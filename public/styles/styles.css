@@ -1,0 +1,385 @@
+
+/*loader*/
+/* Full-page loader overlay */
+#pageLoaderOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.page-loader {
+  border: 5px solid #092534;
+  border-top: 5px solid #83a300;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.detalle-cuenta{
+  display: flex; 
+  justify-content: space-between;
+}
+
+.change-subscription {
+  background-color: #092534;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 2%;
+  font-size: 14px;
+  text-decoration: none;;
+}
+.change-subscription:hover {
+  background-color: #659000;
+}
+
+  /* Container for the filters */
+  #Filtrar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; 
+    padding: 10px;
+    border: 2px solid #092534; /* Border around the Filtrar element */
+    margin-bottom: 5px;
+    border-radius: 5px;
+    background-color: white;
+}
+
+/*Rama juridica*/
+/* Example extension for the new Ramas dropdown */
+#ramaDropdown {
+  display: none; /* hidden by default, shown with JS */
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  z-index: 999;
+}
+#ramaDropdown a {
+  color: #092534;
+  padding: 8px 10px;
+  display: block;
+  text-decoration: none;
+}
+#ramaDropdown a:hover {
+  background-color: #e7f3e7;
+}
+#subRamasCheckboxContainer{
+  font-size: 13px;
+}
+
+.rama-juridica-values{
+  margin-bottom: 7px;
+  margin-top: 7px;
+  padding: 5px 0px;
+}
+
+.rama-value{
+  /* Space between etiquetas */
+  margin-left: 5px; 
+  margin-right: 5px;
+  margin-bottom: 2px;
+  margin-top: 2px;
+  margin-bottom: 10px;
+
+   /* Etiqueta container settings */
+
+  background-color: transparent;
+  border: 1px solid #83a300; /* White border */
+  padding: 7px;
+  border-radius: 4px;
+  color: #83a300;
+
+}
+
+.sub-rama-juridica-values{
+  margin-top: 7px;
+  padding:5px;
+}
+
+.sub-rama-value{
+  padding:5px 0px;
+  color: #83a300;
+}
+
+/* Flex children - Industria and Boletin Oficial */
+.filter-item {
+    flex: 1;
+    margin-left: 2%;
+    /*text-align: center; */
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between; /* Space between the id and date */
+  align-items: center; /* Vertically align items in the center */
+  margin-bottom: 10px; /* Add some space below the row if needed */
+}
+
+.date{
+  margin-bottom: 4%;
+  margin-left: 15px;
+}
+
+/*Charts*/
+
+.chart {
+  border-radius: 10px;;
+}
+
+#chartContainer {
+  height: 40vh; /* Adjust height to 50% of the viewport height */
+  width: 100%; /* Full width */
+  display: flex;
+}
+
+#documentsChart {
+  width: 100%;
+  height: 100%;
+}
+
+/*date*/
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between elements */
+  margin-top: 10px;
+}
+
+.date-filter label {
+  font-size: 14px;
+  margin-right: 5px;
+}
+
+.date-filter input[type="date"] {
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/*no results*/
+
+.no-results {
+  text-align: center;
+  margin: 20px 0;
+  font-size: 1.2rem;
+  color: #666;
+  font-weight: bold;
+}
+
+
+/*fonts*/
+@font-face {
+  font-family: 'Azonix';
+  src: url('../assets/fonts/Azonix.woff2') format('woff2'),
+       url('../assets/fonts/Azonix.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  /*font-family: Arial, sans-serif; */
+  font-family: 'Candara', sans-serif;
+  background-color: #fbf7ef;
+  color: #092534;
+  overflow-x:hidden;
+  margin: 2%;
+}
+
+h1 {
+  color: #092534;
+  font-family: 'Azonix', sans-serif;
+  padding-left: 10%;
+  padding-right: 10%;
+  padding-top: 20px;
+}
+
+.analytics-label {
+  margin-right: 10px;
+  font-size: 20px;
+  margin-bottom: 1%;
+  font-weight: 800;
+  margin-top: 3%;
+}
+
+a {
+  color:#092534;
+}
+.data-item a {
+  color:#83a300;
+}
+/*loading icon*/
+.loader{
+  margin-left: 45%;
+  margin-top: 15%;
+  margin-bottom: 30%;
+  border: 4px solid #092534; /* Light grey */
+  border-top: 4px solid #83a300; /* Blue */
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  animation: spin 2s linear infinite;
+}
+
+#loading-icon-chart {
+  width:300px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#buscarBtn{
+  cursor: pointer; 
+  margin-right: 0px;
+  margin-bottom: 2px;
+  margin-top: 2px;
+  margin-bottom: 10px;
+  text-align: right;
+  font-family: 'Azonix', sans-serif;
+  border: none;
+  background-color: #092534;
+  padding: 7px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #fbf7ef;
+}
+
+/*container section*/
+
+#data-container {
+  /*margin-top: 20px; */
+  padding-left: 10%;
+  padding-right: 10%;
+  padding-bottom: 20px;
+  padding-top: 20px;
+  
+  /*background-color: #f0f0f0; */
+ /* border: 1px solid #83a300; */
+  border-radius: 8px;
+}
+
+.data-item {
+  margin-bottom: 15px;
+  padding: 2vw;
+ /* background-color: #ffffff; */
+  border: 1px solid #092534;
+  border-radius: 4px;
+  background-color: white;
+}
+
+
+/*Id section*/
+
+.id-values {
+  font-size: 30px;
+  font-weight: 600;
+  /*text-align: center; */
+  font-family: Arial, sans-serif;
+}
+
+/*Etiquetas Section*/
+
+.etiquetas-label {
+  margin-right: 10px; /* Add some space between the label and the values */
+  font-size: 20px;
+  margin-bottom: 1%;
+ font-weight:800;
+}
+
+
+.etiquetas-values {
+  display: flex;
+  flex-wrap: wrap; /*Wrap values if they don't fit in a single row */
+}
+
+.etiquetas-values span {
+  /* Space between etiquetas */
+  margin-left: 5px; 
+  margin-right: 5px;
+  margin-bottom: 2px;
+  margin-top: 2px;
+  margin-bottom: 10px;
+
+   /* Etiqueta container settings */
+
+  background-color: transparent;
+  border: 1px solid #092534; /* White border */
+  padding: 7px;
+  border-radius: 4px;
+  color: #092534;
+}
+
+.etiquetas-values .selectedValue {
+  background-color: #83a300;
+  border: none; /* White border */
+  border-radius: 4px;
+}
+
+/*Resumen Section*/
+.resumen-content {
+  text-align: justify;
+  hyphens: auto;
+  margin-bottom: 10px
+  /*margin-left: 2%;
+  margin-right: 2%;
+  */
+}
+
+.resumen-label {
+  font-size: 20px;
+  margin-bottom: 1%;
+  font-weight: 800;
+}
+
+/*Logout*/
+
+/* Style for the Logout link */
+a[href="/logout"] {
+  display: inline-block;
+  margin: 20px auto; /* Center horizontally */
+  text-align: center;
+  text-decoration: none;
+  background-color: #ff4d4d; /* Red logout button */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  font-size: 16px;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative; /* Ensures it behaves within its container */
+}
+
+/* Container to center the link vertically and horizontally */
+.logout-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Hover effect */
+a[href="/logout"]:hover {
+  background-color: #d43f3f; /* Slightly darker red on hover */
+  transform: translateY(-2px); /* Lift effect on hover */
+}

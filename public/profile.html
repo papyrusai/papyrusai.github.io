@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <title>Profile</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
+  <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" type="text/css" href="styles/styles.css" />
+  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
+  <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
+  <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+</head>
+<body>
+  <!-- Loader overlay -->
+<div id="pageLoaderOverlay">
+  <div class="page-loader"></div>
+</div>
+
+  <nav class="navbar">
+    <div class="logo">
+        <a href="https://papyrusai.webflow.io/" target="_blank">
+          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+        </a>
+      </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+      <li><a href="https://papyrusai.webflow.io/">INICIO</a></li>
+      <li><a href="https://papyrusai.webflow.io/pages/pricing-1">PRECIOS</a></li>
+      <li><a href="http://localhost:5000/profile">APP</a></li> <!--cambiar-->
+      <li><a href="https://papyrusai.webflow.io/pages/contact-1">CONTACTO</a></li>
+    </ul>
+  </nav>
+  <h1>Hola {{name}}</h1>
+  <!-- <p>Email: {{email}}</p> -->
+  <div id="data-container">
+    <div class="detalle-cuenta">
+      <div>
+        <div class="etiquetas-label">Sectores Económicos Suscritos</div>
+        <div class="etiquetas-values" id="etiquetasContainer"></div>
+      </div>
+      <div>
+        <div class="etiquetas-label">Ramas Jurídicas Suscritas</div>
+        <div class="etiquetas-values" id="ramasContainer"></div>
+      </div>
+    </div>
+    <a href="#" id="editIndustriesLink" class ="change-subscription">Editar Suscripción</a>
+<div class="analytics-label busqueda">Búsqueda Avanzada</div>
+
+<!-- We embed user industries & user.ramas as JSON in hidden script tags -->
+<script id="industryTags" type="application/json">{{industry_tags_json}}</script>
+<script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
+<script id="userSubRamaMap" type="application/json">
+  {
+    "Derecho Civil": [
+      "familia", "sucesiones", "divorcios", "arrendamientos"
+    ],
+    "Derecho Mercantil": [
+      "M&A", "financiero", "inmobiliario", "mercados de capital",
+      "societario", "gobierno corporativo"
+    ],
+    "Derecho Administrativo": [
+      "energía", "medio ambiente", "urbanismo", "sectores regulados",
+      "bancario", "contratación pública", "contencioso-administrativo"
+    ],
+    "Derecho Fiscal": [
+      "tributación internacional", "IVA", "IS", "IRNR"
+    ],
+    "Derecho Laboral": [],
+    "Derecho Procesal-Civil": [
+      "pleitos masa (clausulas suelo, cárteles)", "impugnación acuerdos societarios",
+      "desahucio"
+    ],
+    "Derecho Procesal-Penal": [
+      "delitos medioambientales", "delitos económicos",
+      "delitos de sangre"
+    ],
+    "Derecho Constitucional": [],
+    "Derecho de la UE": [],
+    "Derecho Internacional Privado": [],
+    "Derecho Internacional Público": []
+}
+  </script>
+  
+
+<div id="Filtrar">
+  <div class="filter-item">
+    <div class="etiquetas-label">Sector Económico</div>
+    <div class="dropdown">
+      <button onclick="myFunction()" class="dropbtn"><span id="selectedIndustry">Cargando...</span>
+        <i class="fa fa-caret-down"></i>
+      </button>
+      <div id="myDropdown" class="dropdown-content">
+      </div>
+    </div>
+  </div>
+
+ <!-- Insert inside <div id="Filtrar"> (after "Industria" and "Boletín", etc.) -->
+  <div class="filter-item">
+    <div class="etiquetas-label">Rama Jurídica</div>
+    
+    <!-- A small dropdown for main Ramas -->
+    <div class="dropdown" style="margin-bottom: 10px;">
+      <button onclick="toggleRamaDropdown()" class="dropbtn">
+        <span id="selectedRama">Todas</span>
+        <i class="fa fa-caret-down"></i>
+      </button>
+      <div id="ramaDropdown" class="dropdown-content">
+        <!-- Filled dynamically by JS or statically if you prefer -->
+      </div>
+    </div>
+  
+    <!-- Sub-ramas checkboxes section -->
+    <div id="subRamasCheckboxContainer" style="display: none; padding: 6px; border-radius: 4px;">
+    </div>
+  </div>
+
+  <div class="filter-item">
+    <div class="filter-section">
+      <div class="etiquetas-label">Boletín Oficial</div>
+      <div class="filter-options">
+        <label class="filter-option">
+          <input type="checkbox" name="boletin" value="BOE" checked> BOE
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="boletin" value="BOCM"> BOCM
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="boletin" value="BOA"> BOA
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="boletin" value="BOJA"> BOJA
+        </label>
+        <label class="filter-option">
+          <input type="checkbox" name="boletin" value="BOPV"> BOPV
+        </label>
+      </div>
+    </div>
+  </div>
+  <div class="filter-item">
+    <div class="etiquetas-label">Fecha de publicación</div>
+    <div class="date-filter">
+      <label for="startDate">Desde:</label>
+      <input type="date" id="startDate" name="startDate" />
+      <label for="endDate">Hasta:</label>
+      <input type="date" id="endDate" name="endDate" />
+    </div>
+  </div>
+
+</div>
+
+
+<div style="text-align: right;">
+  <button id="buscarBtn" onclick="handleBuscar()">Buscar</button>
+</div>
+     <!-- <div class = "chart" id="chart"></div> -->
+     <div class="analytics-label">Estadísticas de la búsqueda</div>
+     <div id="loading-icon-chart" style="display: none;">
+      <div class="loader"></div>
+  </div>
+     <div id="chartContainer"> 
+      <canvas id="documentsChart"></canvas>
+      </div>
+      <div class="analytics-label">Documentos</div>
+      <div id="loading-icon" style="display: none;">
+        <div class="loader"></div>
+    </div>
+     <!-- <div class="analytics-label">Publicaciones BOE</div> -->
+      <div class="collectionDocs">{{boeDocuments}}</div>
+  </div>
+  <div class="logout-container">
+    <a href="/logout">Logout</a>
+</div>
+
+  <script id="industryTags" type="application/json">{{industry_tags_json}}</script> <!-- Add this line -->
+    <!-- Include hidden script tags to embed variables -->
+    <script id="monthsData" type="application/json">{{months_json}}</script>
+    <script id="countsData" type="application/json">{{counts_json}}</script>
+    <script id="userPlan" type="application/json">{{subscription_plan}}</script>
+    <script id="startDateInput" type="application/json">{{start_date}}</script>
+
+ <!-- <script type="module" src="/dist/index.js"></script> --> <!-- Update this path to point to the bundled file -->
+  <script src="dropdown.js"></script>
+  <script src="displayTags.js"></script> 
+  <script src="collections.js"></script> 
+  <script src="chart.js"></script> 
+  <script>
+  function toggleMenu() {
+        const menu = document.querySelector('.menu');
+        menu.classList.toggle('active');
+         }
+         // Close the menu if clicking outside of it
+document.addEventListener('click', function(event) {
+    const menu = document.querySelector('.menu');
+    const hamburger = document.querySelector('.hamburger');
+    
+    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+    }
+});
+</script>
+</body>
+</html>

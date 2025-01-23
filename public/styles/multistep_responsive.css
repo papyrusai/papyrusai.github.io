@@ -1,0 +1,993 @@
+/* 1) Fluid base font size on <body> */
+body {
+    font-family: Arial, Helvetica, sans-serif, sans-serif;
+    background-color: #fbf7ef ;
+    color: #092534;
+    margin: 0;
+    padding: 0;
+    /* Use clamp to scale between 14px and 18px, with a "preferred" ~1.2vw. */
+    font-size: clamp(14px, 1.2vw, 18px);
+}
+
+  /* loader style */
+/* Full-page loader overlay */
+#pageLoaderOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  
+  .page-loader {
+    border: 5px solid #092534;
+    border-top: 5px solid #83a300;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+
+  /* The overlay container, full-screen */
+
+
+/* 2) The main container, using fluid height and widths */
+.form-container {
+    position: relative;
+    z-index: 1; 
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: clamp(500px, 75vh, 900px); /* 75% viewport but never <500px or >900px */
+    max-width: 800px;
+    margin: clamp(10px, 2vh, 40px) auto;  /* top/bottom margin is fluid as well */
+    border: 1px solid #092534;
+    border-radius: 8px;
+    padding: clamp(10px, 2vh, 20px);
+    background-color: #fbf7ef;
+}
+
+.step-container {
+    /* Keep fluid padding as well */
+    padding: clamp(10px, 2vh, 20px);
+}
+
+/* 3) Progress bar styling */
+.progress-bar {
+    position: relative;
+    width: 100%;
+    background-color: #ddd;
+    border-radius: 8px;
+    margin: clamp(10px, 2vh, 20px) 0;
+}
+
+.progress {
+    height: clamp(6px, 1vh, 10px);
+    background-color: #83a300;
+    width: 0%;
+    border-radius: 8px;
+    transition: width 0.3s ease;
+}
+
+.progress-indicator {
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+    top: -25px;
+    left: 0;
+    right: 0;
+    padding: 0 clamp(5px, 1vw, 10px);
+}
+
+.progress-indicator .step {
+   
+    height: clamp(16px, 2vw, 20px);
+    border-radius: 50%;
+    text-align: center;
+    line-height: clamp(16px, 2vw, 20px);
+    color: #092534;
+    font-weight: bold;
+    z-index: 1;
+}
+
+.progress-indicator .step.active {
+    color: #83a300;
+}
+
+/* Headings with clamp for fluid text */
+h1, h2 {
+    font-family: 'Azonix', sans-serif;
+    margin: 0.3em 0;
+}
+
+h1 {
+    font-size: clamp(16px, 2vw, 20px);
+    margin-bottom: 5px;
+}
+
+h2 {
+    font-size: clamp(14px, 1.8vw, 16px);
+    margin-bottom: 5px;
+    color: #83a300;
+}
+
+.subheading {
+    color: #092534;
+}
+
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+}
+
+/* Buttons container and style */
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: clamp(10px, 2vh, 20px);
+}
+
+button {
+    padding: clamp(6px, 1vh, 10px) clamp(12px, 2vw, 20px);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: inherit; /* Use body’s fluid font-size */
+}
+
+#prevBtn {
+    background-color: #ccc;
+    color: #000;
+    margin-left: 35%;
+    margin-bottom: clamp(20px, 5vh, 50px);
+}
+
+#nextBtn {
+    background-color: #83a300;
+    color: #fff;
+    margin-left: 60%;
+    display: inline;  /* fix "in-line" -> "inline" */
+    margin-bottom: clamp(20px, 5vh, 50px);
+}
+
+#prevBtn:hover {
+    background-color: #999;
+}
+
+#nextBtn:hover {
+    background-color: #659000;
+}
+
+/* Step 1: Profile Option Styling */
+.profile-option {
+    background-color: white;
+    color: #092534;
+    padding: clamp(12px, 2vh, 20px);
+    border-radius: 8px;
+    margin-bottom: clamp(10px, 2vh, 20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    border:1px solid #092534;
+}
+
+.profile-option:hover {
+    background-color: #e6f7e6;
+}
+
+.profile-option.active {
+    border: 2px solid #83a300;
+    Box-shadow: 0px 0px 2px #83a300;
+}
+
+.profile-content {
+    display: flex;
+    width: 100%;
+}
+
+.profile-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: clamp(60px, 8vh, 100px);
+}
+
+.profile-image img {
+    max-width: 100%;
+    height: 100px;
+    border-radius: 8px;
+}
+
+.profile-text {
+    flex: 2;
+    margin-left: clamp(10px, 1vw, 20px);
+}
+
+.profile-text h2 {
+    margin-top: 0;
+}
+
+.profile-text p {
+    margin-top: 7px;
+    margin-bottom: 0;
+    font-size: clamp(12px, 1.5vw, 14px);
+    line-height: 1.5;
+}
+
+input#otherProfileInput {
+    width: 80%;
+}
+
+/* Step 2: Industry Selection Styling */
+.container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Selected Industries Container */
+.selected-industries-container {
+    padding: clamp(5px, 1vh, 10px);
+    margin-bottom: clamp(5px, 1vh, 10px);
+    border-radius: 4px;
+    height: 45px; /* or keep as is if you want a fixed height */
+}
+
+.selected-industries-container h3 {
+    margin: 0 0 10px;
+}
+
+/* We can keep h3 margin or clamp it if needed */
+h3 {
+    margin: clamp(5px, 1vh, 10px);
+}
+
+/*Search industry*/
+.industry-search-container {
+    margin-bottom: 15px;
+}
+
+/* Selected Industry Items */
+.selected-industries-container {
+    max-width: 150px; 
+    max-height: 100px;
+    overflow: hidden;
+    position: relative; 
+}
+
+.selected-industry-item {
+    display: inline-block;
+    position: relative;
+    padding: clamp(4px, 1vh, 7px);
+    border: 1px solid #092534;
+    border-radius: 5px;
+    font-size: clamp(10px, 1.2vw, 12px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 2px;
+    box-sizing: border-box; 
+}
+
+.close-btn {
+    position: absolute; /* Position relative to the parent */
+    top: 1px; /* Adjust position for better alignment */
+    right: 1px; /* Adjust position for better alignment */
+    font-size: 10px;
+    font-weight: bold;
+    color: #fbf7ef; /* Red for the close button */
+    cursor: pointer;
+    line-height: 1;
+    background-color: #092534; /* Optional: White background for contrast */
+    border-radius: 50%; /* Circle shape for the button */
+    width: 9px;
+    height: 9px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.selected-industries-message {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    font-size: 12px;
+    font-style: italic;
+    color: #555;
+    text-align: center;
+    padding: 2px;
+    background-color: #fbf7ef;
+    box-sizing: border-box;
+}
+
+.industry-input-group {
+    display: flex;
+    align-items: center;
+    gap: clamp(5px, 1vw, 10px);
+}
+
+#industrySearchInput {
+    padding: clamp(5px, 1vh, 7px);
+    border: 1px solid #ccc;
+    background: #fbf7ef;
+    border-radius: 5px;
+    font-size: clamp(12px, 1.5vw, 14px);
+    box-sizing: border-box;
+    width:100%;
+}
+
+#selectedIndustriesList {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 5px;
+    padding: 5px;
+    overflow-x: auto;
+    box-sizing: border-box; 
+}
+
+#selectedIndustriesList::-webkit-scrollbar {
+    height: 8px;
+}
+
+#selectedIndustriesList::-webkit-scrollbar-thumb {
+    background: #83a300; 
+    border-radius: 4px;
+}
+
+#selectedIndustriesList::-webkit-scrollbar-track {
+    background: #fbf7ef; 
+}
+
+
+#selectedRamaJuridicaList::-webkit-scrollbar {
+    height: 8px;
+}
+#selectedRamaJuridicaList::-webkit-scrollbar-thumb {
+    background: #83a300; 
+    border-radius: 4px;
+}
+
+#selectedRamaJuridicaList::-webkit-scrollbar-track {
+    background: #fbf7ef; 
+}
+
+.selected-industry-item {
+    display: inline-block;
+    position: relative;
+    padding: clamp(4px, 1vh, 7px);
+    border: 1px solid #092534;
+    border-radius: 5px;
+    font-size: clamp(10px, 1.2vw, 12px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 5px;
+}
+
+.selected-rama-item {
+    display: inline-block;
+    position: relative;
+    margin: 0 5px 5px 0;
+    padding: 10px 10px; 
+    border: 1px solid #092534; 
+    border-radius: 5px;
+    font-size: 12px;
+    white-space: nowrap; 
+}
+
+#selectedRamaJuridicaList {
+    display: flex;
+    flex-wrap: wrap; 
+    gap: 5px;
+    padding: 5px;
+    overflow-x: auto;
+    box-sizing: border-box;
+}
+
+.industry-search-wrapper {
+    position: relative; /* Anchor for the absolute dropdown */
+    width: 100%;        /* or whatever width you want for the input + dropdown */
+    margin: 0;          /* no extra margin unless desired */
+    padding: 0;         /* same reason */
+    display: block;     /* ensure block layout */
+  }
+  
+  .industry-list-container {
+    position: absolute; 
+    top: 100%;             /* directly below the input */
+    left: 0;               
+    width: 100%;           /* same width as the wrapper/input */
+    margin: 0;             /* no gap */
+    padding: 5px;          /* minimal padding for the dropdown box */
+    border: 1px solid #fbf7ef;
+    border-radius: 4px;
+    background-color: #fbf7ef;
+    max-height: 120px;     /* or 100px, as you had before */
+    overflow-y: auto;
+    z-index: 9999;         /* ensure it's on top if needed */
+    display: none;         /* hidden by default, shown via JS */
+  }
+  
+  
+
+/* Two-column wrapper for sect.2 */
+.input-wrapper {
+    display: flex;
+    width: 100%; 
+    height: clamp(80px, 15vh, 150px);
+    box-sizing: border-box;
+}
+
+/* ADDED: position: relative; so the child absolute container is placed below the input. */
+.search-column {
+    position: relative;  /* new */
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 5px;
+    /* remove or ignore the previous margin-top: 76px, etc. */
+  }
+  
+
+.selected-column {
+    width: 50%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: clamp(2px, 1vh, 5px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; 
+}
+
+.industry-list-container h3 {
+    margin-bottom: clamp(5px, 1vh, 10px);
+}
+
+.industry-list {
+    max-height: 30vh;
+    overflow-y: auto;
+}
+
+.industry-item {
+    padding: clamp(3px, 0.8vh, 7px);
+    font-size: clamp(10px, 1.2vw, 12px);
+    margin-bottom: 5px;
+    margin-right: 5px;
+    border-radius: 5px;
+    color: #092534;
+    cursor: pointer;
+    border: 1px solid #092534;
+    background-color: #fbf7ef;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.total-industrys {
+    margin-left: 55%;
+    font-size: clamp(12px, 1.5vw, 15px);
+    color: #83a300;
+}
+
+.rama-item {
+    padding: clamp(3px, 0.8vh, 7px);
+    font-size: clamp(10px, 1.2vw, 12px);
+    margin-bottom: 5px;
+    margin-right: 5px;
+    border-radius: 5px;
+    color: #092534;
+    cursor: pointer;
+    border: 1px solid #092534;
+    background-color: #fbf7ef;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.industry-item:hover,
+.rama-item:hover {
+    background-color: #83a300;
+    color: #092534;
+}
+
+.industry-item.selected,
+.rama-item.selected {
+    background-color: #83a300;
+    color: #092534;
+    border-color: #83a300;
+}
+
+/* Separator */
+.section-separator {
+    position: relative;
+    margin: clamp(10px, 2vh, 20px) auto; 
+    text-align: center;
+    border-top: 1px solid #83a3006b;
+    width: 50%;
+}
+
+.section-separator span {
+    position: relative;
+    top: -0.8em;
+    padding: 0 clamp(5px, 1vw, 10px);
+    background: #fbf7ef;
+    color: #83a300de;
+    font-size: clamp(12px, 1.5vw, 14px);
+}
+
+/* Rama juridica container */
+.rama-juridica-container {
+    /*margin-bottom: clamp(10px, 2vh, 20px);*/
+    position: relative;
+}
+
+#ramaJuridicaSearchInput {
+    width: 100%;
+    padding: clamp(5px, 1vh, 7px);
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: clamp(12px, 1.5vw, 14px);
+    box-sizing: border-box;
+    background: #fbf7ef;
+}
+
+
+/* Sub-ramas pagination arrows */
+#prevSubRamasBtn,
+#nextSubRamasBtn {
+  /* for smaller style: */
+  font-size: 12px;       /* or 11px, whichever you prefer */
+  padding: 1px 6px;      /* reduce padding so they're more compact */
+  margin: 0 2px;         /* small margin */
+  background-color: #83a300;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#prevSubRamasBtn:hover,
+#nextSubRamasBtn:hover {
+    background-color: #659000;
+}
+
+/* Sub-ramas columns */
+.sub-ramas-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    max-height: 18vh; /* optional limit if you need to avoid overflow */
+    overflow-y: auto;
+}
+
+
+/* 1) Make sub-rama-column a positioning container */
+.sub-rama-column {
+    position: relative;  /* So child .sub-rama-arrow can be absolutely positioned */
+    border-radius: 5px;
+    padding: 7px 10px;
+    border: 1px solid #83a300;
+    margin: 0;
+    font-size: 12px;
+    box-sizing: border-box;
+  }
+  
+  /* 2) Tweak sub-rama-title: remove extra arrow styling/spacing */
+  .sub-rama-title {
+    font-weight: bold;
+    text-align: center;
+    color: #83a300;
+    font-size: clamp(12px, 2vw, 16px);
+    line-height: 1.2;
+    margin: 0 0 5px;
+    /* no arrow margin needed any more */
+  }
+  
+  /* 3) Absolutely position the arrow near the right edge */
+  .sub-rama-arrow {
+    position: absolute;      /* absolute inside .sub-rama-column */
+    top: 8px;                /* or ~50% if you want it vertically centered */
+    right: 10px;             /* pinned to the right edge */
+    font-weight: bold;
+    color: #092534;
+    cursor: pointer;
+    /* remove margin-left if you had it */
+    margin-left: 0;
+  }
+  
+  /* 4) OPTIONAL: If you want the arrow vertically centered with the title, 
+     you can do: 
+     top: 50%;
+     transform: translateY(-50%);
+     instead of top: 8px.
+  */
+  
+/* (NEW) The wrapper that grid-distributes only the .sub-rama-item elements in columns of 4 rows each */
+.sub-rama-items-wrapper {
+    display: grid;
+    grid-auto-flow: column;             /* fill columns top-to-bottom */
+    grid-template-rows: repeat(4, auto);/* 4 rows max per column */
+    column-gap: 15px;                   /* space between sub-columns */
+    row-gap: 3px;                       /* space between rows */
+  }
+
+/* Each sub-rama item. We remove large margin so row-gap handles spacing. */
+.sub-rama-item {
+    /* remove margin-bottom, we rely on row-gap now */
+    margin: 0; 
+    display: flex;                  /* keep label/checkbox side by side */
+    align-items: center;
+    cursor: pointer;
+}
+.sub-rama-item input[type="checkbox"] {
+    margin-right: 6px;
+    transform: scale(1.0);
+    accent-color: #83a300;
+}
+
+/* Step 3 Plans Container */
+
+/* A small floating message to warn about plan1 limitations */
+.limited-plan-warning {
+    position: fixed;            /* or absolute if you prefer to anchor inside .form-container */
+    top: 10px;                  /* place near top (or center, your choice) */
+    left: 50%;
+    transform: translateX(-50%);  /* center horizontally */
+    background-color: #ac1717;    /* a warning color, e.g., yellowish */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 9999;             /* on top of other stuff */
+    display: none;             /* hidden by default, show via JS */
+  }
+  
+  /* The close (X) button inside the banner */
+  .limited-plan-warning .close-btn {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    cursor: pointer;
+    color: #092534;
+    background: #ffffff99;
+    border-radius: 50%;
+    padding: 3px 3px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+.choose-plan-heading {
+    text-align: center;
+    font-size: clamp(18px, 2.5vw, 24px);
+    margin-top: clamp(20px, 5vh, 50px);
+    font-weight: bold;
+}
+
+.plans-container {
+    display: flex;
+    justify-content: space-between;
+    gap: clamp(10px, 2vw, 20px);
+    margin-top: clamp(30px, 5vh, 75px);
+}
+
+/* Individual Plan Box */
+.plan-box {
+    position: relative;
+    flex: 1;
+    border-radius: 8px;
+    padding: clamp(10px, 2vh, 20px);
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    border: 1px solid #092534;
+}
+
+.plan-box h3 {
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: normal;
+    color: #092534bd;
+}
+
+.plan-box h2 {
+    font-size: clamp(18px, 3vw, 24px);
+    margin: clamp(5px, 1vh, 10px) 0;
+    font-weight: bold;
+}
+
+.plan-box p {
+    font-size: clamp(12px, 1.5vw, 14px);
+    color: #666;
+    margin-bottom: clamp(10px, 2vh, 20px);
+}
+/*banners*/
+
+  /* Common style for all plan badges */
+  .plan-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    color: #092534;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 12px; /* smaller text */
+    z-index: 9999;
+  }
+  
+  /* If you want different colors for each banner: */
+  .free-two-months {
+    background-color: #83a300; /* or #ffcc00, up to you */
+    color: #fbf7ef;
+  }
+  .free{
+    top:-20px;
+    right: 10px;
+  }
+  
+  .coming-soon {
+    background-color: #092534; /* for example pink, or any color */
+    color: #fff;               /* white text for contrast */
+  }
+  
+  /* (Optional) If plan3 is disabled, you can gray it out entirely: */
+  .plan-box[data-disabled="true"] {
+    opacity: 0.6;       /* visually indicate it's not available */
+    cursor: default;    /* no pointer hand */
+  }
+  
+  /* Possibly highlight the banner if the user tries to click Plan 3 */
+  
+  /*.plan-badge.highlighted {
+    animation: pulse 0.8s ease 0s 2 alternate;
+  } */
+  
+  @keyframes pulse {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.2); }
+  }
+  
+/* Plan Features List */
+.plan-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.plan-box ul li {
+    font-size: clamp(12px, 1.5vw, 14px);
+    margin-bottom: clamp(5px, 1vh, 10px);
+    padding-bottom: clamp(5px, 1vh, 10px);
+    border-bottom: 1px solid #ccccccd9;
+}
+
+.plan-box ul li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+/* Plan Buttons */
+.plan-button {
+    margin-top: clamp(5px, 1vh, 10px);
+    padding: clamp(5px, 1vh, 10px) clamp(10px, 2vw, 20px);
+    border: none;
+    border-radius: 5px;
+    font-size: clamp(12px, 1.5vw, 14px);
+    cursor: pointer;
+    background-color: #83a300;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+.plan-box {
+    cursor: pointer;
+    transition: background-color 0.3s ease, border 0.3s ease;
+}
+
+.plan-box:hover {
+    background-color: #e6f7e6;
+}
+
+.plan-box.selected {
+    border: 2px solid #83a300;
+    Box-shadow: 0px 0px 2px #83a300;
+}
+
+/* Loader */
+.loader {
+    border: 3px solid #f3f3f3; 
+    border-top: 3px solid #83a300;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive design for <800px (existing rules). 
+   You can keep them or tweak further. */
+
+/* ============= RESPONSIVE DESIGN FOR MOBILE (<800px) ============= */
+@media (max-width: 800px) {
+   
+   /* 1) Ensure the selected lists only show 30px, scrolling horizontally */
+   #selectedIndustriesList,
+   #selectedRamaJuridicaList {
+       max-height: 50px;       /* only 30px tall */
+       overflow-x: auto;       /* scroll horizontally if needed */
+       overflow-y: hidden;     /* no vertical scroll */
+       white-space: nowrap;    /* items stay side by side horizontally */
+       display:block;
+       padding: 0px;
+   }
+
+   /* 2) Sub-ramas container: stack columns top-to-bottom (instead of side by side) */
+   .sub-ramas-columns {
+       display: flex;          /* switch to flex layout for stacking */
+       flex-direction: column; /* each .sub-rama-column is on its own row */
+       gap: 6px;               /* keep some vertical gap between columns */
+       max-height: initial;    /* remove or override if we had a max-height previously */
+       overflow-y: visible;    /* we rely on pagination still, so no big scrolling container */
+       margin-top: 7px;
+   }
+
+   /* 3) Each sub-rama-column becomes full width */
+   .sub-rama-column {
+       width: 100%;
+       margin-bottom: 0px;    /* space between columns */
+       padding: 5px 5px;
+       /* The title + dropdown logic remains the same; no further changes needed */
+   }
+   .total-industrys {
+    margin: 5px 0px;
+}
+   
+    /* Slightly reduce base font size */
+    body {
+        font-size: 12px; 
+    }
+    /* Remove or reduce big margins/padding on the main container */
+    .form-container {
+        margin: 5px auto;
+        width: auto; 
+        height: auto; 
+        padding: 8px; 
+        border: none; /* remove border if you want a full-bleed look */
+        border-radius: 5px;
+    }
+    .step-container {
+        padding: 8px; /* reduce step container padding */
+    }
+    /* Reduce spacing in the progress indicator */
+    .progress-indicator .step {
+        height: 14px; /* smaller steps */
+        line-height: 14px; 
+        font-size: 10px; 
+    }
+    .profile-option {
+        padding: 8px;
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+    .profile-image{
+        display:none;
+    }
+    .profile-text p {
+        font-size: 12px;
+    }
+    .industry-list {
+        max-height: 20vh;
+    }
+    .section-separator {
+        margin: auto;
+        margin-top: 10%;
+        width: 70%;
+    }
+    /* Force columns to stack */
+    .input-wrapper {
+        flex-direction: column; /* stacked */
+        height: auto; /* let content grow */
+    }
+    .search-column, .selected-column {
+        width: 100%;
+        height: auto;
+        padding: 0px; /* smaller padding on each */
+    }
+    .plans-container {
+        flex-direction: column; /* stack the plan boxes */
+        align-items: center;
+        gap: 15px;  /* reduce gap on mobile */
+        margin-top: 20px; /* also reduce top margin */
+    }
+    .plan-box {
+        width: 90%;
+        max-width: 400px;
+        margin-bottom: 0px; /* spacing between boxes */
+        padding: 5px;
+    }
+    .plan-badge{
+       position: absolute;
+        top: -10px;
+        padding: 5px 5px;
+        border-radius: 5px;
+        font-weight: bold;
+        font-size: 10px;
+        z-index: 9999;
+    }
+    
+        .free {
+            top: -20px;
+            right: 20px;
+        }
+    /* Possibly hide or reduce big headings for mobile */
+    .choose-plan-heading {
+        display: none; /* hide big heading if you want a more compact mobile */
+    }
+
+    input#otherProfileInput{
+        font-size: 10px;
+    }
+}
+
+/*Buttons*/
+@media (max-width: 800px) {
+    /* 1) Reduce spacing above the buttons container, so they're 10px from the last element */
+    .buttons {
+        margin-bottom: 10px !important;
+        justify-content: center;
+        margin-top: 0px !important;
+    }
+  
+    /* 2) Remove individual margin from the buttons, so they stay close together and centered */
+    #prevBtn, 
+    #nextBtn {
+      margin: 0 !important; 
+    }
+    
+    /* 3) (Optional) You can also add a small gap if you want space between them */
+    .buttons {
+      gap: 10px; /* space between #prevBtn and #nextBtn */
+    }
+  }
+  
+  /*In-line plans text*/
+
+  @media (max-width: 800px) {
+
+    /* Make h2 and p side by side in the same row inside plan-box */
+    .plan-box h2,
+    .plan-box p {
+      display: inline-block;   /* put them on the same line */
+      vertical-align: middle;  /* keep them aligned nicely */
+      margin: 0px;
+      margin-bottom: 5px;               /* remove top/bottom spacing */
+    }
+  
+    /* Optional small spacing between them if you like */
+    .plan-box h2 {
+        font-size: 12px;
+    }
+  }

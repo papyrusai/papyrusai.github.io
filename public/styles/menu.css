@@ -1,0 +1,178 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif; /* Change to your preferred font */
+  }
+
+ 
+  .navbar {
+    color: #092534;
+    font-size: small;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    height: 60px; /* Adjust the height as needed */
+    border-bottom: 1px solid #83a300; /* rgba(251, 247, 239, 0.2);*/
+}
+
+
+
+.navbar.login{
+  background-color: #092534;
+}
+
+.logo img {
+    max-height: 60px; /* Adjust the max-height as needed for your logo */
+    margin-left: 10%;
+    width: auto; /* Maintain aspect ratio */
+  }
+  
+  .menu {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .menu li {
+    padding: 0 16px; /* Adjust spacing between menu items */
+  }
+  
+  .menu li a {
+    color: #092534;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+  
+  .menu li a:hover {
+    color: #83a300; /* Lighter color on hover */
+  }
+ 
+  
+/*MOBILE*/
+
+@media (max-width: 1000px) {
+  .container{
+      width:95%;
+  }
+}
+
+
+
+@media (max-width: 600px) {
+  .container {
+      width: 90%; /* Make container full width */
+      /* Stack the elements vertically */
+  }
+
+  .login-section {
+      width: 100%; /* Make the login section full width */
+      padding: 20px; /* Reduce padding to fit smaller screens */
+      text-align: center;
+  }
+
+  .info-section {
+      display: none; /* Hide the info-section */
+  }
+
+  .login-section h1 {
+      font-size: 16px; /* Adjust font size */
+  }
+
+  .login-btn {
+      font-size: 14px; /* Adjust button font size */
+      padding: 4px; /* Adjust button padding */
+      display: inline-block;
+      margin-top:10px;
+
+  }
+
+  .login-section input[type="email"], .login-section button {
+      font-size: 14px; /* Adjust input and button font size */
+      padding: 8px; /* Adjust input and button padding */
+      display: inline-block;
+      width: 60%;
+  }
+}
+
+@media (max-width: 400px) {
+
+  .info-section {
+    display: none; /* Hide the info-section */
+}
+.container{
+  width:95%;
+}
+  .login-section{
+  padding-top:20px;
+  padding-bottom:20px;
+  padding-left: 0px;
+  padding-right:0px;
+}
+.logo img {
+  height: 50px; /* Adjust the max-height as needed for your logo */
+  width: auto; /* Maintain aspect ratio */
+  margin-left: 0%;
+  
+}
+}
+
+
+/*hambrger section*/
+
+.hamburger {
+  display: none; /* Hidden by default */
+  font-size: 24px; /* Icon size */
+  background: none;
+  border: none;
+  color: #092534; /* Hamburger color */
+  cursor: pointer;
+}
+
+.hamburger.login{
+  color:#fbf7ef;
+}
+/*hamburger menu*/
+@media (max-width: 600px) {
+
+  .menu {
+      display: none; 
+  }
+  .hamburger {
+      display: block; /* Show hamburger icon */
+  }
+  .menu.active {
+      display: block; /* Show menu when active */
+      position: absolute; /* Position the menu */
+      right: 0; 
+      top: 60px; /* Adjust based on navbar height */
+      background-color: #fbf7efd6; /* Background color for the dropdown */
+      width: 70%; /* Full width */
+      text-align: right; /* Align items to the right */
+      border-radius: 4px;
+      z-index: 9999;   
+  }
+  .menu li {
+      padding: 15px; 
+      margin-right: 10px;
+  }
+  .menu li a {
+    color: #092534;
+}
+  .login-image{
+      display:none;
+  }
+  .login-section {
+      padding: 40px;
+      min-height: auto;
+  }
+  .temporal-uno{
+      margin-top: 0px;
+      font-size:12px;
+  }
+  .temporal{
+      font-size:12px;
+  }
+
+}

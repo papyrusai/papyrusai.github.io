@@ -1,0 +1,203 @@
+
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+}
+
+.login-form{
+    background: rgb(9,37,52);
+background: linear-gradient(180deg, rgba(9,37,52,1) 0%, rgba(117,136,147,1) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 90vh;
+    margin: 0;
+}
+.logo img {
+    height: 100px; /* Adjust the max-height as needed for your logo */
+    width: auto; /* Maintain aspect ratio */
+    
+  }
+  .container {
+    display: flex;
+    width: 60%;
+    max-width: 1200px;
+    background-color: white;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/*test*/
+
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: inline-block !important;
+}
+
+
+/*google*/
+  .google-login {
+    display: inline-flex; /* Align the image and text horizontally */
+    align-items: center; /* Center the image and text vertically */
+    justify-content: center; /* Center the content horizontally */
+    gap: 8px; /* Space between the image and text */
+    text-align: center;
+    background-color: transparent;
+    color: #092534;
+    border: 1px solid #ccc;;
+    padding: 5px;
+    text-decoration: none;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    font-size: 16px;
+    max-width: 300px;
+}
+.google-login img {
+    height: 30px; /* Adjust the height as necessary */
+    width: auto; /* Maintain aspect ratio */
+    vertical-align: middle;
+    margin-bottom: 2px;
+}
+
+.login-section {
+    padding: 40px;
+    width: 50%;
+    background-color: #f4f4f4;
+    min-height: 400px; /* Add this line to set a minimum height */
+    text-align: center; /* Center child elements horizontally */
+}
+
+.login-section h1 {
+    font-size: 30px;
+    margin-bottom: 20px;
+    color:#83a300
+}
+
+.login-btn  {
+display: inline-block;
+margin-top: 40px;
+width: 50%;
+text-align: center;
+background-color: white;
+color: #75758b;
+border: 1px solid #ccc;
+padding: 4px;
+text-decoration: none;
+margin-bottom: 15px;
+border-radius: 5px;
+font-size: 14px;
+}
+
+/*loading icon*/
+.loader-google {
+    display: inline-block;
+    text-align: center;
+    text-align: center;
+    border: 4px solid #fbf7ef; /* Light grey */
+    border-top: 4px solid #83a300; /* Blue */
+    border-radius: 50%;
+    width: 10px;
+    height: 10px;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+/*temporal*/
+.temporal{ 
+    color: #092534;
+}
+.temporal-uno{
+    color: #092534;
+    margin-top: 40px;
+}
+/*divider*/
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    color: #092534; /* Adjust this color as needed */
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #ccc; /* Adjust the color of the lines as needed */
+    margin: 0 10px; /* Space between the text and the lines */
+}
+
+.divider span {
+    font-size: 14px; /* Adjust font size if needed */
+    color: rgb(92, 108, 117); /* Match the color of the lines */
+}
+
+/*email*/
+.login-section input[type="email"] {
+    
+    display: inline-block;
+    text-align: center;
+    width: 90%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/*next*/
+.login-section button {
+    width: 50%;
+    margin-top: 15px;
+    display: inline-block;
+    text-align: center;
+    padding: 10px;
+    background-color: #83a300;
+    color: #fbf7ef;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/*info section*/
+.info-section {
+    padding: 40px;
+    width: 50%;
+    background-color: #092534;
+    color: #fbf7ef;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.info-section h2 {
+    font-size: 24px;
+    margin-bottom: 20px;
+}
+
+.info-section p {
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.info-section a {
+    color: #fbf7ef;
+    text-decoration: underline;
+    font-weight: bold;
+}
+

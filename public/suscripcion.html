@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Personalizar Suscripción</title>
+  <link rel="stylesheet" href="styles/menu.css" />
+  <link rel="stylesheet" href="styles/multistep_responsive.css" />
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #fbf7ef;
+      color: #092534;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Hide .container until data is loaded */
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      display: none; 
+    }
+
+    .subscription-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 2px solid #ddd;
+    }
+    .subscription-header h1 {
+      font-size: 24px;
+      margin: 0;
+    }
+    .subscription-details {
+      font-size: 16px;
+      margin: 5px 0 0 0; /* small top margin */
+    }
+
+    .change-subscription {
+      background-color: #092534;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .change-subscription:hover {
+      background-color: #659000; 
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin: 20px 0;
+    }
+    .nav-buttons button {
+      flex: 1;
+      margin: 0 10px;
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .nav-buttons button.active {
+      background-color: #83a300;
+      color: white;
+    }
+    .nav-buttons button.disabled {
+      background-color: #ddd;
+      color: #999;
+      cursor: not-allowed;
+      position: relative;
+    }
+
+    .content-container {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      min-height: 200px;
+      margin-top: 20px;
+      background-color: white;
+    }
+    .coming-soon-badge {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background-color: #092534;
+      color: #fff;
+      font-size: 10px;
+      padding: 3px 5px;
+      border-radius: 4px;
+    }
+
+    /* Spinner for "Cambiar suscripción" button */
+    .spinner {
+      display: inline-block;
+      margin-left: 8px;
+      border: 3px solid #092534;
+      border-top: 3px solid #83a300;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 1s linear infinite;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0%   { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Minimalistic bullet styling for BO or other lists */
+    ul.bo-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 15px 0;
+    }
+    ul.bo-list li {
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+    }
+    ul.bo-list li::before {
+      content: "•";
+      color: #83a300;
+      font-weight: bold;
+      display: inline-block;
+      width: 1em;
+      margin-right: 8px;
+    }
+
+    .green-tick {
+      width: 18px;
+      height: 18px;
+      margin-left: 6px;
+      display: inline-block;
+      background-color: #83a300;
+      border-radius: 50%;
+    }
+    .blurred { 
+      opacity: 0.5;
+    }
+
+    .etiqueta {
+      display: inline-block;
+      position: relative;
+      padding: clamp(4px, 1vh, 7px);
+      border: 1px solid #092534;
+      border-radius: 5px;
+      font-size: clamp(11px, 1.2vw, 13px);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 2px;
+      box-sizing: border-box; 
+    }
+
+    /* Full-page loader overlay */
+    #pageLoaderOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255,255,255,0.9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .page-loader {
+      border: 5px solid #092534;
+      border-top: 5px solid #83a300;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    .filter-title {
+      margin-right: 10px;
+      font-size: 20px;
+      margin-bottom: 3%;
+      font-weight: 800;
+    }
+
+    .selected-values-list {
+      max-height: 50px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      display: block;
+      padding: 10px;
+    }
+    .selected-values-list::-webkit-scrollbar {
+      height: 8px;
+    }
+    .selected-values-list::-webkit-scrollbar-thumb {
+      background: #83a300; 
+      border-radius: 4px;
+    }
+    .selected-values-list::-webkit-scrollbar-track {
+      background: #fbf7ef; 
+    }
+    .cambiar-personalizacion {
+      margin-top:10px; 
+      background-color: #ccc; 
+      color: #092534; 
+      border: none; 
+      padding: 6px 12px; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      font-size: 14px;    
+    }
+    .cambiar-personalizacion:hover {
+      background-color: #83a300;
+      color:#fbf7ef;
+    }
+
+    /* "Cancelar suscripción" button aligned right below the container */
+    .cancel-subscription {
+      background-color: #b00000; 
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .cancel-subscription:hover {
+      background-color: #900000;
+    }
+    .cancel-subscription-container {
+      display: flex;
+      justify-content: flex-end; 
+      margin-top: 15px; 
+    }
+
+    /* 
+      ------------- Responsive for Mobile -------------
+    */
+    @media (max-width: 600px) {
+      .container {
+        padding: 10px;
+      }
+      .subscription-header {
+        display: block;
+        text-align: center;
+      }
+      .subscription-header h1 {
+        font-size: 20px; 
+        margin-bottom: 10px;
+      }
+      .subscription-details {
+        font-size: 14px;
+      }
+      .change-subscription {
+        width: 100%;
+        font-size: 14px;
+      }
+      .nav-buttons {
+        flex-direction: column; 
+        gap: 10px; 
+        margin: 10px 0; 
+      }
+      .nav-buttons button {
+        margin: 0;
+        width: 100%;
+        font-size: 14px; 
+      }
+      .coming-soon-badge {
+        right: 4px;
+      }
+      .content-container {
+        padding: 15px;
+      }
+      ul.bo-list li {
+        margin: 8px 0; 
+        font-size: 14px;
+      }
+      .filter-title {
+        font-size: 16px;
+        margin-bottom: 5px;
+      }
+      /* Cancel sub button in mobile => full width if you want */
+      .cancel-subscription {
+        width: 100%;
+      }
+    }
+
+    /* Modal for "Cancelar suscripción" confirmation */
+    #cancelModalOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      display: none; 
+      justify-content: center;
+      align-items: center;
+      z-index: 10000; 
+    }
+    .cancel-modal-content {
+      background: #fff;
+      width: 80%;
+      max-width: 400px;
+      padding: 20px;
+      border-radius: 8px;
+      position: relative;
+      text-align: center;
+    }
+    .cancel-modal-content h3 {
+      margin-top: 0;
+    }
+    .cancel-modal-content p {
+      margin: 10px 0;
+    }
+    .cancel-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      background: #092534;
+      color: #fff;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .confirm-cancel-btn {
+      background-color: #b00000;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .confirm-cancel-btn:hover {
+      background-color: #900000;
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Loader overlay -->
+  <div id="pageLoaderOverlay">
+    <div class="page-loader"></div>
+  </div>
+
+  <!-- Modal overlay for cancel subscription -->
+  <div id="cancelModalOverlay">
+    <div class="cancel-modal-content">
+      <span class="cancel-modal-close" onclick="closeCancelModal()">x</span>
+      <h3>Cancelar Suscripción</h3>
+      <p>
+        Si cancelas tu suscripción se borrarán tu información  
+        de la base de datos, y dejarás de recibir notificaciones de Papyrus.
+      </p>
+      <button class="confirm-cancel-btn" onclick="confirmCancellation()">Cancelar Suscripción</button>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="logo">
+      <a href="https://papyrusai.webflow.io/" target="_blank">
+        <img src="assets/papyrus_app.png" alt="Papyrus Logo" />
+      </a>
+    </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button>
+    <ul class="menu">
+      <li><a href="https://papyrusai.webflow.io/">HOME</a></li>
+      <li><a href="https://papyrusai.webflow.io/pages/pricing-1">PRICING</a></li>
+      <li><a href="/profile">APP</a></li>
+      <li><a href="https://papyrusai.webflow.io/pages/contact-1">CONTACT</a></li>
+    </ul>
+  </nav>
+
+  <div class="container" id="mainContainer">
+    <!-- Subscription Header -->
+    <div class="subscription-header">
+      <div>
+        <h1>Detalles de Suscripción</h1>
+        <p class="subscription-details">
+          Plan: <span id="plan-name">-</span>
+        </p>
+        <p class="subscription-details">
+          Precio: <span id="plan-price">-</span>
+        </p>
+      </div>
+      <!-- One button => "Cambiar suscripción" -->
+      <button class="change-subscription" id="btnCambiarSuscripcion">
+        Cambiar suscripción
+        <span id="spinnerIcon" class="spinner" style="display: none;"></span>
+      </button>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="nav-buttons">
+      <button id="btn-cobertura" class="active" onclick="showContent('cobertura')">
+        Cobertura Legal
+      </button>
+      <button id="btn-personalizacion" onclick="showContent('personalizacion')">
+        Personalización
+      </button>
+      <button id="btn-ia" class="disabled">
+        Búsqueda IA
+        <span class="coming-soon-badge">Próximamente</span>
+      </button>
+    </div>
+
+    <!-- Content Container -->
+    <div id="content-container" class="content-container">
+      <!-- Dynamically loaded content -->
+    </div>
+
+    <!-- The "Cancelar suscripción" button, aligned right below content-container -->
+    <div class="cancel-subscription-container">
+      <button class="cancel-subscription" id="btnCancelarSuscripcion" onclick="openCancelModal()">
+        Cancelar suscripción
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Toggling hamburger
+    function toggleMenu() {
+      const menu = document.querySelector('.menu');
+      menu.classList.toggle('active');
+    }
+    document.addEventListener('click', function (event) {
+      const menu = document.querySelector('.menu');
+      const hamburger = document.querySelector('.hamburger');
+      if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+      }
+    });
+
+    // We'll store plan, industry_tags, rama_juridicas globally
+    let currentUserPlan = 'plan1';
+    let userIndustries = [];   // from DB
+    let userRamas = [];        // from DB
+
+    async function loadSubscriptionDetails() {
+      try {
+        const response = await fetch('/api/current-user-details');
+        if (!response.ok) throw new Error('Network response was not ok');
+        const userData = await response.json();
+        // userData.subscription_plan => e.g. "plan1"
+        // userData.industry_tags => array
+        // userData.rama_juridicas => array
+        currentUserPlan = userData.subscription_plan || 'plan1';
+        userIndustries = userData.industry_tags || [];
+        userRamas = userData.rama_juridicas || [];
+
+        // Fill #plan-name and #plan-price
+        let planName = 'Desconocido';
+        let planPrice = '-';
+        switch (currentUserPlan) {
+          case 'plan1':
+            planName = 'Basic';
+            planPrice = '0€';
+            break;
+          case 'plan2':
+            planName = 'Standard';
+            planPrice = '80€/mes';
+            break;
+          case 'plan3':
+            planName = 'Premium';
+            planPrice = 'TBD';
+            break;
+        }
+        document.getElementById('plan-name').textContent = planName;
+        document.getElementById('plan-price').textContent = planPrice;
+      } catch (err) {
+        console.error('Error loading subscription details:', err);
+      }
+    }
+
+    // Build "Cobertura Legal"
+    function buildCoberturaLegal() {
+      const boItems = ['BOE', 'BOCM', 'BOA', 'BOJA', 'BOPV'];
+      let html = `<h2>Cobertura Legal</h2><ul class="bo-list">`;
+
+      boItems.forEach(bo => {
+        let userHasAccess = false;
+        if (currentUserPlan === 'plan2' || currentUserPlan === 'plan3') {
+          userHasAccess = true;
+        } else if (currentUserPlan === 'plan1') {
+          userHasAccess = (bo === 'BOE');
+        }
+
+        if (userHasAccess) {
+          html += `
+            <li>
+              <span>${bo}</span>
+              <img src="assets/green_tick.png" alt="Tick" style="width: 25px; height: 25px; margin-bottom: 3px" />
+            </li>
+          `;
+        } else {
+          // blurred + "Mejorar suscripción"
+          html += `
+            <li>
+              <span class="blurred">${bo}</span>
+              <button style="
+                  margin-left: 10px; 
+                  background-color: #ccc; 
+                  border: none; 
+                  padding: 3px 6px; 
+                  border-radius: 4px; 
+                  cursor: pointer; 
+                  font-size: 12px;
+                "
+                onclick="window.location.href='/multistep.html?step=2'">
+                Mejorar suscripción
+              </button>
+            </li>
+          `;
+        }
+      });
+      html += `</ul>
+        <div style="margin-top: 20px;">
+          <p>
+            Si quieres resúmenes, clasificación y notificaciones personalizadas 
+            con IA de algún boletín oficial no cubierto aún por Papyrus, contáctanos
+          </p>
+          <a href="https://papyrusai.webflow.io/pages/contact-1"
+             target="_blank"
+             style="background-color: #83a300; color: #fff; 
+                    padding: 6px 12px; border-radius: 5px; 
+                    text-decoration: none; font-weight: bold;">
+            Contáctanos
+          </a>
+        </div>
+      `;
+      return html;
+    }
+    
+    // Build "Personalización"
+    function buildPersonalizacion() {
+      let html = `<h2>Personalización</h2>`;
+
+      // For plan1 => disclaimers
+      if (currentUserPlan === 'plan1') {
+        html += `
+          <div class="filter-title">
+            A. Sectores Económicos
+            <small style="display:block; font-size:13px; font-weight:300;margin-top:1%">
+              Máximo un filtro incluido en el plan gratuito
+            </small>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="filter-title">
+            A. Sectores Económicos
+          </div>
+        `;
+      }
+
+      // Display the user’s industries
+      html += `<div class="selected-values-list">`;
+      if (userIndustries.length === 0) {
+        html += `<p style="font-size:14px; color:#777;">No tienes sectores guardados</p>`;
+      } else {
+        userIndustries.forEach(ind => {
+          html += `<span class="etiqueta">${ind}</span>`;
+        });
+      }
+      html += `</div><br/>`;
+
+      if (currentUserPlan === 'plan1') {
+        html += `
+          <div class="filter-title">
+            B. Ramas Jurídicas
+            <small style="display:block; font-size:13px; font-weight:300; margin-top:1%">
+              Máximo un filtro incluido en el plan gratuito
+            </small>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="filter-title">
+            B. Ramas Jurídicas
+          </div>
+        `;
+      }
+
+      // userRamas as etiquetas
+      html += `<div class="selected-values-list">`;
+      if (userRamas.length === 0) {
+        html += `<p style="font-size:14px; color:#777;">No tienes ramas guardadas</p>`;
+      } else {
+        userRamas.forEach(rama => {
+          html += `<span class="etiqueta">${rama}</span>`;
+        });
+      }
+      html += `</div><br/>`;
+
+      // Then a "Mejorar suscripción" or "Cambiar" button that takes to step2
+      html += `
+        <button class="cambiar-personalizacion"
+          onclick="window.location.href='/multistep.html?step=2'">
+          Cambiar suscripción
+        </button>
+      `;
+      return html;
+    }
+
+    // Show content for each tab
+    function showContent(section) {
+      const contentContainer = document.getElementById('content-container');
+      document.getElementById('btn-cobertura').classList.remove('active');
+      document.getElementById('btn-personalizacion').classList.remove('active');
+
+      if (section === 'cobertura') {
+        document.getElementById('btn-cobertura').classList.add('active');
+        contentContainer.innerHTML = buildCoberturaLegal();
+      } else if (section === 'personalizacion') {
+        document.getElementById('btn-personalizacion').classList.add('active');
+        contentContainer.innerHTML = buildPersonalizacion();
+      }
+    }
+
+    // "Cambiar suscripción" => spinner
+    document.addEventListener('DOMContentLoaded', function() {
+      const btnCambiar = document.getElementById('btnCambiarSuscripcion');
+      const spinnerIcon = document.getElementById('spinnerIcon');
+      btnCambiar.addEventListener('click', function() {
+        btnCambiar.disabled = true;
+        spinnerIcon.style.display = 'inline-block';
+        setTimeout(() => {
+          window.location.href = '/multistep.html?step=2';
+        }, 700);
+      });
+    });
+
+    // Show/hide loader overlay + container
+    const pageLoaderOverlay = document.getElementById('pageLoaderOverlay');
+    const mainContainer = document.getElementById('mainContainer');
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 1) load user plan, industries, ramas
+      await loadSubscriptionDetails();
+
+      // 2) hide loader, show container
+      pageLoaderOverlay.style.display = 'none';
+      mainContainer.style.display = 'block';
+
+      // 3) default => show "Cobertura" with the correct plan data
+      showContent('cobertura');
+    });
+
+    // -------------------------
+    // Cancel Subscription Modal
+    // -------------------------
+    function openCancelModal() {
+      const overlay = document.getElementById('cancelModalOverlay');
+      overlay.style.display = 'flex'; // show
+    }
+    function closeCancelModal() {
+      const overlay = document.getElementById('cancelModalOverlay');
+      overlay.style.display = 'none';
+    }
+    async function confirmCancellation() {
+      try {
+        // 1) send DELETE request to server route => 
+        //    server unsets googleId, email, name => not remove entire doc
+        const resp = await fetch('/api/cancel-subscription', {
+          method: 'DELETE'
+        });
+        if (!resp.ok) {
+          throw new Error('Failed to remove user credentials');
+        }
+        // 2) If successful => redirect to /logout
+        window.location.href = '/logout';
+      } catch (err) {
+        console.error('Error confirming cancellation:', err);
+      }
+    }
+  </script>
+</body>
+</html>

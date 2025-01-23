@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Step Form</title>
+    <link rel="stylesheet" href="styles/menu.css">
+    <link rel="stylesheet" href="styles/multistep_responsive.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+
+    <style>
+
+    </style>
+
+<style>
+ /* You can place this in your CSS file */
+
+/* The sub-rama items wrapper now has a fixed max-height on desktop */
+.sub-rama-items-wrapper {
+  display: none;
+  max-height: 150px; 
+  overflow-y: auto;
+  margin-top: 8px;
+  border: 1px solid #ddd;
+  padding: 6px;
+  border-radius: 4px;
+}
+
+/* On mobile, remove the fixed height so it expands fully */
+@media (max-width: 600px) {
+  .sub-rama-items-wrapper {
+    max-height: none;
+  }
+}
+
+  </style>
+ 
+    
+    <script src="https://js.stripe.com/v3/"></script>
+
+</head>
+<body> 
+  
+    <nav class="navbar">
+    <div class="logo">
+        <a href="https://papyrusai.webflow.io/" target="_blank">
+          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+        </a>
+      </div>
+   <button class="hamburger" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+        <li><a href="https://papyrusai.webflow.io/">INICIO</a></li>
+        <li><a href="https://papyrusai.webflow.io/pages/pricing-1">PRECIOS</a></li>
+        <li><a href="http://localhost:5000/profile">APP</a></li> <!--cambiar-->
+        <li><a href="https://papyrusai.webflow.io/pages/contact-1">CONTACTO</a></li>
+    </ul>
+  </nav>
+
+    <div class="form-container">
+            <!-- Loader Overlay (hidden by default) -->
+        <div id="pageLoaderOverlay">
+            <div class="page-loader"></div>
+        </div>
+        <form id="multiStepForm"  style="display: none;">
+            <!-- Step 1: Perfil Usuario -->
+            <div class="form-step active">
+                <div class="step-container">
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                        <div class="progress-indicator">
+                           <!--
+                            <span class="step">1</span>
+                            -->
+                            <span class="step active">1. Usuario</span>
+                            <span class="step active">2. Plan</span>
+                            <span class="step active">3. Personalización</span>
+                        </div>
+                    </div>
+                <h1>Tipo de Usuario</h1>
+                <p class="subheading">Selecciona el tipo de usuario con el que más te identificas</p>
+            
+                    <!-- Content for Perfil Usuario -->
+                    <div class="profile-option"  onclick="selectProfileOption(this, 'Empresa')">
+                        <div class="profile-content">
+                            <div class="profile-image">
+                                <img src="assets/empresa.png" alt="Empresa Image">
+                            </div>
+                            <div class="profile-text">
+                                <h2>Empresa</h2>
+                                <p>Perfil interesado en recibir alertas normativas de industrias específicas que puedan afectar a su negocio </p>
+                                <p><b>Beneficios:</b> Cumplimiento Normativo, Disminución Riesgo Regulatorio, Descubrimiento Oportunidades... </p>
+                              <!--  <p>Ejemplo: Asesoría jurídica de fabricante de tractores interesado en normativa relacionada con "Maquinaría Agrícola".</p> -->
+                             
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-option"  onclick="selectProfileOption(this, 'Abogado')">
+                        <div class="profile-content">
+                            <div class="profile-image">
+                                <img src="assets/juridico.png" alt="Compliance Image">
+                            </div>
+                            <div class="profile-text">
+                                <h2>Abogado</h2>
+                                <p>Perfil interesado en recibir alertas normativas según especialización jurídica, garantizando la actualización jurídica y mejor cobertura a clientes </p>
+                                <p><b>Beneficios:</b> Cumplimiento Normativo, Acceso a Información Personalizada, Cobertura en tiempo real... </p>
+                              <!--  <p>Ejemplo: Asesoría jurídica de fabricante de tractores interesado en normativa relacionada con "Maquinaría Agrícola".</p> -->
+                             
+                            </div>
+                        </div>
+                    </div>
+                    <div class="profile-option" onclick="selectProfileOption(this, 'Other')">
+                        <div class="profile-content">
+                            <div class="profile-image">
+                                <img src="assets/otro.png" alt="Otro Image">
+                            </div>
+                            <div class="profile-text">
+                                <h2>Otro</h2>
+                                <input id="otherProfileInput" type="text" placeholder="Introduce tu perfil de usuario" oninput="updateOtherProfile(this)" style=" margin-top: 10px;">
+                                <input type="hidden" id="selectedProfileType" name="selectedProfileType">
+                 
+                                <!--  <p>Ejemplo: Asesoría jurídica de fabricante de tractores interesado en normativa relacionada con "Maquinaría Agrícola".</p> -->
+                            
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+
+             <!-- Step 3: Cobertura Legal -->
+             <div class="form-step">
+                <div class="step-container">
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                        <div class="progress-indicator">
+                            <!--
+                             <span class="step">1</span>
+                             -->
+                            <span class="step active">1. Usuario</span>
+                            <span class="step active">2. Plan</span>
+                            <span class="step active">3. Personalización</span>
+                         </div>
+                    </div>
+                <h1>Tipo de Suscripción</h1>
+                <p class="subheading">Seleccione el paquete que más se adapte a sus necesidades</p>
+                <div class="choose-plan-heading">Elige tu plan</div>
+                
+
+                <!-- Content for Cobertura Legal -->
+                
+                    <div class="plans-container">
+                        <!-- Plan 1 -->
+                        
+                        <div class="plan-box" data-value="plan1">
+                            <div class="plan-badge free">Registrándote antes de 01-04-25</div>
+                            <h3>Basic</h3>
+                            <h2>Gratuito</h2>
+                            <p>Al mes</p>
+                            <ul>
+                                <li>Resumen diario general del BOE</li>
+                                <li>Notificación personalizada BOE (limitada a 1 filtro)</li>
+                                <li>-</li>
+                        
+                            </ul>
+                        </div>
+                
+                        <!-- Plan 2 -->
+                        <div class="plan-box" data-value="plan2">
+                             <!-- Banner for "2 meses gratuitos" -->
+                            <div class="plan-badge free-two-months">2 meses gratuitos</div>
+                            <h3>Standard</h3>
+                            <h2>€80.00</h2>
+                            <p>Al mes</p>
+                            <ul>
+                                <li>Resumen diario de 5 BOs</li>
+                                <li>Notificación personalizada ilimitada</li>
+                                <li>-</li>
+                            
+                            </ul>
+                        </div>
+                
+                        <!-- Plan 3: coming soon -->
+                        <div class="plan-box" data-value="plan3" data-disabled="true">
+                            <!-- Banner for "Coming soon" -->
+                             <div class="plan-badge coming-soon">Próximamente</div>
+                            <h3>Premium</h3>
+                            <h2>TBD</h2>
+                            <p>Al mes</p>
+                            <ul>
+                                <li>Resumen diario de 5 BOs</li>
+                                <li>Notificación personalizada ilimitada</li>
+                                <li>Búsqueda personalizada por IA</li>
+                            
+                            </ul>
+                            
+                        </div>
+                    </div>
+                     <!-- Hidden input to store the selected plan -->
+    <input type="hidden" id="selectedPlan" name="selectedPlan" value="">
+                </div>
+                
+
+            </div>
+            <!-- Step 2: Seleccione Industria -->
+       
+            <div class="form-step">
+                <div class="step-container">
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                        <div class="progress-indicator">
+                            <!--
+                             <span class="step">1</span>
+                             -->
+                             <span class="step active">1. Usuario</span>
+                             <span class="step active">2. Plan</span>
+                             <span class="step active">3. Personalización</span>
+                         </div>
+                    </div>
+                    <h1>Personaliza tu suscripción</h1>
+                    <p class="subheading">Selecciona el sector económico y la rama jurídica de tu interés</p>
+                
+                </div>
+    
+                <div class="container">
+                    <!-- Selected Industries Section 
+                    <div class="selected-industries-container">
+                        <h3>Industrias Seleccionadas</h3>
+                       -->
+                  
+                    <div class="input-wrapper">
+                            
+                            <div class="search-column">
+                                <h3>A. Sectores Económicos</h3>
+                                <div class="industry-search-wrapper">
+                                            <input 
+                                                type="text" 
+                                                id="industrySearchInput" 
+                                                placeholder="Escribe para buscar industrias..." 
+                                                oninput="performSemanticSearch()"   />
+                                    
+                                    <!-- Scrollable Industry List Section -->
+                                    <div class="industry-list-container" id="industry-list-container">
+                                        <div id="industryList" class="industry-list">
+                                            <div class="industry-item" data-value="Agricultura, ganadería, caza y servicios relacionados">Agricultura, ganadería, caza y servicios relacionados</div>
+                                            <div class="industry-item" data-value="Silvicultura y explotación forestal">Silvicultura y explotación forestal</div>
+                                            <div class="industry-item" data-value="Pesca y acuicultura">Pesca y acuicultura</div>
+                                            <div class="industry-item" data-value="Extracción de antracita, hulla y lignito">Extracción de antracita, hulla y lignito</div>
+                                            <div class="industry-item" data-value="Extracción de crudo de petróleo y gas natural">Extracción de crudo de petróleo y gas natural</div>
+                                            <div class="industry-item" data-value="Extracción de minerales metálicos">Extracción de minerales metálicos</div>
+                                            <div class="industry-item" data-value="Otras industrias extractivas">Otras industrias extractivas</div>
+                                            <div class="industry-item" data-value="Actividades de apoyo a las industrias extractivas">Actividades de apoyo a las industrias extractivas</div>
+                                            <div class="industry-item" data-value="Industria de la alimentación">Industria de la alimentación</div>
+                                            <div class="industry-item" data-value="Fabricación de bebidas">Fabricación de bebidas</div>
+                                            <div class="industry-item" data-value="Industria del tabaco">Industria del tabaco</div>
+                                            <div class="industry-item" data-value="Industria textil">Industria textil</div>
+                                            <div class="industry-item" data-value="Confección de prendas de vestir">Confección de prendas de vestir</div>
+                                            <div class="industry-item" data-value="Industria del cuero y del calzado">Industria del cuero y del calzado</div>
+                                            <div class="industry-item" data-value="Industria de la madera y del corcho">Industria de la madera y del corcho</div>
+                                            <div class="industry-item" data-value="Industria del papel">Industria del papel</div>
+                                            <div class="industry-item" data-value="Artes gráficas y reproducción de soportes grabados">Artes gráficas y reproducción de soportes grabados</div>
+                                            <div class="industry-item" data-value="Coquerías y refino de petróleo">Coquerías y refino de petróleo</div>
+                                            <div class="industry-item" data-value="Industria química">Industria química</div>
+                                            <div class="industry-item" data-value="Fabricación de productos farmacéuticos">Fabricación de productos farmacéuticos</div>
+                                            <div class="industry-item" data-value="Fabricación de productos de caucho y plásticos">Fabricación de productos de caucho y plásticos</div>
+                                            <div class="industry-item" data-value="Fabricación de otros productos minerales no metálicos">Fabricación de otros productos minerales no metálicos</div>
+                                            <div class="industry-item" data-value="Metalurgia; fabricación de productos de hierro y acero">Metalurgia; fabricación de productos de hierro y acero</div>
+                                            <div class="industry-item" data-value="Fabricación de productos metálicos, excepto maquinaria">Fabricación de productos metálicos, excepto maquinaria</div>
+                                            <div class="industry-item" data-value="Fabricación de productos informáticos, electrónicos y ópticos">Fabricación de productos informáticos, electrónicos y ópticos</div>
+                                            <div class="industry-item" data-value="Fabricación de material y equipo eléctrico">Fabricación de material y equipo eléctrico</div>
+                                            <div class="industry-item" data-value="Fabricación de maquinaria y equipo n.c.o.p">Fabricación de maquinaria y equipo n.c.o.p</div>
+                                            <div class="industry-item" data-value="Fabricación de vehículos de motor, remolques y semirremolques">Fabricación de vehículos de motor, remolques y semirremolques</div>
+                                            <div class="industry-item" data-value="Fabricación de otro material de transporte">Fabricación de otro material de transporte</div>
+                                            <div class="industry-item" data-value="Fabricación de muebles">Fabricación de muebles</div>
+                                            <div class="industry-item" data-value="Otras industrias manufactureras">Otras industrias manufactureras</div>
+                                            <div class="industry-item" data-value="Reparación e instalación de maquinaria y equipo">Reparación e instalación de maquinaria y equipo</div>
+                                            <div class="industry-item" data-value="Suministro de energía eléctrica, gas, vapor y aire acondicionado">Suministro de energía eléctrica, gas, vapor y aire acondicionado</div>
+                                            <div class="industry-item" data-value="Captación, depuración y distribución de agua">Captación, depuración y distribución de agua</div>
+                                            <div class="industry-item" data-value="Recogida y tratamiento de aguas residuales">Recogida y tratamiento de aguas residuales</div>
+                                            <div class="industry-item" data-value="Gestión de residuos">Gestión de residuos</div>
+                                            <div class="industry-item" data-value="Actividades de descontaminación">Actividades de descontaminación</div>
+                                            <div class="industry-item" data-value="Construcción de edificios">Construcción de edificios</div>
+                                            <div class="industry-item" data-value="Ingeniería civil">Ingeniería civil</div>
+                                            <div class="industry-item" data-value="Actividades de construcción especializada">Actividades de construcción especializada</div>
+                                            <div class="industry-item" data-value="Venta y reparación de vehículos de motor">Venta y reparación de vehículos de motor</div>
+                                            <div class="industry-item" data-value="Comercio al por mayor">Comercio al por mayor</div>
+                                            <div class="industry-item" data-value="Comercio al por menor">Comercio al por menor</div>
+                                            <div class="industry-item" data-value="Transporte terrestre y por tubería">Transporte terrestre y por tubería</div>
+                                            <div class="industry-item" data-value="Transporte marítimo y por vías navegables interiores">Transporte marítimo y por vías navegables interiores</div>
+                                            <div class="industry-item" data-value="Transporte aéreo">Transporte aéreo</div>
+                                            <div class="industry-item" data-value="Almacenamiento y actividades anexas al transporte">Almacenamiento y actividades anexas al transporte</div>
+                                            <div class="industry-item" data-value="Actividades postales y de correos">Actividades postales y de correos</div>
+                                            <div class="industry-item" data-value="Servicios de alojamiento">Servicios de alojamiento</div>
+                                            <div class="industry-item" data-value="Servicios de comidas y bebidas">Servicios de comidas y bebidas</div>
+                                            <div class="industry-item" data-value="Edición">Edición</div>
+                                            <div class="industry-item" data-value="Actividades cinematográficas y de vídeo">Actividades cinematográficas y de vídeo</div>
+                                            <div class="industry-item" data-value="Actividades de programación y emisión">Actividades de programación y emisión</div>
+                                            <div class="industry-item" data-value="Telecomunicaciones">Telecomunicaciones</div>
+                                            <div class="industry-item" data-value="Programación, consultoría y otras actividades informáticas">Programación, consultoría y otras actividades informáticas</div>
+                                            <div class="industry-item" data-value="Servicios de información">Servicios de información</div>
+                                            <div class="industry-item" data-value="Servicios financieros, excepto seguros y fondos de pensiones">Servicios financieros, excepto seguros y fondos de pensiones</div>
+                                            <div class="industry-item" data-value="Seguros, reaseguros y fondos de pensiones">Seguros, reaseguros y fondos de pensiones</div>
+                                            <div class="industry-item" data-value="Actividades auxiliares a los servicios financieros y seguros">Actividades auxiliares a los servicios financieros y seguros</div>
+                                            <div class="industry-item" data-value="Actividades inmobiliarias">Actividades inmobiliarias</div>
+                                            <div class="industry-item" data-value="Actividades jurídicas y de contabilidad">Actividades jurídicas y de contabilidad</div>
+                                            <div class="industry-item" data-value="Consultoría de gestión empresarial">Consultoría de gestión empresarial</div>
+                                            <div class="industry-item" data-value="Servicios técnicos de arquitectura e ingeniería">Servicios técnicos de arquitectura e ingeniería</div>
+                                            <div class="industry-item" data-value="Investigación y desarrollo">Investigación y desarrollo</div>
+                                            <div class="industry-item" data-value="Publicidad y estudios de mercado">Publicidad y estudios de mercado</div>
+                                            <div class="industry-item" data-value="Otras actividades profesionales, científicas y técnicas">Otras actividades profesionales, científicas y técnicas</div>
+                                            <div class="industry-item" data-value="Actividades veterinarias">Actividades veterinarias</div>
+                                            <div class="industry-item" data-value="Actividades de alquiler">Actividades de alquiler</div>
+                                            <div class="industry-item" data-value="Actividades relacionadas con el empleo">Actividades relacionadas con el empleo</div>
+                                            <div class="industry-item" data-value="Agencias de viajes, operadores turísticos">Agencias de viajes, operadores turísticos</div>
+                                            <div class="industry-item" data-value="Actividades de seguridad e investigación">Actividades de seguridad e investigación</div>
+                                            <div class="industry-item" data-value="Servicios a edificios y actividades de jardinería">Servicios a edificios y actividades de jardinería</div>
+                                            <div class="industry-item" data-value="Actividades administrativas de oficina">Actividades administrativas de oficina</div>
+                                            <div class="industry-item" data-value="Administración pública y defensa">Administración pública y defensa</div>
+                                            <div class="industry-item" data-value="Educación">Educación</div>
+                                            <div class="industry-item" data-value="Actividades sanitarias">Actividades sanitarias</div>
+                                            <div class="industry-item" data-value="Asistencia en establecimientos residenciales">Asistencia en establecimientos residenciales</div>
+                                            <div class="industry-item" data-value="Actividades de servicios sociales sin alojamiento">Actividades de servicios sociales sin alojamiento</div>
+                                            <div class="industry-item" data-value="Actividades de creación, artísticas y espectáculos">Actividades de creación, artísticas y espectáculos</div>
+                                            <div class="industry-item" data-value="Bibliotecas, archivos, museos y otras actividades culturales">Bibliotecas, archivos, museos y otras actividades culturales</div>
+                                            <div class="industry-item" data-value="Actividades de juegos de azar y apuestas">Actividades de juegos de azar y apuestas</div>
+                                            <div class="industry-item" data-value="Actividades deportivas, recreativas y de entretenimiento">Actividades deportivas, recreativas y de entretenimiento</div>
+                                            <div class="industry-item" data-value="Actividades de organizaciones asociativas">Actividades de organizaciones asociativas</div>
+                                            <div class="industry-item" data-value="Reparación de ordenadores y artículos personales">Reparación de ordenadores y artículos personales</div>
+                                            <div class="industry-item" data-value="Otros servicios personales">Otros servicios personales</div>
+                                            <div class="industry-item" data-value="Actividades de los hogares como empleadores">Actividades de los hogares como empleadores</div>
+                                            <div class="industry-item" data-value="Actividades de los hogares como productores">Actividades de los hogares como productores</div>
+                                            <div class="industry-item" data-value="Actividades de organizaciones y organismos extraterritoriales">Actividades de organizaciones y organismos extraterritoriales</div>
+                                                  <!-- Add more industries as needed -->
+                                        </div>
+                                    </div>
+                                </div>
+                        
+                    </div>
+                       <!-- Right side: Selected industries -->
+                        <div class="selected-column">
+                            <div class="total-industrys" id="sectorsCounter"><i>Sectores de interés: 0 </i></div>
+                            <div id="selectedIndustriesList"></div>
+                            <div id="overflowMessage" class="overflow-msg"></div>
+                        </div>
+                    </div> 
+                    <div class="section-separator"><span>● ● ●</span> </div>
+                      
+
+                    <div class="rama-juridica-container">
+                        <div class="input-wrapper">
+                          <!-- Left Column: Search & List -->
+                          <div class="search-column">
+                             <!-- A new container row for heading + pagination side by side -->
+                            <div class="rama-heading-row" style="display: flex; align-items: center; justify-content: space-between;">
+                                <h3>B. Rama Jurídica</h3>
+
+                                <!-- The subRamasPagination in-line, smaller text, no absolute positioning -->
+                                <div id="subRamasPagination" style="display: none; align-items: center; font-size: 12px;">
+                                <span id="paginationText" style="margin-right: 6px;"></span>
+                                <button id="prevSubRamasBtn" type="button" style="margin-right: 4px;">←</button>
+                                <button id="nextSubRamasBtn" type="button">→</button>
+                                </div>
+                            </div>
+
+
+                            <input
+                              type="text"
+                              id="ramaJuridicaSearchInput"
+                              placeholder="Escribe para buscar ramas jurídicas..."
+                              oninput="filterRamasJuridicas()"
+                            />
+                            <div class="industry-search-wrapper">
+                                <div id="ramaJuridicaListContainer" class="industry-list-container">
+                                <div id="ramaJuridicaList" class="industry-list">
+                                    <div class="rama-item" data-value="Derecho Civil">Derecho Civil</div>
+                                    <div class="rama-item" data-value="Derecho Mercantil">Derecho Mercantil</div>
+                                    <div class="rama-item" data-value="Derecho Administrativo">Derecho Administrativo</div>
+                                    <div class="rama-item" data-value="Derecho Fiscal">Derecho Fiscal</div>
+                                    <div class="rama-item" data-value="Derecho Laboral">Derecho Laboral</div>
+                                    <div class="rama-item" data-value="Derecho Procesal-Civil">Derecho Procesal-Civil</div>
+                                    <div class="rama-item" data-value="Derecho Procesal-Penal">Derecho Procesal-Penal</div>
+                                    <div class="rama-item" data-value="Derecho Constitucional">Derecho Constitucional</div>
+                                    <div class="rama-item" data-value="Derecho de la UE">Derecho de la UE</div>
+                                    <div class="rama-item" data-value="Derecho Internacional Público">Derecho Internacional Público</div>
+                                </div>
+                                </div>
+                            </div>
+                          </div>
+                          
+                          <!-- Right Column: Selected Ramas -->
+                          <div class="selected-column">
+                            <!-- You can dynamically update this number in your JS if desired -->
+                            <div class="total-industrys"  id="ramasCounter"><i>Ramas de interés: 0</i></div> 
+                            <div id="selectedRamaJuridicaList"></div>
+                          </div>
+                        </div>
+                      </div>
+                                                        <!-- Sub-Ramas Container (hidden if no Ramas) -->
+                    <div id="subRamasContainer" style="display: none; position: relative;">
+                       <!-- <h3>Elige sub-ramas jurídicas de tu interés</h3> -->        
+                    
+                      
+                    
+                        <!-- The columns themselves -->
+                        <div class="sub-ramas-columns" id="subRamasColumns">
+                        <!-- Filled by JS for the current page of 3 ramas -->
+                        </div>
+                    </div>
+                
+                </div>
+            </div>
+             
+
+           
+        </div>
+
+               
+        </form>
+    </div>
+
+    <div id="planLimitWarning" class="limited-plan-warning">
+        Mejora tu plan en el paso 2 para poder seleccionar más de un filtro por clase (sector económico y rama jurídica)
+        <span class="close-btn" onclick="closePlanLimitWarning()">×</span>
+      </div>
+    <div class="buttons">
+        <button type="button" id="prevBtn" onclick="nextPrev(-1)">Anterior</button>
+        <button type="button" id="nextBtn" onclick="nextPrev(1)">Siguiente</button>
+    </div>
+    
+    <script src="multistep.js"></script>
+   <!-- <script src="ramajuridicas.js"></script> -->
+    <script>
+        function toggleMenu() {
+            const menu = document.querySelector('.menu');
+            menu.classList.toggle('active');
+             }
+             // Close the menu if clicking outside of it
+    document.addEventListener('click', function(event) {
+        const menu = document.querySelector('.menu');
+        const hamburger = document.querySelector('.hamburger');
+        
+        if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+            menu.classList.remove('active');
+        }
+    });
+    </script>
+</body>
+</html>
+ 
+            <!-- Extra step: Palabras Clave y funcionalidad IA -->
+           <!--
+            <div class="form-step">
+                <div class="step-container">
+                    <div class="progress-bar">
+                        <div class="progress" id="progress"></div>
+                        <div class="progress-indicator">
+                            <span class="step">1</span>
+                            <span class="step">2</span>
+                            <span class="step">3</span>
+                            <span class="step">4</span>
+                        </div>
+                    </div>
+                <h1>Palabras Clave y funcionalidad IA</h1>
+            -->
+                    
+                <!-- Content for Palabras Clave y funcionalidad IA -->
+           <!--  </div>
+            </div>
+            -->

@@ -1,0 +1,176 @@
+
+/* Responsive styles for screens with a max-width of 600px */
+@media (max-width: 600px) {
+    body {
+        font-size: 14px; /* Reduce font size to 10px on smaller screens */
+    }
+    h1{
+    padding-left: 5%;
+    padding-right: 5%;
+    }
+
+    .detalle-cuenta{
+     display:block;
+      }
+
+      /* 2) Make .header-row stack vertically, so .date goes below .id-values */
+  .header-row {
+    flex-direction: column;    /* Column layout on mobile */
+    align-items: flex-start;   /* Align items to the left */
+  }
+
+  .analytics-label.busqueda {
+    margin-top: 40px;
+  }
+
+  /* 3) Adjust .date margins on mobile to appear below .id-values */
+  .header-row .date {
+    margin-top: 10px;   /* Add space above date */
+    margin-left: 0;    /* Remove leftover left margin */
+  }
+    .data-item,
+    #data-container {
+        padding:3%; /* Reduce padding to 2% on smaller screens */
+    }
+    /* Logo*/
+    .logo img{
+        max-height: 50px;
+        margin-left: 0px;
+    }
+    /*General*/
+    h1 {
+        font-size: 1.5em;
+
+    }
+    .etiquetas-values{
+        max-height: 50px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        display: block;
+        padding: 10px 5px;
+        margin: 10px 5px;
+    }
+    .etiquetas-values::-webkit-scrollbar {
+        height: 4px;
+    }
+    
+    .etiquetas-values::-webkit-scrollbar-thumb {
+        background: #83a300; 
+        border-radius: 4px;
+    }
+    
+    .etiquetas-values::-webkit-scrollbar-track {
+        background: #fbf7ef; 
+    }
+    .etiquetas-label{
+        font-size: 16px;
+        margin-right: 0px;
+    }
+
+    .dropbtn {
+        font-size: 12px;
+        margin-bottom: 0%;
+    }
+
+    /*Date filter*/
+    
+      .date-filter {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px; /* Adjust the spacing for smaller screens */
+      }
+    
+      .date-filter label {
+        margin-right: 0; /* Remove right margin for smaller screens */
+      }
+      
+
+    /*Radio-menu*/
+    .filter-option input[type="checkbox"] {
+        width: 10px;
+        height: 10px;
+
+    }
+    
+    .filter-options {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .filter-option {
+        flex: 1 1 30%; /* Force the first three items to take up about 30% of the width */
+    }
+    /* Optional: Add a checkmark to the checkbox when checked */
+    .filter-option input[type="checkbox"]:checked::after {
+        display: none;
+    }
+  
+
+    /*Resumen Section*/
+    .resumen-label{
+    font-size: 16px;
+    margin-right: 0px;
+    }
+    .menu {
+        display:none;
+    }
+    .logo.img{
+        margin-left:0%;
+    }
+    .logo{
+        display:center;
+    }
+    .loader{
+        margin-left: 37%;
+        width: 50px;
+        height: 50px;
+    }
+   
+}
+
+/* Adjust font sizes and padding for smaller screens */
+@media (max-width: 768px) {
+    .chartjs-title {
+        font-size: 8px;
+    }
+  
+    .chartjs-legend {
+        font-size: 8px;
+    }
+  
+    .chartjs-axis-label {
+        font-size: 8px;
+    }
+  
+    #chartContainer {
+        height: 20vh; /* Slightly reduce height for small screens */
+    }
+    #loading-icon-chart {
+      width:100%;
+    }
+    .id-values{
+      font-size: 18px;
+      margin-top: 4%;
+    }
+  }
+
+
+/*Change to filtrar to vertical*/
+@media (max-width: 1200px) {
+    #Filtrar {
+        flex-direction: column; /* Change to vertical layout */
+        align-items: stretch; /* Align children to fill the width */
+    }
+
+    .filter-item {
+        margin-bottom: 20px; /* Add spacing between elements in vertical layout */
+    }
+
+    .filter-item:last-child {
+        margin-bottom: 0; /* Remove bottom margin from the last item */
+    }
+}
+
+
+

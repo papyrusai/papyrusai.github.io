@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Select Industries</title>
+  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+  <style>
+  body{
+    background-color: #092534;
+  }
+
+  h1 {
+    text-align: center;
+    margin-bottom: 10px;
+    color: #fbf7ef;
+  }
+
+    .container {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 10%;
+  margin-right: 10%;
+  margin-top: 1%;
+  margin-bottom: 5%;
+  border: 1px solid #fbf7ef;
+  padding:20px;
+  border-radius: 4px;
+}
+
+.left-side,
+.right-side {
+  width: 50%; /* Adjust this to change the proportion */
+  margin-left: 2%;
+  margin-right:2%;
+}
+
+/*industry list section*/
+.industry-list {
+  max-height: 360px;
+  max-width: 100%;
+  margin: 0 auto;
+  border: none;
+  border-radius: 5px;
+  padding: 10px;
+  overflow-y: auto;
+  background-color: transparent;
+}
+.industry-item {
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 3px;
+      color:#fbf7ef;
+      cursor: pointer;
+      border: 1px solid #fbf7ef;
+      background-color: transparent;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .industry-item:hover {
+      background-color: #83a300;
+    }
+
+    .industry-item.selected {
+      background-color: #83a300;
+      color: white;
+      border-color: #83a300;
+    }
+
+/*buttons section*/
+.button-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.button-container button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.cancel-button {
+  background-color: #ccc;
+  color: black;
+}
+
+.submit-button {
+  background-color: #83a300;
+  color: white;
+}
+
+.submit-button:hover {
+  background-color: dark#83a300;
+}
+
+.cancel-button:hover {
+  background-color: #999;
+}
+
+.selected-industries-container {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: transparent;
+  max-height: 400px;
+  overflow-y: auto;
+}
+h2{
+  color:#fbf7ef;
+}
+
+/*selected section*/
+#selectedIndustriesList {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+#selectedIndustriesList span {
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-bottom: 10px;
+  background-color: #83a300;
+  border: none;
+  padding: 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #fbf7ef;
+}
+
+/*mobile*/
+@media (max-width: 1000px) {
+  .container {
+    flex-direction: column; /* Stack the items vertically */
+  }
+
+  .left-side,
+  .right-side {
+    width: 100%; /* Take up full width */
+  }
+
+  .right-side {
+    order: 1; /* Move the selected industries above the industry list */
+  }
+
+  .button-container {
+    max-width: 100%;
+  }
+  .seleccion-title{
+    font-size:14px;
+  }
+  .industry-item{
+    font-size:12px;
+  }
+  h1{
+    font-size: 16px;;
+  }
+  .button-container {
+  margin: 5px;
+}
+.button-container button {
+  font-size: 12px;
+  margin:5px;
+  padding: 5px 10px;
+}
+.container{
+  margin:0;
+  border:none;
+  padding: 15px 0px;
+}
+
+}
+
+
+  </style>
+    <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+</head>
+<body>
+  <nav class="navbar">
+  <div class="logo">
+      <a href="https://papyrusai.webflow.io/" target="_blank">
+        <img src="assets/papyrus_app_white.png" alt="Papyrus Logo">
+      </a>
+    </div>
+ <button class="hamburger" onclick="toggleMenu()">☰</button>
+  <ul class="menu">
+    <li><a href="https://papyrusai.webflow.io/">HOME</a></li>
+    <li><a href="https://papyrusai.webflow.io/pages/pricing-1">PRICING</a></li>
+    <li><a href="http://localhost:5000/profile">APP</a></li> <!--cambiar-->
+    <li><a href="https://papyrusai.webflow.io/pages/contact-1">CONTACT</a></li>
+  </ul>
+</nav>
+
+<div class="container">
+  <div class="left-side">
+    <h1>Seleccione Industrias</h1>
+    <form id="industryForm" action="/save-industries" method="POST">
+      <div id="industryList" class="industry-list">
+        <div class="industry-item" data-value="Administración, defensa y servicios de seguridad social">Administración, defensa y servicios de seguridad social</div>
+        <div class="industry-item" data-value="Agua recogida y purificada">Agua recogida y purificada</div>
+        <div class="industry-item" data-value="Alimentos, bebidas, tabaco y productos relacionados">Alimentos, bebidas, tabaco y productos relacionados</div>
+        <div class="industry-item" data-value="Equipamiento de seguridad, lucha contra incendios, policía y defensa">Equipamiento de seguridad, lucha contra incendios, policía y defensa</div>
+        <div class="industry-item" data-value="Equipos de laboratorio, ópticos y de precisión (excl. gafas)">Equipos de laboratorio, ópticos y de precisión (excl. gafas)</div>
+        <div class="industry-item" data-value="Equipos de transporte y productos auxiliares para el transporte">Equipos de transporte y productos auxiliares para el transporte</div>
+        <div class="industry-item" data-value="Equipos médicos, farmacéuticos y productos de cuidado personal">Equipos médicos, farmacéuticos y productos de cuidado personal</div>
+        <div class="industry-item" data-value="Estructuras de construcción y materiales; productos auxiliares para la construcción (excepto aparatos eléctricos)">Estructuras de construcción y materiales; productos auxiliares para la construcción (excepto aparatos eléctricos)</div>
+        <div class="industry-item" data-value="Instrumentos musicales, bienes deportivos, juegos, juguetes, artesanías, materiales de arte y accesorios">Instrumentos musicales, bienes deportivos, juegos, juguetes, artesanías, materiales de arte y accesorios</div>
+        <div class="industry-item" data-value="Maquinaria agrícola">Maquinaria agrícola</div>
+        <div class="industry-item" data-value="Maquinaria de oficina y equipos de computación, suministros excepto muebles y paquetes de software">Maquinaria de oficina y equipos de computación, suministros excepto muebles y paquetes de software</div>
+        <div class="industry-item" data-value="Maquinaria eléctrica, aparatos, equipos y consumibles; iluminación">Maquinaria eléctrica, aparatos, equipos y consumibles; iluminación</div>
+        <div class="industry-item" data-value="Maquinaria industrial">Maquinaria industrial</div>
+        <div class="industry-item" data-value="Maquinaria para minería, canteras, equipos de construcción">Maquinaria para minería, canteras, equipos de construcción</div>
+        <div class="industry-item" data-value="Minería, metales básicos y productos relacionados">Minería, metales básicos y productos relacionados</div>
+        <div class="industry-item" data-value="Muebles (incl. mobiliario de oficina), artículos de decoración, electrodomésticos (excl. iluminación) y productos de limpieza">Muebles (incl. mobiliario de oficina), artículos de decoración, electrodomésticos (excl. iluminación) y productos de limpieza</div>
+        <div class="industry-item" data-value="Otros servicios comunitarios, sociales y personales">Otros servicios comunitarios, sociales y personales</div>
+        <div class="industry-item" data-value="Paquetes de software y sistemas de información">Paquetes de software y sistemas de información</div>
+        <div class="industry-item" data-value="Productos agrícolas, ganaderos, pesqueros, forestales y relacionados">Productos agrícolas, ganaderos, pesqueros, forestales y relacionados</div>
+        <div class="industry-item" data-value="Productos químicos">Productos químicos</div>
+        <div class="industry-item" data-value="Productos petrolíferos, combustible, electricidad y otras fuentes de energía">Productos petrolíferos, combustible, electricidad y otras fuentes de energía</div>
+        <div class="industry-item" data-value="Productos impresos y relacionados">Productos impresos y relacionados</div>
+        <div class="industry-item" data-value="Radio, televisión, comunicación, telecomunicación y equipos relacionados">Radio, televisión, comunicación, telecomunicación y equipos relacionados</div>
+        <div class="industry-item" data-value="Ropa, calzado, artículos de equipaje y accesorios">Ropa, calzado, artículos de equipaje y accesorios</div>
+        <div class="industry-item" data-value="Servicios agrícolas, forestales, hortícolas, acuícolas y apícolas">Servicios agrícolas, forestales, hortícolas, acuícolas y apícolas</div>
+        <div class="industry-item" data-value="Servicios de arquitectura, construcción, ingeniería e inspección">Servicios de arquitectura, construcción, ingeniería e inspección</div>
+        <div class="industry-item" data-value="Servicios de apoyo y auxiliares de transporte; servicios de agencias de viajes">Servicios de apoyo y auxiliares de transporte; servicios de agencias de viajes</div>
+        <div class="industry-item" data-value="Servicios de aguas residuales, eliminación de desechos, limpieza y medio ambiente">Servicios de aguas residuales, eliminación de desechos, limpieza y medio ambiente</div>
+        <div class="industry-item" data-value="Servicios de educación y formación">Servicios de educación y formación</div>
+        <div class="industry-item" data-value="Servicios de hotel, restaurante y comercio minorista">Servicios de hotel, restaurante y comercio minorista</div>
+        <div class="industry-item" data-value="Servicios de instalación (excepto software)">Servicios de instalación (excepto software)</div>
+        <div class="industry-item" data-value="Servicios de investigación y desarrollo y consultoría relacionada">Servicios de investigación y desarrollo y consultoría relacionada</div>
+        <div class="industry-item" data-value="Servicios de reparación y mantenimiento">Servicios de reparación y mantenimiento</div>
+        <div class="industry-item" data-value="Servicios de salud y trabajo social">Servicios de salud y trabajo social</div>
+        <div class="industry-item" data-value="Servicios de TI: consultoría, desarrollo de software, Internet y soporte">Servicios de TI: consultoría, desarrollo de software, Internet y soporte</div>
+        <div class="industry-item" data-value="Servicios empresariales: derecho, marketing, consultoría, reclutamiento, impresión y seguridad">Servicios empresariales: derecho, marketing, consultoría, reclutamiento, impresión y seguridad</div>
+        <div class="industry-item" data-value="Servicios financieros y de seguros">Servicios financieros y de seguros</div>
+        <div class="industry-item" data-value="Servicios inmobiliarios">Servicios inmobiliarios</div>
+        <div class="industry-item" data-value="Servicios postales y de telecomunicaciones">Servicios postales y de telecomunicaciones</div>
+        <div class="industry-item" data-value="Servicios públicos">Servicios públicos</div>
+        <div class="industry-item" data-value="Servicios recreativos, culturales y deportivos">Servicios recreativos, culturales y deportivos</div>
+        <div class="industry-item" data-value="Servicios relacionados con la industria del petróleo y gas">Servicios relacionados con la industria del petróleo y gas</div>
+        <div class="industry-item" data-value="Servicios de transporte (excl. transporte de residuos)">Servicios de transporte (excl. transporte de residuos)</div>
+        <div class="industry-item" data-value="Tejidos de cuero y textil, materiales plásticos y de caucho">Tejidos de cuero y textil, materiales plásticos y de caucho</div>
+        <div class="industry-item" data-value="Trabajos de construcción">Trabajos de construcción</div>
+      </div>
+      <div class="button-container">
+        <button type="button" class="cancel-button" onclick="window.location.href='/profile'">Cancelar</button>
+        <button type="submit" class="submit-button">Guardar</button>
+      </div>
+     <!-- Hidden inputs will be added dynamically by JavaScript -->
+    </form>
+  </div>
+
+  <div class="right-side">
+    <h1 class="seleccion-title">Industrias Seleccionadas</h1>
+    <div class="selected-industries-container">
+      <div id="selectedIndustriesList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+ document.addEventListener('DOMContentLoaded', function () {
+  const industryList = document.getElementById('industryList');
+  const selectedIndustriesList = document.getElementById('selectedIndustriesList');
+  const industryForm = document.getElementById('industryForm');
+  const selectedItems = [];
+
+  // Function to get query parameters
+  function getQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    return params.getAll('industries[]');
+  }
+
+  // Preselect industries based on the query parameters
+  const preselectedIndustries = getQueryParams();
+  preselectedIndustries.forEach(industry => {
+    const matchingItem = Array.from(industryList.children).find(item => item.getAttribute('data-value') === industry);
+    if (matchingItem) {
+      matchingItem.classList.add('selected');
+      selectedItems.push(industry);
+      updateSelectedIndustries();
+    }
+  });
+
+  industryList.addEventListener('click', function (event) {
+    const item = event.target;
+    if (item.classList.contains('industry-item')) {
+      const value = item.getAttribute('data-value');
+      
+      if (item.classList.contains('selected')) {
+        item.classList.remove('selected');
+        const index = selectedItems.indexOf(value);
+        if (index > -1) {
+          selectedItems.splice(index, 1);
+          updateSelectedIndustries();
+        }
+      } else {
+        item.classList.add('selected');
+        selectedItems.push(value);
+        updateSelectedIndustries();
+      }
+    }
+  });
+
+  function updateSelectedIndustries() {
+    selectedIndustriesList.innerHTML = '';
+    // Clear existing hidden inputs
+    const existingInputs = industryForm.querySelectorAll('input[name="industries[]"]');
+    existingInputs.forEach(input => input.remove());
+
+    selectedItems.forEach(item => {
+      const span = document.createElement('span');
+      span.textContent = item;
+      selectedIndustriesList.appendChild(span);
+
+      // Create a new hidden input for each selected item
+      const hiddenInput = document.createElement('input');
+      hiddenInput.type = 'hidden';
+      hiddenInput.name = 'industries[]';
+      hiddenInput.value = item;
+      industryForm.appendChild(hiddenInput);
+    });
+  }
+});
+function toggleMenu() {
+        const menu = document.querySelector('.menu');
+        menu.classList.toggle('active');
+         }
+         // Close the menu if clicking outside of it
+document.addEventListener('click', function(event) {
+    const menu = document.querySelector('.menu');
+    const hamburger = document.querySelector('.hamburger');
+    
+    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+    }
+});
+
+ </script>
+</body>
+</html>

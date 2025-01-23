@@ -1,79 +1,156 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Papyrus AI App</title>
-    <link rel="icon" type="image/png" href="assets/images/papyrus_logo_image.png">
-    <link rel="stylesheet" href="styles/style.css">
-    <link rel="stylesheet" href="styles/menu.css">
-    <link rel="stylesheet" href="styles/mobile.css">
-    <link rel="stylesheet" href="styles/foot.css">
+  <title>OAuth App</title>
+  <meta name="viewport" content="width=device-width">
+
+  <link rel="stylesheet" type="text/css" href="styles/login.css" />
+  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">
-            <a href="https://papyrusai.webflow.io/" target="_blank">
-              <img src="assets/images/papyrus_app_white.png" alt="Papyrus Logo">
-            </a>
-          </div>
-       <!-- <button class="hamburger" onclick="toggleMenu()">☰</button> -->
-        <ul class="menu">
-          <li><a href="https://papyrusai.webflow.io/">HOME</a></li>
-          <li><a href="https://papyrusai.webflow.io/pages/pricing-1">PRICING</a></li>
-         <!-- <li><a href="#blog">BLOG</a></li> -->
-          <li><a href="https://papyrusai.webflow.io/pages/contact-1">CONTACT</a></li>
-        </ul>
-      </nav>
-    <h1>Novedades Regulatorias </h1>
-
-    <div id="loading-icon" style="display: none;">
-        <div class="loader"></div>
-    </div>
-    
-    <div id="data-container">
-        <!-- Data will be displayed here -->
-    </div>
-
-
-<!--FONT AWESOME-->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-
-<!--GOOGLE FONTS-->
-<link rel="preconnect" href="https://fonts.gstatic.com">
-<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Play&display=swap" rel="stylesheet"> 
-</head>
-<body>
-<footer>
-<div class="footer">
-    <!--
-<div class="row">
-<a href="#"><i class="fa fa-facebook"></i></a>
-<a href="#"><i class="fa fa-instagram"></i></a>
-<a href="#"><i class="fa fa-youtube"></i></a>
-<a href="#"><i class="fa fa-twitter"></i></a>
-</div>
+  <!--
+  <h1>Welcome to OAuth App</h1>
+  <a href="/auth/google">Authenticate with Google</a>
 -->
-<div class="logo-foot">
-    <img src="assets/images/papyrus_app.png" alt="Papyrus Logo">
-  </div>
 
-<div class="row">
-<ul>
-<li><a href="https://papyrusai.webflow.io/">Home</a></li>
-<li><a href="https://papyrusai.webflow.io/pages/pricing-1">Pricing</a></li>
-<li><a href="https://papyrusai.webflow.io/pages/contact-1">Contact us</a></li>
-</ul>
-</div>
+  <body>
+    <nav class="navbar login">
+      <div class="logo">
+          <a href="https://papyrusai.webflow.io/" target="_blank">
+            <img src="assets/papyrus_app_white.png" alt="Papyrus Logo">
+          </a>
+        </div>
+     <button class="hamburger login" onclick="toggleMenu()">☰</button> 
+      <ul class="menu">
+        <li><a href="https://papyrusai.webflow.io/">INICIO</a></li>
+        <li><a href="https://papyrusai.webflow.io/pages/pricing-1">PRECIOS</a></li>
+        <li><a href="http://localhost:5000/profile">APP</a></li> <!--cambiar-->
+        <li><a href="https://papyrusai.webflow.io/pages/contact-1">CONTACTO</a></li>
+      </ul>
+    </nav>
+<section class="login-form">
+    <div class="container">
+        <div class="login-section">
+          <div class="logo">
+            <a href="https://papyrusai.webflow.io/" target="_blank">
+              <img class ="login-image"src="assets/papyrus_app.png" alt="Papyrus Logo">
+            </a>
+            
+          </div>
+            <h1>Inicia Sesión en tu Cuenta</h1>
+            <div>
+              <a id="google-login-btn" class="login-btn google-login" href="/auth/google" onclick="showLoading()">
+                <div id="google-login">
+                  <img src="assets/google_trans-removebg-preview.png" alt="Google Logo">
+                  Google
+                </div>
+                <span id="loading-icon" style="display: none;">
+                  <div class="loader-google"></div>
+                </span>
+              </a>
+            <p class="temporal-uno">Accede a toda la información normativa del territorio español</p>
+            <p class="temporal">Recibe alertas, resúmenes y gráficos <strong> personalizados</strong>.</p>
+          </div>
+          <!--
+          
+          <div class="divider">
+            <span>O con email y contraseña</span>
+        </div>
 
-<div class="row">
-Papyrus Copyright © 2024 - All rights reserved 
-</div>
-</div>
-</footer>
+          <div>
+            <form action="/login" method="post">
+                <input type="email" name="email" placeholder="Email Address" required>
+                <button type="submit">Siguiente</button>
+            </form>
+          </div>
+           -->
 
+        </div>
 
-
-    <script src="main.js"></script>
+        <div class="info-section">
+            <h2>Recibe acceso gratuito a nuestra Newsletter</h2>
+            <p>Filtra de manera automática todo el contenido normativo con nuestra IA </p>
+            <p>Recibe alertas, resúmenes y gráficos <strong>personalizados</strong>.</p>
+        </div>
+    </div>
+  </section>
 </body>
+</body>
+
+<script>
+function resetLoginButton() {
+    const loginButton = document.getElementById('google-login-btn');
+    const googleLoginText = document.getElementById('google-login');
+    const loadingIcon = document.getElementById('loading-icon');
+
+    // Reset classes
+    if (googleLoginText) {
+      googleLoginText.style = '';
+      googleLoginText.offsetHeight; // Trigger reflow
+        googleLoginText.classList.remove('hidden');
+        googleLoginText.classList.add('visible');
+    }
+
+    if (loadingIcon) {
+      loadingIcon.offsetHeight; // Trigger reflow
+        loadingIcon.classList.remove('visible');
+        loadingIcon.classList.add('hidden');
+    }
+
+    if (loginButton) {
+        loginButton.classList.remove('disabled');
+        loginButton.style.pointerEvents = 'auto'; // Allow clicks again
+    }
+
+    console.log('Reset login button styles applied.');
+}
+
+  function showLoading() {
+    const googleLoginText = document.getElementById('google-login');
+    const loadingIcon = document.getElementById('loading-icon');
+
+    // Hide the Google text and show the loading icon
+    if (googleLoginText) {
+      
+      googleLoginText.classList.remove('visible');
+      
+      googleLoginText.classList.add('hidden');
+    }
+    if (loadingIcon) {
+      
+      loadingIcon.classList.remove('hidden'); 
+      
+      loadingIcon.classList.add('visible'); 
+      loadingIcon.style.display = 'inline-block';
+    }
+
+    // Disable the button to prevent multiple clicks
+    const loginButton = document.getElementById('google-login-btn');
+    if (loginButton) {
+      loginButton.style.pointerEvents = 'none';
+    }
+  }
+// Use `pageshow` to ensure reset on navigation
+window.addEventListener('pageshow', () => {
+    resetLoginButton(); // Ensure the button is reset every time the page is shown
+});
+
+//  document.addEventListener('DOMContentLoaded', resetLoginButton);
+
+  function toggleMenu() {
+        const menu = document.querySelector('.menu');
+        menu.classList.toggle('active');
+         }
+         // Close the menu if clicking outside of it
+document.addEventListener('click', function(event) {
+    const menu = document.querySelector('.menu');
+    const hamburger = document.querySelector('.hamburger');
+    
+    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+    }
+});
+</script>
+
 </html>
