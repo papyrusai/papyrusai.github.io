@@ -52,7 +52,7 @@ async function findUserByGoogleId(googleId) {
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: 'http://https://papyrusai-github-io.onrender.com/auth/google/callback'
+  callbackURL: 'https://papyrusai-github-io.onrender.com/auth/google/callback'
 },
 async (token, tokenSecret, profile, done) => {
   try {
