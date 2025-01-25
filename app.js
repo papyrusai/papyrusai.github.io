@@ -559,8 +559,8 @@ app.post('/create-checkout-session', async (req, res) => {
       subscription_data: subscriptionData,
       locale: 'es', // 'es' for Spanish
 
-      success_url: `http://localhost:5000/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
-      cancel_url: 'http://localhost:5000/multistep.html',
+      success_url: `https://papyrusai-github-io.onrender.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
+      cancel_url: 'https://papyrusai-github-io.onrender.com/multistep.html',
     });
 
     res.json({ sessionId: session.id });
