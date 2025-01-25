@@ -1060,7 +1060,7 @@ async function handleStripeCheckout(plan, profileType) {
     });
     if (!resp.ok) throw new Error('Failed to create Checkout Session');
     const { sessionId } = await resp.json();
-    const stripe = Stripe('pk_test_51QOlLCEpe9srfTKEBrhgIWVCJYyFEEXRexkuobqhauLbuHUqsZdWSaHnaQs3uTNtokc6Zo8MPwBe71jsVxQWzJyy00R597zCf6');
+    const stripe = Stripe('pk_live_51QOlLCEpe9srfTKE4ymTYWhMSWs7qDvRQvmnzgoh0FmOWQ9cYTlOawWNiWQReOQeDx7Uslw7cbj9ClBGFas8heQq00wKegaiJg'); //live
     await stripe.redirectToCheckout({ sessionId });
   } catch (err) {
     console.error('Stripe checkout error:', err);
