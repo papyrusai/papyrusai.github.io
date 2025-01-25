@@ -5,7 +5,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from flask_cors import CORS  # Import Flask-CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app, resources={r"/semantic-search": {"origins": "*"}})
 
 # Load precomputed embeddings
 industry_list = np.load('industry_list.npy', allow_pickle=True)
