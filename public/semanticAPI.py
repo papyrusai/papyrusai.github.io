@@ -14,6 +14,10 @@ industry_embeddings = np.load('industry_embeddings.npy')
 # Load model
 model = SentenceTransformer('sentence-transformers/distiluse-base-multilingual-cased-v2') #more robust
 
+@app.route('/', methods=['GET'])
+def home():
+    return "Flask is running!", 200
+
 
 @app.route('/semantic-search', methods=['POST'])
 def semantic_search():
