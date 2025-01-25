@@ -684,7 +684,7 @@ async function performSemanticSearch() {
     return;
   }
   try {
-    const response = await fetch('http://127.0.0.1:8000/semantic-search', {
+    const response = await fetch('https://papyrusai-github-io-ytzg.onrender.com/semantic-search', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ query }),
