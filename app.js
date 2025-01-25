@@ -8,7 +8,7 @@ const { MongoClient } = require('mongodb');
 const moment = require('moment');
 const fs = require('fs');
 
-const stripe = require('stripe')('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'); // Use your Stripe secret key
+const stripe = require('stripe')(process.env.STRIPE); // Use your Stripe secret key
 
 //to avoid deprecation error
 const mongodbOptions = {
