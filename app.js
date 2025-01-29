@@ -25,11 +25,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.set('trust proxy', 1); // IMPORTANT when behind a proxy (Render)
+
+// Then your session:
 app.use(session({
   secret: process.env.SESSION_SECRET || 'default_session_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false }
+  cookie: {
+    secure: true,
+    sameSite: 'none',
+    httpOnly: true
+  }
 }));
 
 app.use(passport.initialize());
@@ -559,8 +566,8 @@ app.post('/create-checkout-session', async (req, res) => {
       subscription_data: subscriptionData,
       locale: 'es', // 'es' for Spanish
 
-      success_url: `https://papyrusai-github-io.onrender.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
-      cancel_url: 'https://papyrusai-github-io.onrender.com/multistep.html',
+      success_url: `https://papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
+      cancel_url: 'https://papyrus-ai.com/multistep.html',
     });
 
     res.json({ sessionId: session.id });
