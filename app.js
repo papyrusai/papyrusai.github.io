@@ -8,13 +8,17 @@ const { MongoClient } = require('mongodb');
 const moment = require('moment');
 const fs = require('fs');
 
-const stripe = require('stripe')(process.env.STRIPE); // Use your Stripe secret key
+// Use your Stripe secret key
+const stripe = require('stripe')(process.env.STRIPE);
 
-//to avoid deprecation error
+// NEW toggle for plan2
+const IS_PLAN2_FREE = "yes";//process.env.IS_PLAN2_FREE || 'no';
+
+// to avoid deprecation error
 const mongodbOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true
-  }
+};
 
 require('./auth'); // Ensure this file is configured correctly
 
@@ -49,7 +53,7 @@ app.get('/', (req, res) => {
 // Middleware to ensure user is authenticated
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
-      return next();
+    return next();
   }
   res.redirect('/'); // Redirect to the login page if not authenticated
 }
@@ -59,7 +63,6 @@ app.get('/multistep.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'multistep.html'));
 });
 
-
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -67,7 +70,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/dist', express.static(path.join(__dirname, 'public/dist')));
 
 const uri = process.env.DB_URI;
-
 
 app.get('/select-industries', (req, res) => {
   if (!req.isAuthenticated()) {
@@ -83,7 +85,9 @@ app.post('/save-industries', async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    const industries = Array.isArray(req.body.industries) ? req.body.industries : [req.body.industries];
+    const industries = Array.isArray(req.body.industries)
+      ? req.body.industries
+      : [req.body.industries];
     await usersCollection.updateOne(
       { googleId: req.user.googleId },
       { $set: { industry_tags: industries } }
@@ -99,9 +103,12 @@ app.post('/save-industries', async (req, res) => {
 });
 
 // Google OAuth routes with prompt to re-authenticate
-app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
 
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/' }),
+app.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
   async (req, res) => {
     const client = new MongoClient(uri, mongodbOptions);
     try {
@@ -128,8 +135,6 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
   }
 );
 
-
-
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
@@ -142,17 +147,16 @@ app.get('/profile', async (req, res) => {
     const usersCollection = database.collection("users");
 
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
-
     if (!user.industry_tags || user.industry_tags.length === 0) {
       return res.redirect('/select-industries');
     }
 
     // We safely read possible user.rama_juridicas if it exists
-    const userRamas = user.rama_juridicas || []; // default empty if not found
+    const userRamas = user.rama_juridicas || []; // default empty
 
-    const collections = req.query.collections || ['BOE']; // Default to BOE if no collections are selected
+    const collections = req.query.collections || ['BOE']; // Default to BOE
 
-    // Calculate the start date for the last three months
+    // Calculate the start date for the last month
     const now = new Date();
     const startDate = new Date();
     startDate.setMonth(now.getMonth() - 1);
@@ -160,7 +164,8 @@ app.get('/profile', async (req, res) => {
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
-        { $or: [
+        {
+          $or: [
             { mes: { $gt: startDate.getMonth() + 1 } },
             { mes: startDate.getMonth() + 1, dia: { $gte: startDate.getDate() } }
           ]
@@ -176,21 +181,21 @@ app.get('/profile', async (req, res) => {
 
     let allDocuments = [];
 
-    // Loop through the selected collections and fetch documents from each
+    // Loop through the selected collections and fetch docs
     for (const collectionName of collections) {
       const collection = database.collection(collectionName);
       const documents = await collection.find(query).project(projection).toArray();
       allDocuments = allDocuments.concat(documents);
     }
 
-    // Sort allDocuments by date (anio, mes, dia)
+    // Sort by date descending
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
 
-    // Prepare documentsHtml and chart data
+    // Build documentsHtml
     let documentsHtml;
     if (allDocuments.length < 1) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
@@ -199,24 +204,30 @@ app.get('/profile', async (req, res) => {
         <div class="data-item">
           <div class="header-row">
             <div class="id-values">
-            ${doc.short_name}
+              ${doc.short_name}
             </div>
             <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
           </div>
           <div class="etiquetas-values">
-            ${doc.divisiones_cnae && doc.divisiones_cnae.length > 0
-              ? doc.divisiones_cnae.map(divisiones_cnae => `<span>${divisiones_cnae}</span>`).join('')
-            : ''}
+            ${
+              doc.divisiones_cnae && doc.divisiones_cnae.length > 0
+                ? doc.divisiones_cnae.map(div => `<span>${div}</span>`).join('')
+                : ''
+            }
           </div>
           <div class="rama-juridica-values">
-            ${doc.rama_juridica && doc.rama_juridica.length > 0
-              ? doc.rama_juridica.map(rama => `<span class="rama-value">${rama}</span>`).join('')
-              : ''}
+            ${
+              doc.rama_juridica && doc.rama_juridica.length > 0
+                ? doc.rama_juridica.map(rama => `<span class="rama-value">${rama}</span>`).join('')
+                : ''
+            }
           </div>
           <div class="sub-rama-juridica-values">
-            ${doc.sub_rama_juridica && doc.sub_rama_juridica.length > 0
-              ? doc.sub_rama_juridica.map(subRama => `<span class="sub-rama-value"><i><b>#${subRama}</b></i></span>`).join('')
-              : ''}
+            ${
+              doc.sub_rama_juridica && doc.sub_rama_juridica.length > 0
+                ? doc.sub_rama_juridica.map(subRama => `<span class="sub-rama-value"><i><b>#${subRama}</b></i></span>`).join('')
+                : ''
+            }
           </div>
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
@@ -225,7 +236,7 @@ app.get('/profile', async (req, res) => {
       `).join('');
     }
 
-    // Aggregate documents by month for chart data
+    // Build chart data
     const documentsByMonth = {};
     allDocuments.forEach(doc => {
       const month = `${doc.anio}-${doc.mes.toString().padStart(2, '0')}`;
@@ -238,7 +249,7 @@ app.get('/profile', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(month => documentsByMonth[month]);
 
-    // Read the profile.html template
+    // Read and replace tokens in profile.html
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
@@ -250,7 +261,7 @@ app.get('/profile', async (req, res) => {
       .replace('{{months_json}}', JSON.stringify(months))
       .replace('{{counts_json}}', JSON.stringify(counts))
       .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
-      .replace('{{start_date}}', JSON.stringify(startDate)); // Format the start date as YYYY-MM-DD
+      .replace('{{start_date}}', JSON.stringify(startDate));
 
     res.send(profileHtml);
 
@@ -262,40 +273,27 @@ app.get('/profile', async (req, res) => {
   }
 });
 
-
-
 const Fuse = require('fuse.js');
 
 app.get('/search-ramas-juridicas', async (req, res) => {
-    const query = req.query.q;
+  const query = req.query.q;
+  const ramaJuridicaList = [
+    "Derecho Civil", "Derecho Mercantil", "Derecho Administrativo", "Derecho Fiscal",
+    "Derecho Laboral", "Derecho Procesal-Civil", "Derecho Procesal-Penal", "Derecho Constitucional",
+    "Derecho de la UE", "Derecho Internacional Público", "Derecho Internacional Privado"
+  ];
 
-    const ramaJuridicaList = [
-        "Derecho Civil",
-        "Derecho Mercantil",
-        "Derecho Administrativo",
-        "Derecho Fiscal",
-        "Derecho Laboral",
-        "Derecho Procesal-Civil",
-        "Derecho Procesal-Penal",
-        "Derecho Constitucional",
-        "Derecho de la UE",
-        "Derecho Internacional Público",
-        "Derecho Internacional Privado"
-    ];
+  const fuse = new Fuse(ramaJuridicaList, {
+    includeScore: true,
+    threshold: 0.3,
+    ignoreLocation: true,
+    minMatchCharLength: 2,
+    distance: 100
+  });
 
-    const fuse = new Fuse(ramaJuridicaList, {
-        includeScore: true,
-        threshold: 0.3, // Increase threshold to make matching less strict
-        ignoreLocation: true, // Allows matches anywhere in the string
-        minMatchCharLength: 2, // Ensures partial matches for short queries
-        distance: 100 // Adjust for token distance in matches
-    });
-
-    const results = fuse.search(query).map(result => result.item);
-
-    res.json(results);
+  const results = fuse.search(query).map(result => result.item);
+  res.json(results);
 });
-
 
 app.get('/data', async (req, res) => {
   if (!req.isAuthenticated()) {
@@ -315,28 +313,24 @@ app.get('/data', async (req, res) => {
     }
 
     // 2) Read query
-    // Example:  ?collections[]=BOE&collections[]=BOCM&industry=Todas&rama=Todas&subRamas=...
     const collections = req.query.collections || ['BOE'];
     const industry = req.query.industry || 'Todas';
     const ramaValue = req.query.rama || 'Todas';
-    const subRamasStr = req.query.subRamas || ''; 
+    const subRamasStr = req.query.subRamas || '';
     const startDate = req.query.desde;
     const endDate = req.query.hasta;
 
     // Build the query object
     const query = {};
 
-    // If industry != 'Todas', filter by divisiones_cnae
     if (industry.toLowerCase() !== 'todas') {
       query.divisiones_cnae = industry;
     }
 
-    // If ramaValue != 'Todas', filter by doc.rama_juridica
     if (ramaValue.toLowerCase() !== 'todas') {
       query.rama_juridica = { $in: [ramaValue] };
     }
 
-    // If subRamasStr not empty => build an array
     let subRamasArray = [];
     if (subRamasStr.trim() !== '') {
       subRamasArray = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -345,7 +339,6 @@ app.get('/data', async (req, res) => {
       query.sub_rama_juridica = { $in: subRamasArray };
     }
 
-    // Date range filter
     if (startDate || endDate) {
       query.$and = query.$and || [];
       if (startDate) {
@@ -372,7 +365,6 @@ app.get('/data', async (req, res) => {
 
     console.log('Final query =>', query);
 
-    // 3) fetch from each collection
     const projection = {
       short_name: 1, divisiones_cnae: 1, resumen: 1,
       dia: 1, mes: 1, anio: 1, url_pdf: 1,
@@ -385,14 +377,14 @@ app.get('/data', async (req, res) => {
       allDocuments = allDocuments.concat(docs);
     }
 
-    // 4) sort descending
+    // sort descending
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
 
-    // 5) Build HTML or no-results
+    // Build HTML or no-results
     let documentsHtml;
     if (allDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
@@ -401,19 +393,17 @@ app.get('/data', async (req, res) => {
         <div class="data-item">
           <div class="header-row">
             <div class="id-values">
-            ${doc.short_name}
+              ${doc.short_name}
             </div>
             <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
           </div>
           <div class="etiquetas-values">
-              ${
-                doc.divisiones_cnae
-                ? doc.divisiones_cnae.map(div => `<span>${div}</span>`).join('')
-                : ''
-              }
+            ${
+              doc.divisiones_cnae
+              ? doc.divisiones_cnae.map(div => `<span>${div}</span>`).join('')
+              : ''
+            }
           </div>
-
-            <!-- Show doc.rama_juridica, doc.sub_rama_juridica if you want -->
           <div class="rama-juridica-values">
             ${
               doc.rama_juridica && doc.rama_juridica.length > 0
@@ -421,11 +411,10 @@ app.get('/data', async (req, res) => {
                 : ''
             }
           </div>
-           <!-- Sub-Rama Jurídica -->
           <div class="sub-rama-juridica-values">
             ${
               doc.sub_rama_juridica && doc.sub_rama_juridica.length > 0
-                ? doc.sub_rama_juridica.map(subRama => `<span class="sub-rama-value"><i><b>#${subRama}</i></b></span>`).join('')
+                ? doc.sub_rama_juridica.map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join('')
                 : ''
             }
           </div>
@@ -436,8 +425,7 @@ app.get('/data', async (req, res) => {
       `).join('');
     }
 
-    // 6) Also build or update the months & counts for the chart
-    //    We'll do the same logic we do in /profile
+    // Chart data
     const documentsByMonth = {};
     for (const doc of allDocuments) {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -446,13 +434,7 @@ app.get('/data', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // 7) Return JSON that includes documentsHtml + new months & counts
-    res.json({
-      documentsHtml,
-      months,
-      counts
-    });
-
+    res.json({ documentsHtml, months, counts });
   } catch (err) {
     console.error('Error retrieving data:', err);
     res.status(500).json({ error: 'Error retrieving data' });
@@ -465,12 +447,9 @@ app.get('/index.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// In your server code (app.js)
+// Cancel subscription example
 app.delete('/api/cancel-subscription', async (req, res) => {
   try {
-    // We'll assume your user is in req.user
-    // or maybe in req.session.passport.user, etc.
-    // Example: user => { googleId, email, name, ... }
     if (!req.user) {
       return res.status(401).json({ error: 'No user in session' });
     }
@@ -478,10 +457,9 @@ app.delete('/api/cancel-subscription', async (req, res) => {
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
     const db = client.db("papyrus");
-    // Instead of deleteOne => we do updateOne with $unset
     await db.collection('users').updateOne(
       { googleId: req.user.googleId },
-      { 
+      {
         $unset: {
           googleId: "",
           email: "",
@@ -497,25 +475,17 @@ app.delete('/api/cancel-subscription', async (req, res) => {
   }
 });
 
-
-
 app.get('/logout', (req, res) => {
-  // Destroy the session and clear cookies manually
-  req.session = null; 
-  res.clearCookie('connect.sid', { path: '/' }); // Clear session cookie
-  
-  // Redirect directly to index.html
+  req.session = null;
+  res.clearCookie('connect.sid', { path: '/' });
   res.redirect('/index.html');
 });
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-
 /*Stripe*/
-
 app.post('/create-checkout-session', async (req, res) => {
   const {
     plan,
@@ -523,51 +493,84 @@ app.post('/create-checkout-session', async (req, res) => {
     rama_juridicas,
     profile_type,
     sub_rama_map,
-    isTrial // <--- NEW param from client
+    isTrial
   } = req.body;
 
   try {
+    // 1) If plan2 is free => skip Stripe
+    if (plan === 'plan2' && IS_PLAN2_FREE === 'yes') {
+      console.log("Plan2 is free => skipping Stripe checkout");
+
+      // We can just store the user data in DB as if they've subscribed
+      if (!req.user) {
+        return res.status(401).json({ error: 'Unauthorized user' });
+      }
+
+      const client = new MongoClient(uri, mongodbOptions);
+      await client.connect();
+      const db = client.db('papyrus');
+      const usersCollection = db.collection('users');
+
+      await usersCollection.updateOne(
+        { googleId: req.user.googleId },
+        {
+          $set: {
+            industry_tags,
+            rama_juridicas,
+            subscription_plan: plan,  // plan2
+            profile_type,
+            sub_rama_map,
+            stripe_subscription_id: null // no stripe sub
+          }
+        },
+        { upsert: true }
+      );
+
+      await client.close();
+      // Return a response so the front-end knows we didn't call Stripe
+      return res.json({
+        skipStripe: true,
+        redirectUrl: '/profile'
+      });
+    }
+
+    // 2) Otherwise normal Stripe code
     const priceIdMap = {
-      plan2: 'price_1QOlhEEpe9srfTKESkjGMFvI', //live
-      plan3: 'price_1QOlwZEpe9srfTKEBRzcNR8A', //test
+      plan2: 'price_1QOlhEEpe9srfTKESkjGMFvI', // live
+      plan3: 'price_1QOlwZEpe9srfTKEBRzcNR8A', // test
     };
 
     if (!priceIdMap[plan]) {
       return res.status(400).json({ error: 'Invalid plan selected' });
     }
 
-    // Encode your data for the success_url
     const encodedIndustryTags  = encodeURIComponent(JSON.stringify(industry_tags));
     const encodedRamaJuridicas = encodeURIComponent(JSON.stringify(rama_juridicas));
     const encodedPlan          = encodeURIComponent(plan);
     const encodedProfileType   = encodeURIComponent(profile_type);
     const encodedSubRamaMap    = encodeURIComponent(JSON.stringify(sub_rama_map));
 
-    // Build base subscription data
+    // Build subscription data
     let subscriptionData = {};
-    // If plan2, set trial_period_days: 60
     if (plan === 'plan2' && isTrial) {
       subscriptionData = {
-        trial_period_days: 60,  // 2-month free trial
+        trial_period_days: 60 // 2-month free trial
       };
     }
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
-        { 
+        {
           price: priceIdMap[plan],
-          quantity: 1 
+          quantity: 1
         }
       ],
       mode: 'subscription',
-
-      // If plan2 is in trial:
       subscription_data: subscriptionData,
-      locale: 'es', // 'es' for Spanish
-
+      locale: 'es',
       success_url: `https://papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
-      cancel_url: 'https://papyrus-ai.com/multistep.html',
+      cancel_url: 'https://papyrus-ai.com/multistep.html'
     });
 
     res.json({ sessionId: session.id });
@@ -582,11 +585,7 @@ app.get('/save-user', async (req, res) => {
   const rawRamaJuridicas = req.query.rama_juridicas;
   const plan = req.query.plan;
   const rawProfileType = req.query.profile_type;
-
-  // [ADDED] sub_rama_map
   const rawSubRamaMap = req.query.sub_rama_map;
-
-  // [NEW] read session_id if present
   const sessionId = req.query.session_id || null;
 
   if (!req.user) {
@@ -598,18 +597,14 @@ app.get('/save-user', async (req, res) => {
     const ramaJuridicas = JSON.parse(decodeURIComponent(rawRamaJuridicas));
     const profileType = decodeURIComponent(rawProfileType);
 
-    // [CHANGED] parse sub_rama_map
     let subRamaMapObj = {};
     if (rawSubRamaMap) {
       subRamaMapObj = JSON.parse(decodeURIComponent(rawSubRamaMap));
     }
 
-    // 1) Possibly retrieve the subscription ID from Stripe if sessionId is present
     let stripeSubscriptionId = null;
     if (sessionId) {
-      // retrieve session from Stripe
       const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
-      // the subscription ID is stored in stripeSession.subscription
       if (stripeSession.subscription) {
         stripeSubscriptionId = stripeSession.subscription;
       }
@@ -617,19 +612,17 @@ app.get('/save-user', async (req, res) => {
 
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
+    const db = client.db("papyrus");
+    const usersCollection = db.collection("users");
 
-    // 2) Update the user in DB with subscription_plan, plus the subscription_id if we got it
     const updateFields = {
       industry_tags: industryTags,
       rama_juridicas: ramaJuridicas,
       subscription_plan: plan,
-      profile_type: profileType,
+      profile_type,
       sub_rama_map: subRamaMapObj
     };
 
-    // if we have a valid subscription ID, store it as well
     if (stripeSubscriptionId) {
       updateFields.stripe_subscription_id = stripeSubscriptionId;
     }
@@ -649,7 +642,7 @@ app.get('/save-user', async (req, res) => {
 
 /*free*/
 app.post('/save-free-plan', async (req, res) => {
-  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map } = req.body; 
+  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map } = req.body;
   if (!req.user) {
     return res.status(401).send('Unauthorized');
   }
@@ -668,7 +661,7 @@ app.post('/save-free-plan', async (req, res) => {
           rama_juridicas,
           subscription_plan: plan,
           profile_type,
-          sub_rama_map   // <--- NEW
+          sub_rama_map
         }
       },
       { upsert: true }
@@ -685,8 +678,9 @@ app.get('/api/current-user', ensureAuthenticated, async (req, res) => {
   try {
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
+    const db = client.db("papyrus");
+    const usersCollection = db.collection("users");
+
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
@@ -694,7 +688,7 @@ app.get('/api/current-user', ensureAuthenticated, async (req, res) => {
     // Return minimal info
     res.json({
       name: user.name || '',
-      subscription_plan: user.subscription_plan || 'plan1' // default
+      subscription_plan: user.subscription_plan || 'plan1'
     });
   } catch (error) {
     console.error('Error fetching current user:', error);
@@ -706,8 +700,8 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
   try {
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
+    const db = client.db("papyrus");
+    const usersCollection = db.collection("users");
 
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
     if (!user) {
@@ -718,8 +712,8 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
     res.json({
       name: user.name || '',
       subscription_plan: user.subscription_plan || 'plan1',
-      industry_tags: user.industry_tags || [],       // array of strings
-      rama_juridicas: user.rama_juridicas || []      // array of strings
+      industry_tags: user.industry_tags || [],
+      rama_juridicas: user.rama_juridicas || []
     });
   } catch (error) {
     console.error('Error fetching current user:', error);
@@ -728,10 +722,8 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
 });
 
 app.post('/save-same-plan2', async (req, res) => {
-  // This is only called if the user is STILL on plan2, 
-  // and we want to just update the new industries/ramas.
   const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map } = req.body;
-  
+
   if (!req.user) {
     return res.status(401).send('Unauthorized');
   }
@@ -748,7 +740,7 @@ app.post('/save-same-plan2', async (req, res) => {
         $set: {
           industry_tags,
           rama_juridicas,
-          subscription_plan: plan,  // still plan2
+          subscription_plan: plan,
           profile_type,
           sub_rama_map
         }
@@ -764,64 +756,49 @@ app.post('/save-same-plan2', async (req, res) => {
   }
 });
 
-
 app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
-  // 1) read incoming data
   const { plan, industry_tags, rama_juridicas, sub_rama_map } = req.body;
 
   if (!req.user) {
     return res.status(401).send('Unauthorized: No logged-in user');
   }
 
-  // 2) logic to cancel the existing plan2 subscription on Stripe
-
-  let subscriptionId = null; // or read from user doc
-  // We'll show an example approach below.
-
+  let subscriptionId = null;
   const client = new MongoClient(uri, mongodbOptions);
   try {
     await client.connect();
     const db = client.db("papyrus");
     const usersCollection = db.collection("users");
 
-    // 2a) Find the user in DB
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // read subscriptionId from user doc if you store it
-    subscriptionId = user.stripe_subscription_id; // or however you name it
-    if (!subscriptionId) {
-      console.warn('No subscription id found to cancel. Possibly user never had plan2 or we never saved subscription_id');
-    } else {
-      // 2b) Cancel the subscription in Stripe
+    subscriptionId = user.stripe_subscription_id;
+    if (subscriptionId) {
       try {
         await stripe.subscriptions.cancel(subscriptionId);
         console.log(`Cancelled Stripe subscription: ${subscriptionId}`);
       } catch (error) {
         console.error('Error cancelling subscription in Stripe', error);
-        // If you want to handle error, do it here. Possibly return or continue
       }
     }
 
-    // 3) Now update user => switch to plan1, store new data
     await usersCollection.updateOne(
       { googleId: req.user.googleId },
       {
         $set: {
-          subscription_plan: plan,  // "plan1"
+          subscription_plan: plan,
           industry_tags,
           rama_juridicas,
           sub_rama_map,
-          // Possibly also remove subscription_id if you store it
           stripe_subscription_id: null
         }
       },
       { upsert: true }
     );
 
-    // 4) Return JSON with a redirect => /profile
     res.json({ redirectUrl: '/profile' });
   } catch (error) {
     console.error('Error switching from plan2 to plan1:', error);
