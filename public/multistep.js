@@ -24,7 +24,7 @@ let currentSubRamasPage = 0;
 let currentUserPlan = 'plan1';
 
 // [CHANGED] New toggle for free plan2 on the front-end
-let isPlan2Free = "no"; // can be set to "yes" or "no"
+let isPlan2Free = "yes"; // can be set to "yes" or "no"
 
 
 /************************************************************
