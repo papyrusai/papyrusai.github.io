@@ -1,4 +1,3 @@
-
 /************************************************************
  * 1) GLOBAL VARIABLES
  ************************************************************/
@@ -23,6 +22,10 @@ let currentSubRamasPage = 0;
 
 // For easier reference to current user plan
 let currentUserPlan = 'plan1';
+
+// [CHANGED] New toggle for free plan2 on the front-end
+let isPlan2Free = "no"; // can be set to "yes" or "no"
+
 
 /************************************************************
  * 2) The subRamasMap (Rama -> array of sub-ramas)
@@ -137,25 +140,27 @@ function resetSubmitButton() {
  ************************************************************/
 window.addEventListener('DOMContentLoaded', async () => {
 
-  // 4.1) Possibly jump to step2 if ?step=2
+  // [CHANGED] Optionally set isPlan2Free = "yes" here or read from some hidden input
+  const possibleFreeVal = document.getElementById('isPlan2FreeInput');
+  if (possibleFreeVal && possibleFreeVal.value === 'yes') {
+    isPlan2Free = 'yes';
+  }
+
   const formContainer = document.getElementById('multiStepForm');
   const formLoader = document.getElementById('pageLoaderOverlay');
 
   const urlParams = new URLSearchParams(window.location.search);
   const stepParam = urlParams.get('step');
 
-  // If step=2 => jump directly to Step 2
   if (stepParam === '2') {
     currentStep = 1; 
   }
 
   showStep(currentStep);
-
-  // Reveal the form
   formLoader.style.display = 'none';
   formContainer.style.display = 'block';
 
-  // 4.2) Setup focus/click for "Sectores Económicos"
+  // Setup industry search
   const industrySearchInput = document.getElementById('industrySearchInput');
   const industryListContainer = document.getElementById('industry-list-container');
   if (industrySearchInput && industryListContainer) {
@@ -179,7 +184,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 4.3) Setup focus/click for "Rama Jurídica"
+  // Setup Ramas search
   const ramaSearchInput = document.getElementById('ramaJuridicaSearchInput');
   const ramaListContainer = document.getElementById('ramaJuridicaListContainer');
   if (ramaSearchInput && ramaListContainer) {
@@ -203,7 +208,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 4.4) Fetch user data => restore
+  // Fetch user data => restore
   try {
     const response = await fetch('/api/current-user-details');
     if (!response.ok) throw new Error('Error loading user details');
@@ -233,13 +238,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   showStep(currentStep);
-
-  // Immediately update the UI for any previously saved items
   updateSelectedIndustries();
   updateSelectedRamaJuridica();
 });
 
-// Reset button on pageshow
 window.addEventListener('pageshow', () => {
   resetSubmitButton();
 });
@@ -308,7 +310,6 @@ function nextPrev(n) {
       alert('Selecciona al menos una industria antes de continuar');
       return;
     }
-    // Must have plan
     const plan = document.getElementById('selectedPlan').value;
     if (!plan) {
       alert('Error: no se detectó plan seleccionado');
@@ -316,6 +317,13 @@ function nextPrev(n) {
     }
     const profileType = document.getElementById('selectedProfileType').value.trim();
 
+    // [CHANGED] If plan2 is free => handleFreePlanSubmission with no limit
+    if (plan === 'plan2' && isPlan2Free === 'yes') {
+      handleFreePlanSubmission(plan, profileType);
+      return;
+    }
+
+    // If user already has plan2 and reselects plan2
     if (plan === 'plan2' && currentUserPlan === 'plan2') {
       handleSamePlan2Submission(plan, profileType);
       return;
@@ -326,9 +334,9 @@ function nextPrev(n) {
       return;
     } 
 
+    // if plan1 + user was on plan2 => cancel plan2
     if (plan === 'plan1' && currentUserPlan === 'plan2') {
-      // free plan but user was on plan2 => cancel plan2 first
-      // enforce free plan limit => 1 sector, 2 ramas 
+      // enforce free plan limit => 1 sector, 2 ramas
       if (selectedItems.size > 1) {
         showPlanLimitWarning();
         return;
@@ -401,7 +409,6 @@ document.addEventListener('DOMContentLoaded', () => {
     plan.addEventListener('click', () => {
       const isDisabled = plan.getAttribute('data-disabled') === 'true';
       if (isDisabled) {
-        // "Coming soon" highlight
         const badge = plan.querySelector('.coming-soon');
         if (badge) {
           badge.classList.remove('highlighted');
@@ -410,7 +417,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return;
       }
-      // otherwise, select plan
       planBoxes.forEach(b => b.classList.remove('selected'));
       plan.classList.add('selected');
       const planValue = plan.getAttribute('data-value');
@@ -426,7 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
 /************************************************************
  * 8) Step 3 => Industries + Ramas + sub-ramas
  ************************************************************/
-// Show/hide plan limit warning
 function showPlanLimitWarning() {
   const warning = document.getElementById('planLimitWarning');
   if (warning) warning.style.display = 'block';
@@ -436,7 +441,6 @@ function closePlanLimitWarning() {
   if (warning) warning.style.display = 'none';
 }
 
-/** Update the "selectedIndustriesList" from selectedItems */
 function updateSelectedIndustries() {
   const list = document.getElementById('selectedIndustriesList');
   if (!list) return;
@@ -452,7 +456,6 @@ function updateSelectedIndustries() {
     closeBtn.textContent = '×';
     closeBtn.onclick = () => {
       selectedItems.delete(item);
-      // remove highlight from the dropdown
       document.querySelectorAll('.industry-item').forEach(el => {
         if (el.getAttribute('data-value') === item) {
           el.classList.remove('selected');
@@ -465,14 +468,12 @@ function updateSelectedIndustries() {
     list.appendChild(span);
   });
 
-  // count
   const sectorsCounter = document.getElementById('sectorsCounter');
   if (sectorsCounter) {
     sectorsCounter.innerHTML = `<i>Sectores de interés: ${selectedItems.size}</i>`;
   }
 }
 
-/** Update the "selectedRamaJuridicaList" from selectedRamaJuridicas */
 function updateSelectedRamaJuridica() {
   const list = document.getElementById('selectedRamaJuridicaList');
   if (!list) return;
@@ -491,7 +492,6 @@ function updateSelectedRamaJuridica() {
     closeBtn.onclick = () => {
       const idx = selectedRamaJuridicas.indexOf(value);
       if (idx > -1) selectedRamaJuridicas.splice(idx, 1);
-      // remove highlight from the main list
       if (ramaList) {
         const itemDiv = Array.from(ramaList.children)
           .find(el => el.getAttribute('data-value') === value);
@@ -504,13 +504,11 @@ function updateSelectedRamaJuridica() {
     list.appendChild(span);
   });
 
-  // count
   const ramasCounter = document.getElementById('ramasCounter');
   if (ramasCounter) {
     ramasCounter.innerHTML = `<i>Ramas de interés: ${selectedRamaJuridicas.length}</i>`;
   }
 
-  // show/hide subRamas container
   const subRamasContainer = document.getElementById('subRamasContainer');
   if (subRamasContainer) {
     if (selectedRamaJuridicas.length > 0) {
@@ -521,7 +519,6 @@ function updateSelectedRamaJuridica() {
     }
   }
 
-  // "outer" pagination: each page gets up to 3 Ramas
   subRamasPages = chunkArray(selectedRamaJuridicas, 3);
   currentSubRamasPage = 0;
   showSubRamasPage(currentSubRamasPage);
@@ -529,7 +526,7 @@ function updateSelectedRamaJuridica() {
 }
 
 /************************************************************
- * 9) Sub-Ramas Pagination (outer level)
+ * 9) Sub-Ramas Pagination
  ************************************************************/
 function showSubRamasPage(pageIndex) {
   const subRamasColumns = document.getElementById('subRamasColumns');
@@ -539,29 +536,24 @@ function showSubRamasPage(pageIndex) {
   const ramasOnThisPage = subRamasPages[pageIndex] || [];
 
   ramasOnThisPage.forEach(ramaName => {
-    // Column container
     const colDiv = document.createElement('div');
     colDiv.className = 'sub-rama-column';
 
-    // Title element (with arrow)
     const titleElem = document.createElement('div');
     titleElem.className = 'sub-rama-title';
     titleElem.innerHTML = `
       <span class="rama-name">${ramaName}</span>
-      <!-- arrow in the top-right corner -->
       <span class="sub-rama-arrow" style="float:right; cursor:pointer;">
         <i class="fas fa-chevron-down"></i>
       </span>
     `;
     colDiv.appendChild(titleElem);
 
-    // The content wrapper (sub-ramas), hidden at first
     const itemsWrapper = document.createElement('div');
     itemsWrapper.className = 'sub-rama-items-wrapper';
     itemsWrapper.style.display = 'none'; 
     colDiv.appendChild(itemsWrapper);
 
-    // Insert all sub-ramas (no chunking)
     const subList = subRamasMap[ramaName] || [];
     if (!subRamaCheckMap[ramaName]) {
       subRamaCheckMap[ramaName] = {};
@@ -577,7 +569,6 @@ function showSubRamasPage(pageIndex) {
 
       const prevVal = subRamaCheckMap[ramaName][subName];
       if (prevVal === undefined) {
-        // default => checked
         checkbox.checked = true;
         subRamaCheckMap[ramaName][subName] = true;
       } else {
@@ -595,14 +586,11 @@ function showSubRamasPage(pageIndex) {
       itemsWrapper.appendChild(itemDiv);
     });
 
-    // Toggle show/hide on arrow click
     const arrowSpan = titleElem.querySelector('.sub-rama-arrow');
     arrowSpan.addEventListener('click', e => {
       e.stopPropagation();
-
       if (itemsWrapper.style.display === 'none') {
         itemsWrapper.style.display = 'block';
-        // optional: change icon to up or down
         arrowSpan.innerHTML = '<i class="fas fa-chevron-up"></i>';
       } else {
         itemsWrapper.style.display = 'none';
@@ -644,7 +632,6 @@ function updateSubRamasPaginationUI() {
   }
 }
 
-// Outer next/prev for multiple Ramas
 document.addEventListener('DOMContentLoaded', () => {
   const prevBtn = document.getElementById('prevSubRamasBtn');
   const nextBtn = document.getElementById('nextSubRamasBtn');
@@ -669,7 +656,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /************************************************************
- * 10) Searching Industries => "performSemanticSearch()" 
+ * 10) Searching Industries => performSemanticSearch()
  ************************************************************/
 async function performSemanticSearch() {
   const input = document.getElementById('industrySearchInput');
@@ -703,9 +690,9 @@ async function performSemanticSearch() {
       if (selectedItems.has(r.industry)) {
         div.classList.add('selected');
       }
-      // On click => toggle
       div.addEventListener('click', (event) => {
         event.stopPropagation();
+        // [CHANGED] If plan=plan1 => limit. If plan2 is free => no limit.
         if (selectedPlanGlobal === 'plan1') {
           if (!selectedItems.has(r.industry) && selectedItems.size >= 1) {
             showPlanLimitWarning();
@@ -729,7 +716,6 @@ async function performSemanticSearch() {
   }
 }
 
-/** If query is empty => show full list */
 function resetIndustryListAI() {
   const industryList = document.getElementById('industryList');
   if (!industryList) return;
@@ -835,10 +821,8 @@ function resetIndustryListAI() {
     if (selectedItems.has(ind)) {
       div.classList.add('selected');
     }
-    // On click => toggle
     div.addEventListener('click', (event) => {
       event.stopPropagation();
-
       if (selectedPlanGlobal === 'plan1') {
         if (!selectedItems.has(ind) && selectedItems.size >= 1) {
           showPlanLimitWarning();
@@ -916,7 +900,6 @@ async function filterRamasJuridicas() {
   }
 }
 
-/** Show the full default list if user clears the input */
 function resetRamaJuridicaList(selectedValues=[]) {
   const ramaJuridicaList = document.getElementById('ramaJuridicaList');
   if (!ramaJuridicaList) return;
@@ -973,7 +956,6 @@ function resetRamaJuridicaList(selectedValues=[]) {
  * 12) Free Plan or Stripe Plan Submission
  ************************************************************/
 function buildSubRamaMap() {
-  // e.g. { "Derecho Civil": ["familia","sucesiones"], ... }
   const sub_rama_map = {};
   for (const ramaName in subRamaCheckMap) {
     const subObj = subRamaCheckMap[ramaName];
@@ -1070,11 +1052,6 @@ async function handleStripeCheckout(plan, profileType) {
   }
 }
 
-/** 
- * handleSamePlan2Submission => user re-selects plan2
- * just save updated industries/ramas/sub-ramas 
- * and redirect to profile. 
- **/
 async function handleSamePlan2Submission(plan, profileType) {
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
