@@ -812,6 +812,134 @@ function performIndustryFilter() {
   });
 }
 
+/** If query is empty => show full list */
+function resetIndustryListAI() {
+  const industryList = document.getElementById('industryList');
+  if (!industryList) return;
+
+  industryList.innerHTML = '';
+  const fullIndustries = [
+    "Agricultura, ganadería, caza y servicios relacionados",
+    "Silvicultura y explotación forestal",
+    "Pesca y acuicultura",
+    "Extracción de antracita, hulla y lignito",
+    "Extracción de crudo de petróleo y gas natural",
+    "Extracción de minerales metálicos",
+    "Otras industrias extractivas",
+    "Actividades de apoyo a las industrias extractivas",
+    "Industria de la alimentación",
+    "Fabricación de bebidas",
+    "Industria del tabaco",
+    "Industria textil",
+    "Confección de prendas de vestir",
+    "Industria del cuero y del calzado",
+    "Industria de la madera y del corcho",
+    "Industria del papel",
+    "Artes gráficas y reproducción de soportes grabados",
+    "Coquerías y refino de petróleo",
+    "Industria química",
+    "Fabricación de productos farmacéuticos",
+    "Fabricación de productos de caucho y plásticos",
+    "Fabricación de otros productos minerales no metálicos",
+    "Metalurgia; fabricación de productos de hierro y acero",
+    "Fabricación de productos metálicos, excepto maquinaria",
+    "Fabricación de productos informáticos, electrónicos y ópticos",
+    "Fabricación de material y equipo eléctrico",
+    "Fabricación de maquinaria y equipo n.c.o.p",
+    "Fabricación de vehículos de motor, remolques y semirremolques",
+    "Fabricación de otro material de transporte",
+    "Fabricación de muebles",
+    "Otras industrias manufactureras",
+    "Reparación e instalación de maquinaria y equipo",
+    "Suministro de energía eléctrica, gas, vapor y aire acondicionado",
+    "Captación, depuración y distribución de agua",
+    "Recogida y tratamiento de aguas residuales",
+    "Gestión de residuos",
+    "Actividades de descontaminación",
+    "Construcción de edificios",
+    "Ingeniería civil",
+    "Actividades de construcción especializada",
+    "Venta y reparación de vehículos de motor",
+    "Comercio al por mayor",
+    "Comercio al por menor",
+    "Transporte terrestre y por tubería",
+    "Transporte marítimo y por vías navegables interiores",
+    "Transporte aéreo",
+    "Almacenamiento y actividades anexas al transporte",
+    "Actividades postales y de correos",
+    "Servicios de alojamiento",
+    "Servicios de comidas y bebidas",
+    "Edición",
+    "Actividades cinematográficas y de vídeo",
+    "Actividades de programación y emisión",
+    "Telecomunicaciones",
+    "Programación, consultoría y otras actividades informáticas",
+    "Servicios de información",
+    "Servicios financieros, excepto seguros y fondos de pensiones",
+    "Seguros, reaseguros y fondos de pensiones",
+    "Actividades auxiliares a los servicios financieros y seguros",
+    "Actividades inmobiliarias",
+    "Actividades jurídicas y de contabilidad",
+    "Consultoría de gestión empresarial",
+    "Servicios técnicos de arquitectura e ingeniería",
+    "Investigación y desarrollo",
+    "Publicidad y estudios de mercado",
+    "Otras actividades profesionales, científicas y técnicas",
+    "Actividades veterinarias",
+    "Actividades de alquiler",
+    "Actividades relacionadas con el empleo",
+    "Agencias de viajes, operadores turísticos",
+    "Actividades de seguridad e investigación",
+    "Servicios a edificios y actividades de jardinería",
+    "Actividades administrativas de oficina",
+    "Administración pública y defensa",
+    "Educación",
+    "Actividades sanitarias",
+    "Asistencia en establecimientos residenciales",
+    "Actividades de servicios sociales sin alojamiento",
+    "Actividades de creación, artísticas y espectáculos",
+    "Bibliotecas, archivos, museos y otras actividades culturales",
+    "Actividades de juegos de azar y apuestas",
+    "Actividades deportivas, recreativas y de entretenimiento",
+    "Actividades de organizaciones asociativas",
+    "Reparación de ordenadores y artículos personales",
+    "Otros servicios personales",
+    "Actividades de los hogares como empleadores",
+    "Actividades de los hogares como productores",
+    "Actividades de organizaciones y organismos extraterritoriales"
+  ];
+
+  fullIndustries.forEach(ind => {
+    const div = document.createElement('div');
+    div.className = 'industry-item';
+    div.textContent = ind;
+    div.setAttribute('data-value', ind);
+
+    if (selectedItems.has(ind)) {
+      div.classList.add('selected');
+    }
+    // On click => toggle
+    div.addEventListener('click', (event) => {
+      event.stopPropagation();
+
+      if (selectedPlanGlobal === 'plan1') {
+        if (!selectedItems.has(ind) && selectedItems.size >= 1) {
+          showPlanLimitWarning();
+          return;
+        }
+      }
+      if (selectedItems.has(ind)) {
+        selectedItems.delete(ind);
+        div.classList.remove('selected');
+      } else {
+        selectedItems.add(ind);
+        div.classList.add('selected');
+      }
+      updateSelectedIndustries();
+    });
+    industryList.appendChild(div);
+  });
+}
 
 /************************************************************
  * 11) Searching Ramas => filterRamasJuridicas()
