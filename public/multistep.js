@@ -171,7 +171,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       industryListContainer.style.display = 'block';
     });
     industrySearchInput.addEventListener('input', () => {
-      performSemanticSearch();
+      performIndustryFilter(); 
       industryListContainer.style.display = 'block';
     });
     document.addEventListener('click', (event) => {
@@ -655,10 +655,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
 /************************************************************
- * 10) Searching Industries => performSemanticSearch()
+ * 10) Searching Industries => performIndustryFilter() using Fuse
  ************************************************************/
-async function performSemanticSearch() {
+// [CHANGED] We rename the function to "performIndustryFilter" 
+// and do a local Fuse-based search on the fullIndustries array.
+
+function performIndustryFilter() {
   const input = document.getElementById('industrySearchInput');
   if (!input) return;
   const query = input.value.trim();
@@ -666,61 +670,13 @@ async function performSemanticSearch() {
   const industryList = document.getElementById('industryList');
   if (!industryList) return;
 
+  // If no query => show full list
   if (!query) {
     resetIndustryListAI();
     return;
   }
-  try {
-    const response = await fetch('https://papyrusai-github-io-ytzg.onrender.com/semantic-search', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ query }),
-    });
-    if (!response.ok) throw new Error('Failed to fetch semantic search');
 
-    const results = await response.json();
-    industryList.innerHTML = '';
-
-    results.forEach(r => {
-      const div = document.createElement('div');
-      div.className = 'industry-item';
-      div.textContent = r.industry;
-      div.setAttribute('data-value', r.industry);
-
-      if (selectedItems.has(r.industry)) {
-        div.classList.add('selected');
-      }
-      div.addEventListener('click', (event) => {
-        event.stopPropagation();
-        // [CHANGED] If plan=plan1 => limit. If plan2 is free => no limit.
-        if (selectedPlanGlobal === 'plan1') {
-          if (!selectedItems.has(r.industry) && selectedItems.size >= 1) {
-            showPlanLimitWarning();
-            return;
-          }
-        }
-        if (selectedItems.has(r.industry)) {
-          selectedItems.delete(r.industry);
-          div.classList.remove('selected');
-        } else {
-          selectedItems.add(r.industry);
-          div.classList.add('selected');
-        }
-        updateSelectedIndustries();
-      });
-
-      industryList.appendChild(div);
-    });
-  } catch (err) {
-    console.error('Semantic search error:', err);
-  }
-}
-
-function resetIndustryListAI() {
-  const industryList = document.getElementById('industryList');
-  if (!industryList) return;
-
-  industryList.innerHTML = '';
+  // [CHANGED] Full local list:
   const fullIndustries = [
     "Agricultura, ganadería, caza y servicios relacionados",
     "Silvicultura y explotación forestal",
@@ -812,28 +768,42 @@ function resetIndustryListAI() {
     "Actividades de organizaciones y organismos extraterritoriales"
   ];
 
-  fullIndustries.forEach(ind => {
+  // [CHANGED] Use Fuse to filter
+  const fuse = new Fuse(fullIndustries, {
+    includeScore: true,
+    threshold: 0.3,
+    ignoreLocation: true,
+    minMatchCharLength: 2,
+    distance: 100
+  });
+
+  const fuseResults = fuse.search(query);
+  const filtered = fuseResults.map(r => r.item);
+
+  // Now show the filtered results
+  industryList.innerHTML = '';
+
+  filtered.forEach(item => {
     const div = document.createElement('div');
     div.className = 'industry-item';
-    div.textContent = ind;
-    div.setAttribute('data-value', ind);
+    div.textContent = item;
+    div.setAttribute('data-value', item);
 
-    if (selectedItems.has(ind)) {
+    if (selectedItems.has(item)) {
       div.classList.add('selected');
     }
-    div.addEventListener('click', (event) => {
-      event.stopPropagation();
+    div.addEventListener('click', () => {
       if (selectedPlanGlobal === 'plan1') {
-        if (!selectedItems.has(ind) && selectedItems.size >= 1) {
+        if (!selectedItems.has(item) && selectedItems.size >= 1) {
           showPlanLimitWarning();
           return;
         }
       }
-      if (selectedItems.has(ind)) {
-        selectedItems.delete(ind);
+      if (selectedItems.has(item)) {
+        selectedItems.delete(item);
         div.classList.remove('selected');
       } else {
-        selectedItems.add(ind);
+        selectedItems.add(item);
         div.classList.add('selected');
       }
       updateSelectedIndustries();
@@ -841,6 +811,7 @@ function resetIndustryListAI() {
     industryList.appendChild(div);
   });
 }
+
 
 /************************************************************
  * 11) Searching Ramas => filterRamasJuridicas()
