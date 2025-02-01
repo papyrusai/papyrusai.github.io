@@ -209,15 +209,11 @@ app.get('/profile', async (req, res) => {
             : ''}
           </div>
           <div class="rama-juridica-values">
-            ${doc.rama_juridica && doc.rama_juridica.length > 0
-              ? doc.rama_juridica.map(rama => `<span class="rama-value">${rama}</span>`).join('')
+            ${doc.ramas_juridicas && doc.ramas_juridicas.length > 0
+              ? doc.ramas_juridicas.map(rama => `<span class="rama-value">${rama}</span>`).join('')
               : ''}
           </div>
-          <div class="sub-rama-juridica-values">
-            ${doc.sub_rama_juridica && doc.sub_rama_juridica.length > 0
-              ? doc.sub_rama_juridica.map(subRama => `<span class="sub-rama-value"><i><b>#${subRama}</b></i></span>`).join('')
-              : ''}
-          </div>
+          
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
           <a href="${doc.url_pdf}" target="_blank">Leer más</a>
@@ -416,19 +412,12 @@ app.get('/data', async (req, res) => {
             <!-- Show doc.rama_juridica, doc.sub_rama_juridica if you want -->
           <div class="rama-juridica-values">
             ${
-              doc.rama_juridica && doc.rama_juridica.length > 0
-                ? doc.rama_juridica.map(rama => `<span class="rama-value">${rama}</span>`).join('')
+              doc.ramas_juridicas && doc.ramas_juridicas.length > 0
+                ? doc.ramas_juridicas.map(rama => `<span class="rama-value">${rama}</span>`).join('')
                 : ''
             }
           </div>
-           <!-- Sub-Rama Jurídica -->
-          <div class="sub-rama-juridica-values">
-            ${
-              doc.sub_rama_juridica && doc.sub_rama_juridica.length > 0
-                ? doc.sub_rama_juridica.map(subRama => `<span class="sub-rama-value"><i><b>#${subRama}</i></b></span>`).join('')
-                : ''
-            }
-          </div>
+           
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
           <a href="${doc.url_pdf}" target="_blank">Leer más</a>
