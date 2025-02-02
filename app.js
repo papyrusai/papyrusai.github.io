@@ -58,6 +58,10 @@ function ensureAuthenticated(req, res, next) {
 app.get('/multistep.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'multistep.html'));
 });
+// Route to serve multistep.html only if authenticated
+app.get('/suscripcion.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'suscripcion.html'));
+});
 
 
 // Serve static files from the "public" directory
