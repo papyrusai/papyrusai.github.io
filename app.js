@@ -51,7 +51,8 @@ function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
       return next();
   }
-  res.redirect('/'); // Redirect to the login page if not authenticated
+  req.session.returnTo = req.originalUrl;
+  return res.redirect('/');
 }
 
 // Route to serve multistep.html only if authenticated
@@ -108,8 +109,15 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
       // Find the user in the database
       const existingUser = await usersCollection.findOne({ googleId: req.user.googleId });
 
-      if (existingUser && existingUser.industry_tags && existingUser.industry_tags.length > 0) {
+      if (existingUser) {
         // Redirect to profile if user has selected industry tags
+        
+        if (req.session.returnTo) {
+          const redirectPath = req.session.returnTo;
+          req.session.returnTo = null;  // Clear it
+          return res.redirect(redirectPath);
+        }
+        
         return res.redirect('/profile');
       } else {
         // Redirect to the multistep form if industry tags are not set
