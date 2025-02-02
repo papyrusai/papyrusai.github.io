@@ -109,7 +109,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
       // Find the user in the database
       const existingUser = await usersCollection.findOne({ googleId: req.user.googleId });
 
-      if (existingUser) {
+      if (existingUser && existingUser.industry_tags && existingUser.industry_tags.length > 0) {
         // Redirect to profile if user has selected industry tags
         
         if (req.session.returnTo) {
