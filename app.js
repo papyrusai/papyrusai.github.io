@@ -405,9 +405,6 @@ app.get('/data', async (req, res) => {
 
     // 1) Ensure current user has industry tags
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
-    if (!user.industry_tags || user.industry_tags.length === 0) {
-      return res.status(400).json({ error: 'No industry tags selected' });
-    }
 
     // We'll read the user's sub_rama_map for sub‐rama logic
     const userSubRamaMap = user.sub_rama_map || {};
