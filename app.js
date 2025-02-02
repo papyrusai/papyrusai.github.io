@@ -143,88 +143,158 @@ app.get('/profile', async (req, res) => {
 
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
 
+    // If user hasn't chosen any industry_tags, redirect
     if (!user.industry_tags || user.industry_tags.length === 0) {
       return res.redirect('/select-industries');
     }
 
-    // We safely read possible user.rama_juridicas if it exists
-    const userRamas = user.rama_juridicas || []; // default empty if not found
+    // user.sub_rama_map is the user's preference for each rama -> array of sub-ramas
+    const userSubRamaMap = user.sub_rama_map || {};
 
-    const collections = req.query.collections || ['BOE']; // Default to BOE if no collections are selected
+    const collections = req.query.collections || ['BOE']; // default to BOE if none chosen
 
-    // Calculate the start date for the last three months
+    // Calculate the start date for the last ~month
     const now = new Date();
     const startDate = new Date();
-    startDate.setMonth(now.getMonth() - 1);
+    startDate.setMonth(now.getMonth() - 1); // or -3 if you want 3 months, etc.
 
+    // Query to get any doc from startDate to now
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
-        { $or: [
+        {
+          $or: [
             { mes: { $gt: startDate.getMonth() + 1 } },
-            { mes: startDate.getMonth() + 1, dia: { $gte: startDate.getDate() } }
+            {
+              mes: startDate.getMonth() + 1,
+              dia: { $gte: startDate.getDate() }
+            }
           ]
         }
       ]
     };
 
     const projection = {
-      short_name: 1, divisiones_cnae: 1, resumen: 1,
-      dia: 1, mes: 1, anio: 1, url_pdf: 1,
-      rama_juridica: 1, sub_rama_juridica: 1
+      short_name: 1,
+      divisiones_cnae: 1,
+      resumen: 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      url_pdf: 1,
+      // doc.ramas_juridicas is presumably an object
+      // e.g.: { "Derecho Civil": ["familia","contratos"], ... }
+      ramas_juridicas: 1
     };
 
     let allDocuments = [];
 
-    // Loop through the selected collections and fetch documents from each
+    // Fetch documents from each selected collection
     for (const collectionName of collections) {
       const collection = database.collection(collectionName);
       const documents = await collection.find(query).project(projection).toArray();
       allDocuments = allDocuments.concat(documents);
     }
 
-    // Sort allDocuments by date (anio, mes, dia)
+    // Sort all documents by date descending
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
-      return dateB - dateA;
+      return dateB - dateA; // descending
     });
 
-    // Prepare documentsHtml and chart data
-    let documentsHtml;
-    if (allDocuments.length < 1) {
-      documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
-    } else {
-      documentsHtml = allDocuments.map(doc => `
-        <div class="data-item">
-          <div class="header-row">
-            <div class="id-values">
-            ${doc.short_name}
-            </div>
-            <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
-          </div>
-          <div class="etiquetas-values">
-            ${doc.divisiones_cnae && doc.divisiones_cnae.length > 0
-              ? doc.divisiones_cnae.map(divisiones_cnae => `<span>${divisiones_cnae}</span>`).join('')
-            : ''}
-          </div>
-          <div class="rama-juridica-values">
-            ${doc.ramas_juridicas && doc.ramas_juridicas.length > 0
-              ? doc.ramas_juridicas.map(rama => `<span class="rama-value">${rama}</span>`).join('')
-              : ''}
-          </div>
-          
-          <div class="resumen-label">Resumen</div>
-          <div class="resumen-content">${doc.resumen}</div>
-          <a href="${doc.url_pdf}" target="_blank">Leer más</a>
-        </div>
-      `).join('');
+    // Filter + annotate documents with matched values
+    const filteredDocuments = [];
+    for (const doc of allDocuments) {
+      // 1) Check CNAE intersection
+      let cnaes = doc.divisiones_cnae || [];
+      if (!Array.isArray(cnaes)) cnaes = [cnaes];
+      const matchedCnaes = cnaes.filter(c => user.industry_tags.includes(c));
+
+      // 2) Check sub-rama intersection
+      //    doc.ramas_juridicas is an object: { [ramaName]: [subRama1, subRama2, ...] }
+      let matchedRamas = [];
+      let matchedSubRamas = [];
+
+      if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
+        for (const [ramaName, docSubArr] of Object.entries(doc.ramas_juridicas)) {
+          // user.sub_rama_map[ramaName] is the array of sub-ramas the user wants in this rama
+          const userSubArr = userSubRamaMap[ramaName] || [];
+          // Intersection
+          const intersection = docSubArr.filter(sr => userSubArr.includes(sr));
+          if (intersection.length > 0) {
+            // This doc matches for at least one sub-rama in this rama
+            matchedRamas.push(ramaName);
+            matchedSubRamas = matchedSubRamas.concat(intersection);
+          }
+        }
+      }
+
+      // If either cnae matched or sub-rama matched, we keep it
+      if (matchedCnaes.length > 0 || matchedRamas.length > 0) {
+        // Remove duplicates from matchedRamas, matchedSubRamas
+        matchedRamas = [...new Set(matchedRamas)];
+        matchedSubRamas = [...new Set(matchedSubRamas)];
+
+        // Annotate doc so we can display the coincident values
+        doc.matched_cnaes = matchedCnaes;
+        doc.matched_rama_juridica = matchedRamas;
+        doc.matched_sub_rama_juridica = matchedSubRamas;
+
+        filteredDocuments.push(doc);
+      }
     }
 
-    // Aggregate documents by month for chart data
+    // Now we only display `filteredDocuments`.
+    let documentsHtml;
+    if (filteredDocuments.length < 1) {
+      documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
+    } else {
+      documentsHtml = filteredDocuments.map(doc => {
+        // doc.matched_cnaes => array of coincident CNAEs
+        // doc.matched_rama_juridica => array of coincident ramas
+        // doc.matched_sub_rama_juridica => array of coincident sub-ramas
+
+        const cnaesHtml = doc.matched_cnaes && doc.matched_cnaes.length > 0
+          ? doc.matched_cnaes.map(c => `<span>${c}</span>`).join('')
+          : '';
+
+        const ramasHtml = doc.matched_rama_juridica && doc.matched_rama_juridica.length > 0
+          ? doc.matched_rama_juridica.map(r => `<span class="rama-value">${r}</span>`).join('')
+          : '';
+
+        const subRamasHtml = doc.matched_sub_rama_juridica && doc.matched_sub_rama_juridica.length > 0
+          ? doc.matched_sub_rama_juridica.map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join('')
+          : '';
+
+        return `
+          <div class="data-item">
+            <div class="header-row">
+              <div class="id-values">${doc.short_name}</div>
+              <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+            </div>
+            <div class="etiquetas-values">
+              ${cnaesHtml}
+            </div>
+            <div class="rama-juridica-values">
+              ${ramasHtml}
+            </div>
+            <div class="sub-rama-juridica-values">
+              ${subRamasHtml}
+            </div>
+            
+            <div class="resumen-label">Resumen</div>
+            <div class="resumen-content">${doc.resumen}</div>
+            <a href="${doc.url_pdf}" target="_blank">Leer más</a>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Build chart data
     const documentsByMonth = {};
-    allDocuments.forEach(doc => {
-      const month = `${doc.anio}-${doc.mes.toString().padStart(2, '0')}`;
+    filteredDocuments.forEach(doc => {
+      const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
       if (!documentsByMonth[month]) {
         documentsByMonth[month] = 0;
       }
@@ -236,17 +306,20 @@ app.get('/profile', async (req, res) => {
 
     // Read the profile.html template
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
+
+    // Fill placeholders
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
       .replace('{{email}}', user.email)
       .replace('{{industry_tags}}', user.industry_tags.join(', '))
       .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags))
-      .replace('{{rama_juridicas_json}}', JSON.stringify(userRamas))
+      //.replace('{{rama_juridicas_json}}', JSON.stringify(user.sub_rama_map || {}))
+      .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas))
       .replace('{{boeDocuments}}', documentsHtml)
       .replace('{{months_json}}', JSON.stringify(months))
       .replace('{{counts_json}}', JSON.stringify(counts))
       .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
-      .replace('{{start_date}}', JSON.stringify(startDate)); // Format the start date as YYYY-MM-DD
+      .replace('{{start_date}}', JSON.stringify(startDate));
 
     res.send(profileHtml);
 
