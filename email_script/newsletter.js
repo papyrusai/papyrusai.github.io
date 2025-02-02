@@ -728,7 +728,7 @@ function buildNewsletterHTMLNoMatches(userName, dateString, boeDocs) {
       // Send
       const mailOptions = {
         from: 'Papyrus <info@papyrus-ai.com>',
-        to: '6inimartin6@gmail.com',//user.email,
+        to: user.email,
         subject: `Papyrus Alertas Normativas — ${moment().format('YYYY-MM-DD')}`,
         html: htmlBody,
         attachments: [
