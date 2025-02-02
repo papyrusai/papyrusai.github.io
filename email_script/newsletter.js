@@ -18,18 +18,19 @@ const MONGODB_URI = process.env.DB_URI;
 const DB_NAME = 'papyrus';
 
 // Example: Hard-coded date for testing => 2025-01-24
-const TODAY = moment().utc();
+
+/*const TODAY = moment().utc();
 const anioToday = 2025;
 const mesToday  = 1;
 const diaToday  = 24;
+*/
 
-/*
 // If you want the real "today," comment out the lines above and do:
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
 const diaToday  = TODAY.date();
-*/
+
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
