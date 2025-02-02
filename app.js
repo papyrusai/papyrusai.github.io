@@ -148,17 +148,17 @@ app.get('/profile', async (req, res) => {
       return res.redirect('/select-industries');
     }
 
-    // user.sub_rama_map is the user's preference for each rama -> array of sub-ramas
+    // We'll read user.sub_rama_map for the new sub‐rama logic
     const userSubRamaMap = user.sub_rama_map || {};
 
     const collections = req.query.collections || ['BOE']; // default to BOE if none chosen
 
-    // Calculate the start date for the last ~month
+    // Calculate the start date for the last ~month (adjust as needed)
     const now = new Date();
     const startDate = new Date();
-    startDate.setMonth(now.getMonth() - 1); // or -3 if you want 3 months, etc.
+    startDate.setMonth(now.getMonth() - 1);
 
-    // Query to get any doc from startDate to now
+    // Query to get docs from startDate to now
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
@@ -182,8 +182,7 @@ app.get('/profile', async (req, res) => {
       mes: 1,
       anio: 1,
       url_pdf: 1,
-      // doc.ramas_juridicas is presumably an object
-      // e.g.: { "Derecho Civil": ["familia","contratos"], ... }
+      // doc.ramas_juridicas => { "Derecho Civil": [...], "Derecho Fiscal": [...], etc. }
       ramas_juridicas: 1
     };
 
@@ -206,33 +205,57 @@ app.get('/profile', async (req, res) => {
     // Filter + annotate documents with matched values
     const filteredDocuments = [];
     for (const doc of allDocuments) {
-      // 1) Check CNAE intersection
+      // 1) Check CNAE intersection with user.industry_tags
       let cnaes = doc.divisiones_cnae || [];
       if (!Array.isArray(cnaes)) cnaes = [cnaes];
       const matchedCnaes = cnaes.filter(c => user.industry_tags.includes(c));
 
-      // 2) Check sub-rama intersection
-      //    doc.ramas_juridicas is an object: { [ramaName]: [subRama1, subRama2, ...] }
+      // 2) Check rama/sub‐rama intersection
+      //    doc.ramas_juridicas => { [ramaName]: arrayOfSubRamas }
+      //    user.sub_rama_map => { [ramaName]: arrayOfSubRamasUserWants }
+
       let matchedRamas = [];
       let matchedSubRamas = [];
 
       if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
-        for (const [ramaName, docSubArr] of Object.entries(doc.ramas_juridicas)) {
-          // user.sub_rama_map[ramaName] is the array of sub-ramas the user wants in this rama
-          const userSubArr = userSubRamaMap[ramaName] || [];
-          // Intersection
-          const intersection = docSubArr.filter(sr => userSubArr.includes(sr));
-          if (intersection.length > 0) {
-            // This doc matches for at least one sub-rama in this rama
+        for (const [ramaName, docSubRamas] of Object.entries(doc.ramas_juridicas)) {
+          // If the user doesn't have this rama in sub_rama_map, skip
+          if (!userSubRamaMap[ramaName]) {
+            continue;
+          }
+
+          // userSubRamaMap[ramaName] => the array of sub‐ramas the user wants for this rama
+          const userSubArr = userSubRamaMap[ramaName];
+
+          // docSubRamas => array of sub‐ramas the doc has for ramaName
+          if (!Array.isArray(docSubRamas)) {
+            // If it's not an array, ensure we treat it as one
+            continue;
+          }
+
+          // NEW RULE:
+          // (a) If docSubRamas is empty => match if user is subscribed to that ramaName at all
+          // (b) If docSubRamas is not empty => intersect with userSubArr, must have at least 1
+          if (docSubRamas.length === 0) {
+            // The doc has the rama but no sub‐ramas
+            // => treat as match if the user is subscribed to that rama
+            // i.e. userSubArr is not undefined. (We've already checked that above)
             matchedRamas.push(ramaName);
-            matchedSubRamas = matchedSubRamas.concat(intersection);
+            // (no sub‐ramas to add to matchedSubRamas)
+          } else {
+            // The doc does have sub‐ramas => must have at least one intersection
+            const intersection = docSubRamas.filter(sr => userSubArr.includes(sr));
+            if (intersection.length > 0) {
+              matchedRamas.push(ramaName);
+              matchedSubRamas = matchedSubRamas.concat(intersection);
+            }
           }
         }
       }
 
-      // If either cnae matched or sub-rama matched, we keep it
+      // If either cnae matched or (rama + sub‐rama) matched, we keep the doc
       if (matchedCnaes.length > 0 || matchedRamas.length > 0) {
-        // Remove duplicates from matchedRamas, matchedSubRamas
+        // Remove duplicates from matched arrays
         matchedRamas = [...new Set(matchedRamas)];
         matchedSubRamas = [...new Set(matchedSubRamas)];
 
@@ -291,7 +314,7 @@ app.get('/profile', async (req, res) => {
       }).join('');
     }
 
-    // Build chart data
+    // Build chart data from filteredDocuments
     const documentsByMonth = {};
     filteredDocuments.forEach(doc => {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -313,8 +336,7 @@ app.get('/profile', async (req, res) => {
       .replace('{{email}}', user.email)
       .replace('{{industry_tags}}', user.industry_tags.join(', '))
       .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags))
-      //.replace('{{rama_juridicas_json}}', JSON.stringify(user.sub_rama_map || {}))
-      .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas))
+      .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas || {}))
       .replace('{{boeDocuments}}', documentsHtml)
       .replace('{{months_json}}', JSON.stringify(months))
       .replace('{{counts_json}}', JSON.stringify(counts))

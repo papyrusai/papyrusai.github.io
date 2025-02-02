@@ -148,6 +148,7 @@ document.addEventListener("DOMContentLoaded", function() {
       checkbox.type = 'checkbox';
       checkbox.value = sub;
       checkbox.style.marginRight = '8px'; // Space between checkbox and text
+      checkbox.checked = true; // Make the checkbox checked by default
       checkbox.style.width = '12px'; // Adjust checkbox size
       checkbox.style.height = '12px'; // Adjust checkbox size
       checkbox.style.border = '1px solid black'; // Add border for better visibility
