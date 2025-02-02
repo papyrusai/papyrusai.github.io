@@ -565,6 +565,7 @@ function showSubRamasPage(pageIndex) {
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.checked = true;
       checkbox.value = subName;
 
       const prevVal = subRamaCheckMap[ramaName][subName];
