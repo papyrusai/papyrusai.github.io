@@ -429,7 +429,7 @@ app.get('/data', async (req, res) => {
     // (Note: If your schema uses doc.ramas_juridicas as an object,
     //  this query might not apply. Adjust if needed.)
     if (ramaValue.toLowerCase() !== 'todas') {
-      query.rama_juridica = { $in: [ramaValue] };
+      query.ramas_juridicas = { $in: [ramaValue] };
     }
 
     // If subRamasStr not empty => build an array

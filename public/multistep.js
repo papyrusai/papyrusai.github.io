@@ -1014,8 +1014,12 @@ function resetRamaJuridicaList(selectedValues=[]) {
     "Derecho Procesal-Penal",
     "Derecho Constitucional",
     "Derecho de la UE",
-    "Derecho Internacional Público"
-  ];
+    "Derecho Internacional Público",
+    "Derecho Internacional Privado",
+    "Derecho Penal Económico",
+    "Derecho Informático",
+    "Derecho Ambiental"
+    ];
 
   fullRamas.forEach(rama => {
     const div = document.createElement('div');
