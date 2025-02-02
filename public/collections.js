@@ -350,6 +350,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+      checkbox.checked = true;
       checkbox.value = sub;
       checkbox.style.marginRight = '8px';
 
