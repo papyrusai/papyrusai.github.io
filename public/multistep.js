@@ -306,7 +306,7 @@ function nextPrev(n) {
   // If we are at step 2 => final submission
   if (currentStep === 2 && n > 0) {
     // Must have at least 1 industry
-    
+
    /* if (selectedItems.size === 0) {
       alert('Selecciona al menos una industria antes de continuar');
       return;
@@ -339,12 +339,12 @@ function nextPrev(n) {
     // if plan1 + user was on plan2 => cancel plan2
     if (plan === 'plan1' && currentUserPlan === 'plan2') {
       // enforce free plan limit => 1 sector, 2 ramas
-      if (selectedItems.size > 1) {
+      if (selectedItems.size > 0) {
         showPlanLimitWarning();
         return;
       }
       const ramaJList = document.querySelectorAll('#selectedRamaJuridicaList span');
-      if (ramaJList.length > 2) {
+      if (ramaJList.length > 0) {
         showPlanLimitWarning();
         return;
       }
