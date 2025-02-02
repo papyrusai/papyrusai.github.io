@@ -68,14 +68,6 @@ app.use('/dist', express.static(path.join(__dirname, 'public/dist')));
 
 const uri = process.env.DB_URI;
 
-
-app.get('/select-industries', (req, res) => {
-  if (!req.isAuthenticated()) {
-    return res.redirect('/');
-  }
-  res.sendFile(path.join(__dirname, 'public', 'industryForm.html'));
-});
-
 app.post('/save-industries', async (req, res) => {
   const client = new MongoClient(uri, mongodbOptions);
   try {
@@ -142,11 +134,6 @@ app.get('/profile', async (req, res) => {
     const usersCollection = database.collection("users");
 
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
-
-    // If user hasn't chosen any industry_tags, redirect
-    if (!user.industry_tags || user.industry_tags.length === 0) {
-      return res.redirect('/select-industries');
-    }
 
     // We'll read user.sub_rama_map for the new sub‐rama logic
     const userSubRamaMap = user.sub_rama_map || {};
