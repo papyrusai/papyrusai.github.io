@@ -289,7 +289,7 @@ function nextPrev(n) {
     if (currentStep === 0) {
       const profileType = document.getElementById('selectedProfileType').value.trim();
       if (!profileType) {
-        alert('Selecciona el tipo de usuario o ingresa un valor personalizado');
+        alert('Selecciona el tipo de usuario');
         return;
       }
     }
@@ -306,10 +306,12 @@ function nextPrev(n) {
   // If we are at step 2 => final submission
   if (currentStep === 2 && n > 0) {
     // Must have at least 1 industry
-    if (selectedItems.size === 0) {
+    
+   /* if (selectedItems.size === 0) {
       alert('Selecciona al menos una industria antes de continuar');
       return;
     }
+      */
     const plan = document.getElementById('selectedPlan').value;
     if (!plan) {
       alert('Error: no se detectó plan seleccionado');

@@ -405,6 +405,9 @@ app.get('/data', async (req, res) => {
 
     // 1) Ensure current user has industry tags
     const user = await usersCollection.findOne({ googleId: req.user.googleId });
+    if (!user.industry_tags || user.industry_tags.length === 0) {
+      return res.status(400).json({ error: 'No industry tags selected' });
+    }
 
     // We'll read the user's sub_rama_map for sub‐rama logic
     const userSubRamaMap = user.sub_rama_map || {};
@@ -429,7 +432,7 @@ app.get('/data', async (req, res) => {
     }
 
     // Note: We do NOT directly filter for ramaValue/subRamas,
-    // because doc.ramas_juridicas is an object, not an array field.
+    // because doc.ramas_juridicas is stored as an object, not an array.
 
     // 4) Date range filter (startDate <= doc date <= endDate)
     if (startDate || endDate) {
@@ -467,7 +470,7 @@ app.get('/data', async (req, res) => {
       mes: 1,
       anio: 1,
       url_pdf: 1,
-      // e.g. ramas_juridicas: { "Derecho Civil": ["familia", "contratos"], "Derecho Fiscal": ["IVA"] }
+      // e.g. ramas_juridicas: { "Derecho Civil": [...], "Derecho Fiscal": [...] }
       ramas_juridicas: 1
     };
 
@@ -478,7 +481,7 @@ app.get('/data', async (req, res) => {
       allDocuments = allDocuments.concat(docs);
     }
 
-    // 6) Sort all docs descending by date
+    // 6) Sort descending by date
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
@@ -491,39 +494,44 @@ app.get('/data', async (req, res) => {
       chosenSubRamas = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
     }
 
-    // 8) Post-filter docs based on the subRama logic:
-    // "If doc has a certain rama but no sub-rama => it only matches if the user's sub_rama_map[rama] includes 'genérico'.
-    //  If doc does have sub-ramas => must match at least one of them."
+    // 8) Post-filter docs
+    // The doc is considered a match if:
+    //   (a) doc intersects with user’s CNAEs, or
+    //   (b) doc intersects with user’s ramas_juridicas. Specifically:
+    //       - If doc has no sub-ramas for that rama => user must have "genérico"
+    //       - If doc has sub-ramas => at least 1 overlaps with user
 
     const filteredDocuments = [];
     for (const doc of allDocuments) {
-      // (A) Check doc's CNAEs vs user's industry_tags
+      // (A) Check CNAEs
       let cnaes = doc.divisiones_cnae || [];
       if (!Array.isArray(cnaes)) cnaes = [cnaes];
       const matchedCnaes = cnaes.filter(c => user.industry_tags.includes(c));
 
-      // (B) Check doc.ramas_juridicas object
+      // (B) Check ramas_juridicas
       let matchedRamas = [];
       let matchedSubRamas = [];
 
       if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
         for (const [ramaName, rawSubRamas] of Object.entries(doc.ramas_juridicas)) {
-          // user must be subscribed to this rama => check userSubRamaMap
+          // If user isn't subscribed to this rama => skip
           const userSubArr = userSubRamaMap[ramaName] || null;
-          console.log(userSubArr);
           if (!userSubArr) continue;
 
-          // docSubRamas for this specific rama
+          // Convert docSubRamas to a real array
           const docSubRamas = Array.isArray(rawSubRamas) ? rawSubRamas : [];
-          console.log(docSubRamas);
 
-          // If docSubRamas is empty => match only if userSubArr includes "genérico"
+          // If doc has NO sub-ramas => match only if user has "genérico"
           if (docSubRamas.length === 0) {
             if (userSubArr.includes("genérico")) {
               matchedRamas.push(ramaName);
+              // <-- IMPORTANT:
+              // If user specifically selects "genérico" in the UI, we want doc to pass.
+              // So let's push "genérico" into matchedSubRamas to help the intersection check below.
+              matchedSubRamas.push("genérico");
             }
           } else {
-            // docSubRamas is non-empty => require at least 1 overlap
+            // docSubRamas is non-empty => at least 1 overlap
             const intersection = docSubRamas.filter(sr => userSubArr.includes(sr));
             if (intersection.length > 0) {
               matchedRamas.push(ramaName);
@@ -539,7 +547,7 @@ app.get('/data', async (req, res) => {
         passesChosenRama = matchedRamas.includes(ramaValue);
       }
 
-      // (D) If user specifically chose subRamas in the UI => ensure intersection
+      // (D) If user specifically chose subRamas, ensure at least one intersection
       let passesChosenSubRamas = true;
       if (chosenSubRamas.length > 0) {
         const docIntersection = matchedSubRamas.filter(sr => chosenSubRamas.includes(sr));
@@ -547,14 +555,13 @@ app.get('/data', async (req, res) => {
       }
 
       // (E) Keep the doc if:
-      //   - (matchedCnaes > 0 OR matchedRamas > 0)
+      //   - (matchedCnaes > 0) OR (matchedRamas > 0)
       //   - passesChosenRama
       //   - passesChosenSubRamas
       if ((matchedCnaes.length > 0 || matchedRamas.length > 0) &&
           passesChosenRama &&
           passesChosenSubRamas) {
 
-        // Remove duplicates
         matchedRamas = [...new Set(matchedRamas)];
         matchedSubRamas = [...new Set(matchedSubRamas)];
 
@@ -583,7 +590,7 @@ app.get('/data', async (req, res) => {
 
         const subRamasHtml = (doc.matched_sub_rama_juridica || [])
           .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
-          .join(' '); // space between each sub-rama
+          .join(' ');
 
         return `
           <div class="data-item">
@@ -612,7 +619,7 @@ app.get('/data', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // 11) Return JSON that includes documentsHtml + new months & counts
+    // 11) Return JSON with documentsHtml, months & counts
     res.json({
       documentsHtml,
       months,
