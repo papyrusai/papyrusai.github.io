@@ -510,10 +510,12 @@ app.get('/data', async (req, res) => {
         for (const [ramaName, rawSubRamas] of Object.entries(doc.ramas_juridicas)) {
           // user must be subscribed to this rama => check userSubRamaMap
           const userSubArr = userSubRamaMap[ramaName] || null;
+          console.log(userSubArr);
           if (!userSubArr) continue;
 
           // docSubRamas for this specific rama
           const docSubRamas = Array.isArray(rawSubRamas) ? rawSubRamas : [];
+          console.log(docSubRamas);
 
           // If docSubRamas is empty => match only if userSubArr includes "genérico"
           if (docSubRamas.length === 0) {
