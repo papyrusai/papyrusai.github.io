@@ -183,7 +183,8 @@ app.get('/profile', async (req, res) => {
       anio: 1,
       url_pdf: 1,
       // doc.ramas_juridicas => { "Derecho Civil": [...], "Derecho Fiscal": [...], etc. }
-      ramas_juridicas: 1
+      ramas_juridicas: 1,
+      _id:1
     };
 
     let allDocuments = [];
@@ -309,7 +310,7 @@ app.get('/profile', async (req, res) => {
             
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <a href="${doc.url_pdf}" target="_blank">Leer más</a>
+            <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
           </div>
         `;
       }).join('');
@@ -431,7 +432,7 @@ app.get('/data', async (req, res) => {
       query.divisiones_cnae = industry;
     }
 
-    // NOTE: We do NOT do a direct filter for rama or subRamas here,
+    // NOTE: We do NOT do a direct filter for rama or subRamas,
     // because doc.ramas_juridicas is stored as an object, not an array field.
     // We'll handle it in the post-filter logic below.
 
@@ -494,7 +495,7 @@ app.get('/data', async (req, res) => {
       chosenSubRamas = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
     }
 
-    // 8) Post-filter docs based on userSubRamaMap and the "empty sub-rama means a match" rule
+    // 8) Post-filter docs based on the new "genérico" rule
     const filteredDocuments = [];
     for (const doc of allDocuments) {
       // (A) Check doc's CNAEs vs user.industry_tags
@@ -514,12 +515,15 @@ app.get('/data', async (req, res) => {
 
           // Convert docSubRamas to an array or empty array
           let docSubRamas = Array.isArray(rawSubRamas) ? rawSubRamas : [];
-          
-          // (1) If docSubRamas is empty => match if user is subscribed to that rama
+
+          // (1) If docSubRamas is empty
+          // => match only if userSubArr includes "genérico"
           if (docSubRamas.length === 0) {
-            matchedRamas.push(ramaName);
+            if (userSubArr.includes("genérico")) {
+              matchedRamas.push(ramaName);
+            }
           }
-          // (2) If docSubRamas is non-empty => need intersection
+          // (2) If docSubRamas is non-empty => at least 1 sub-rama must match
           else {
             const intersection = docSubRamas.filter(sr => userSubArr.includes(sr));
             if (intersection.length > 0) {
