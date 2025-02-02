@@ -287,7 +287,9 @@ app.get('/profile', async (req, res) => {
           : '';
 
         const subRamasHtml = doc.matched_sub_rama_juridica && doc.matched_sub_rama_juridica.length > 0
-          ? doc.matched_sub_rama_juridica.map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join('')
+          ? doc.matched_sub_rama_juridica
+          .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join('')
+          .join(' ')
           : '';
 
         return `
