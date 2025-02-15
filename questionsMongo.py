@@ -26,7 +26,7 @@ else:
 # Set up the Gemini model
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')  # Using a more generally available model
+    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
     logging.info("Gemini model initialized successfully")  # Log initialization
 except Exception as e:
     logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
@@ -94,7 +94,7 @@ def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
         5. Evita repetir el texto original.
         6. Haz un análisis crítico.
         7. Incluye el contexto económico general.
-        8. Extensión máxima de 500 palabras.
+        8. Extensión máxima de 300 palabras.
         """
 
     gemini_response = ask_gemini(text, prompt)
