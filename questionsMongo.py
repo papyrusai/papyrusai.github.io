@@ -15,6 +15,8 @@ DB_COLLECTION = os.getenv("DB_COLLECTION")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Ensure this is set in your .env
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in .env file.  Please set it.")
+else:
+     print("GEMINI_API_KEY found in .env file") # check api key
 
 # Set up the Gemini model
 genai.configure(api_key=GEMINI_API_KEY)
@@ -47,7 +49,10 @@ def get_text_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-21
 def ask_gemini(text, prompt):
     """Asks Gemini a question about the text and returns the response."""
     try:
+        print(f"Sending prompt to Gemini: {prompt[:100]}...")  # Log the first 100 chars of the prompt
         response = model.generate_content(f"{prompt}:\n\n{text}")
+        print("Gemini API call successful") #show succesfull call
+
         return response.text
     except Exception as e:
         print(f"Error querying Gemini: {e}")
