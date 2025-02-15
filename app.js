@@ -310,7 +310,7 @@ app.get('/profile', async (req, res) => {
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-            <a href="/norma.html?documentId=${doc._id}">Análisis impacto</a> <!-- Link to the new norma.html page with documentId -->
+           <div> <a href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a> </div> <!-- Link to the new norma.html page with documentId -->
           </div>
         `;
       }).join('');
