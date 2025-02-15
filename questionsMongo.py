@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -15,14 +18,19 @@ DB_COLLECTION = os.getenv("DB_COLLECTION")
 # Gemini API configuration
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Ensure this is set in your .env
 if not GEMINI_API_KEY:
+    logging.error("GEMINI_API_KEY not found in .env file!")  # Use logging.error
     raise ValueError("GEMINI_API_KEY not found in .env file.  Please set it.")
 else:
-    logging.basicConfig(level=logging.INFO)
-    logging.info("GEMINI_API_KEY found in .env file") # check api key
+    logging.info("GEMINI_API_KEY found in .env file")
 
 # Set up the Gemini model
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
+try:
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
+    logging.info("Gemini model initialized successfully")  # Log initialization
+except Exception as e:
+    logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
+    model = None
 
 def connect_to_mongodb():
     """Connects to MongoDB and returns the database and collection objects."""
@@ -30,6 +38,7 @@ def connect_to_mongodb():
         client = pymongo.MongoClient(DB_URI)
         db = client[DB_NAME]
         collection = db[DB_COLLECTION]
+        logging.info(f"Connected to MongoDB database: {DB_NAME}, collection: {DB_COLLECTION}")
         return db, collection
     except pymongo.errors.ConnectionFailure as e:
         logging.error(f"Could not connect to MongoDB: {e}")
@@ -40,6 +49,7 @@ def get_text_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-21
     try:
         document = collection.find_one({document_id: id_value})
         if document and "text" in document:
+            logging.info(f"Document with id '{id_value}' found.")
             return document["text"]
         else:
             logging.warning(f"Document with id '{id_value}' or text field not found.")
@@ -53,7 +63,7 @@ def ask_gemini(text, prompt):
     try:
         logging.info(f"Sending prompt to Gemini: {prompt[:100]}...")  # Log the first 100 chars of the prompt
         response = model.generate_content(f"{prompt}:\n\n{text}")
-        logging.info("Gemini API call successful") #show succesfull call
+        logging.info("Gemini API call successful")  # Log success
 
         return response.text
     except Exception as e:
@@ -62,12 +72,15 @@ def ask_gemini(text, prompt):
 
 def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
     """Main function to connect, retrieve text, and ask Gemini."""
+    logging.info(f"Starting main function with document_id: {document_id}")
     db, collection = connect_to_mongodb()
     if db is None or collection is None:
+        logging.error("Failed to connect to MongoDB")
         return
 
     text = get_text_from_mongodb(collection, id_value=document_id)
     if not text:
+        logging.warning("No text found for document")
         return
 
     prompt = "Realiza un resumen completo sobre las principales implicaciones y consecuencies jurídicas y económicas de este texto para una empresa gallega de la industria textil"
@@ -75,12 +88,16 @@ def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
 
     if gemini_response:
         print(gemini_response)  # Just print the response
+        logging.info("Gemini response printed to standard output")
+
     else:
-        print("Error: Gemini did not respond.") #print error
+        print("Error: Gemini did not respond.")  # print error
+        logging.error("Gemini API did not respond.")
 
 if __name__ == "__main__":
-    # You'll call `main` from Node.js now, passing the document ID
-    # For testing purposes, you can still run it directly:
-    # Example:
-    # main("BOE-A-2025-2144") #Or any other id
-    pass # do nothing if executed directly
+    import sys
+    if len(sys.argv) > 1:
+        document_id = sys.argv[1]
+        main(document_id)
+    else:
+        logging.warning("No document_id provided when running directly.")

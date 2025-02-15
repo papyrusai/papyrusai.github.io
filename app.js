@@ -704,45 +704,48 @@ app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 
 // New endpoint to trigger Python script
 app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
-    const documentId = req.body.documentId;
+  const documentId = req.body.documentId;
 
-    // Path to your Python script
-    const pythonScriptPath = path.join(__dirname, 'questionsMongo.py');
+  // Path to your Python script
+  const pythonScriptPath = path.join(__dirname, 'questionsMongo.py');
 
-    try {
-        // Spawn a new process to execute the Python script
-        const pythonProcess = spawn('python', [pythonScriptPath, documentId]); // Pass documentId as argument
+  console.log(`Analyzing norma with documentId: ${documentId}`); //Log the document ID
 
-        let result = '';
-        let errorOutput = '';
+  try {
+      // Spawn a new process to execute the Python script
+      const pythonProcess = spawn('python', [pythonScriptPath, documentId]); // Pass documentId as argument
 
-        // Capture the output from the Python script
-        pythonProcess.stdout.on('data', (data) => {
-            result += data.toString();
-        });
+      let result = '';
+      let errorOutput = '';
 
-        // Capture errors from the Python script
-        pythonProcess.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-        });
+      // Capture the output from the Python script
+      pythonProcess.stdout.on('data', (data) => {
+          result += data.toString();
+           console.log(`Python stdout: ${data.toString()}`);
+      });
 
-        // Handle process completion
-        pythonProcess.on('close', (code) => {
-            if (code !== 0) {
-                console.error(`Python script exited with code ${code}`, errorOutput);
-                return res.status(500).send(`Python script failed with error: ${errorOutput}`);
-            }
+      // Capture errors from the Python script
+      pythonProcess.stderr.on('data', (data) => {
+          errorOutput += data.toString();
+           console.error(`Python stderr: ${data.toString()}`);
+      });
 
-            // Send the result back to the client
-            res.send(result);
-        });
+      // Handle process completion
+      pythonProcess.on('close', (code) => {
+          if (code !== 0) {
+              console.error(`Python script exited with code ${code}`, errorOutput);
+              return res.status(500).send(`Python script failed with error: ${errorOutput}`);
+          }
 
-    } catch (error) {
-        console.error('Error executing Python script:', error);
-        res.status(500).send('Error executing Python script');
-    }
+          // Send the result back to the client
+          res.send(result);
+      });
+
+  } catch (error) {
+      console.error('Error executing Python script:', error);
+      res.status(500).send('Error executing Python script');
+  }
 });
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
