@@ -26,7 +26,7 @@ else:
 # Set up the Gemini model
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
+    model = genai.GenerativeModel('gemini-pro')  # Using a more generally available model
     logging.info("Gemini model initialized successfully")  # Log initialization
 except Exception as e:
     logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
@@ -85,20 +85,22 @@ def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
 
     prompt = """Realiza un resumen completo sobre las principales implicaciones y consecuencias jurídicas y económicas de este texto para una empresa gallega de la industria textil.
 
-        Por favor, formatea tu respuesta de la siguiente manera:
+        Por favor, formatea tu respuesta como un documento HTML sencillo, incluyendo:
 
-        1.  Utiliza párrafos claros y concisos para cada idea principal.
-        2.  Crea subtítulos descriptivos para cada sección temática.
-        3.  Si es posible y apropiado, utiliza listas con viñetas (bullets) para enumerar puntos importantes o recomendaciones.
-        4. Evita repetir el texto original.
-        5. Haz un análisis crítico.
-        6. Incluye el contexto económico general.
-        7. Extensión máxima de 500 palabras."""  # Added new line at the end
+        1.  Párrafos encerrados en etiquetas `<p>`.
+        2.  Subtítulos de sección encerrados en etiquetas `<h2>`.
+        3.  Listas de puntos importantes encerradas en etiquetas `<ul>` y `<li>`.
+        4. Utiliza etiquetas `<b>` para resaltar palabras importantes.
+        5. Evita repetir el texto original.
+        6. Haz un análisis crítico.
+        7. Incluye el contexto económico general.
+        8. Extensión máxima de 500 palabras.
+        """
 
     gemini_response = ask_gemini(text, prompt)
 
     if gemini_response:
-        print(gemini_response)  # Just print the response
+        print(gemini_response)  # Just print the HTML response
         logging.info("Gemini response printed to standard output")
 
     else:

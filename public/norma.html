@@ -50,21 +50,20 @@
 
     <div id="loader"></div>
     <div id="analysisResult"></div>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const shortNameSpan = document.getElementById('normaShortName');
             const analyzeButton = document.getElementById('analyzeButton');
             const analysisResultDiv = document.getElementById('analysisResult');
             const loaderDiv = document.getElementById('loader');
-
+    
             // Get the document ID from the URL (you can change this if you pass it differently)
             const urlParams = new URLSearchParams(window.location.search);
             const documentId = urlParams.get('documentId');
-
+    
             // Assuming the document ID is passed as a query parameter
             // Example: norma.html?documentId=BOE-A-2025-2144
-
+    
             // Fetch the document details (only the short_name for this example)
             fetch(`/api/norma-details?documentId=${documentId}`) // New endpoint in app.js
                 .then(response => response.json())
@@ -75,11 +74,11 @@
                     console.error('Error fetching norma details:', error);
                     analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
                 });
-
+    
             analyzeButton.addEventListener('click', () => {
                 analysisResultDiv.textContent = ''; // Clear previous results
                 loaderDiv.style.display = 'block'; // Show the loader
-
+    
                 fetch('/api/analyze-norma', { // New endpoint in app.js
                     method: 'POST',
                     headers: {
@@ -90,7 +89,7 @@
                 .then(response => response.text()) // Expecting plain text
                 .then(data => {
                     loaderDiv.style.display = 'none'; // Hide the loader
-                    analysisResultDiv.textContent = data; // Show the result
+                    analysisResultDiv.innerHTML = data; // Set as HTML
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);
