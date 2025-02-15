@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Norma Details</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>Profile</title>
+    <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
+    <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="styles/styles.css" />
+    <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+    <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
+    <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
+    <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
+    <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
     <style>
         #analysisResult {
             margin-top: 20px;
@@ -38,18 +48,44 @@
               font-size: 14px;
               text-decoration: none;
           }
+          .container-norma{
+            margin: 2%;
+          }
     </style>
 </head>
 <body>
-    <h1>Norma Details</h1>
+
+     <!-- Loader overlay -->
+<div id="pageLoaderOverlay">
+    <div class="page-loader"></div>
+  </div>
+
+    <nav class="navbar">
+      <div class="logo">
+          <a href="https://papyrusai.webflow.io/" target="_blank">
+            <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+          </a>
+        </div>
+      <button class="hamburger" onclick="toggleMenu()">☰</button> 
+      <ul class="menu">
+        <ul class="menu">
+          <li><a href="https://papyrus-ai.com/">WEB</a></li>
+          <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
+          <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+          <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+        </ul>
+    </nav>
+
+    <div class="container-norma">
+    <h1>Análisis Normativo</h1>
     <div id="normaDetails">
         <!-- This will be populated with data from MongoDB -->
-        <h2>Short Name: <span id="normaShortName"></span></h2>
+        <h2> <span id="normaShortName"></span></h2>
         <button id="analyzeButton" class="analisis-impacto">Analisis Impacto</button>
     </div>
 
-    <div id="loader"></div>
     <div id="analysisResult"></div>
+</div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const shortNameSpan = document.getElementById('normaShortName');
@@ -77,7 +113,8 @@
     
             analyzeButton.addEventListener('click', () => {
                 analysisResultDiv.textContent = ''; // Clear previous results
-                loaderDiv.style.display = 'block'; // Show the loader
+                //loaderDiv.style.display = 'block'; // Show the loader
+                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; // Show loading icon
     
                 fetch('/api/analyze-norma', { // New endpoint in app.js
                     method: 'POST',
@@ -88,12 +125,15 @@
                 })
                 .then(response => response.text()) // Expecting plain text
                 .then(data => {
-                    loaderDiv.style.display = 'none'; // Hide the loader
-                    analysisResultDiv.innerHTML = data; // Set as HTML
+                    //loaderDiv.style.display = 'none'; // Hide the loader
+                         const htmlContent = data.replace(/^```html\s*|\s*```$/g, '');
+                        analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
+                        analysisResultDiv.innerHTML = htmlContent; // Set as HTML
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);
-                    loaderDiv.style.display = 'none'; // Ensure loader is hidden even on error
+                    //loaderDiv.style.display = 'none'; // Ensure loader is hidden even on error
+                    analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
                     analysisResultDiv.textContent = 'Error analyzing norma.';
                 });
             });
