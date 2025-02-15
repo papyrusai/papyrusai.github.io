@@ -26,7 +26,7 @@ else:
 # Set up the Gemini model
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
+    model = genai.GenerativeModel('gemini-pro')  # Using a more generally available model
     logging.info("Gemini model initialized successfully")  # Log initialization
 except Exception as e:
     logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
@@ -83,7 +83,18 @@ def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
         logging.warning("No text found for document")
         return
 
-    prompt = "Realiza un resumen completo sobre las principales implicaciones y consecuencies jurídicas y económicas de este texto para una empresa gallega de la industria textil"
+    prompt = """Realiza un resumen completo sobre las principales implicaciones y consecuencias jurídicas y económicas de este texto para una empresa gallega de la industria textil.
+
+        Por favor, formatea tu respuesta de la siguiente manera:
+
+        1.  Utiliza párrafos claros y concisos para cada idea principal.
+        2.  Crea subtítulos descriptivos para cada sección temática.
+        3.  Si es posible y apropiado, utiliza listas con viñetas (bullets) para enumerar puntos importantes o recomendaciones.
+        4. Evita repetir el texto original.
+        5. Haz un análisis crítico.
+        6. Incluye el contexto económico general.
+        7. Extensión máxima de 500 palabras."""  # Added new line at the end
+
     gemini_response = ask_gemini(text, prompt)
 
     if gemini_response:
