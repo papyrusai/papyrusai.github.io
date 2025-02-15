@@ -16,11 +16,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Ensure this is set in your .env
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in .env file.  Please set it.")
 else:
-     print("GEMINI_API_KEY found in .env file") # check api key
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logging.info("GEMINI_API_KEY found in .env file") # check api key
 
 # Set up the Gemini model
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
+model = genai.GenerativeModel('gemini-pro')  # Using a more generally available model
 
 def connect_to_mongodb():
     """Connects to MongoDB and returns the database and collection objects."""
@@ -30,7 +32,7 @@ def connect_to_mongodb():
         collection = db[DB_COLLECTION]
         return db, collection
     except pymongo.errors.ConnectionFailure as e:
-        print(f"Could not connect to MongoDB: {e}")
+        logging.error(f"Could not connect to MongoDB: {e}")
         return None, None
 
 def get_text_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-2144"):
@@ -40,22 +42,22 @@ def get_text_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-21
         if document and "text" in document:
             return document["text"]
         else:
-            print(f"Document with id '{id_value}' or text field not found.")
+            logging.warning(f"Document with id '{id_value}' or text field not found.")
             return None
     except Exception as e:
-        print(f"Error retrieving document from MongoDB: {e}")
+        logging.exception(f"Error retrieving document from MongoDB: {e}")
         return None
 
 def ask_gemini(text, prompt):
     """Asks Gemini a question about the text and returns the response."""
     try:
-        print(f"Sending prompt to Gemini: {prompt[:100]}...")  # Log the first 100 chars of the prompt
+        logging.info(f"Sending prompt to Gemini: {prompt[:100]}...")  # Log the first 100 chars of the prompt
         response = model.generate_content(f"{prompt}:\n\n{text}")
-        print("Gemini API call successful") #show succesfull call
+        logging.info("Gemini API call successful") #show succesfull call
 
         return response.text
     except Exception as e:
-        print(f"Error querying Gemini: {e}")
+        logging.exception(f"Error querying Gemini: {e}")
         return None
 
 def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
@@ -74,7 +76,7 @@ def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
     if gemini_response:
         print(gemini_response)  # Just print the response
     else:
-        print("Error: Gemini did not respond.")
+        print("Error: Gemini did not respond.") #print error
 
 if __name__ == "__main__":
     # You'll call `main` from Node.js now, passing the document ID
