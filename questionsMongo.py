@@ -26,7 +26,7 @@ else:
 # Set up the Gemini model
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-pro')  # Using a more generally available model
+    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
     logging.info("Gemini model initialized successfully")  # Log initialization
 except Exception as e:
     logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
