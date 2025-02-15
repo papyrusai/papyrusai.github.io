@@ -22,7 +22,7 @@ else:
 
 # Set up the Gemini model
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')  # Using a more generally available model
+model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
 
 def connect_to_mongodb():
     """Connects to MongoDB and returns the database and collection objects."""
