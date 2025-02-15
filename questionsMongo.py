@@ -2,6 +2,7 @@ import os
 import pymongo
 from dotenv import load_dotenv
 import google.generativeai as genai
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,7 +17,6 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")  # Ensure this is set in your .env
 if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in .env file.  Please set it.")
 else:
-    import logging
     logging.basicConfig(level=logging.INFO)
     logging.info("GEMINI_API_KEY found in .env file") # check api key
 
