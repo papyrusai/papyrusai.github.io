@@ -7,8 +7,9 @@ const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const moment = require('moment');
 const fs = require('fs');
-
-const stripe = require('stripe')(process.env.STRIPE); // Use your Stripe secret key
+const { spawn } = require('child_process'); // Import the spawn function
+const Fuse = require('fuse.js');
+const stripe = require('stripe')(process.env.STRIPE);
 
 //to avoid deprecation error
 const mongodbOptions = {
@@ -63,7 +64,6 @@ app.get('/multistep.html', ensureAuthenticated, (req, res) => {
 app.get('/suscripcion.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'suscripcion.html'));
 });
-
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -310,6 +310,7 @@ app.get('/profile', async (req, res) => {
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+            <a href="/norma.html?documentId=${doc._id}">Análisis impacto</a> <!-- Link to the new norma.html page with documentId -->
           </div>
         `;
       }).join('');
@@ -353,10 +354,6 @@ app.get('/profile', async (req, res) => {
     await client.close();
   }
 });
-
-
-
-const Fuse = require('fuse.js');
 
 app.get('/search-ramas-juridicas', async (req, res) => {
     const query = req.query.q;
@@ -583,7 +580,7 @@ app.get('/data', async (req, res) => {
           .map(div => `<span>${div}</span>`)
           .join('');
 
-        const ramaHtml = (doc.matched_rama_juridica || [])
+          const ramaHtml = (doc.matched_rama_juridica || [])
           .map(r => `<span class="rama-value">${r}</span>`)
           .join('');
 
@@ -604,6 +601,7 @@ app.get('/data', async (req, res) => {
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+            <a href="/norma.html?documentId=${doc._id}">Análisis impacto</a> <!-- Link to the new norma.html page with documentId -->
           </div>
         `;
       }).join('');
@@ -632,7 +630,6 @@ app.get('/data', async (req, res) => {
     await client.close();
   }
 });
-
 
 app.get('/index.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -679,6 +676,71 @@ app.get('/logout', (req, res) => {
   
   // Redirect directly to index.html
   res.redirect('/index.html');
+});
+
+// New endpoint to fetch norma details
+app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
+    const documentId = req.query.documentId;
+
+    const client = new MongoClient(uri, mongodbOptions);
+    try {
+        await client.connect();
+        const database = client.db("papyrus");
+        const collection = database.collection("BOE"); // Assuming "BOE" is the collection
+
+        const document = await collection.findOne({ _id: documentId });
+        if (document) {
+            res.json({ short_name: document.short_name });
+        } else {
+            res.status(404).json({ error: 'Document not found' });
+        }
+    } catch (err) {
+        console.error('Error fetching norma details:', err);
+        res.status(500).json({ error: 'Error fetching norma details' });
+    } finally {
+        await client.close();
+    }
+});
+
+// New endpoint to trigger Python script
+app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
+    const documentId = req.body.documentId;
+
+    // Path to your Python script
+    const pythonScriptPath = path.join(__dirname, 'questionsMongo.py');
+
+    try {
+        // Spawn a new process to execute the Python script
+        const pythonProcess = spawn('python', [pythonScriptPath, documentId]); // Pass documentId as argument
+
+        let result = '';
+        let errorOutput = '';
+
+        // Capture the output from the Python script
+        pythonProcess.stdout.on('data', (data) => {
+            result += data.toString();
+        });
+
+        // Capture errors from the Python script
+        pythonProcess.stderr.on('data', (data) => {
+            errorOutput += data.toString();
+        });
+
+        // Handle process completion
+        pythonProcess.on('close', (code) => {
+            if (code !== 0) {
+                console.error(`Python script exited with code ${code}`, errorOutput);
+                return res.status(500).send(`Python script failed with error: ${errorOutput}`);
+            }
+
+            // Send the result back to the client
+            res.send(result);
+        });
+
+    } catch (error) {
+        console.error('Error executing Python script:', error);
+        res.status(500).send('Error executing Python script');
+    }
 });
 
 
