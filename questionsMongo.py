@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 import logging
 import sys
-import requests  # For downloading the PDF
-import io  # For handling the PDF in memory
-import pypdf  # For extracting text from the PDF
+import requests
+import io
+import pypdf
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -48,10 +48,10 @@ def connect_to_mongodb():
         logging.error(f"Could not connect to MongoDB: {e}")
         return None, None
 
-def get_pdf_url_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-2144"):
-    """Retrieves the PDF URL from the MongoDB document."""
+def get_pdf_url_from_mongodb(collection, id_value): #Removed static properties
+    """Retrieves the PDF URL from the MongoDB document given the document ID ( _id field)."""
     try:
-        document = collection.find_one({document_id: id_value})
+        document = collection.find_one({"_id": id_value}) # Find using _id
         if document and "url_pdf" in document:
             logging.info(f"Document with id '{id_value}' found.")
             return document["url_pdf"]
@@ -97,7 +97,7 @@ def ask_gemini(text, prompt):
         logging.exception(f"Error querying Gemini: {e}")
         return None
 
-def main(document_id="BOE-A-2025-2144", user_prompt="Realiza un resumen"):  # Make document_id an argument
+def main(document_id, user_prompt): # Removed default value
     """Main function to connect, retrieve PDF URL, extract text, and ask Gemini."""
     logging.info(f"Starting main function with document_id: {document_id}")
     db, collection = connect_to_mongodb()
@@ -105,7 +105,7 @@ def main(document_id="BOE-A-2025-2144", user_prompt="Realiza un resumen"):  # Ma
         logging.error("Failed to connect to MongoDB")
         return
 
-    pdf_url = get_pdf_url_from_mongodb(collection, document_id=document_id)
+    pdf_url = get_pdf_url_from_mongodb(collection, id_value=document_id) #Here is where we use user value
     if not pdf_url:
         logging.warning("No PDF URL found for document")
         return
