@@ -705,15 +705,16 @@ app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 // New endpoint to trigger Python script
 app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
   const documentId = req.body.documentId;
+  const userPrompt = req.body.userPrompt; // Get the user's prompt from the request body
 
   // Path to your Python script
   const pythonScriptPath = path.join(__dirname, 'questionsMongo.py');
 
-  console.log(`Analyzing norma with documentId: ${documentId}`); //Log the document ID
+  console.log(`Analyzing norma with documentId: ${documentId}, User Prompt: ${userPrompt}`); //Log the document ID
 
   try {
       // Spawn a new process to execute the Python script
-      const pythonProcess = spawn('python', [pythonScriptPath, documentId]); // Pass documentId as argument
+      const pythonProcess = spawn('python', [pythonScriptPath, documentId, userPrompt]); // Pass documentId and userPrompt as arguments
 
       let result = '';
       let errorOutput = '';

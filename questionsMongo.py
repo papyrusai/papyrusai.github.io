@@ -3,6 +3,7 @@ import pymongo
 from dotenv import load_dotenv
 import google.generativeai as genai
 import logging
+import sys  # Import the sys module
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -26,7 +27,7 @@ else:
 # Set up the Gemini model
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Using a more generally available model
+    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Specify the correct model here
     logging.info("Gemini model initialized successfully")  # Log initialization
 except Exception as e:
     logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
@@ -70,7 +71,7 @@ def ask_gemini(text, prompt):
         logging.exception(f"Error querying Gemini: {e}")
         return None
 
-def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
+def main(document_id="BOE-A-2025-2144", user_prompt="Realiza un resumen"):  # Make document_id an argument
     """Main function to connect, retrieve text, and ask Gemini."""
     logging.info(f"Starting main function with document_id: {document_id}")
     db, collection = connect_to_mongodb()
@@ -83,21 +84,18 @@ def main(document_id="BOE-A-2025-2144"):  # Make document_id an argument
         logging.warning("No text found for document")
         return
 
-    prompt = """Realiza un resumen completo sobre las principales implicaciones y consecuencias jurídicas y económicas de este texto para una empresa gallega de la industria textil.
-
-        Por favor, formatea tu respuesta como un documento HTML sencillo, incluyendo:
+    system_prompt = """Por favor, formatea tu respuesta como un documento HTML sencillo, incluyendo:
 
         1.  Párrafos encerrados en etiquetas `<p>`.
         2.  Subtítulos de sección encerrados en etiquetas `<h2>`.
         3.  Listas de puntos importantes encerradas en etiquetas `<ul>` y `<li>`.
         4. Utiliza etiquetas `<b>` para resaltar palabras importantes.
-        5. Evita repetir el texto original.
-        6. Haz un análisis crítico.
-        7. Incluye el contexto económico general.
-        8. Extensión máxima de 300 palabras.
+         5. Extensón máxima 300 palabras
         """
 
-    gemini_response = ask_gemini(text, prompt)
+    final_prompt = user_prompt + ". " + system_prompt
+
+    gemini_response = ask_gemini(text, final_prompt)
 
     if gemini_response:
         print(gemini_response)  # Just print the HTML response
@@ -111,6 +109,7 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
         document_id = sys.argv[1]
-        main(document_id)
+        user_prompt = sys.argv[2] if len(sys.argv) > 2 else "Realiza un resumen" # added get user prompt
+        main(document_id,user_prompt) # call main
     else:
         logging.warning("No document_id provided when running directly.")
