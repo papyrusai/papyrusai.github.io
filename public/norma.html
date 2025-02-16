@@ -94,6 +94,7 @@
             const analyzeButton = document.getElementById('analyzeButton');
             const analysisResultDiv = document.getElementById('analysisResult');
             const loaderDiv = document.getElementById('loader');
+            const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
             const userPromptInput = document.getElementById('userPrompt');
     
             // Get the document ID from the URL (you can change this if you pass it differently)
@@ -108,10 +109,12 @@
                 .then(response => response.json())
                 .then(data => {
                     shortNameSpan.textContent = data.short_name;
+                    pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
                 })
                 .catch(error => {
                     console.error('Error fetching norma details:', error);
                     analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
+                    pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
                 });
     
               analyzeButton.addEventListener('click', () => {
