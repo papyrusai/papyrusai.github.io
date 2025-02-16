@@ -3,7 +3,10 @@ import pymongo
 from dotenv import load_dotenv
 import google.generativeai as genai
 import logging
-import sys  # Import the sys module
+import sys
+import requests  # For downloading the PDF
+import io  # For handling the PDF in memory
+import pypdf  # For extracting text from the PDF
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -45,18 +48,41 @@ def connect_to_mongodb():
         logging.error(f"Could not connect to MongoDB: {e}")
         return None, None
 
-def get_text_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-2144"):
-    """Retrieves the text from the MongoDB document."""
+def get_pdf_url_from_mongodb(collection, document_id="_id", id_value="BOE-A-2025-2144"):
+    """Retrieves the PDF URL from the MongoDB document."""
     try:
         document = collection.find_one({document_id: id_value})
-        if document and "text" in document:
+        if document and "url_pdf" in document:
             logging.info(f"Document with id '{id_value}' found.")
-            return document["text"]
+            return document["url_pdf"]
         else:
-            logging.warning(f"Document with id '{id_value}' or text field not found.")
+            logging.warning(f"Document with id '{id_value}' or url_pdf field not found.")
             return None
     except Exception as e:
         logging.exception(f"Error retrieving document from MongoDB: {e}")
+        return None
+
+def download_and_extract_text_from_pdf(pdf_url):
+    """Downloads a PDF from a URL and extracts the text content."""
+    try:
+        logging.info(f"Downloading PDF from: {pdf_url}")
+        response = requests.get(pdf_url, stream=True)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        pdf_file = io.BytesIO(response.content)
+        reader = pypdf.PdfReader(pdf_file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+        logging.info("Successfully extracted text from PDF.")
+        return text
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error downloading PDF: {e}")
+        return None
+    except pypdf.errors.PdfReadError as e:
+        logging.error(f"Error reading PDF: {e}")
+        return None
+    except Exception as e:
+        logging.exception(f"Error processing PDF: {e}")
         return None
 
 def ask_gemini(text, prompt):
@@ -72,16 +98,21 @@ def ask_gemini(text, prompt):
         return None
 
 def main(document_id="BOE-A-2025-2144", user_prompt="Realiza un resumen"):  # Make document_id an argument
-    """Main function to connect, retrieve text, and ask Gemini."""
+    """Main function to connect, retrieve PDF URL, extract text, and ask Gemini."""
     logging.info(f"Starting main function with document_id: {document_id}")
     db, collection = connect_to_mongodb()
     if db is None or collection is None:
         logging.error("Failed to connect to MongoDB")
         return
 
-    text = get_text_from_mongodb(collection, id_value=document_id)
+    pdf_url = get_pdf_url_from_mongodb(collection, document_id=document_id)
+    if not pdf_url:
+        logging.warning("No PDF URL found for document")
+        return
+
+    text = download_and_extract_text_from_pdf(pdf_url)
     if not text:
-        logging.warning("No text found for document")
+        logging.error("Failed to extract text from PDF")
         return
 
     system_prompt = """No alucines, toda información que contestes debe estar incluida en el documento. Por favor cita los artículos de referencia del documento relacionados con la cuestión jurídica solicitada. Por favor, formatea tu respuesta como un documento HTML sencillo, incluyendo:
