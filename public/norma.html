@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <title>Profile</title>
-    <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+    <link rel="icon" href="assets\papyrus_logo.png" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
     <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
@@ -38,7 +38,7 @@
             100% { transform: rotate(360deg); }
         }
         .analisis-impacto {
-              background-color: #83a300;
+              background-color: #092534;
               color: white;
               padding: 5px 10px;
               border: none;
@@ -51,6 +51,45 @@
           .container-norma{
             margin: 2%;
           }
+          /* Style the input field */
+          .user-prompt {
+            width: 80%;
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 15px;
+            box-sizing: border-box;
+            font-size: 16px;
+            font-family: 'Heebo', sans-serif;
+            text-align: left;
+            resize: vertical; /* This enables vertical resizing */
+            overflow: auto;
+            min-height: 100px;
+            /* height: auto;
+            white-space: pre-wrap; /* Allows line breaks within the text area */
+            word-break: break-word;/*Break on new word, not letter*/
+          }
+
+
+        /* Add focus style */
+        .user-prompt:focus {
+          outline: none;
+          border-color: #83a300;
+          box-shadow: 0 0 5px rgba(131, 163, 0, 0.5);
+        }
+
+        /* Style the container for the input and button */
+        .input-button-container {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start; /* Aligns items to the start (left) */
+          width: 100%;
+          margin-bottom: 20px;
+          /*padding-left: 2%; *//* Matches the left margin of the input */
+        }
+        .input-button-container > * {
+            margin-bottom: 10px; /* Adds spacing between elements */
+        }
+
     </style>
 </head>
 <body>
@@ -77,15 +116,17 @@
     </nav>
 
     <div class="container-norma">
-    <h1>Análisis Normativo</h1>
+    <h1 style="padding-left:0%">Análisis Normativo</h1>
     <div id="normaDetails">
         <!-- This will be populated with data from MongoDB -->
         <h2> <span id="normaShortName"></span></h2>
-           <label for="userPrompt">Custom Prompt:</label>
-        <input type="text" id="userPrompt" name="userPrompt" value= "realiza un resumen" placeholder="Enter your prompt here">
-        <button id="analyzeButton" class="analisis-impacto">Analisis Impacto</button>
-    </div>
-
+           <!-- <label for="userPrompt">Custom Prompt:</label> --> </div>
+             <div class="input-button-container">
+  <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Enter your prompt here">Realiza un resumen</textarea>
+    <div>
+    <button id="analyzeButton" class="analisis-impacto">Analizar Impacto</button>
+</div>
+</div>
     <div id="analysisResult"></div>
 </div>
     <script>
@@ -121,6 +162,7 @@
                 analysisResultDiv.textContent = ''; // Clear previous results
                 //loaderDiv.style.display = 'block'; // Show the loader
                 analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; // Show loading icon
+                analyzeButton.style.backgroundColor = 'transparent';
 
                 const userPrompt = userPromptInput.value;
 
@@ -136,12 +178,14 @@
                     //loaderDiv.style.display = 'none'; // Hide the loader
                          const htmlContent = data.replace(/^```html\s*|\s*```$/g, '');
                         analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
+                        analyzeButton.style.backgroundColor = '#83a300';
                         analysisResultDiv.innerHTML = htmlContent; // Set as HTML
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);
                     //loaderDiv.style.display = 'none'; // Ensure loader is hidden even on error
                     analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
+                      analyzeButton.style.backgroundColor = '#092534';
                     analysisResultDiv.textContent = 'Error analyzing norma.';
                 });
             });

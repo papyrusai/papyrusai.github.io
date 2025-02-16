@@ -84,7 +84,7 @@ def main(document_id="BOE-A-2025-2144", user_prompt="Realiza un resumen"):  # Ma
         logging.warning("No text found for document")
         return
 
-    system_prompt = """Por favor, formatea tu respuesta como un documento HTML sencillo, incluyendo:
+    system_prompt = """No alucines, toda información que contestes debe estar incluida en el documento. Por favor, formatea tu respuesta como un documento HTML sencillo, incluyendo:
 
         1.  Párrafos encerrados en etiquetas `<p>`.
         2.  Subtítulos de sección encerrados en etiquetas `<h2>`.
