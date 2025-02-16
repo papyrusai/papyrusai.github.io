@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <title>Profile</title>
-    <link rel="icon" href="assets\papyrus_logo.png" type="image/png">
+    <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
     <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
@@ -67,7 +67,8 @@
             /* height: auto;
             white-space: pre-wrap; /* Allows line breaks within the text area */
             word-break: break-word;/*Break on new word, not letter*/
-          }
+             spellcheck: false; /* Disable spellcheck */
+        }
 
 
         /* Add focus style */
@@ -122,7 +123,7 @@
         <h2> <span id="normaShortName"></span></h2>
            <!-- <label for="userPrompt">Custom Prompt:</label> --> </div>
              <div class="input-button-container">
-  <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Enter your prompt here">Realiza un resumen</textarea>
+  <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Enter your prompt here" spellcheck="false">Realiza un resumen</textarea>
     <div>
     <button id="analyzeButton" class="analisis-impacto">Analizar Impacto</button>
 </div>
@@ -159,13 +160,12 @@
                 });
     
               analyzeButton.addEventListener('click', () => {
-                analysisResultDiv.textContent = ''; // Clear previous results
-                loaderDiv.style.display = 'block'; // Show the loader
-                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; // Show loading icon
-                analyzeButton.style.backgroundColor = 'transparent';
+                 analysisResultDiv.textContent = '';
+                 const userPrompt = userPromptInput.value;
 
-                const userPrompt = userPromptInput.value;
+                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...';// Show loading icon
 
+                analyzeButton.disabled = true;
                 fetch('/api/analyze-norma', { // New endpoint in app.js
                     method: 'POST',
                     headers: {
@@ -175,18 +175,20 @@
                 })
                 .then(response => response.text()) // Expecting plain text
                 .then(data => {
-                    //loaderDiv.style.display = 'none'; // Hide the loader
-                         const htmlContent = data.replace(/^```html\s*|\s*```$/g, '');
-                        analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
-                        analyzeButton.style.backgroundColor = '#83a300';
-                        analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                    //Reactivate and change Analizar Impacto button
+                    analyzeButton.disabled = false;
+                    analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
+                    // Set and change again to initial css properties
+                    analyzeButton.style.backgroundColor = '#83a300';
+                    analysisResultDiv.innerHTML = data; // Set as HTML
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);
-                    //loaderDiv.style.display = 'none'; // Ensure loader is hidden even on error
-                    analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
-                      analyzeButton.style.backgroundColor = '#092534';
+                      analyzeButton.disabled = false;
+                    analyzeButton.innerHTML = 'Analizar Impacto'; // Revert button text
                     analysisResultDiv.textContent = 'Error analyzing norma.';
+
+                    analyzeButton.style.backgroundColor = '#092534';
                 });
             });
         });
