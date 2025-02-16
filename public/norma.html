@@ -1,197 +1,60 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <title>Profile</title>
-    <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
-    <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
-    <link rel="stylesheet" type="text/css" href="styles/styles.css" />
-    <link rel="stylesheet" type="text/css" href="styles/menu.css" />
-    <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
-    <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
-    <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
-    <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
-    <style>
-        #analysisResult {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const shortNameSpan = document.getElementById('normaShortName');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const analysisResultDiv = document.getElementById('analysisResult');
+        const loaderDiv = document.getElementById('loader');
+        const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
+        const userPromptInput = document.getElementById('userPrompt');
 
-        #loader {
-            display: none; /* Hidden by default */
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 2s linear infinite;
-        }
+        // Get the document ID from the URL (you can change this if you pass it differently)
+        const urlParams = new URLSearchParams(window.location.search);
+        const documentId = urlParams.get('documentId');
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .analisis-impacto {
-              background-color: #092534;
-              color: white;
-              padding: 5px 10px;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-              margin-top: 2%;
-              font-size: 14px;
-              text-decoration: none;
-          }
-          .container-norma{
-            margin: 2%;
-          }
-          /* Style the input field */
-          .user-prompt {
-            width: 80%;
-            padding: 10px 15px;
-            border: 1px solid #ccc;
-            border-radius: 15px;
-            box-sizing: border-box;
-            font-size: 16px;
-            font-family: 'Heebo', sans-serif;
-            text-align: left;
-            resize: vertical; /* This enables vertical resizing */
-            overflow: auto;
-            min-height: 100px;
-            /* height: auto;
-            white-space: pre-wrap; /* Allows line breaks within the text area */
-            word-break: break-word;/*Break on new word, not letter*/
-             spellcheck: false; /* Disable spellcheck */
-        }
+        // Assuming the document ID is passed as a query parameter
+        // Example: norma.html?documentId=BOE-A-2025-2144
 
+        // Fetch the document details (only the short_name for this example)
+        fetch(`/api/norma-details?documentId=${documentId}`) // New endpoint in app.js
+            .then(response => response.json())
+            .then(data => {
+                shortNameSpan.textContent = data.short_name;
+                pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
+            })
+            .catch(error => {
+                console.error('Error fetching norma details:', error);
+                analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
+                pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
+            });
 
-        /* Add focus style */
-        .user-prompt:focus {
-          outline: none;
-          border-color: #83a300;
-          box-shadow: 0 0 5px rgba(131, 163, 0, 0.5);
-        }
+          analyzeButton.addEventListener('click', () => {
+            analysisResultDiv.textContent = ''; // Clear previous results
+            //loaderDiv.style.display = 'block'; // Show the loader
+            analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
+            analyzeButton.style.backgroundColor = 'transparent';
 
-        /* Style the container for the input and button */
-        .input-button-container {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start; /* Aligns items to the start (left) */
-          width: 100%;
-          margin-bottom: 20px;
-          /*padding-left: 2%; *//* Matches the left margin of the input */
-        }
-        .input-button-container > * {
-            margin-bottom: 10px; /* Adds spacing between elements */
-        }
+            const userPrompt = userPromptInput.value;
 
-    </style>
-</head>
-<body>
-
-     <!-- Loader overlay -->
-<div id="pageLoaderOverlay">
-    <div class="page-loader"></div>
-  </div>
-
-    <nav class="navbar">
-      <div class="logo">
-          <a href="https://papyrusai.webflow.io/" target="_blank">
-            <img src="assets/papyrus_app.png" alt="Papyrus Logo">
-          </a>
-        </div>
-      <button class="hamburger" onclick="toggleMenu()">☰</button> 
-      <ul class="menu">
-        <ul class="menu">
-          <li><a href="https://papyrus-ai.com/">WEB</a></li>
-          <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
-          <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
-          <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
-        </ul>
-    </nav>
-
-    <div class="container-norma">
-    <h1 style="padding-left:0%">Análisis Normativo</h1>
-    <div id="normaDetails">
-        <!-- This will be populated with data from MongoDB -->
-        <h2> <span id="normaShortName"></span></h2>
-           <!-- <label for="userPrompt">Custom Prompt:</label> --> </div>
-             <div class="input-button-container">
-  <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Enter your prompt here" spellcheck="false">Realiza un resumen</textarea>
-    <div>
-    <button id="analyzeButton" class="analisis-impacto">Analizar Impacto</button>
-</div>
-</div>
-    <div id="analysisResult"></div>
-</div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const shortNameSpan = document.getElementById('normaShortName');
-            const analyzeButton = document.getElementById('analyzeButton');
-            const analysisResultDiv = document.getElementById('analysisResult');
-            const loaderDiv = document.getElementById('loader');
-            const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
-            const userPromptInput = document.getElementById('userPrompt');
-    
-            // Get the document ID from the URL (you can change this if you pass it differently)
-            const urlParams = new URLSearchParams(window.location.search);
-            const documentId = urlParams.get('documentId');
-    
-            // Assuming the document ID is passed as a query parameter
-            // Example: norma.html?documentId=BOE-A-2025-2144
-    
-            // Fetch the document details (only the short_name for this example)
-            fetch(`/api/norma-details?documentId=${documentId}`) // New endpoint in app.js
-                .then(response => response.json())
-                .then(data => {
-                    shortNameSpan.textContent = data.short_name;
-                    pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
-                })
-                .catch(error => {
-                    console.error('Error fetching norma details:', error);
-                    analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
-                    pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
-                });
-    
-              analyzeButton.addEventListener('click', () => {
-                 analysisResultDiv.textContent = '';
-                 const userPrompt = userPromptInput.value;
-
-                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...';// Show loading icon
-
-                analyzeButton.disabled = true;
-                fetch('/api/analyze-norma', { // New endpoint in app.js
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt })
-                })
-                .then(response => response.text()) // Expecting plain text
-                .then(data => {
-                    //Reactivate and change Analizar Impacto button
-                    analyzeButton.disabled = false;
+            fetch('/api/analyze-norma', { // New endpoint in app.js
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt })
+            })
+            .then(response => response.text()) // Expecting plain text
+            .then(data => {
+                     const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
                     analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
-                    // Set and change again to initial css properties
                     analyzeButton.style.backgroundColor = '#83a300';
-                    analysisResultDiv.innerHTML = data; // Set as HTML
-                })
-                .catch(error => {
-                    console.error('Error analyzing norma:', error);
-                      analyzeButton.disabled = false;
-                    analyzeButton.innerHTML = 'Analizar Impacto'; // Revert button text
-                    analysisResultDiv.textContent = 'Error analyzing norma.';
-
-                    analyzeButton.style.backgroundColor = '#092534';
-                });
+                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+            })
+            .catch(error => {
+                console.error('Error analyzing norma:', error);
+                analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
+                  analyzeButton.style.backgroundColor = '#092534';
+                analysisResultDiv.textContent = 'Error analyzing norma.';
             });
         });
-    </script>
-</body>
-</html>
+    });
+</script>
