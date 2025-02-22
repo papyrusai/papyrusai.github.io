@@ -318,7 +318,7 @@ function nextPrev(n) {
       alert('Error: no se detectó plan seleccionado');
       return;
     }
-    //const profileType = document.getElementById('selectedProfileType').value.trim();
+    const profileType = document.getElementById('userTypeSelect').value.trim();
     
 
     // [CHANGED] If plan2 is free => handleFreePlanSubmission with no limit

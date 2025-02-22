@@ -67,57 +67,57 @@
         <form id="multiStepForm"  style="display: none;">
             <!-- Step 1: Perfil Usuario -->
                         <!-- Replace the current Step 1 block with this updated version -->
-            <div class="form-step active">
-                <div class="step-container">
-                <div class="progress-bar">
-                    <div class="progress" id="progress"></div>
-                    <div class="progress-indicator">
-                    <span class="step active">1. Usuario</span>
-                    <span class="step active">2. Plan</span>
-                    <span class="step active">3. Personalización</span>
-                    </div>
-                </div>
-                <h1>Tipo de Usuario</h1>
-                <p class="subheading">Selecciona el tipo de usuario</p>
-                <select id="userTypeSelect" name="userType">
-                    <option value="">-- Selecciona una opción --</option>
-                    <option value="Fondo de inversión">Fondo de inversión</option>
-                    <option value="Despacho >50 empleados">Despacho &gt;50 empleados</option>
-                    <option value="Despacho <50 empleados">Despacho &lt;50 empleados</option>
-                    <option value="Empresa regulada">Empresa regulada</option>
-                    <option value="Agencia compliance">Agencia compliance</option>
-                </select>
-            
-                <h2>Seleccionar Cobertura Legal</h2>
-                <div class="cobertura-legal-section">
-                    <div class="cobertura-legal-field">
-                    <label for="nacionalEuropeoSelect">Nacional y Europeo</label>
-                    <select id="nacionalEuropeoSelect" name="cobertura_legal[nacionalEuropeo][]" multiple>
-                        <option value="BOE">BOE</option>
-                        <option value="DOUE">DOUE</option>
-                    </select>
-                    </div>
-                    <div class="cobertura-legal-field">
-                    <label for="autonomicoSelect">Autonómico</label>
-                    <select id="autonomicoSelect" name="cobertura_legal[autonomico][]" multiple>
-                        <option value="BOA">BOA</option>
-                        <option value="BOCM">BOCM</option>
-                        <option value="BOCYL">BOCYL</option>
-                        <option value="BOE">BOE</option>
-                        <option value="BOJA">BOJA</option>
-                        <option value="BOPV">BOPV</option>
-                    </select>
-                    </div>
-                    <div class="cobertura-legal-field">
-                    <label for="reguladoresSelect">Reguladores</label>
-                    <select id="reguladoresSelect" name="cobertura_legal[reguladores][]" multiple>
-                        <option value="CNMV">CNMV</option>
-                    </select>
-                    </div>
-                </div>
-                </div>
-            </div>
-  
+                        <div class="form-step active">
+                            <div class="step-container">
+                              <div class="progress-bar">
+                                <div class="progress" id="progress"></div>
+                                <div class="progress-indicator">
+                                  <span class="step active">1. Usuario</span>
+                                  <span class="step active">2. Plan</span>
+                                  <span class="step active">3. Personalización</span>
+                                </div>
+                              </div>
+                              <h1>Tipo de Usuario</h1>
+                              <p class="subheading">Selecciona el tipo de usuario</p>
+                              <select id="userTypeSelect" name="userType" class="styled-dropdown">
+                                <option value="">-- Selecciona una opción --</option>
+                                <option value="Fondo de inversión">Fondo de inversión</option>
+                                <option value="Despacho >50 empleados">Despacho &gt;50 empleados</option>
+                                <option value="Despacho <50 empleados">Despacho &lt;50 empleados</option>
+                                <option value="Empresa regulada">Empresa regulada</option>
+                                <option value="Agencia compliance">Agencia compliance</option>
+                              </select>
+                          
+                              <h2>Seleccionar Cobertura Legal</h2>
+                              <div class="cobertura-legal-section">
+                                <div class="cobertura-legal-field">
+                                  <label for="nacionalEuropeoSelect">Nacional y Europeo</label>
+                                  <select id="nacionalEuropeoSelect" name="cobertura_legal[nacionalEuropeo][]" multiple class="styled-dropdown">
+                                    <option value="BOE">BOE</option>
+                                    <option value="DOUE">DOUE</option>
+                                  </select>
+                                </div>
+                                <div class="cobertura-legal-field">
+                                  <label for="autonomicoSelect">Autonómico</label>
+                                  <select id="autonomicoSelect" name="cobertura_legal[autonomico][]" multiple class="styled-dropdown">
+                                    <option value="BOA">BOA</option>
+                                    <option value="BOCM">BOCM</option>
+                                    <option value="BOCYL">BOCYL</option>
+                                    <option value="BOE">BOE</option>
+                                    <option value="BOJA">BOJA</option>
+                                    <option value="BOPV">BOPV</option>
+                                  </select>
+                                </div>
+                                <div class="cobertura-legal-field">
+                                  <label for="reguladoresSelect">Reguladores</label>
+                                  <select id="reguladoresSelect" name="cobertura_legal[reguladores][]" multiple class="styled-dropdown">
+                                    <option value="CNMV">CNMV</option>
+                                  </select>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
 
 
              <!-- Step 3: Cobertura Legal -->

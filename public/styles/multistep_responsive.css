@@ -9,7 +9,25 @@ body {
     font-size: clamp(14px, 1.2vw, 18px);
 }
 
-  /* loader style */
+  
+/* Style for the new dropdowns to mimic the industry list container/items */
+.styled-dropdown {
+    padding: clamp(5px, 1vh, 7px);
+    font-size: clamp(10px, 1.2vw, 12px);
+    border: 1px solid #092534;
+    background-color: #fbf7ef;
+    border-radius: 5px;
+    width: 100%;
+    box-sizing: border-box;
+    color: #092534;
+    /* Optional: Remove default appearance to have a more uniform look */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+
+/* loader style */
 /* Full-page loader overlay */
 #pageLoaderOverlay {
     position: fixed;
