@@ -77,8 +77,9 @@
                                   <span class="step active">3. Personalización</span>
                                 </div>
                               </div>
-                              <h1>Tipo de Usuario</h1>
-                              <p class="subheading">Selecciona el tipo de usuario</p>
+                              <h1>Información de Usuario</h1>
+                              <h2 style="margin-top:5%">Perfil</h2>
+                              <div class="step1-item">Tipo de Empresa</div>
                               <select id="userTypeSelect" name="userType" class="styled-dropdown">
                                 <option value="">-- Selecciona una opción --</option>
                                 <option value="Fondo de inversión">Fondo de inversión</option>
@@ -88,38 +89,72 @@
                                 <option value="Agencia compliance">Agencia compliance</option>
                               </select>
                           
-                              <h2>Seleccionar Cobertura Legal</h2>
-                              <div class="cobertura-legal-section">
-                                <div class="cobertura-legal-field">
-                                  <label for="nacionalEuropeoSelect">Nacional y Europeo</label>
-                                  <select id="nacionalEuropeoSelect" name="cobertura_legal[nacionalEuropeo][]" multiple class="styled-dropdown">
-                                    <option value="BOE">BOE</option>
-                                    <option value="DOUE">DOUE</option>
-                                  </select>
+                              <h2 style="margin-top:5%">Cobertura Legal</h2>
+                              
+                              <!-- Custom multi-select for "Nacional y Europeo" -->
+                              <div class="step1-item">1. Nacional y Europeo</div>
+                              <div class="custom-multiselect" id="nacionalEuropeoCustom" data-input-id="nacionalEuropeoInput" data-display-id="nacionalEuropeoDisplay">
+                                <div class="selected-options styled-dropdown" onclick="toggleDropdown('nacionalEuropeoDropdown')">
+                                  <span id="nacionalEuropeoDisplay">Selecciona opciones...</span>
+                                  <i class="fa fa-caret-down"></i>
                                 </div>
-                                <div class="cobertura-legal-field">
-                                  <label for="autonomicoSelect">Autonómico</label>
-                                  <select id="autonomicoSelect" name="cobertura_legal[autonomico][]" multiple class="styled-dropdown">
-                                    <option value="BOA">BOA</option>
-                                    <option value="BOCM">BOCM</option>
-                                    <option value="BOCYL">BOCYL</option>
-                                    <option value="BOE">BOE</option>
-                                    <option value="BOJA">BOJA</option>
-                                    <option value="BOPV">BOPV</option>
-                                  </select>
+                                <div class="options-container" id="nacionalEuropeoDropdown">
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOE"> BOE
+                                  </label>
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="DOUE"> DOUE
+                                  </label>
                                 </div>
-                                <div class="cobertura-legal-field">
-                                  <label for="reguladoresSelect">Reguladores</label>
-                                  <select id="reguladoresSelect" name="cobertura_legal[reguladores][]" multiple class="styled-dropdown">
-                                    <option value="CNMV">CNMV</option>
-                                  </select>
+                                <input type="hidden" name="cobertura_legal[nacionalEuropeo][]" id="nacionalEuropeoInput">
+                              </div>
+                              
+                              <!-- Custom multi-select for "Autonómico" -->
+                               <div class="step1-item">2. Autonómico</div>
+                              <div class="custom-multiselect" id="autonomicoCustom" data-input-id="autonomicoInput" data-display-id="autonomicoDisplay">
+                                <div class="selected-options styled-dropdown" onclick="toggleDropdown('autonomicoDropdown')">
+                                  <span id="autonomicoDisplay">Selecciona opciones...</span>
+                                  <i class="fa fa-caret-down"></i>
                                 </div>
+                                <div class="options-container" id="autonomicoDropdown">
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOA"> BOA
+                                  </label>
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOCM"> BOCM
+                                  </label>
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOCYL"> BOCYL
+                                  </label>
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOE"> BOE
+                                  </label>
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOJA"> BOJA
+                                  </label>
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="BOPV"> BOPV
+                                  </label>
+                                </div>
+                                <input type="hidden" name="cobertura_legal[autonomico][]" id="autonomicoInput">
+                              </div>
+                              
+                              <!-- Custom multi-select for "Reguladores" -->
+                              <div class="step1-item">3. Reguladores</div>
+                              <div class="custom-multiselect" id="reguladoresCustom" data-input-id="reguladoresInput" data-display-id="reguladoresDisplay">
+                                <div class="selected-options styled-dropdown" onclick="toggleDropdown('reguladoresDropdown')">
+                                  <span id="reguladoresDisplay">Selecciona opciones...</span>
+                                  <i class="fa fa-caret-down"></i>
+                                </div>
+                                <div class="options-container" id="reguladoresDropdown">
+                                  <label class="checkbox-option">
+                                    <input type="checkbox" value="CNMV"> CNMV
+                                  </label>
+                                </div>
+                                <input type="hidden" name="cobertura_legal[reguladores][]" id="reguladoresInput">
                               </div>
                             </div>
                           </div>
-                          
-
-
              <!-- Step 3: Cobertura Legal -->
              <div class="form-step">
                 <div class="step-container">
@@ -437,6 +472,51 @@
         }
     });
     </script>
+
+    <!-- Include the following JavaScript (or merge it into your existing JS file) -->
+<script>
+    function toggleDropdown(dropdownId) {
+      var dropdown = document.getElementById(dropdownId);
+      dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+    }
+    
+    function updateMultiSelect(multiselectId, inputId, displayId) {
+      var container = document.getElementById(multiselectId);
+      var input = document.getElementById(inputId);
+      var display = document.getElementById(displayId);
+      var checkboxes = container.querySelectorAll('.checkbox-option input[type="checkbox"]');
+      var selected = [];
+      checkboxes.forEach(function(checkbox) {
+        if (checkbox.checked) {
+          selected.push(checkbox.value);
+          checkbox.parentElement.classList.add('selected');
+        } else {
+          checkbox.parentElement.classList.remove('selected');
+        }
+      });
+      input.value = JSON.stringify(selected);
+      display.innerText = selected.length > 0 ? selected.join(', ') : "Selecciona opciones...";
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      var multiSelects = document.querySelectorAll('.custom-multiselect');
+      multiSelects.forEach(function(multiselect) {
+        var dropdown = multiselect.querySelector('.options-container');
+        var display = multiselect.querySelector('.selected-options span');
+        document.addEventListener('click', function(event) {
+          if (!multiselect.contains(event.target)) {
+            dropdown.style.display = 'none';
+          }
+        });
+        var checkboxes = multiselect.querySelectorAll('.checkbox-option input[type="checkbox"]');
+        checkboxes.forEach(function(checkbox) {
+          checkbox.addEventListener('change', function() {
+            updateMultiSelect(multiselect.id, multiselect.dataset.inputId, multiselect.dataset.displayId);
+          });
+        });
+      });
+    });
+  </script>
 </body>
 </html>
  

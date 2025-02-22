@@ -25,6 +25,73 @@ body {
     -moz-appearance: none;
     appearance: none;
   }
+  .custom-multiselect {
+    position: relative;
+    width: 100%;
+    margin-bottom: 1em;
+  }
+  .step1-item{
+    margin: 1% 0;
+  }
+  .selected-options {
+    padding: clamp(5px, 1vh, 7px);
+    font-size: clamp(10px, 1.2vw, 12px);
+    border: 1px solid #092534;
+    background-color: #fbf7ef;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+  }
+  
+  .selected-options span {
+    flex: 1;
+  }
+  
+  .options-container {
+    position: absolute;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #fbf7ef;
+    border-radius: 4px;
+    background-color: #fbf7ef;
+    max-height: 120px;
+    overflow-y: auto;
+    z-index: 9999;
+    display: none;
+    box-sizing: border-box;
+  }
+  
+  .checkbox-option {
+    padding: clamp(3px, 0.8vh, 7px);
+    font-size: clamp(10px, 1.2vw, 12px);
+    margin-bottom: 5px;
+    border: 1px solid #092534;
+    border-radius: 5px;
+    background-color: #fbf7ef;
+    cursor: pointer;
+    display: block;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  
+  .checkbox-option input {
+    margin-right: 5px;
+  }
+  
+  .checkbox-option:hover {
+    background-color: #83a300;
+    color: #092534;
+  }
+  
+  .checkbox-option.selected {
+    background-color: #83a300;
+    color: #092534;
+    border-color: #83a300;
+  }
   
 
 /* loader style */
