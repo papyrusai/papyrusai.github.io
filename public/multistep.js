@@ -319,6 +319,7 @@ function nextPrev(n) {
       return;
     }
     //const profileType = document.getElementById('selectedProfileType').value.trim();
+    
 
     // [CHANGED] If plan2 is free => handleFreePlanSubmission with no limit
     if (plan === 'plan2' && isPlan2Free === 'yes') {
@@ -1076,7 +1077,7 @@ function buildSubRamaMap() {
 
 async function handleFreePlanSubmission(plan, profileType) {
       // Read the profile type from the new dropdown:
-    const profileType = document.getElementById('userTypeSelect').value.trim();
+    //const profileType = document.getElementById('userTypeSelect').value.trim();
 
     // Capture the cobertura legal selections:
     const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
@@ -1134,7 +1135,7 @@ async function handleFreePlanSubmission(plan, profileType) {
 
 async function handleStripeCheckout(plan, profileType) {
         // Read the profile type from the new dropdown:
-      const profileType = document.getElementById('userTypeSelect').value.trim();
+    //  const profileType = document.getElementById('userTypeSelect').value.trim();
 
       // Capture the cobertura legal selections:
       const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
@@ -1195,7 +1196,7 @@ async function handleStripeCheckout(plan, profileType) {
 
 async function handleSamePlan2Submission(plan, profileType) {
       // Read the profile type from the new dropdown:
-    const profileType = document.getElementById('userTypeSelect').value.trim();
+    //const profileType = document.getElementById('userTypeSelect').value.trim();
 
     // Capture the cobertura legal selections:
     const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
@@ -1252,7 +1253,7 @@ async function handleSamePlan2Submission(plan, profileType) {
 
 async function handleChangePlan2toPlan1Submission(plan, profileType) {
       // Read the profile type from the new dropdown:
-      const profileType = document.getElementById('userTypeSelect').value.trim();
+   //   const profileType = document.getElementById('userTypeSelect').value.trim();
 
       // Capture the cobertura legal selections:
       const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
