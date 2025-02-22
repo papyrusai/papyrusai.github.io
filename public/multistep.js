@@ -287,12 +287,13 @@ function nextPrev(n) {
   if (n > 0) {
     // Step 0 => user type
     if (currentStep === 0) {
-      const profileType = document.getElementById('selectedProfileType').value.trim();
+      const profileType = document.getElementById('userTypeSelect').value.trim();
       if (!profileType) {
         alert('Selecciona el tipo de usuario');
         return;
       }
     }
+    
     // Step 1 => plan
     if (currentStep === 1) {
       const plan = document.getElementById('selectedPlan').value;
@@ -1074,6 +1075,22 @@ function buildSubRamaMap() {
 }
 
 async function handleFreePlanSubmission(plan, profileType) {
+      // Read the profile type from the new dropdown:
+    const profileType = document.getElementById('userTypeSelect').value.trim();
+
+    // Capture the cobertura legal selections:
+    const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
+                                          .map(opt => opt.value);
+    const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
+                                      .map(opt => opt.value);
+    const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
+                                      .map(opt => opt.value);
+    const cobertura_legal = {
+      "Nacional y Europeo": coberturaNacionalEuropeo,
+      "Autonomico": coberturaAutonomico,
+      "Reguladores": coberturaReguladores
+    };
+  
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
     .filter(s => s);
@@ -1096,7 +1113,8 @@ async function handleFreePlanSubmission(plan, profileType) {
         industry_tags: industries,
         rama_juridicas: ramas,
         profile_type: profileType,
-        sub_rama_map
+        sub_rama_map,
+        cobertura_legal  
       }),
     });
     if (!resp.ok) throw new Error('Failed to save free plan data');
@@ -1115,6 +1133,22 @@ async function handleFreePlanSubmission(plan, profileType) {
 }
 
 async function handleStripeCheckout(plan, profileType) {
+        // Read the profile type from the new dropdown:
+      const profileType = document.getElementById('userTypeSelect').value.trim();
+
+      // Capture the cobertura legal selections:
+      const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
+                                            .map(opt => opt.value);
+      const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
+                                        .map(opt => opt.value);
+      const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
+                                        .map(opt => opt.value);
+      const cobertura_legal = {
+        "Nacional y Europeo": coberturaNacionalEuropeo,
+        "Autonomico": coberturaAutonomico,
+        "Reguladores": coberturaReguladores
+      };
+  
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
     .filter(s => s);
@@ -1143,7 +1177,8 @@ async function handleStripeCheckout(plan, profileType) {
         rama_juridicas: ramas,
         profile_type: profileType,
         sub_rama_map,
-        isTrial
+        isTrial,
+        cobertura_legal  
       }),
     });
     if (!resp.ok) throw new Error('Failed to create Checkout Session');
@@ -1159,6 +1194,21 @@ async function handleStripeCheckout(plan, profileType) {
 }
 
 async function handleSamePlan2Submission(plan, profileType) {
+      // Read the profile type from the new dropdown:
+    const profileType = document.getElementById('userTypeSelect').value.trim();
+
+    // Capture the cobertura legal selections:
+    const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
+                                          .map(opt => opt.value);
+    const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
+                                      .map(opt => opt.value);
+    const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
+                                      .map(opt => opt.value);
+    const cobertura_legal = {
+      "Nacional y Europeo": coberturaNacionalEuropeo,
+      "Autonomico": coberturaAutonomico,
+      "Reguladores": coberturaReguladores
+    };
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
     .filter(s => s);
@@ -1181,7 +1231,8 @@ async function handleSamePlan2Submission(plan, profileType) {
         industry_tags: industries,
         rama_juridicas: ramas,
         profile_type: profileType,
-        sub_rama_map
+        sub_rama_map,
+        cobertura_legal  
       }),
     });
     if (!resp.ok) throw new Error('Failed to update user plan2 data');
@@ -1200,6 +1251,22 @@ async function handleSamePlan2Submission(plan, profileType) {
 }
 
 async function handleChangePlan2toPlan1Submission(plan, profileType) {
+      // Read the profile type from the new dropdown:
+      const profileType = document.getElementById('userTypeSelect').value.trim();
+
+      // Capture the cobertura legal selections:
+      const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
+                                            .map(opt => opt.value);
+      const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
+                                        .map(opt => opt.value);
+      const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
+                                        .map(opt => opt.value);
+      const cobertura_legal = {
+        "Nacional y Europeo": coberturaNacionalEuropeo,
+        "Autonomico": coberturaAutonomico,
+        "Reguladores": coberturaReguladores
+      }; 
+ 
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
     .filter(s => s);
@@ -1222,7 +1289,8 @@ async function handleChangePlan2toPlan1Submission(plan, profileType) {
         plan,  // plan1
         industry_tags: industries,
         rama_juridicas: ramas,
-        sub_rama_map
+        sub_rama_map,
+        cobertura_legal  
       }),
     });
     if (!resp.ok) throw new Error('Failed to cancel plan2 / switch to plan1');
