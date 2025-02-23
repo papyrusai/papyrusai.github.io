@@ -106,7 +106,7 @@ app.post('/login', (req, res, next) => {
     }
     if (!user) {
       // When no user is found, return an error message
-      return res.status(400).json({ error: "No existe un usuario con ese correo, por favor registrate" });
+      return res.status(400).json({ error: "Correo o contraseña equivocada, por favor, intente de nuevo"});
     }
     req.logIn(user, (err) => {
       if (err) {

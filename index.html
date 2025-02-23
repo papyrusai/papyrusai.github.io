@@ -69,8 +69,8 @@
           <form id="loginForm">
             <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="password" placeholder="Contraseña" required>
-            <button type="submit">Login</button>
-          </form>
+            <button type="submit" id="loginSubmitBtn">Login</button>
+          </form>          
           <div id="loginError" class="error-message"></div>
           <p>¿No tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Regístrate</span></p>
         </div>
@@ -82,11 +82,11 @@
           </div>
           <form id="registrationForm" onsubmit="return handleRegistrationSubmit(event);">
             <input type="email" name="email" placeholder="Email Address" required>
-            <!-- Nombre input removed as per requirement -->
             <input type="password" id="regPassword" name="password" placeholder="Password" required>
             <input type="password" id="regConfirm" name="confirmPassword" placeholder="Confirm Password" required>
-            <button type="submit">Register</button>
+            <button type="submit" id="registerSubmitBtn">Regístrate</button>
           </form>
+          
           <div id="registrationError" class="error-message"></div>
           <p>¿Ya tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Inicia Sesión</span></p>
         </div>
@@ -164,6 +164,12 @@
   const data = {};
   formData.forEach((value, key) => data[key] = value);
   
+  // Show loader in the registration button:
+  const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+  const originalText = registerSubmitBtn.innerHTML;
+  registerSubmitBtn.disabled = true;
+  registerSubmitBtn.innerHTML = '<div class="loader"></div>';
+  
   try {
     const response = await fetch('/register', {
       method: 'POST',
@@ -174,6 +180,8 @@
     if (!response.ok) {
       const errorResponse = await response.json();
       errorDiv.textContent = errorResponse.error || "Error en el registro. Inténtalo de nuevo.";
+      registerSubmitBtn.disabled = false;
+      registerSubmitBtn.innerHTML = originalText;
       return false;
     } else {
       const result = await response.json();
@@ -182,6 +190,8 @@
   } catch (err) {
     errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
     console.error(err);
+    registerSubmitBtn.disabled = false;
+    registerSubmitBtn.innerHTML = originalText;
   }
   return false;
 }
@@ -189,37 +199,45 @@
 
     // Handle login form submission via AJAX
     async function handleLoginSubmit(event) {
-      event.preventDefault();
-      const errorDiv = document.getElementById('loginError');
-      errorDiv.textContent = "";
-      
-      const form = document.getElementById('loginForm');
-      const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => data[key] = value);
-      
-      try {
-        const response = await fetch('/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data),
-          redirect: 'manual'
-        });
-        if (response.ok) {
-          const data = await response.json();
-          window.location.href = data.redirectUrl;
-        } else {
-          const errorData = await response.json();
-          errorDiv.textContent = errorData.error || "Error en el inicio de sesión. Por favor, inténtalo de nuevo.";
-        }
-      } catch (err) {
-        errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
-        console.error(err);
-      }
-      return false;
+  event.preventDefault();
+  const errorDiv = document.getElementById('loginError');
+  errorDiv.textContent = "";
+  
+  const form = document.getElementById('loginForm');
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => data[key] = value);
+
+  // Show loader in the button:
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+  const originalText = loginSubmitBtn.innerHTML;
+  loginSubmitBtn.disabled = true;
+  loginSubmitBtn.innerHTML = '<div class="loader"></div>';
+
+  try {
+    const response = await fetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      window.location.href = result.redirectUrl;
+    } else {
+      const errorData = await response.json();
+      errorDiv.textContent = errorData.error || "No existe un usuario con ese correo, por favor registrate";
+      loginSubmitBtn.disabled = false;
+      loginSubmitBtn.innerHTML = originalText;
     }
+  } catch (err) {
+    errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
+    console.error(err);
+    loginSubmitBtn.disabled = false;
+    loginSubmitBtn.innerHTML = originalText;
+  }
+  return false;
+}
 
     // Attach event listeners to the forms
     document.getElementById('registrationForm').addEventListener('submit', handleRegistrationSubmit);
