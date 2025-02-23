@@ -101,36 +101,44 @@ app.post('/save-industries', async (req, res) => {
 // New route for email/password login using Passport Local Strategy
 app.post('/login', (req, res, next) => {
   passport.authenticate('local', (err, user, info) => {
-    if (err) return next(err);
-    if (!user) return res.redirect('/index.html');
+    if (err) {
+      return res.status(500).json({ error: "Error interno de autenticación" });
+    }
+    if (!user) {
+      // When no user is found, return an error message
+      return res.status(400).json({ error: "No existe un usuario con ese correo, por favor registrate" });
+    }
     req.logIn(user, (err) => {
-      if (err) return next(err);
-      // Check if the user already has a subscription_plan set.
+      if (err) {
+        return res.status(500).json({ error: "Error al iniciar sesión" });
+      }
+      // Check if the user has a subscription_plan.
       if (user.subscription_plan) {
-        return res.redirect('/profile');
+        return res.status(200).json({ redirectUrl: '/profile' });
       } else {
-        return res.redirect('/multistep.html');
+        return res.status(200).json({ redirectUrl: '/multistep.html' });
       }
     });
   })(req, res, next);
 });
 
+
  
 /*register*/
 // Registration route for new users
 app.post('/register', async (req, res) => {
-  const { email, password, confirmPassword, name } = req.body;
+  const { email, password, confirmPassword } = req.body; // Removed name field
   const bcrypt = require('bcryptjs');
-  
-  // Basic server-side validation
+
+  // Server-side validations
   if (password !== confirmPassword) {
-    return res.status(400).send("Las contraseñas no coinciden.");
+    return res.status(400).json({ error: "Las contraseñas no coinciden." });
   }
   if (password.length < 7) {
-    return res.status(400).send("La contraseña debe tener al menos 7 caracteres.");
+    return res.status(400).json({ error: "La contraseña debe tener al menos 7 caracteres." });
   }
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    return res.status(400).send("La contraseña debe contener al menos un carácter especial.");
+    return res.status(400).json({ error: "La contraseña debe contener al menos un carácter especial." });
   }
 
   const client = new MongoClient(process.env.DB_URI, mongodbOptions);
@@ -139,42 +147,36 @@ app.post('/register', async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    // Check if user already exists
+    // Check if a user with this email already exists.
     const existingUser = await usersCollection.findOne({ email: email });
     if (existingUser) {
-      return res.status(400).send("El usuario ya existe. Por favor, inicia sesión.");
+      return res.status(400).json({ error: "El usuario ya existe, por favor inicia sesión" });
     }
     
-    // Hash the password
+    // Hash the password and insert the new user.
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
       email,
       password: hashedPassword,
-      name: name || "", // Optional name field
-      // You can add other default fields as needed
+      // subscription_plan remains undefined for new users.
     };
     
     const result = await usersCollection.insertOne(newUser);
-    // Attach the generated _id to newUser so it works with session serialization
     newUser._id = result.insertedId;
     
-    // Log in the user immediately after registration
+    // Log the user in immediately after registration.
     req.login(newUser, (err) => {
       if (err) {
         console.error("Error during login after registration:", err);
-        return res.status(500).send("Registro completado, pero fallo al iniciar sesión.");
+        return res.status(500).json({ error: "Registro completado, pero fallo al iniciar sesión" });
       }
-      // For new users, if subscription_plan is not set, redirect to multistep.
-      if (newUser.subscription_plan) {
-        return res.redirect('/profile');
-      } else {
-        return res.redirect('/multistep.html');
-      }
+      // New users have no subscription_plan so redirect to multistep.
+      return res.status(200).json({ redirectUrl: '/multistep.html' });
     });
     
   } catch (err) {
     console.error("Error registering user:", err);
-    res.status(500).send("Error al registrar el usuario.");
+    return res.status(500).json({ error: "Error al registrar el usuario." });
   } finally {
     await client.close();
   }
