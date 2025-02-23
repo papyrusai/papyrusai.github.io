@@ -151,45 +151,41 @@
 
     // Handle registration form submission via AJAX
     async function handleRegistrationSubmit(event) {
-      event.preventDefault();
-      const errorDiv = document.getElementById('registrationError');
-      errorDiv.textContent = "";
-      
-      if (!validateRegistration()) {
-        return false;
-      }
-      
-      const form = document.getElementById('registrationForm');
-      const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => data[key] = value);
-      
-      try {
-        const response = await fetch('/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        });
-        if (!response.ok) {
-          const text = await response.text();
-          if(text.includes("El usuario ya existe")) {
-            errorDiv.textContent = "El usuario ya existe, por favor inicia sesión";
-          } else {
-            errorDiv.textContent = text;
-          }
-          return false;
-        } else {
-          // If registration succeeds, redirect to the URL provided by the server.
-          window.location.href = (await response.text()).trim();
-        }
-      } catch (err) {
-        errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
-        console.error(err);
-      }
+  event.preventDefault();
+  const errorDiv = document.getElementById('registrationError');
+  errorDiv.textContent = "";
+  
+  if (!validateRegistration()) {
+    return false;
+  }
+  
+  const form = document.getElementById('registrationForm');
+  const formData = new FormData(form);
+  const data = {};
+  formData.forEach((value, key) => data[key] = value);
+  
+  try {
+    const response = await fetch('/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      errorDiv.textContent = errorResponse.error || "Error en el registro. Inténtalo de nuevo.";
       return false;
+    } else {
+      const result = await response.json();
+      window.location.href = result.redirectUrl;
     }
+  } catch (err) {
+    errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
+    console.error(err);
+  }
+  return false;
+}
+
 
     // Handle login form submission via AJAX
     async function handleLoginSubmit(event) {
@@ -211,10 +207,12 @@
           body: JSON.stringify(data),
           redirect: 'manual'
         });
-        if (response.status === 200) {
-          window.location.href = (await response.text()).trim();
+        if (response.ok) {
+          const data = await response.json();
+          window.location.href = data.redirectUrl;
         } else {
-          errorDiv.textContent = "No existe un usuario con ese correo, por favor registrate";
+          const errorData = await response.json();
+          errorDiv.textContent = errorData.error || "Error en el inicio de sesión. Por favor, inténtalo de nuevo.";
         }
       } catch (err) {
         errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
