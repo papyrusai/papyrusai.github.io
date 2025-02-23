@@ -1082,18 +1082,15 @@ async function handleFreePlanSubmission(plan, profileType,companyName) {
     //const profileType = document.getElementById('userTypeSelect').value.trim();
 
     // Capture the cobertura legal selections:
-    const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
-                                          .map(opt => opt.value);
-    const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
-                                      .map(opt => opt.value);
-    const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
-                                      .map(opt => opt.value);
+    const coberturaNacionalEuropeo = JSON.parse(document.getElementById('nacionalEuropeoInput').value || '[]');
+    const coberturaAutonomico = JSON.parse(document.getElementById('autonomicoInput').value || '[]');
+    const coberturaReguladores = JSON.parse(document.getElementById('reguladoresInput').value || '[]');
     const cobertura_legal = {
       "Nacional y Europeo": coberturaNacionalEuropeo,
       "Autonomico": coberturaAutonomico,
       "Reguladores": coberturaReguladores
     };
-  
+    
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
     .filter(s => s);
@@ -1141,17 +1138,15 @@ async function handleStripeCheckout(plan, profileType,companyName) {
     //  const profileType = document.getElementById('userTypeSelect').value.trim();
 
       // Capture the cobertura legal selections:
-      const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
-                                            .map(opt => opt.value);
-      const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
-                                        .map(opt => opt.value);
-      const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
-                                        .map(opt => opt.value);
+      const coberturaNacionalEuropeo = JSON.parse(document.getElementById('nacionalEuropeoInput').value || '[]');
+      const coberturaAutonomico = JSON.parse(document.getElementById('autonomicoInput').value || '[]');
+      const coberturaReguladores = JSON.parse(document.getElementById('reguladoresInput').value || '[]');
       const cobertura_legal = {
         "Nacional y Europeo": coberturaNacionalEuropeo,
         "Autonomico": coberturaAutonomico,
         "Reguladores": coberturaReguladores
       };
+      
   
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
@@ -1203,17 +1198,15 @@ async function handleSamePlan2Submission(plan, profileType,companyName) {
     //const profileType = document.getElementById('userTypeSelect').value.trim();
 
     // Capture the cobertura legal selections:
-    const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
-                                          .map(opt => opt.value);
-    const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
-                                      .map(opt => opt.value);
-    const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
-                                      .map(opt => opt.value);
+    const coberturaNacionalEuropeo = JSON.parse(document.getElementById('nacionalEuropeoInput').value || '[]');
+    const coberturaAutonomico = JSON.parse(document.getElementById('autonomicoInput').value || '[]');
+    const coberturaReguladores = JSON.parse(document.getElementById('reguladoresInput').value || '[]');
     const cobertura_legal = {
       "Nacional y Europeo": coberturaNacionalEuropeo,
       "Autonomico": coberturaAutonomico,
       "Reguladores": coberturaReguladores
     };
+    
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
     .filter(s => s);
@@ -1261,17 +1254,15 @@ async function handleChangePlan2toPlan1Submission(plan, profileType,companyName)
    //   const profileType = document.getElementById('userTypeSelect').value.trim();
 
       // Capture the cobertura legal selections:
-      const coberturaNacionalEuropeo = Array.from(document.getElementById('nacionalEuropeoSelect').selectedOptions)
-                                            .map(opt => opt.value);
-      const coberturaAutonomico = Array.from(document.getElementById('autonomicoSelect').selectedOptions)
-                                        .map(opt => opt.value);
-      const coberturaReguladores = Array.from(document.getElementById('reguladoresSelect').selectedOptions)
-                                        .map(opt => opt.value);
+      const coberturaNacionalEuropeo = JSON.parse(document.getElementById('nacionalEuropeoInput').value || '[]');
+      const coberturaAutonomico = JSON.parse(document.getElementById('autonomicoInput').value || '[]');
+      const coberturaReguladores = JSON.parse(document.getElementById('reguladoresInput').value || '[]');
       const cobertura_legal = {
         "Nacional y Europeo": coberturaNacionalEuropeo,
         "Autonomico": coberturaAutonomico,
         "Reguladores": coberturaReguladores
-      }; 
+      };
+      
  
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
