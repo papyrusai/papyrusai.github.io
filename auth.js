@@ -111,7 +111,7 @@ passport.use(new LocalStrategy(
   { usernameField: 'email' },
   async (email, password, done) => {
     // Import bcrypt for comparing hashed passwords
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
     const client = new MongoClient(uri, mongodbOptions);
     try {
       await client.connect();
