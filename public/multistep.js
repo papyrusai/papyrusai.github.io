@@ -1093,7 +1093,6 @@ async function handleFreePlanSubmission(plan, profileType,companyName) {
       "Autonomico": coberturaAutonomico,
       "Reguladores": coberturaReguladores
     };
-    const companyName =  document.getElementById('companyName').value.trim();
   
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
