@@ -822,6 +822,7 @@ app.get('/save-user', async (req, res) => {
   const plan = req.query.plan;
   const rawProfileType = req.query.profile_type;
   const rawCobertura_legal = req.query.cobertura_legal;
+  const rawCompanyName = req.query.company_name;
 
   // [ADDED] sub_rama_map
   const rawSubRamaMap = req.query.sub_rama_map;
@@ -838,6 +839,8 @@ app.get('/save-user', async (req, res) => {
     const ramaJuridicas = JSON.parse(decodeURIComponent(rawRamaJuridicas));
     const profileType = decodeURIComponent(rawProfileType);
     const cobertura_legal = JSON.parse(decodeURIComponent(rawCobertura_legal));
+    const company_name = JSON.parse(decodeURIComponent(rawCompanyName));
+
 
     // [CHANGED] parse sub_rama_map
     let subRamaMapObj = {};
@@ -868,7 +871,8 @@ app.get('/save-user', async (req, res) => {
       subscription_plan: plan,
       profile_type: profileType,
       sub_rama_map: subRamaMapObj,
-      cobertura_legal: cobertura_legal 
+      cobertura_legal: cobertura_legal ,
+      company_name : company_name
     };
 
     // if we have a valid subscription ID, store it as well
@@ -891,7 +895,7 @@ app.get('/save-user', async (req, res) => {
 
 /*free*/
 app.post('/save-free-plan', async (req, res) => {
-  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map,cobertura_legal } = req.body; 
+  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map,cobertura_legal,company_name} = req.body; 
   if (!req.user) {
     return res.status(401).send('Unauthorized');
   }
@@ -911,7 +915,8 @@ app.post('/save-free-plan', async (req, res) => {
           subscription_plan: plan,
           profile_type,
           sub_rama_map,
-          cobertura_legal // <--- NEW
+          cobertura_legal,
+          company_name 
         }
       },
       { upsert: true }
@@ -973,7 +978,7 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
 app.post('/save-same-plan2', async (req, res) => {
   // This is only called if the user is STILL on plan2, 
   // and we want to just update the new industries/ramas.
-  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map, cobertura_legal} = req.body;
+  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map, cobertura_legal,company_name} = req.body; 
   
   if (!req.user) {
     return res.status(401).send('Unauthorized');
@@ -994,7 +999,8 @@ app.post('/save-same-plan2', async (req, res) => {
           subscription_plan: plan,  // still plan2
           profile_type,
           sub_rama_map,
-          cobertura_legal
+          cobertura_legal,
+          company_name
         }
       },
       { upsert: true }

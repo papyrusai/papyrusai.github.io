@@ -79,6 +79,10 @@
                               </div>
                               <h1>Información de Usuario</h1>
                               <h2 style="margin-top:5%">Perfil</h2>
+                              <!-- New: Company Name Input -->
+                             <div class="step1-item">Nombre de empresa</div>
+                             <input type="text" id="companyName" name="companyName" class="styled-dropdown" placeholder="Introduce el nombre de la empresa">
+    
                               <div class="step1-item">Tipo de Empresa</div>
                               <select id="userTypeSelect" name="userType" class="styled-dropdown">
                                 <option value="">-- Selecciona una opción --</option>
@@ -100,10 +104,10 @@
                                 </div>
                                 <div class="options-container" id="nacionalEuropeoDropdown">
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="BOE"> BOE
+                                    <input type="checkbox" value="BOE"> Boletín Oficial del Estado (BOE)
                                   </label>
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="DOUE"> DOUE
+                                    <input type="checkbox" value="DOUE"> Diario Oficial de la Unión Europea (DOUE)
                                   </label>
                                 </div>
                                 <input type="hidden" name="cobertura_legal[nacionalEuropeo][]" id="nacionalEuropeoInput">
@@ -118,22 +122,19 @@
                                 </div>
                                 <div class="options-container" id="autonomicoDropdown">
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="BOA"> BOA
+                                    <input type="checkbox" value="BOA"> Boletín Oficial de Aragon (BOA)
                                   </label>
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="BOCM"> BOCM
+                                    <input type="checkbox" value="BOCM"> Boletín Oficial de la Comunidad de Madrid (BOCM)
                                   </label>
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="BOCYL"> BOCYL
+                                    <input type="checkbox" value="BOCYL"> Boletín Oficial de Castilla y la León (BOCYL)
                                   </label>
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="BOE"> BOE
+                                    <input type="checkbox" value="BOJA"> Boletín Oficial de la Junta de Andalucía (BOJA)
                                   </label>
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="BOJA"> BOJA
-                                  </label>
-                                  <label class="checkbox-option">
-                                    <input type="checkbox" value="BOPV"> BOPV
+                                    <input type="checkbox" value="BOPV"> Boletín Oficial del País Vasco (BOPV)
                                   </label>
                                 </div>
                                 <input type="hidden" name="cobertura_legal[autonomico][]" id="autonomicoInput">
@@ -148,7 +149,7 @@
                                 </div>
                                 <div class="options-container" id="reguladoresDropdown">
                                   <label class="checkbox-option">
-                                    <input type="checkbox" value="CNMV"> CNMV
+                                    <input type="checkbox" value="CNMV"> Comisión Nacional del Mercado de Valores (CNMV)
                                   </label>
                                 </div>
                                 <input type="hidden" name="cobertura_legal[reguladores][]" id="reguladoresInput">

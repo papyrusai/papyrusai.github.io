@@ -320,21 +320,23 @@ function nextPrev(n) {
     }
     const profileType = document.getElementById('userTypeSelect').value.trim();
     
+    const companyName =  document.getElementById('companyName').value.trim();
+    
 
     // [CHANGED] If plan2 is free => handleFreePlanSubmission with no limit
     if (plan === 'plan2' && isPlan2Free === 'yes') {
-      handleFreePlanSubmission(plan, profileType);
+      handleFreePlanSubmission(plan, profileType,companyName);
       return;
     }
 
     // If user already has plan2 and reselects plan2
     if (plan === 'plan2' && currentUserPlan === 'plan2') {
-      handleSamePlan2Submission(plan, profileType);
+      handleSamePlan2Submission(plan, profileType,companyName);
       return;
     }
 
     if (plan === 'plan2' || plan === 'plan3') {
-      handleStripeCheckout(plan, profileType);
+      handleStripeCheckout(plan, profileType,companyName);
       return;
     } 
 
@@ -350,7 +352,7 @@ function nextPrev(n) {
         showPlanLimitWarning();
         return;
       }
-      handleChangePlan2toPlan1Submission(plan, profileType);
+      handleChangePlan2toPlan1Submission(plan, profileType,companyName);
       return;
     }
     // If plan1 => free
@@ -364,7 +366,7 @@ function nextPrev(n) {
         showPlanLimitWarning();
         return;
       }
-      handleFreePlanSubmission(plan, profileType);
+      handleFreePlanSubmission(plan, profileType,companyName);
       return;
     }
   }
@@ -1075,7 +1077,7 @@ function buildSubRamaMap() {
   return sub_rama_map;
 }
 
-async function handleFreePlanSubmission(plan, profileType) {
+async function handleFreePlanSubmission(plan, profileType,companyName) {
       // Read the profile type from the new dropdown:
     //const profileType = document.getElementById('userTypeSelect').value.trim();
 
@@ -1091,6 +1093,7 @@ async function handleFreePlanSubmission(plan, profileType) {
       "Autonomico": coberturaAutonomico,
       "Reguladores": coberturaReguladores
     };
+    const companyName =  document.getElementById('companyName').value.trim();
   
   const industries = Array.from(document.querySelectorAll('#selectedIndustriesList span'))
     .map(el => el.textContent.replace('×','').trim())
@@ -1115,7 +1118,8 @@ async function handleFreePlanSubmission(plan, profileType) {
         rama_juridicas: ramas,
         profile_type: profileType,
         sub_rama_map,
-        cobertura_legal  
+        cobertura_legal  ,
+        company_name:companyName
       }),
     });
     if (!resp.ok) throw new Error('Failed to save free plan data');
@@ -1133,7 +1137,7 @@ async function handleFreePlanSubmission(plan, profileType) {
   }
 }
 
-async function handleStripeCheckout(plan, profileType) {
+async function handleStripeCheckout(plan, profileType,companyName) {
         // Read the profile type from the new dropdown:
     //  const profileType = document.getElementById('userTypeSelect').value.trim();
 
@@ -1179,7 +1183,8 @@ async function handleStripeCheckout(plan, profileType) {
         profile_type: profileType,
         sub_rama_map,
         isTrial,
-        cobertura_legal  
+        cobertura_legal,
+        company_name:companyName
       }),
     });
     if (!resp.ok) throw new Error('Failed to create Checkout Session');
@@ -1194,7 +1199,7 @@ async function handleStripeCheckout(plan, profileType) {
   }
 }
 
-async function handleSamePlan2Submission(plan, profileType) {
+async function handleSamePlan2Submission(plan, profileType,companyName) {
       // Read the profile type from the new dropdown:
     //const profileType = document.getElementById('userTypeSelect').value.trim();
 
@@ -1233,7 +1238,8 @@ async function handleSamePlan2Submission(plan, profileType) {
         rama_juridicas: ramas,
         profile_type: profileType,
         sub_rama_map,
-        cobertura_legal  
+        cobertura_legal ,
+        company_name:companyName
       }),
     });
     if (!resp.ok) throw new Error('Failed to update user plan2 data');
@@ -1251,7 +1257,7 @@ async function handleSamePlan2Submission(plan, profileType) {
   }
 }
 
-async function handleChangePlan2toPlan1Submission(plan, profileType) {
+async function handleChangePlan2toPlan1Submission(plan, profileType,companyName) {
       // Read the profile type from the new dropdown:
    //   const profileType = document.getElementById('userTypeSelect').value.trim();
 
@@ -1291,7 +1297,8 @@ async function handleChangePlan2toPlan1Submission(plan, profileType) {
         industry_tags: industries,
         rama_juridicas: ramas,
         sub_rama_map,
-        cobertura_legal  
+        cobertura_legal ,
+        company_name:companyName
       }),
     });
     if (!resp.ok) throw new Error('Failed to cancel plan2 / switch to plan1');
