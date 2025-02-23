@@ -2,157 +2,199 @@
 <html>
 <head>
   <title>Papyrus App</title>
-  
-  <link rel="icon" href="public\assets\papyrus_logo.png" type="image/png"> 
+  <link rel="icon" href="public/assets/papyrus_logo.png" type="image/png"> 
   <meta name="viewport" content="width=device-width">
-
   <link rel="stylesheet" type="text/css" href="styles/login.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
-
+  <style>
+    /* You can adjust these styles as needed */
+    .hidden { display: none; }
+    .error-message { color: red; font-size: 0.9em; }
+    .toggle-link { cursor: pointer; color: blue; text-decoration: underline; }
+  </style>
 </head>
 <body>
-  <!--
-  <h1>Welcome to OAuth App</h1>
-  <a href="/auth/google">Authenticate with Google</a>
--->
+  <nav class="navbar login">
+    <div class="logo">
+      <a href="https://www.papyrus-ai.com/" target="_blank">
+        <img src="assets/papyrus_app_white.png" alt="Papyrus Logo">
+      </a>
+    </div>
+    <button class="hamburger login" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+      <li><a href="https://papyrus-ai.com/">WEB</a></li>
+      <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li>
+      <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+      <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+    </ul>
+  </nav>
 
-  <body>
-    <nav class="navbar login">
-      <div class="logo">
+  <section class="login-form">
+    <div class="container">
+      <div class="login-section">
+        <div class="logo">
           <a href="https://www.papyrus-ai.com/" target="_blank">
-            <img src="assets/papyrus_app_white.png" alt="Papyrus Logo">
+            <img class="login-image" src="assets/papyrus_app.png" alt="Papyrus Logo">
           </a>
         </div>
-     <button class="hamburger login" onclick="toggleMenu()">☰</button> 
-      <ul class="menu">
-        <li><a href="https://papyrus-ai.com/">WEB</a></li>
-        <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
-        <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
-        <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
-      </ul>
-    </nav>
-<section class="login-form">
-    <div class="container">
-        <div class="login-section">
-          <div class="logo">
-            <a href="https://www.papyrus-ai.com/" target="_blank">
-              <img class ="login-image"src="assets/papyrus_app.png" alt="Papyrus Logo">
-            </a>
-            
-          </div>
-            <h1>Inicia Sesión</h1>
-            <div>
-              <a id="google-login-btn" class="login-btn google-login" href="/auth/google" onclick="showLoading()">
-                <div id="google-login">
-                  <img src="assets/google_trans-removebg-preview.png" alt="Google Logo">
-                  Google
-                </div>
-                <span id="loading-icon" style="display: none;">
-                  <div class="loader-google"></div>
-                </span>
-              </a>
-            <p class="temporal-uno">Accede a toda la información normativa del territorio español</p>
-            <p class="temporal">Recibe alertas, resúmenes y gráficos <strong> personalizados</strong>.</p>
-          </div>
-          
+        <h1 id="form-title">Inicia Sesión</h1>
+
+        <!-- Google Login (unchanged) -->
+        <div>
+          <a id="google-login-btn" class="login-btn google-login" href="/auth/google" onclick="showLoading()">
+            <div id="google-login">
+              <img src="assets/google_trans-removebg-preview.png" alt="Google Logo">
+              Google
+            </div>
+            <span id="loading-icon" style="display: none;">
+              <div class="loader-google"></div>
+            </span>
+          </a>
+          <p class="temporal-uno">Accede a toda la información normativa del territorio español</p>
+          <p class="temporal">Recibe alertas, resúmenes y gráficos <strong>personalizados</strong>.</p>
+        </div>
+
+        <!-- Login Form -->
+        <div id="login-form">
           <div class="divider">
             <span>O con email y contraseña</span>
           </div>
-          
-          <div>
-            <form action="/login" method="post">
-                <input type="email" name="email" placeholder="Email Address" required>
-                <input type="password" name="password" placeholder="Password" required>
-                <button type="submit">Login</button>
-            </form>
+          <form action="/login" method="post">
+            <input type="email" name="email" placeholder="Email Address" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+          </form>
+          <p>¿No tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Regístrate</span></p>
+        </div>
+
+        <!-- Registration Form -->
+        <div id="register-form" class="hidden">
+          <div class="divider">
+            <span>Regístrate con email y contraseña</span>
           </div>
-          
-
+          <form id="registrationForm" action="/register" method="post" onsubmit="return validateRegistration();">
+            <input type="email" name="email" placeholder="Email Address" required>
+            <!-- Optionally add a name field if desired -->
+            <input type="text" name="name" placeholder="Nombre (opcional)">
+            <input type="password" id="regPassword" name="password" placeholder="Password" required>
+            <input type="password" id="regConfirm" name="confirmPassword" placeholder="Confirm Password" required>
+            <div id="regError" class="error-message"></div>
+            <button type="submit">Register</button>
+          </form>
+          <p>¿Ya tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Inicia Sesión</span></p>
         </div>
 
-        <div class="info-section">
-            <h2>Recibe acceso gratuito a Alertas Normativas</h2>
-            <p>Filtra de manera automática todo el contenido normativo con nuestra IA </p>
-            <p>Recibe alertas, resúmenes y gráficos <strong>personalizados</strong>.</p>
-        </div>
+      </div>
+
+      <div class="info-section">
+        <h2>Recibe acceso gratuito a Alertas Normativas</h2>
+        <p>Filtra de manera automática todo el contenido normativo con nuestra IA</p>
+        <p>Recibe alertas, resúmenes y gráficos <strong>personalizados</strong>.</p>
+      </div>
     </div>
   </section>
-</body>
-</body>
 
-<script>
-function resetLoginButton() {
-    const loginButton = document.getElementById('google-login-btn');
-    const googleLoginText = document.getElementById('google-login');
-    const loadingIcon = document.getElementById('loading-icon');
+  <script>
+    function toggleForm() {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const formTitle = document.getElementById('form-title');
+      if (loginForm.classList.contains('hidden')) {
+        loginForm.classList.remove('hidden');
+        registerForm.classList.add('hidden');
+        formTitle.textContent = "Inicia Sesión";
+      } else {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        formTitle.textContent = "Regístrate";
+      }
+    }
 
-    // Reset classes
-    if (googleLoginText) {
-      googleLoginText.style = '';
-      googleLoginText.offsetHeight; // Trigger reflow
+    // Client-side validation for registration form
+    function validateRegistration() {
+      const password = document.getElementById('regPassword').value;
+      const confirm = document.getElementById('regConfirm').value;
+      const errorDiv = document.getElementById('regError');
+      
+      // Reset error message
+      errorDiv.textContent = "";
+      
+      // Check that both passwords match
+      if (password !== confirm) {
+        errorDiv.textContent = "Las contraseñas no coinciden.";
+        return false;
+      }
+      // Check length (more than 6 characters)
+      if (password.length < 7) {
+        errorDiv.textContent = "La contraseña debe tener al menos 7 caracteres.";
+        return false;
+      }
+      // Check for at least one special character
+      const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+      if (!specialCharRegex.test(password)) {
+        errorDiv.textContent = "La contraseña debe contener al menos un carácter especial.";
+        return false;
+      }
+      return true;
+    }
+
+    // (Existing functions for Google login and menu toggling...)
+    function resetLoginButton() {
+      const loginButton = document.getElementById('google-login-btn');
+      const googleLoginText = document.getElementById('google-login');
+      const loadingIcon = document.getElementById('loading-icon');
+
+      if (googleLoginText) {
+        googleLoginText.style = '';
+        googleLoginText.offsetHeight;
         googleLoginText.classList.remove('hidden');
         googleLoginText.classList.add('visible');
-    }
-
-    if (loadingIcon) {
-      loadingIcon.offsetHeight; // Trigger reflow
+      }
+      if (loadingIcon) {
+        loadingIcon.offsetHeight;
         loadingIcon.classList.remove('visible');
         loadingIcon.classList.add('hidden');
-    }
-
-    if (loginButton) {
+      }
+      if (loginButton) {
         loginButton.classList.remove('disabled');
-        loginButton.style.pointerEvents = 'auto'; // Allow clicks again
+        loginButton.style.pointerEvents = 'auto';
+      }
+      console.log('Reset login button styles applied.');
     }
 
-    console.log('Reset login button styles applied.');
-}
-
-  function showLoading() {
-    const googleLoginText = document.getElementById('google-login');
-    const loadingIcon = document.getElementById('loading-icon');
-
-    // Hide the Google text and show the loading icon
-    if (googleLoginText) {
-      
-      googleLoginText.classList.remove('visible');
-      
-      googleLoginText.classList.add('hidden');
-    }
-    if (loadingIcon) {
-      
-      loadingIcon.classList.remove('hidden'); 
-      
-      loadingIcon.classList.add('visible'); 
-      loadingIcon.style.display = 'inline-block';
+    function showLoading() {
+      const googleLoginText = document.getElementById('google-login');
+      const loadingIcon = document.getElementById('loading-icon');
+      if (googleLoginText) {
+        googleLoginText.classList.remove('visible');
+        googleLoginText.classList.add('hidden');
+      }
+      if (loadingIcon) {
+        loadingIcon.classList.remove('hidden'); 
+        loadingIcon.classList.add('visible'); 
+        loadingIcon.style.display = 'inline-block';
+      }
+      const loginButton = document.getElementById('google-login-btn');
+      if (loginButton) {
+        loginButton.style.pointerEvents = 'none';
+      }
     }
 
-    // Disable the button to prevent multiple clicks
-    const loginButton = document.getElementById('google-login-btn');
-    if (loginButton) {
-      loginButton.style.pointerEvents = 'none';
+    window.addEventListener('pageshow', () => {
+      resetLoginButton();
+    });
+
+    function toggleMenu() {
+      const menu = document.querySelector('.menu');
+      menu.classList.toggle('active');
     }
-  }
-// Use `pageshow` to ensure reset on navigation
-window.addEventListener('pageshow', () => {
-    resetLoginButton(); // Ensure the button is reset every time the page is shown
-});
-
-//  document.addEventListener('DOMContentLoaded', resetLoginButton);
-
-  function toggleMenu() {
-        const menu = document.querySelector('.menu');
-        menu.classList.toggle('active');
-         }
-         // Close the menu if clicking outside of it
-document.addEventListener('click', function(event) {
-    const menu = document.querySelector('.menu');
-    const hamburger = document.querySelector('.hamburger');
-    
-    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+    document.addEventListener('click', function(event) {
+      const menu = document.querySelector('.menu');
+      const hamburger = document.querySelector('.hamburger');
+      if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
         menu.classList.remove('active');
-    }
-});
-</script>
-
+      }
+    });
+  </script>
+</body>
 </html>

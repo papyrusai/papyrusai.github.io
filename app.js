@@ -104,6 +104,65 @@ app.post('/login', passport.authenticate('local', {
   failureRedirect: '/index.html'
 }));
  
+/*register*/
+// Registration route for new users
+app.post('/register', async (req, res) => {
+  const { email, password, confirmPassword, name } = req.body;
+  const bcrypt = require('bcryptjs');
+  
+  // Basic server-side validation
+  if (password !== confirmPassword) {
+    return res.status(400).send("Las contraseñas no coinciden.");
+  }
+  if (password.length < 7) {
+    return res.status(400).send("La contraseña debe tener al menos 7 caracteres.");
+  }
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    return res.status(400).send("La contraseña debe contener al menos un carácter especial.");
+  }
+
+  const client = new MongoClient(process.env.DB_URI, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Check if user already exists
+    const existingUser = await usersCollection.findOne({ email: email });
+    if (existingUser) {
+      return res.status(400).send("El usuario ya existe. Por favor, inicia sesión.");
+    }
+    
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      email,
+      password: hashedPassword,
+      name: name || "", // Optional name field
+      // You can add other default fields as needed
+    };
+    
+    const result = await usersCollection.insertOne(newUser);
+    // Attach the generated _id to newUser so it works with session serialization
+    newUser._id = result.insertedId;
+    
+    // Log in the user immediately after registration
+    req.login(newUser, (err) => {
+      if (err) {
+        console.error("Error during login after registration:", err);
+        return res.status(500).send("Registro completado, pero fallo al iniciar sesión.");
+      }
+      return res.redirect('/profile');
+    });
+  } catch (err) {
+    console.error("Error registering user:", err);
+    res.status(500).send("Error al registrar el usuario.");
+  } finally {
+    await client.close();
+  }
+});
+
+
 
 // Google OAuth routes with prompt to re-authenticate
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
