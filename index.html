@@ -7,10 +7,19 @@
   <link rel="stylesheet" type="text/css" href="styles/login.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
   <style>
-    /* You can adjust these styles as needed */
     .hidden { display: none; }
-    .error-message { color: red; font-size: 0.9em; }
+    .error-message { color: red; font-size: 0.9em; margin-top: 5px; }
     .toggle-link { cursor: pointer; color: blue; text-decoration: underline; }
+    /* Ensure email and password inputs have the same fixed width */
+    input[type="email"], input[type="password"] {
+      width: 300px;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 300px;
+      padding: 10px;
+    }
   </style>
 </head>
 <body>
@@ -50,10 +59,6 @@
               <div class="loader-google"></div>
             </span>
           </a>
-          <!--
-          <p class="temporal-uno">Accede a toda la información normativa del territorio español</p>
-          <p class="temporal">Recibe alertas, resúmenes y gráficos <strong>personalizados</strong>.</p>
-        -->
         </div>
 
         <!-- Login Form -->
@@ -61,11 +66,12 @@
           <div class="divider">
             <span>O con email y contraseña</span>
           </div>
-          <form action="/login" method="post">
+          <form id="loginForm">
             <input type="email" name="email" placeholder="Email" required>
-            <input type="password" name="password" placeholder="Contraseña" required >
+            <input type="password" name="password" placeholder="Contraseña" required>
             <button type="submit">Login</button>
           </form>
+          <div id="loginError" class="error-message"></div>
           <p>¿No tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Regístrate</span></p>
         </div>
 
@@ -74,15 +80,14 @@
           <div class="divider">
             <span>Regístrate con email y contraseña</span>
           </div>
-          <form id="registrationForm" action="/register" method="post" onsubmit="return validateRegistration();">
+          <form id="registrationForm" onsubmit="return handleRegistrationSubmit(event);">
             <input type="email" name="email" placeholder="Email Address" required>
-            <!-- Optionally add a name field if desired -->
-            <input type="text" name="name" placeholder="Nombre (opcional)">
+            <!-- Nombre input removed as per requirement -->
             <input type="password" id="regPassword" name="password" placeholder="Password" required>
             <input type="password" id="regConfirm" name="confirmPassword" placeholder="Confirm Password" required>
-            <div id="regError" class="error-message"></div>
             <button type="submit">Register</button>
           </form>
+          <div id="registrationError" class="error-message"></div>
           <p>¿Ya tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Inicia Sesión</span></p>
         </div>
 
@@ -97,6 +102,7 @@
   </section>
 
   <script>
+    // Toggle between login and registration forms
     function toggleForm() {
       const loginForm = document.getElementById('login-form');
       const registerForm = document.getElementById('register-form');
@@ -110,13 +116,16 @@
         registerForm.classList.remove('hidden');
         formTitle.textContent = "Regístrate";
       }
+      // Clear error messages when toggling
+      document.getElementById('loginError').textContent = "";
+      document.getElementById('registrationError').textContent = "";
     }
 
     // Client-side validation for registration form
     function validateRegistration() {
       const password = document.getElementById('regPassword').value;
       const confirm = document.getElementById('regConfirm').value;
-      const errorDiv = document.getElementById('regError');
+      const errorDiv = document.getElementById('registrationError');
       
       // Reset error message
       errorDiv.textContent = "";
@@ -140,7 +149,85 @@
       return true;
     }
 
-    // (Existing functions for Google login and menu toggling...)
+    // Handle registration form submission via AJAX
+    async function handleRegistrationSubmit(event) {
+      event.preventDefault();
+      const errorDiv = document.getElementById('registrationError');
+      errorDiv.textContent = "";
+      
+      if (!validateRegistration()) {
+        return false;
+      }
+      
+      const form = document.getElementById('registrationForm');
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+      
+      try {
+        const response = await fetch('/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+          const text = await response.text();
+          if(text.includes("El usuario ya existe")) {
+            errorDiv.textContent = "El usuario ya existe, por favor inicia sesión";
+          } else {
+            errorDiv.textContent = text;
+          }
+          return false;
+        } else {
+          // If registration succeeds, redirect to the URL provided by the server.
+          window.location.href = (await response.text()).trim();
+        }
+      } catch (err) {
+        errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
+        console.error(err);
+      }
+      return false;
+    }
+
+    // Handle login form submission via AJAX
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      const errorDiv = document.getElementById('loginError');
+      errorDiv.textContent = "";
+      
+      const form = document.getElementById('loginForm');
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+      
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data),
+          redirect: 'manual'
+        });
+        if (response.status === 200) {
+          window.location.href = (await response.text()).trim();
+        } else {
+          errorDiv.textContent = "No existe un usuario con ese correo, por favor registrate";
+        }
+      } catch (err) {
+        errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
+        console.error(err);
+      }
+      return false;
+    }
+
+    // Attach event listeners to the forms
+    document.getElementById('registrationForm').addEventListener('submit', handleRegistrationSubmit);
+    document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
+
+    // Existing functions for Google login and menu toggling
     function resetLoginButton() {
       const loginButton = document.getElementById('google-login-btn');
       const googleLoginText = document.getElementById('google-login');
