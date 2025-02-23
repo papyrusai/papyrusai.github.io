@@ -99,10 +99,22 @@ app.post('/save-industries', async (req, res) => {
 
 
 // New route for email/password login using Passport Local Strategy
-app.post('/login', passport.authenticate('local', { 
-  successRedirect: '/profile',
-  failureRedirect: '/index.html'
-}));
+app.post('/login', (req, res, next) => {
+  passport.authenticate('local', (err, user, info) => {
+    if (err) return next(err);
+    if (!user) return res.redirect('/index.html');
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      // Check if the user already has a subscription_plan set.
+      if (user.subscription_plan) {
+        return res.redirect('/profile');
+      } else {
+        return res.redirect('/multistep.html');
+      }
+    });
+  })(req, res, next);
+});
+
  
 /*register*/
 // Registration route for new users
@@ -152,8 +164,14 @@ app.post('/register', async (req, res) => {
         console.error("Error during login after registration:", err);
         return res.status(500).send("Registro completado, pero fallo al iniciar sesión.");
       }
-      return res.redirect('/profile');
+      // For new users, if subscription_plan is not set, redirect to multistep.
+      if (newUser.subscription_plan) {
+        return res.redirect('/profile');
+      } else {
+        return res.redirect('/multistep.html');
+      }
     });
+    
   } catch (err) {
     console.error("Error registering user:", err);
     res.status(500).send("Error al registrar el usuario.");
