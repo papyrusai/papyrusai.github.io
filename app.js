@@ -47,6 +47,8 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html')); // Serve the global index.html
 });
 
+
+
 // Middleware to ensure user is authenticated
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
@@ -94,6 +96,14 @@ app.post('/save-industries', async (req, res) => {
     await client.close();
   }
 });
+
+
+// New route for email/password login using Passport Local Strategy
+app.post('/login', passport.authenticate('local', { 
+  successRedirect: '/profile',
+  failureRedirect: '/index.html'
+}));
+ 
 
 // Google OAuth routes with prompt to re-authenticate
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
