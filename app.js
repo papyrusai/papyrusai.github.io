@@ -4,7 +4,7 @@ const passport = require('passport');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const moment = require('moment');
 const fs = require('fs');
 const { spawn } = require('child_process'); // Import the spawn function
@@ -84,7 +84,7 @@ app.post('/save-industries', async (req, res) => {
 
     const industries = Array.isArray(req.body.industries) ? req.body.industries : [req.body.industries];
     await usersCollection.updateOne(
-      { googleId: req.user.googleId },
+      { _id: new ObjectId(req.user._id) },
       { $set: { industry_tags: industries } }
     );
 
@@ -194,7 +194,7 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
       const usersCollection = database.collection("users");
 
       // Find the user in the database
-      const existingUser = await usersCollection.findOne({ googleId: req.user.googleId });
+      const existingUser = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
 
       if (existingUser && existingUser.industry_tags && existingUser.industry_tags.length > 0) {
         // Redirect to profile if user has selected industry tags
@@ -232,7 +232,7 @@ app.get('/profile', async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    const user = await usersCollection.findOne({ googleId: req.user.googleId });
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
 
     // We'll read user.sub_rama_map for the new sub‐rama logic
     const userSubRamaMap = user.sub_rama_map || {};
@@ -487,7 +487,7 @@ app.get('/data', async (req, res) => {
     const usersCollection = database.collection("users");
 
     // 1) Ensure current user has industry tags
-    const user = await usersCollection.findOne({ googleId: req.user.googleId });
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     if (!user.industry_tags || user.industry_tags.length === 0) {
       return res.status(400).json({ error: 'No industry tags selected' });
     }
@@ -737,7 +737,7 @@ app.delete('/api/cancel-subscription', async (req, res) => {
     const db = client.db("papyrus");
     // Instead of deleteOne => we do updateOne with $unset
     await db.collection('users').updateOne(
-      { googleId: req.user.googleId },
+      { _id: new ObjectId(req.user._id) },
       { 
         $unset: {
           googleId: "",
@@ -968,7 +968,7 @@ app.get('/save-user', async (req, res) => {
     }
 
     await usersCollection.updateOne(
-      { googleId: req.user.googleId },
+      { _id: new ObjectId(req.user._id) },
       { $set: updateFields },
       { upsert: true }
     );
@@ -994,7 +994,7 @@ app.post('/save-free-plan', async (req, res) => {
     const usersCollection = db.collection("users");
 
     await usersCollection.updateOne(
-      { googleId: req.user.googleId },
+      { _id: new ObjectId(req.user._id) },
       {
         $set: {
           industry_tags,
@@ -1022,7 +1022,7 @@ app.get('/api/current-user', ensureAuthenticated, async (req, res) => {
     await client.connect();
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
-    const user = await usersCollection.findOne({ googleId: req.user.googleId });
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -1044,7 +1044,7 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    const user = await usersCollection.findOne({ googleId: req.user.googleId });
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -1078,7 +1078,7 @@ app.post('/save-same-plan2', async (req, res) => {
     const usersCollection = db.collection("users");
 
     await usersCollection.updateOne(
-      { googleId: req.user.googleId },
+      { _id: new ObjectId(req.user._id) },
       {
         $set: {
           industry_tags,
@@ -1122,7 +1122,7 @@ app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
     const usersCollection = db.collection("users");
 
     // 2a) Find the user in DB
-    const user = await usersCollection.findOne({ googleId: req.user.googleId });
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -1144,7 +1144,7 @@ app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
 
     // 3) Now update user => switch to plan1, store new data
     await usersCollection.updateOne(
-      { googleId: req.user.googleId },
+      { _id: new ObjectId(req.user._id) },
       {
         $set: {
           subscription_plan: plan,  // "plan1"
