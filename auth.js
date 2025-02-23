@@ -26,18 +26,22 @@ async function upsertUser(profile) {
       email: profile.emails[0].value
     };
 
-    const result = await usersCollection.updateOne(
+    // Upsert the user document
+    await usersCollection.updateOne(
       { googleId: user.googleId },
       { $set: user },
       { upsert: true }
     );
 
-    console.log(`User ${result.upsertedId ? 'inserted' : 'updated'}`);
-    return user;
+    // Retrieve the full user document (including _id)
+    const fullUser = await usersCollection.findOne({ googleId: user.googleId });
+    console.log(`User ${fullUser._id ? 'inserted/updated' : 'not found'}`);
+    return fullUser;
   } finally {
     await client.close();
   }
 }
+
 
 async function findUserByGoogleId(googleId) {
   const client = new MongoClient(uri, mongodbOptions);
