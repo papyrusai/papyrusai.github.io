@@ -12,6 +12,30 @@
   <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
   <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+  <style>
+    /* Aumenta un poco la fuente en móvil */
+    @media (max-width: 600px) {
+      body {
+        font-size: 18px; /* más grande en móvil */
+      }
+      .feedback-container {
+        padding: 20px;
+      }
+    }
+    .feedback-container {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 20px;
+      font-family: sans-serif;
+    }
+    #thankYouMessage {
+      color: green; 
+      margin-top: 15px;
+      font-weight: bold;
+      display: none; /* oculto por defecto */
+    }
+  </style>
 </head>
 <body>
   

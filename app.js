@@ -1020,16 +1020,17 @@ app.post('/save-free-plan', async (req, res) => {
 
 /*Feedback*/
 // En tu app.js
+// En app.js
 app.get('/feedback', async (req, res) => {
   try {
-    const userId = req.query.userId; // e.g. "64f2..."
-    const grade = parseInt(req.query.grade, 10); // e.g. 1..5
+    const userId = req.query.userId; 
+    const grade = parseInt(req.query.grade, 10);
 
     if (!userId || !grade) {
       return res.status(400).send('Faltan parámetros');
     }
 
-    // Conectamos con Mongo
+    // Conexión a Mongo
     const client = new MongoClient(process.env.DB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true
@@ -1037,27 +1038,34 @@ app.get('/feedback', async (req, res) => {
     await client.connect();
     const db = client.db('papyrus');
     const feedbackCol = db.collection('Feedback');
+    const usersCol = db.collection('users');
 
-    // Prepara el doc
+    // 1) Buscar el email del usuario en "users"
+    const userInDB = await usersCol.findOne({ _id: new ObjectId(userId) });
+    if (!userInDB) {
+      await client.close();
+      return res.status(404).send('Usuario no encontrado');
+    }
+
+    // 2) Crear objeto feedback
     const fecha = moment().format('DD-MM-YYYY');
     const newFeedback = {
       user_id: new ObjectId(userId),
+      user_email: userInDB.email,  // <--- GUARDAMOS EL EMAIL
       content_evaluated: 'email',
       fecha,
       grade,
-      comentario: '' // de momento vacío
+      comentario: ''
     };
 
-    // Insertamos
+    // 3) Insertar
     const result = await feedbackCol.insertOne(newFeedback);
-
-    // Opcional: guarda el nuevo _id si quieres referenciarlo
     const feedbackId = result.insertedId;
 
     await client.close();
 
-    // Ahora redirigimos a feedback.html para que deje comentario
-    // Le pasamos en la query el feedbackId para luego actualizar comentario
+    // 4) En lugar de redirigir a feedback.html sin más, 
+    //    le mandamos a feedback.html con el param fid=...
     return res.redirect(`https://app.papyrus-ai.com/feedback.html?fid=${feedbackId}`);
 
   } catch (err) {
@@ -1066,11 +1074,13 @@ app.get('/feedback', async (req, res) => {
   }
 });
 
-app.post('/feedback-comment', async (req, res) => {
+
+// app.js
+app.post('/feedback-comment', express.json(), async (req, res) => {
   try {
     const { fid, comentario } = req.body;
     if (!fid) {
-      return res.status(400).send('Faltan parámetros');
+      return res.status(400).send('Faltan parámetros (fid)');
     }
 
     const client = new MongoClient(process.env.DB_URI, {
@@ -1081,7 +1091,7 @@ app.post('/feedback-comment', async (req, res) => {
     const db = client.db('papyrus');
     const feedbackCol = db.collection('Feedback');
 
-    // Actualizamos el documento con _id = fid, añadiendo comentario
+    // 1) Actualiza "comentario" en el doc con _id=fid
     await feedbackCol.updateOne(
       { _id: new ObjectId(fid) },
       { $set: { comentario } }
@@ -1089,27 +1099,13 @@ app.post('/feedback-comment', async (req, res) => {
 
     await client.close();
 
-    // Muestra una página de agradecimiento o redirige a otra
-    return res.send(`
-      <html>
-        <head>
-          <title>Gracias por tu feedback</title>
-        </head>
-        <body style="font-family: sans-serif; text-align: center;">
-          <h1>¡Muchas gracias!</h1>
-          <p>Hemos registrado tu comentario: "${comentario}"</p>
-          <a href="https://app.papyrus-ai.com/profile">Volver al perfil</a>
-        </body>
-      </html>
-    `);
+    // 2) Responde un 200 OK => para que en JS se muestre "gracias"
+    return res.status(200).send('OK');
   } catch (err) {
     console.error('Error en /feedback-comment =>', err);
     return res.status(500).send('Error guardando comentario');
   }
 });
-
-
-
 
 
 
