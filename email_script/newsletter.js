@@ -4,6 +4,7 @@
  * To run:
  *    node newsletter.js
  * Variables: solo enviamos BOE
+ * * Produccion: ELIMINAR EN produccion --> cambiar filteredUsers to allUsers
  ************************************************/
 const { MongoClient } = require('mongodb');
 const nodemailer = require('nodemailer');
@@ -132,7 +133,7 @@ function buildDocumentHTML(doc, isLastDoc) {
 /**
  * Build the "normal" newsletter (some matches for the user).
  */
-function buildNewsletterHTML(userName, dateString, groupedData) {
+function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
   // Split out cnae-based vs sub-rama-based
   const cnaeGroups = groupedData.filter(g => g.type === 'cnae');
   const subRamaGroups = groupedData.filter(g => g.type === 'subRama');
@@ -368,6 +369,18 @@ function buildNewsletterHTML(userName, dateString, groupedData) {
       ${detailBlocks}
 
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
+
+     <div style="text-align:center; margin: 20px 0;">
+      <p>¿Qué te ha parecido este email?</p>
+      <p style="font-size:18px;">
+        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1">★☆☆☆☆</a>
+        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2">★★☆☆☆</a>
+        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3">★★★☆☆</a>
+        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4">★★★★☆</a>
+        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5">★★★★★</a>
+      </p>
+    </div>
+
       <p style="font-size:0.9em; color:#666; text-align:center;">
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
       </p>
@@ -390,7 +403,7 @@ function buildNewsletterHTML(userName, dateString, groupedData) {
  * Newsletter "no matches" scenario.
  * Only BOE docs, grouped by divisiones_cnae, 'Genérico' last.
  */
-function buildNewsletterHTMLNoMatches(userName, dateString, boeDocs) {
+function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   const cnaeMap = {};
 
   boeDocs.forEach(doc => {
@@ -564,6 +577,16 @@ function buildNewsletterHTMLNoMatches(userName, dateString, boeDocs) {
       ${detailBlocks}
 
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
+     <div style="text-align:center; margin: 20px 0;">
+  <p>¿Qué te ha parecido este email?</p>
+  <p style="font-size:18px;">
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1">★☆☆☆☆</a>
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2">★★☆☆☆</a>
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3">★★★☆☆</a>
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4">★★★★☆</a>
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5">★★★★★</a>
+  </p>
+</div>
       <p style="font-size:0.9em; color:#666; text-align:center;">
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
       </p>
@@ -619,8 +642,11 @@ function buildNewsletterHTMLNoMatches(userName, dateString, boeDocs) {
     const usersCollection = db.collection('users');
     const allUsers = await usersCollection.find({}).toArray();
 
+    // ***** AÑADE ESTE FILTRO: solo "6inimartin6@gmail.com" *****
+const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com');
+
     // For each user, build "cnae" + "subRama" groups
-    for (const user of allUsers) {
+    for (const user of  filteredUsers){ //ELIMINAR EN PRODUCCION
       // We'll keep separate grouping structures, then combine them
       const cnaeGroups = {};
       const ramaGroups = {};
@@ -716,9 +742,9 @@ function buildNewsletterHTMLNoMatches(userName, dateString, boeDocs) {
             item.doc.sub_rama_juridica = subRamas;
             return item.doc;
           });
-        htmlBody = buildNewsletterHTMLNoMatches(user.name, moment().format('YYYY-MM-DD'), boeDocs);
+        htmlBody = buildNewsletterHTMLNoMatches(user.name,  user._id.toString(),moment().format('YYYY-MM-DD'), boeDocs);
       } else {
-        htmlBody = buildNewsletterHTML(user.name, moment().format('YYYY-MM-DD'), finalGroups);
+        htmlBody = buildNewsletterHTML(user.name,  user._id.toString(),moment().format('YYYY-MM-DD'), finalGroups);
       }
 
       // Log email size

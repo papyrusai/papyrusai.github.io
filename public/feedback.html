@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Feedback</title>
+  <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+  <link rel="stylesheet" href="styles/styles.css"> <!-- tu CSS global -->
+  <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" type="text/css" href="styles/styles.css" />
+  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
+  <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
+  <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="logo">
+        <a href="https://www.papyrus-ai.com/" target="_blank">
+          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+        </a>
+      </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+      <ul class="menu">
+        <li><a href="https://papyrus-ai.com/">WEB</a></li>
+        <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
+        <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+        <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+      </ul>
+  </nav>
+
+  <div style="max-width:600px; margin:0 auto; text-align:center; padding:20px;">
+    <h1>¡Gracias por tu valoración!</h1>
+    <p>¿Quieres dejarnos un comentario adicional?</p>
+
+    <!-- Al cargar esta página, tenemos en la URL algo como feedback.html?fid=xxxx -->
+    <!-- Asegúrate de parsear "fid" en JS y meterlo en el form -->
+
+    <form action="/feedback-comment" method="POST">
+      <input type="hidden" name="fid" id="fidField" value="">
+      <textarea name="comentario" rows="5" cols="50" placeholder="Escribe tu comentario..."></textarea>
+      <br><br>
+      <button type="submit">Enviar comentario</button>
+    </form>
+  </div>
+
+  <script>
+    // Parse fid from la query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const fid = urlParams.get('fid');
+    document.getElementById('fidField').value = fid;
+  </script>
+
+</body>
+</html>

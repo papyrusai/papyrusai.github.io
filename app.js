@@ -1017,6 +1017,102 @@ app.post('/save-free-plan', async (req, res) => {
   }
 });
 
+
+/*Feedback*/
+// En tu app.js
+app.get('/feedback', async (req, res) => {
+  try {
+    const userId = req.query.userId; // e.g. "64f2..."
+    const grade = parseInt(req.query.grade, 10); // e.g. 1..5
+
+    if (!userId || !grade) {
+      return res.status(400).send('Faltan parámetros');
+    }
+
+    // Conectamos con Mongo
+    const client = new MongoClient(process.env.DB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    await client.connect();
+    const db = client.db('papyrus');
+    const feedbackCol = db.collection('Feedback');
+
+    // Prepara el doc
+    const fecha = moment().format('DD-MM-YYYY');
+    const newFeedback = {
+      user_id: new ObjectId(userId),
+      content_evaluated: 'email',
+      fecha,
+      grade,
+      comentario: '' // de momento vacío
+    };
+
+    // Insertamos
+    const result = await feedbackCol.insertOne(newFeedback);
+
+    // Opcional: guarda el nuevo _id si quieres referenciarlo
+    const feedbackId = result.insertedId;
+
+    await client.close();
+
+    // Ahora redirigimos a feedback.html para que deje comentario
+    // Le pasamos en la query el feedbackId para luego actualizar comentario
+    return res.redirect(`https://app.papyrus-ai.com/feedback.html?fid=${feedbackId}`);
+
+  } catch (err) {
+    console.error('Error en /feedback =>', err);
+    return res.status(500).send('Error guardando feedback');
+  }
+});
+
+app.post('/feedback-comment', async (req, res) => {
+  try {
+    const { fid, comentario } = req.body;
+    if (!fid) {
+      return res.status(400).send('Faltan parámetros');
+    }
+
+    const client = new MongoClient(process.env.DB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    await client.connect();
+    const db = client.db('papyrus');
+    const feedbackCol = db.collection('Feedback');
+
+    // Actualizamos el documento con _id = fid, añadiendo comentario
+    await feedbackCol.updateOne(
+      { _id: new ObjectId(fid) },
+      { $set: { comentario } }
+    );
+
+    await client.close();
+
+    // Muestra una página de agradecimiento o redirige a otra
+    return res.send(`
+      <html>
+        <head>
+          <title>Gracias por tu feedback</title>
+        </head>
+        <body style="font-family: sans-serif; text-align: center;">
+          <h1>¡Muchas gracias!</h1>
+          <p>Hemos registrado tu comentario: "${comentario}"</p>
+          <a href="https://app.papyrus-ai.com/profile">Volver al perfil</a>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error('Error en /feedback-comment =>', err);
+    return res.status(500).send('Error guardando comentario');
+  }
+});
+
+
+
+
+
+
 /*Cambiar suscripcion*/
 app.get('/api/current-user', ensureAuthenticated, async (req, res) => {
   try {
