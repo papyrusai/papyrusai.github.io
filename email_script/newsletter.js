@@ -371,14 +371,35 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
 
      <div style="text-align:center; margin: 20px 0;">
-      <p>¿Qué te ha parecido este email?</p>
-      <p style="font-size:18px;">
-        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1">★☆☆☆☆</a>
-        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2">★★☆☆☆</a>
-        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3">★★★☆☆</a>
-        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4">★★★★☆</a>
-        <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5">★★★★★</a>
-      </p>
+      <p>¿Qué te ha parecido el resumen normativo?</p>
+   <!-- Fila de “estrellas” (1–5) con color #83a300 -->
+  <p style="font-size:24px; margin:0;">
+    <!-- 1 estrella -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★☆☆☆☆
+    </a>
+    <!-- 2 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★☆☆☆
+    </a>
+    <!-- 3 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★★☆☆
+    </a>
+    <!-- 4 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★★★☆
+    </a>
+    <!-- 5 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★★★★
+    </a>
+  </p>
     </div>
 
       <p style="font-size:0.9em; color:#666; text-align:center;">
@@ -578,13 +599,36 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
 
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
      <div style="text-align:center; margin: 20px 0;">
-  <p>¿Qué te ha parecido este email?</p>
-  <p style="font-size:18px;">
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1">★☆☆☆☆</a>
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2">★★☆☆☆</a>
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3">★★★☆☆</a>
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4">★★★★☆</a>
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5">★★★★★</a>
+ <p>Valora el resumen normativo</p>
+<!-- Fila de “estrellas” (1–5) con color #83a300 -->
+   <p>¿Qué te ha parecido el resumen normativo?</p>
+   <!-- Fila de “estrellas” (1–5) con color #83a300 -->
+  <p style="font-size:24px; margin:0;">
+    <!-- 1 estrella -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★☆☆☆☆
+    </a>
+    <!-- 2 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★☆☆☆
+    </a>
+    <!-- 3 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★★☆☆
+    </a>
+    <!-- 4 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★★★☆
+    </a>
+    <!-- 5 estrellas -->
+    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
+       ★★★★★
+    </a>
   </p>
 </div>
       <p style="font-size:0.9em; color:#666; text-align:center;">
@@ -643,7 +687,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     const allUsers = await usersCollection.find({}).toArray();
 
     // ***** AÑADE ESTE FILTRO: solo "6inimartin6@gmail.com" *****
-const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com');
+const filteredUsers = allUsers; //allUsers.filter(u => u.email === '6inimartin6@gmail.com');
 
     // For each user, build "cnae" + "subRama" groups
     for (const user of  filteredUsers){ //ELIMINAR EN PRODUCCION
