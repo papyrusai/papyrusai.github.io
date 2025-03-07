@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profile Cuatrecasas</title>
+  <link rel="icon" href="assets/papyrus_logo.png" type="image/png">
+  <link rel="stylesheet" type="text/css" href="styles/styles.css" />
+  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+  <!-- Add any additional CSS if needed -->
+</head>
+<body>
+  <nav class="navbar">
+    <div class="logo">
+      <a href="https://www.papyrus-ai.com/" target="_blank">
+        <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+      </a>
+    </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button>
+    <ul class="menu">
+      <li><a href="https://papyrus-ai.com/">WEB</a></li>
+      <li><a href="/profile_cuatrecasas">PANEL DE CONTROL</a></li>
+      <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+      <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+    </ul>
+  </nav>
+
+  <h1>Hola {{name}}</h1>
+
+  <div id="data-container">
+    <div class="analytics-label">Documentos</div>
+    <div class="collectionDocs">
+      {{boeDocuments}}
+    </div>
+  </div>
+
+  <div class="logout-container">
+    <a href="/logout">Logout</a>
+  </div>
+
+  <script>
+    function toggleMenu() {
+      const menu = document.querySelector('.menu');
+      menu.classList.toggle('active');
+    }
+    document.addEventListener('click', function(event) {
+      const menu = document.querySelector('.menu');
+      const hamburger = document.querySelector('.hamburger');
+      if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+      }
+    });
+  </script>
+</body>
+</html>

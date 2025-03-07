@@ -11,6 +11,8 @@ const { spawn } = require('child_process'); // Import the spawn function
 const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
 
+const SPECIAL_DOMAIN = "@papyrus-ai.com";
+
 //to avoid deprecation error
 const mongodbOptions = {
   useNewUrlParser: true,
@@ -97,22 +99,93 @@ app.post('/save-industries', async (req, res) => {
   }
 });
 
+async function processSpecialDomainUser(user) {
+  // Create a new connection to check/create the special user.
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Check if a special user exists with this email.
+    const specialUser = await usersCollection.findOne({ email: user.email });
+    if (specialUser) {
+      return specialUser;
+    } else {
+      // Create a new user with the special defaults.
+      const specialDefaults = {
+        email: user.email,
+        cobertura_legal: {
+          "Nacional y Europeo": ["BOE", "DOUE"],
+          "Autonomico": ["BOA", "BOCM", "BOCYL", "BOJA", "BOPV"],
+          "Reguladores": ["CNMV"]
+        },
+        profile_type: "Departamento conocimiento",
+        company_name: "Cuatrecasas",
+        subscription_plan: "plan2",
+        etiquetas_cuatrecasas: [
+          "Arbitraje Internacional",
+          "Competencia",
+          "Deporte y Entretenimiento",
+          "Empresa y Derechos Humanos",
+          "Energía e Infraestructura",
+          "Farmacéutico y Sanitario",
+          "Financiero",
+          "Fiscalidad Contenciosa",
+          "Fiscalidad Corporativa",
+          "Fiscalidad Financiera",
+          "Fiscalidad Indirecta",
+          "Fondos",
+          "Gobierno Corporativo y Compliance",
+          "Inmobiliario y Urbanismo",
+          "Laboral",
+          "Litigación",
+          "Mercado de Capitales",
+          "Mercantil y M&A",
+          "Penal",
+          "Precios de Transferencia y Tax Governance",
+          "Private Client & Wealth Management",
+          "Private Equity",
+          "Propiedad Intelectual, Industrial y Secretos",
+          "Protección de Datos",
+          "Público",
+          "Reestructuraciones, Insolvencias y Situaciones Especiales",
+          "Servicios Financieros y de Seguros",
+          "Tecnologías y Medios Digitales",
+          "Venture Capital"
+        ]
+      };
+      const result = await usersCollection.insertOne(specialDefaults);
+      specialDefaults._id = result.insertedId;
+      return specialDefaults;
+    }
+  } finally {
+    await client.close();
+  }
+}
+
+
+
 
 // New route for email/password login using Passport Local Strategy
 app.post('/login', (req, res, next) => {
-  passport.authenticate('local', (err, user, info) => {
+  passport.authenticate('local', async (err, user, info) => {
     if (err) {
       return res.status(500).json({ error: "Error interno de autenticación" });
     }
     if (!user) {
-      // When no user is found, return an error message
-      return res.status(400).json({ error: "Correo o contraseña equivocada, por favor, intente de nuevo"});
+      return res.status(400).json({ error: "Correo o contraseña equivocada, por favor, intente de nuevo" });
     }
-    req.logIn(user, (err) => {
+    req.logIn(user, async (err) => {
       if (err) {
         return res.status(500).json({ error: "Error al iniciar sesión" });
       }
-      // Check if the user has a subscription_plan.
+      // If the email ends with our special domain, process as a cuatrecasas user.
+      if (user.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
+        await processSpecialDomainUser(user);
+        return res.status(200).json({ redirectUrl: '/profile_cuatrecasas' });
+      }
+      // Otherwise, normal flow.
       if (user.subscription_plan) {
         return res.status(200).json({ redirectUrl: '/profile' });
       } else {
@@ -127,7 +200,7 @@ app.post('/login', (req, res, next) => {
 /*register*/
 // Registration route for new users
 app.post('/register', async (req, res) => {
-  const { email, password, confirmPassword } = req.body; // Removed name field
+  const { email, password, confirmPassword } = req.body; // No "name" field now
   const bcrypt = require('bcryptjs');
 
   // Server-side validations
@@ -147,13 +220,13 @@ app.post('/register', async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    // Check if a user with this email already exists.
+    // Check if user exists by email.
     const existingUser = await usersCollection.findOne({ email: email });
     if (existingUser) {
       return res.status(400).json({ error: "El usuario ya existe, por favor inicia sesión" });
     }
     
-    // Hash the password and insert the new user.
+    // Hash the password and create the new user.
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
       email,
@@ -164,13 +237,17 @@ app.post('/register', async (req, res) => {
     const result = await usersCollection.insertOne(newUser);
     newUser._id = result.insertedId;
     
-    // Log the user in immediately after registration.
-    req.login(newUser, (err) => {
+    req.login(newUser, async (err) => {
       if (err) {
         console.error("Error during login after registration:", err);
         return res.status(500).json({ error: "Registro completado, pero fallo al iniciar sesión" });
       }
-      // New users have no subscription_plan so redirect to multistep.
+      // If the email is special, process it.
+      if (newUser.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
+        await processSpecialDomainUser(newUser);
+        return res.status(200).json({ redirectUrl: '/profile_cuatrecasas' });
+      }
+      // New users (normal) without subscription_plan go to multistep.
       return res.status(200).json({ redirectUrl: '/multistep.html' });
     });
     
@@ -181,6 +258,7 @@ app.post('/register', async (req, res) => {
     await client.close();
   }
 });
+
 
 
 
@@ -195,21 +273,23 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
       const database = client.db("papyrus");
       const usersCollection = database.collection("users");
 
-      // Find the user in the database
+      // Fetch the user using the _id from the session.
       const existingUser = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
 
+      // If the user's email ends with our special domain, process accordingly.
+      if (req.user.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
+        await processSpecialDomainUser(req.user);
+        return res.redirect('/profile_cuatrecasas');
+      }
+
       if (existingUser && existingUser.industry_tags && existingUser.industry_tags.length > 0) {
-        // Redirect to profile if user has selected industry tags
-        
         if (req.session.returnTo) {
           const redirectPath = req.session.returnTo;
-          req.session.returnTo = null;  // Clear it
+          req.session.returnTo = null;
           return res.redirect(redirectPath);
         }
-        
         return res.redirect('/profile');
       } else {
-        // Redirect to the multistep form if industry tags are not set
         return res.redirect('/multistep.html');
       }
     } catch (err) {
@@ -220,6 +300,88 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
     }
   }
 );
+
+
+// NEW: Route for profile_cuatrecasas
+app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const boeCollection = database.collection("BOE");
+    
+    // Define the fields to retrieve:
+    const projection = {
+      short_name: 1,
+      etiquetas_cuatrecasas: 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      resumen: 1,
+      url_pdf: 1,
+      _id: 1
+    };
+
+    const today = new Date();
+    const queryToday = {
+      anio: today.getFullYear(),
+      mes: today.getMonth() + 1,
+      dia: today.getDate()
+    };
+
+    // First, try to get documents with today's date.
+    let docs = await boeCollection.find(queryToday).project(projection).toArray();
+
+    // If none are found, get the most recent documents.
+    if (docs.length === 0) {
+      docs = await boeCollection.find({}).sort({ anio: -1, mes: -1, dia: -1 }).limit(10).project(projection).toArray();
+    }
+
+    // Build the HTML for each document.
+    let documentsHtml = "";
+    docs.forEach(doc => {
+      let etiquetasHtml = "";
+      if (doc.etiquetas_cuatrecasas && Array.isArray(doc.etiquetas_cuatrecasas) && doc.etiquetas_cuatrecasas.length > 0) {
+        etiquetasHtml = doc.etiquetas_cuatrecasas.map(e => `<span>${e}</span>`).join('');
+      } else {
+        etiquetasHtml = `<span>Genérico</span>`;
+      }
+      documentsHtml += `
+        <div class="data-item">
+          <div class="header-row">
+            <div class="id-values">${doc.short_name}</div>
+            <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+          </div>
+          <div class="etiquetas_cuatrecasas-values">
+            ${etiquetasHtml}
+          </div>
+          <div class="resumen-label">Resumen</div>
+          <div class="resumen-content">${doc.resumen}</div>
+          <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+        </div>
+      `;
+    });
+
+    // Read the new template file profile_cuatrecasas.html.
+    let template = fs.readFileSync(path.join(__dirname, 'public', 'profile_cuatrecasas.html'), 'utf8');
+
+    // Replace placeholders.
+    template = template.replace('{{boeDocuments}}', documentsHtml);
+
+    // Also fetch the user's name for display.
+    const usersCollection = database.collection("users");
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    template = template.replace('{{name}}', user.name || '');
+
+    res.send(template);
+  } catch (err) {
+    console.error("Error in /profile_cuatrecasas:", err);
+    res.status(500).send("Error retrieving documents");
+  } finally {
+    await client.close();
+  }
+});
+
 
 
 
