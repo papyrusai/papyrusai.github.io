@@ -7,6 +7,10 @@
   <link rel="icon" href="assets/papyrus_logo.png" type="image/png">
   <link rel="stylesheet" type="text/css" href="styles/styles.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
+  <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
+  <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
   <!-- Add any additional CSS if needed -->
 </head>
 <body>
@@ -27,8 +31,86 @@
 
   <h1>Hola {{name}}</h1>
 
+  <!-- Busqueda Avanza Section -->
+  <div id="busquedaAvanza">
+    <div class="analytics-label">Búsqueda Avanza</div>
+    <div class="filter-container">
+      <!-- "Sector Económico" removed -->
+      <!-- Dropdown for Servicios Cuatrecasas (populated with etiquetas_cuatrecasas options) -->
+      <div class="filter-item">
+        <div class="etiquetas-label">Servicios Cuatrecasas</div>
+        <div class="dropdown">
+          <button onclick="toggleServiciosDropdown()" class="dropbtn">
+            <span id="selectedServicio">Todos</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="serviciosDropdown" class="dropdown-content">
+            <!-- Example options; ideally these come from the database or a JS variable -->
+            <a href="#" onclick="selectServicio('Todos')">Todos</a>
+            <a href="#" onclick="selectServicio('Arbitraje Internacional')">Arbitraje Internacional</a>
+            <a href="#" onclick="selectServicio('Competencia')">Competencia</a>
+            <a href="#" onclick="selectServicio('Deporte y Entretenimiento')">Deporte y Entretenimiento</a>
+            <a href="#" onclick="selectServicio('Empresa y Derechos Humanos')">Empresa y Derechos Humanos</a>
+            <a href="#" onclick="selectServicio('Energía e Infraestructura')">Energía e Infraestructura</a>
+            <a href="#" onclick="selectServicio('Farmacéutico y Sanitario')">Farmacéutico y Sanitario</a>
+            <a href="#" onclick="selectServicio('Financiero')">Financiero</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Contenciosa')">Fiscalidad Contenciosa</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Corporativa')">Fiscalidad Corporativa</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Financiera')">Fiscalidad Financiera</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Indirecta')">Fiscalidad Indirecta</a>
+            <a href="#" onclick="selectServicio('Fondos')">Fondos</a>
+            <a href="#" onclick="selectServicio('Gobierno Corporativo y Compliance')">Gobierno Corporativo y Compliance</a>
+            <a href="#" onclick="selectServicio('Inmobiliario y Urbanismo')">Inmobiliario y Urbanismo</a>
+            <a href="#" onclick="selectServicio('Laboral')">Laboral</a>
+            <a href="#" onclick="selectServicio('Litigación')">Litigación</a>
+            <a href="#" onclick="selectServicio('Mercado de Capitales')">Mercado de Capitales</a>
+            <a href="#" onclick="selectServicio('Mercantil y M&A')">Mercantil y M&A</a>
+            <a href="#" onclick="selectServicio('Penal')">Penal</a>
+            <a href="#" onclick="selectServicio('Precios de Transferencia y Tax Governance')">Precios de Transferencia y Tax Governance</a>
+            <a href="#" onclick="selectServicio('Private Client & Wealth Management')">Private Client & Wealth Management</a>
+            <a href="#" onclick="selectServicio('Private Equity')">Private Equity</a>
+            <a href="#" onclick="selectServicio('Propiedad Intelectual, Industrial y Secretos')">Propiedad Intelectual, Industrial y Secretos</a>
+            <a href="#" onclick="selectServicio('Protección de Datos')">Protección de Datos</a>
+            <a href="#" onclick="selectServicio('Público')">Público</a>
+            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales')">Reestructuraciones, Insolvencias y Situaciones Especiales</a>
+            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros')">Servicios Financieros y de Seguros</a>
+            <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
+            <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
+          </div>
+        </div>
+      </div>
+      <!-- Boletín Oficial remains -->
+      <div class="filter-item">
+        <div class="etiquetas-label">Boletín Oficial</div>
+        <div class="filter-options">
+          <label class="filter-option">
+            <input type="checkbox" name="boletin" value="BOE" checked> BOE
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="boletin" value="BOCM"> BOCM
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="boletin" value="BOA"> BOA
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="boletin" value="BOJA"> BOJA
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="boletin" value="BOPV"> BOPV
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" name="boletin" value="DOUE"> DOUE
+          </label>
+        </div>
+      </div>
+      <!-- Fecha de publicación removed -->
+    </div>
+  </div>
+  <button id="buscarBtn" onclick="handleBuscar()">Buscar</button>
+
+  <!-- Documentos Section -->
   <div id="data-container">
-    <div class="analytics-label">Documentos</div>
+    <div class="analytics-label">Documentos BOE - Día {{documentDate}}</div>
     <div class="collectionDocs">
       {{boeDocuments}}
     </div>
@@ -50,6 +132,16 @@
         menu.classList.remove('active');
       }
     });
+
+    // Dropdown functions for Servicios Cuatrecasas.
+    function toggleServiciosDropdown() {
+      const dropdown = document.getElementById('serviciosDropdown');
+      dropdown.classList.toggle('show');
+    }
+    function selectServicio(servicio) {
+      document.getElementById('selectedServicio').textContent = servicio;
+      // Optionally trigger filtering on the page.
+    }
   </script>
 </body>
 </html>

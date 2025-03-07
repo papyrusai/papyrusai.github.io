@@ -310,7 +310,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     const database = client.db("papyrus");
     const boeCollection = database.collection("BOE");
     
-    // Define the fields to retrieve:
+    // Projection for the required fields.
     const projection = {
       short_name: 1,
       etiquetas_cuatrecasas: 1,
@@ -329,12 +329,24 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       dia: today.getDate()
     };
 
-    // First, try to get documents with today's date.
+    // Try to get documents with today's date.
     let docs = await boeCollection.find(queryToday).project(projection).toArray();
-
-    // If none are found, get the most recent documents.
+    let docDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+    
+    // If no docs found for today, find the most recent day with documents.
     if (docs.length === 0) {
-      docs = await boeCollection.find({}).sort({ anio: -1, mes: -1, dia: -1 }).limit(10).project(projection).toArray();
+      // Find the most recent document overall.
+      const latestDocsArr = await boeCollection.find({}).sort({ anio: -1, mes: -1, dia: -1 }).limit(1).toArray();
+      if (latestDocsArr.length > 0) {
+        const latestDoc = latestDocsArr[0];
+        const queryLatest = {
+          anio: latestDoc.anio,
+          mes: latestDoc.mes,
+          dia: latestDoc.dia
+        };
+        docs = await boeCollection.find(queryLatest).project(projection).toArray();
+        docDate = `${latestDoc.dia}-${latestDoc.mes}-${latestDoc.anio}`;
+      }
     }
 
     // Build the HTML for each document.
@@ -352,7 +364,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
             <div class="id-values">${doc.short_name}</div>
             <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
           </div>
-          <div class="etiquetas_cuatrecasas-values">
+          <div class="etiquetas-values">
             ${etiquetasHtml}
           </div>
           <div class="resumen-label">Resumen</div>
@@ -365,10 +377,13 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     // Read the new template file profile_cuatrecasas.html.
     let template = fs.readFileSync(path.join(__dirname, 'public', 'profile_cuatrecasas.html'), 'utf8');
 
-    // Replace placeholders.
+    // Replace placeholders: 
+    // {{boeDocuments}} will be replaced with the constructed documents HTML,
+    // and {{documentDate}} with the formatted date.
     template = template.replace('{{boeDocuments}}', documentsHtml);
+    template = template.replace('{{documentDate}}', docDate);
 
-    // Also fetch the user's name for display.
+    // Also inject the user's name.
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     template = template.replace('{{name}}', user.name || '');
