@@ -12,22 +12,28 @@
   <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
   <style>
-    /* Additional styles for the special dropdown */
-    #serviciosDropdown {
+    /* Additional styles for the special dropdowns */
+    #serviciosDropdown, #tipoDropdown {
       max-height: 200px;
       overflow-y: auto;
       position: absolute;
       z-index: 1000;
     }
-    /* Optional: style for the bottom caret in the dropdown */
-    #serviciosDropdown .dropdown-bottom {
+    /* Bottom caret styling */
+    #serviciosDropdown .dropdown-bottom,
+    #tipoDropdown .dropdown-bottom {
       text-align: center;
       padding: 5px;
       border-top: 1px solid #ccc;
       cursor: pointer;
     }
-    /* Ensure the dropdown button and content have relative positioning */
     .dropdown { position: relative; }
+    /* Boletín Oficial: only BOE selectable */
+    .filter-options input[type="checkbox"]:not([value="BOE"]) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
   </style>
 </head>
 <body>
@@ -48,97 +54,116 @@
 
   <!-- Profile Header with Cuatrecasas logo -->
   <div class="profile-header" style="display: flex; align-items: center; gap: 15px; margin: 20px;">
-    <img src="assets/cuatrecasas_logo.png" alt="Cuatrecasas Logo" class="profile-logo" style="height: 60px;">
-    <h1>Hola {{name}}</h1>
+    <img src="assets/cuatrecasas_logo.png" alt="Cuatrecasas Logo" style="height: 160px;">
   </div>
+
   <div id="data-container">
-        <!-- Filter Section (adapted from normal profile's Filtrar) -->
-        <div id="Filtrar">
-            <!-- Remove Sector Económico block -->
-            <!-- Servicios Cuatrecasas Dropdown (replacing Rama Jurídica) -->
-            <div class="filter-item">
-            <div class="etiquetas-label">Servicios Cuatrecasas</div>
-            <div class="dropdown" style="margin-bottom: 10px;">
-                <button onclick="toggleServiciosDropdown()" class="dropbtn">
-                <span id="selectedServicio">Todos</span>
-                <i class="fa fa-caret-down"></i>
-                </button>
-                <div id="serviciosDropdown" class="dropdown-content">
-                <!-- Example options. In practice these could be populated dynamically. -->
-                <a href="#" onclick="selectServicio('Todos')">Todos</a>
-                <a href="#" onclick="selectServicio('Arbitraje Internacional')">Arbitraje Internacional</a>
-                <a href="#" onclick="selectServicio('Competencia')">Competencia</a>
-                <a href="#" onclick="selectServicio('Deporte y Entretenimiento')">Deporte y Entretenimiento</a>
-                <a href="#" onclick="selectServicio('Empresa y Derechos Humanos')">Empresa y Derechos Humanos</a>
-                <a href="#" onclick="selectServicio('Energía e Infraestructura')">Energía e Infraestructura</a>
-                <a href="#" onclick="selectServicio('Farmacéutico y Sanitario')">Farmacéutico y Sanitario</a>
-                <a href="#" onclick="selectServicio('Financiero')">Financiero</a>
-                <a href="#" onclick="selectServicio('Fiscalidad Contenciosa')">Fiscalidad Contenciosa</a>
-                <a href="#" onclick="selectServicio('Fiscalidad Corporativa')">Fiscalidad Corporativa</a>
-                <a href="#" onclick="selectServicio('Fiscalidad Financiera')">Fiscalidad Financiera</a>
-                <a href="#" onclick="selectServicio('Fiscalidad Indirecta')">Fiscalidad Indirecta</a>
-                <a href="#" onclick="selectServicio('Fondos')">Fondos</a>
-                <a href="#" onclick="selectServicio('Gobierno Corporativo y Compliance')">Gobierno Corporativo y Compliance</a>
-                <a href="#" onclick="selectServicio('Inmobiliario y Urbanismo')">Inmobiliario y Urbanismo</a>
-                <a href="#" onclick="selectServicio('Laboral')">Laboral</a>
-                <a href="#" onclick="selectServicio('Litigación')">Litigación</a>
-                <a href="#" onclick="selectServicio('Mercado de Capitales')">Mercado de Capitales</a>
-                <a href="#" onclick="selectServicio('Mercantil y M&A')">Mercantil y M&A</a>
-                <a href="#" onclick="selectServicio('Penal')">Penal</a>
-                <a href="#" onclick="selectServicio('Precios de Transferencia y Tax Governance')">Precios de Transferencia y Tax Governance</a>
-                <a href="#" onclick="selectServicio('Private Client & Wealth Management')">Private Client & Wealth Management</a>
-                <a href="#" onclick="selectServicio('Private Equity')">Private Equity</a>
-                <a href="#" onclick="selectServicio('Propiedad Intelectual, Industrial y Secretos')">Propiedad Intelectual, Industrial y Secretos</a>
-                <a href="#" onclick="selectServicio('Protección de Datos')">Protección de Datos</a>
-                <a href="#" onclick="selectServicio('Público')">Público</a>
-                <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales')">Reestructuraciones, Insolvencias y Situaciones Especiales</a>
-                <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros')">Servicios Financieros y de Seguros</a>
-                <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
-                <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
-                <!-- Bottom caret icon -->
-                <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
-                    <i class="fa fa-caret-down"></i>
-                </div>
-                </div>
+    <!-- Filter Section -->
+    <div id="Filtrar">
+      <!-- Servicios Cuatrecasas Dropdown -->
+      <div class="filter-item">
+        <div class="etiquetas-label">Servicios Cuatrecasas</div>
+        <div class="dropdown" style="margin-bottom: 10px;">
+          <button onclick="toggleServiciosDropdown()" class="dropbtn">
+            <span id="selectedServicio">Todos</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="serviciosDropdown" class="dropdown-content">
+            <a href="#" onclick="selectServicio('Todos')">Todos</a>
+            <a href="#" onclick="selectServicio('Arbitraje Internacional')">Arbitraje Internacional</a>
+            <a href="#" onclick="selectServicio('Competencia')">Competencia</a>
+            <a href="#" onclick="selectServicio('Deporte y Entretenimiento')">Deporte y Entretenimiento</a>
+            <a href="#" onclick="selectServicio('Empresa y Derechos Humanos')">Empresa y Derechos Humanos</a>
+            <a href="#" onclick="selectServicio('Energía e Infraestructura')">Energía e Infraestructura</a>
+            <a href="#" onclick="selectServicio('Farmacéutico y Sanitario')">Farmacéutico y Sanitario</a>
+            <a href="#" onclick="selectServicio('Financiero')">Financiero</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Contenciosa')">Fiscalidad Contenciosa</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Corporativa')">Fiscalidad Corporativa</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Financiera')">Fiscalidad Financiera</a>
+            <a href="#" onclick="selectServicio('Fiscalidad Indirecta')">Fiscalidad Indirecta</a>
+            <a href="#" onclick="selectServicio('Fondos')">Fondos</a>
+            <a href="#" onclick="selectServicio('Gobierno Corporativo y Compliance')">Gobierno Corporativo y Compliance</a>
+            <a href="#" onclick="selectServicio('Inmobiliario y Urbanismo')">Inmobiliario y Urbanismo</a>
+            <a href="#" onclick="selectServicio('Laboral')">Laboral</a>
+            <a href="#" onclick="selectServicio('Litigación')">Litigación</a>
+            <a href="#" onclick="selectServicio('Mercado de Capitales')">Mercado de Capitales</a>
+            <a href="#" onclick="selectServicio('Mercantil y M&A')">Mercantil y M&A</a>
+            <a href="#" onclick="selectServicio('Penal')">Penal</a>
+            <a href="#" onclick="selectServicio('Precios de Transferencia y Tax Governance')">Precios de Transferencia y Tax Governance</a>
+            <a href="#" onclick="selectServicio('Private Client & Wealth Management')">Private Client & Wealth Management</a>
+            <a href="#" onclick="selectServicio('Private Equity')">Private Equity</a>
+            <a href="#" onclick="selectServicio('Propiedad Intelectual, Industrial y Secretos')">Propiedad Intelectual, Industrial y Secretos</a>
+            <a href="#" onclick="selectServicio('Protección de Datos')">Protección de Datos</a>
+            <a href="#" onclick="selectServicio('Público')">Público</a>
+            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales')">Reestructuraciones, Insolvencias y Situaciones Especiales</a>
+            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros')">Servicios Financieros y de Seguros</a>
+            <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
+            <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
+            <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
+              <i class="fa fa-caret-down"></i>
             </div>
-            </div>
-
-            <!-- Boletín Oficial remains -->
-            <div class="filter-item">
-            <div class="filter-section">
-                <div class="etiquetas-label">Boletín Oficial</div>
-                <div class="filter-options">
-                <label class="filter-option">
-                    <input type="checkbox" name="boletin" value="BOE" checked> BOE
-                </label>
-                <label class="filter-option">
-                    <input type="checkbox" name="boletin" value="BOCM"> BOCM
-                </label>
-                <label class="filter-option">
-                    <input type="checkbox" name="boletin" value="BOA"> BOA
-                </label>
-                <label class="filter-option">
-                    <input type="checkbox" name="boletin" value="BOJA"> BOJA
-                </label>
-                <label class="filter-option">
-                    <input type="checkbox" name="boletin" value="BOPV"> BOPV
-                </label>
-                <label class="filter-option">
-                    <input type="checkbox" name="boletin" value="DOUE"> DOUE
-                </label>
-                </div>
-            </div>
-            </div>
-            <!-- Fecha de publicación removed -->
+          </div>
         </div>
+      </div>
 
-        <!-- Documentos Section -->
-        
-            <div class="analytics-label">Documentos BOE - Día {{documentDate}}</div>
-            <div class="collectionDocs">
-            {{boeDocuments}}
+      <!-- Nuevo filtro: Tipo disposición -->
+      <div class="filter-item">
+        <div class="etiquetas-label">Tipo disposición</div>
+        <div class="dropdown" style="margin-bottom: 10px;">
+          <button onclick="toggleTipoDropdown()" class="dropbtn">
+            <span id="selectedTipo">Todos</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="tipoDropdown" class="dropdown-content">
+            <a href="#" onclick="selectTipo('Todos')">Todos</a>
+            <a href="#" onclick="selectTipo('Disposiciones generales')">Disposiciones generales</a>
+            <a href="#" onclick="selectTipo('Otras disposiciones')">Otras disposiciones</a>
+            <div class="dropdown-bottom" onclick="toggleTipoDropdown()">
+              <i class="fa fa-caret-down"></i>
             </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Boletín Oficial (only BOE selectable; others visible but disabled) -->
+      <div class="filter-item">
+        <div class="filter-section">
+          <div class="etiquetas-label">Boletín Oficial</div>
+          <div class="filter-options">
+            <label class="filter-option">
+              <input type="checkbox" name="boletin" value="BOE" checked> BOE
+            </label>
+            <label class="filter-option">
+              <input type="checkbox" name="boletin" value="BOCM" disabled> BOCM
+            </label>
+            <label class="filter-option">
+              <input type="checkbox" name="boletin" value="BOA" disabled> BOA
+            </label>
+            <label class="filter-option">
+              <input type="checkbox" name="boletin" value="BOJA" disabled> BOJA
+            </label>
+            <label class="filter-option">
+              <input type="checkbox" name="boletin" value="BOPV" disabled> BOPV
+            </label>
+            <label class="filter-option">
+              <input type="checkbox" name="boletin" value="DOUE" disabled> DOUE
+            </label>
+          </div>
+        </div>
+      </div>
+      <!-- Fecha de publicación removed -->
+    </div>
+                   
+    <div style="text-align: right;">
+      <button id="buscarBtn" onclick="handleBuscar_cuatrecasas()">Buscar</button>
+    </div>
+
+    <!-- Documentos Section -->
+    <div class="analytics-label">Documentos BOE - Día {{documentDate}}</div>
+    <div class="collectionDocs">
+      {{boeDocuments}}
+    </div>
+  </div>
 
   <div class="logout-container">
     <a href="/logout">Logout</a>
@@ -150,10 +175,14 @@
       menu.classList.toggle('active');
     }
     document.addEventListener('click', function(event) {
-      // Hide Servicios dropdown if clicking outside
-      const dropdown = document.getElementById('serviciosDropdown');
-      if (dropdown && dropdown.classList.contains('show') && !event.target.closest('.dropdown')) {
-        dropdown.classList.remove('show');
+      // Hide dropdowns if clicking outside
+      const serviciosDropdown = document.getElementById('serviciosDropdown');
+      if (serviciosDropdown && serviciosDropdown.classList.contains('show') && !event.target.closest('.dropdown')) {
+        serviciosDropdown.classList.remove('show');
+      }
+      const tipoDropdown = document.getElementById('tipoDropdown');
+      if (tipoDropdown && tipoDropdown.classList.contains('show') && !event.target.closest('.dropdown')) {
+        tipoDropdown.classList.remove('show');
       }
       const menu = document.querySelector('.menu');
       const hamburger = document.querySelector('.hamburger');
@@ -167,9 +196,37 @@
     }
     function selectServicio(servicio) {
       document.getElementById('selectedServicio').textContent = servicio;
-      const dropdown = document.getElementById('serviciosDropdown');
-      dropdown.classList.remove('show');
-      // Optionally, trigger filtering logic here.
+      document.getElementById('serviciosDropdown').classList.remove('show');
+    }
+    function toggleTipoDropdown() {
+      const dropdown = document.getElementById('tipoDropdown');
+      dropdown.classList.toggle('show');
+    }
+    function selectTipo(tipo) {
+      document.getElementById('selectedTipo').textContent = tipo;
+      document.getElementById('tipoDropdown').classList.remove('show');
+    }
+    
+    // Updated filtering function for Buscar.
+    function handleBuscar_cuatrecasas() {
+      // Get current dropdown selections.
+      const servicio = document.getElementById('selectedServicio').textContent.trim();
+      const tipo = document.getElementById('selectedTipo').textContent.trim();
+      // Get all document items.
+      const docs = document.querySelectorAll('.collectionDocs .data-item');
+      docs.forEach(doc => {
+        // Retrieve the text inside etiquetas-values.
+        const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
+        // Check if document matches the selected criteria.
+        let matchServicio = (servicio === 'Todos') || (etiquetasText.includes(servicio));
+        let matchTipo = (tipo === 'Todos') || (etiquetasText.includes(tipo));
+        // Show the doc only if both conditions match.
+        if (matchServicio && matchTipo) {
+          doc.style.display = '';
+        } else {
+          doc.style.display = 'none';
+        }
+      });
     }
   </script>
 </body>
