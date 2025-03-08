@@ -308,7 +308,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
   try {
     await client.connect();
     const database = client.db("papyrus");
-    const boeCollection = database.collection("BOE");
+    const boeCollection = database.collection("BOE"); // Collection hardcoded
     
     // Projection for the required fields.
     const projection = {
@@ -319,7 +319,8 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       anio: 1,
       resumen: 1,
       url_pdf: 1,
-      _id: 1
+      _id: 1,
+      collectionName:1 // Adding collection name
     };
 
     const today = new Date();
@@ -369,9 +370,9 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
           </div>
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
-          <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+          <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
            <div>
-            <a class="button-impacto" href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
           </div>
         </div>
       `;
@@ -452,7 +453,8 @@ app.get('/profile', async (req, res) => {
       url_pdf: 1,
       // doc.ramas_juridicas => { "Derecho Civil": [...], "Derecho Fiscal": [...], etc. }
       ramas_juridicas: 1,
-      _id:1
+      _id:1,
+      collectionName:1 // Added collectionName
     };
 
     let allDocuments = [];
@@ -553,8 +555,7 @@ app.get('/profile', async (req, res) => {
 
         const ramasHtml = doc.matched_rama_juridica && doc.matched_rama_juridica.length > 0
           ? doc.matched_rama_juridica.map(r => `<span class="rama-value">${r}</span>`).join('')
-          : '';
-
+        : '';
         const subRamasHtml = doc.matched_sub_rama_juridica && doc.matched_sub_rama_juridica.length > 0
           ? doc.matched_sub_rama_juridica
           .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ')
@@ -578,9 +579,9 @@ app.get('/profile', async (req, res) => {
             
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+            <a class="leer mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
             <div>
-            <a class="button-impacto" href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
           </div>
           </div>
         `;
@@ -624,42 +625,7 @@ app.get('/profile', async (req, res) => {
   } finally {
     await client.close();
   }
-});
-
-app.get('/search-ramas-juridicas', async (req, res) => {
-    const query = req.query.q;
-
-    const ramaJuridicaList = [
-       "Derecho Civil",
-    "Derecho Mercantil",
-    "Derecho Administrativo",
-    "Derecho Fiscal",
-    "Derecho Laboral",
-    "Derecho Procesal-Civil",
-    "Derecho Procesal-Penal",
-    "Derecho Constitucional",
-    "Derecho de la UE",
-    "Derecho Internacional Público",
-    "Derecho Internacional Privado",
-    "Derecho Penal Económico",
-    "Derecho Informático",
-    "Derecho Ambiental"
-    ];
-
-    const fuse = new Fuse(ramaJuridicaList, {
-        includeScore: true,
-        threshold: 0.3, // Increase threshold to make matching less strict
-        ignoreLocation: true, // Allows matches anywhere in the string
-        minMatchCharLength: 2, // Ensures partial matches for short queries
-        distance: 100 // Adjust for token distance in matches
-    });
-
-    const results = fuse.search(query).map(result => result.item);
-
-    res.json(results);
-});
-
-app.get('/data', async (req, res) => {
+});app.get('/data', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -701,7 +667,7 @@ app.get('/data', async (req, res) => {
     // Note: We do NOT directly filter for ramaValue/subRamas,
     // because doc.ramas_juridicas is stored as an object, not an array.
 
-    // 4) Date range filter (startDate <= doc date <= endDate)
+    // 4) Date range filter (startDate <= endDate)
     if (startDate || endDate) {
       query.$and = query.$and || [];
       if (startDate) {
@@ -738,7 +704,8 @@ app.get('/data', async (req, res) => {
       anio: 1,
       url_pdf: 1,
       // e.g. ramas_juridicas: { "Derecho Civil": [...], "Derecho Fiscal": [...] }
-      ramas_juridicas: 1
+      ramas_juridicas: 1,
+        collectionName: 1 // Get the name
     };
 
     let allDocuments = [];
@@ -851,7 +818,7 @@ app.get('/data', async (req, res) => {
           .map(div => `<span>${div}</span>`)
           .join('');
 
-          const ramaHtml = (doc.matched_rama_juridica || [])
+        const ramaHtml = (doc.matched_rama_juridica || [])
           .map(r => `<span class="rama-value">${r}</span>`)
           .join('');
 
@@ -871,9 +838,9 @@ app.get('/data', async (req, res) => {
             
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+            <a class="leer mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
             <div>
-            <a class="button-impacto" href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
           </div>
           </div>
         `;
@@ -903,6 +870,40 @@ app.get('/data', async (req, res) => {
     await client.close();
   }
 });
+
+app.get('/search-ramas-juridicas', async (req, res) => {
+    const query = req.query.q;
+
+    const ramaJuridicaList = [
+       "Derecho Civil",
+    "Derecho Mercantil",
+    "Derecho Administrativo",
+    "Derecho Fiscal",
+    "Derecho Laboral",
+    "Derecho Procesal-Civil",
+    "Derecho Procesal-Penal",
+    "Derecho Constitucional",
+    "Derecho de la UE",
+    "Derecho Internacional Público",
+    "Derecho Internacional Privado",
+    "Derecho Penal Económico",
+    "Derecho Informático",
+    "Derecho Ambiental"
+    ];
+
+    const fuse = new Fuse(ramaJuridicaList, {
+        includeScore: true,
+        threshold: 0.3, // Increase threshold to make matching less strict
+        ignoreLocation: true, // Allows matches anywhere in the string
+        minMatchCharLength: 2, // Ensures partial matches for short queries
+        distance: 100 // Adjust for token distance in matches
+    });
+
+    const results = fuse.search(query).map(result => result.item);
+
+    res.json(results);
+});
+
 
 app.get('/index.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -953,6 +954,7 @@ app.get('/logout', (req, res) => {
 
 // New endpoint to fetch norma details
 // New endpoint to fetch norma details
+ // New endpoint to fetch norma details
  // New endpoint to fetch norma details
  app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
   const documentId = req.query.documentId;
