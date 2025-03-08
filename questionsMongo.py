@@ -48,9 +48,10 @@ def connect_to_mongodb():
         logging.error(f"Could not connect to MongoDB: {e}")
         return None, None
 
-def get_pdf_url_from_mongodb(collection, id_value): #Removed static properties
+def get_pdf_url_from_mongodb(db, collection_name, id_value): #added db as param
     """Retrieves the PDF URL from the MongoDB document given the document ID ( _id field)."""
     try:
+        collection = db[collection_name] #Added collecion
         document = collection.find_one({"_id": id_value}) # Find using _id
         if document and "url_pdf" in document:
             logging.info(f"Document with id '{id_value}' found.")
@@ -97,7 +98,7 @@ def ask_gemini(text, prompt):
         logging.exception(f"Error querying Gemini: {e}")
         return None
 
-def main(document_id, user_prompt): # Removed default value
+def main(document_id, user_prompt, collection_name): # Removed default value
     """Main function to connect, retrieve PDF URL, extract text, and ask Gemini."""
     logging.info(f"Starting main function with document_id: {document_id}")
     db, collection = connect_to_mongodb()
@@ -105,7 +106,7 @@ def main(document_id, user_prompt): # Removed default value
         logging.error("Failed to connect to MongoDB")
         return
 
-    pdf_url = get_pdf_url_from_mongodb(collection, id_value=document_id) #Here is where we use user value
+    pdf_url = get_pdf_url_from_mongodb(db, collection_name, document_id) #Here is where we use user value
     if not pdf_url:
         logging.warning("No PDF URL found for document")
         return
@@ -141,6 +142,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         document_id = sys.argv[1]
         user_prompt = sys.argv[2] if len(sys.argv) > 2 else "Realiza un resumen" # added get user prompt
-        main(document_id,user_prompt) # call main
+        collection_name = sys.argv[3] if len(sys.argv) > 3 else "BOE"
+        main(document_id,user_prompt, collection_name) # call main
     else:
         logging.warning("No document_id provided when running directly.")

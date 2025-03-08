@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <title>Profile</title>
-    <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+    <link rel="icon" href="assets\papyrus_logo.png" type="image/png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
     <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
@@ -143,12 +143,13 @@
         // Get the document ID from the URL (you can change this if you pass it differently)
         const urlParams = new URLSearchParams(window.location.search);
         const documentId = urlParams.get('documentId');
+                const collectionName = urlParams.get('collectionName'); // Get the collection from URL
 
         // Assuming the document ID is passed as a query parameter
         // Example: norma.html?documentId=BOE-A-2025-2144
 
         // Fetch the document details (only the short_name for this example)
-        fetch(`/api/norma-details?documentId=${documentId}`) // New endpoint in app.js
+        fetch(`/api/norma-details?documentId=${documentId}&collectionName=${collectionName}`) // New endpoint in app.js
             .then(response => response.json())
             .then(data => {
                 shortNameSpan.textContent = data.short_name;
@@ -173,7 +174,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt })
+                body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt, collectionName: collectionName })
             })
             .then(response => response.text()) // Expecting plain text
             .then(data => {

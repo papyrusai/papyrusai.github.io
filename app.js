@@ -370,7 +370,9 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
           <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-           <div> <a href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a> </div> <!-- Link to the new norma.html page with documentId -->
+           <div>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a>
+          </div>
         </div>
       `;
     });
@@ -577,7 +579,9 @@ app.get('/profile', async (req, res) => {
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-           <div> <a href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a> </div> <!-- Link to the new norma.html page with documentId -->
+            <div>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a>
+          </div>
           </div>
         `;
       }).join('');
@@ -868,7 +872,9 @@ app.get('/data', async (req, res) => {
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <a href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-            <a href="/norma.html?documentId=${doc._id}">Análisis impacto</a> <!-- Link to the new norma.html page with documentId -->
+            <div>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}">Análisis impacto normativo</a>
+          </div>
           </div>
         `;
       }).join('');
@@ -946,42 +952,45 @@ app.get('/logout', (req, res) => {
 });
 
 // New endpoint to fetch norma details
+// New endpoint to fetch norma details
 app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
-    const documentId = req.query.documentId;
+  const documentId = req.query.documentId;
+  let collectionName = req.query.collectionName || "BOE"; //set collection default to BOE
 
-    const client = new MongoClient(uri, mongodbOptions);
-    try {
-        await client.connect();
-        const database = client.db("papyrus");
-        const collection = database.collection("BOE"); // Assuming "BOE" is the collection
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+      await client.connect();
+      const database = client.db("papyrus");
+      const collection = database.collection(collectionName); // Dynamically use the collection
 
-        const document = await collection.findOne({ _id: documentId });
-        if (document) {
-            res.json({ short_name: document.short_name });
-        } else {
-            res.status(404).json({ error: 'Document not found' });
-        }
-    } catch (err) {
-        console.error('Error fetching norma details:', err);
-        res.status(500).json({ error: 'Error fetching norma details' });
-    } finally {
-        await client.close();
-    }
+      const document = await collection.findOne({ _id: documentId });
+      if (document) {
+          res.json({ short_name: document.short_name });
+      } else {
+          res.status(404).json({ error: 'Document not found' });
+      }
+  } catch (err) {
+      console.error('Error fetching norma details:', err);
+      res.status(500).json({ error: 'Error fetching norma details' });
+  } finally {
+      await client.close();
+  }
 });
 
 // New endpoint to trigger Python script
 app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
   const documentId = req.body.documentId;
   const userPrompt = req.body.userPrompt; // Get the user's prompt from the request body
+  const collectionName = req.body.collectionName; // Get the name of the collection from the request body
 
   // Path to your Python script
   const pythonScriptPath = path.join(__dirname, 'questionsMongo.py');
 
-  console.log(`Analyzing norma with documentId: ${documentId}, User Prompt: ${userPrompt}`); //Log the document ID
+  console.log(`Analyzing norma with documentId: ${documentId}, User Prompt: ${userPrompt}, Collection Name: ${collectionName}`); //Log the document ID
 
   try {
       // Spawn a new process to execute the Python script
-      const pythonProcess = spawn('python', [pythonScriptPath, documentId, userPrompt]); // Pass documentId and userPrompt as arguments
+      const pythonProcess = spawn('python', [pythonScriptPath, documentId, userPrompt, collectionName]); // Pass documentId and userPrompt as arguments
 
       let result = '';
       let errorOutput = '';
