@@ -953,7 +953,8 @@ app.get('/logout', (req, res) => {
 
 // New endpoint to fetch norma details
 // New endpoint to fetch norma details
-app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
+ // New endpoint to fetch norma details
+ app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
   const documentId = req.query.documentId;
   let collectionName = req.query.collectionName || "BOE"; //set collection default to BOE
 
@@ -965,7 +966,7 @@ app.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 
       const document = await collection.findOne({ _id: documentId });
       if (document) {
-          res.json({ short_name: document.short_name });
+          res.json({ short_name: document.short_name,collectionName: collectionName });
       } else {
           res.status(404).json({ error: 'Document not found' });
       }

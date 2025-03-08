@@ -150,47 +150,47 @@
 
         // Fetch the document details (only the short_name for this example)
         fetch(`/api/norma-details?documentId=${documentId}&collectionName=${collectionName}`) // New endpoint in app.js
-            .then(response => response.json())
-            .then(data => {
-                shortNameSpan.textContent = data.short_name;
-                pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
-            })
-            .catch(error => {
-                console.error('Error fetching norma details:', error);
-                analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
-                pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
-            });
+                .then(response => response.json())
+                .then(data => {
+                    shortNameSpan.textContent = data.short_name;
+                    pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
+                })
+                .catch(error => {
+                    console.error('Error fetching norma details:', error);
+                    analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
+                    pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
+                });
 
-          analyzeButton.addEventListener('click', () => {
-            analysisResultDiv.textContent = ''; // Clear previous results
-            //loaderDiv.style.display = 'block'; // Show the loader
-            analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
-            //analyzeButton.style.backgroundColor = 'transparent';
+                analyzeButton.addEventListener('click', () => {
+                analysisResultDiv.textContent = ''; // Clear previous results
+                //loaderDiv.style.display = 'block'; // Show the loader
+                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
+                //analyzeButton.style.backgroundColor = 'transparent';
 
-            const userPrompt = userPromptInput.value;
+                const userPrompt = userPromptInput.value;
 
-            fetch('/api/analyze-norma', { // New endpoint in app.js
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt, collectionName: collectionName })
-            })
-            .then(response => response.text()) // Expecting plain text
-            .then(data => {
-                     const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                    analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
-                    analyzeButton.style.backgroundColor = '#83a300';
-                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-            })
-            .catch(error => {
-                console.error('Error analyzing norma:', error);
-                analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
-                  analyzeButton.style.backgroundColor = '#092534';
-                analysisResultDiv.textContent = 'Error analyzing norma.';
+                fetch('/api/analyze-norma', { // New endpoint in app.js
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt , collectionName:collectionName})
+                })
+                .then(response => response.text()) // Expecting plain text
+                .then(data => {
+                         const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                        analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
+                        analyzeButton.style.backgroundColor = '#83a300';
+                        analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                })
+                .catch(error => {
+                    console.error('Error analyzing norma:', error);
+                    analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
+                      analyzeButton.style.backgroundColor = '#092534';
+                    analysisResultDiv.textContent = 'Error analyzing norma.';
+                });
             });
         });
-    });
 </script>
 </body>
 </html>
