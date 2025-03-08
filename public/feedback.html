@@ -3,23 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Feedback</title>
-  <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
-  <link rel="stylesheet" href="styles/styles.css"> <!-- tu CSS global -->
-  <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" type="text/css" href="styles/styles.css" />
-  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
-  <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
-  <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
-  <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
-  <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+
+  <!-- Vinculamos tu CSS global y cualquier otro que uses -->
+  <link rel="stylesheet" href="/styles/styles.css">
+  <link rel="stylesheet" href="/styles/mobile.css">
+
+  <!-- Ajuste de estilo inline para la sección de feedback -->
   <style>
-    /* Aumenta un poco la fuente en móvil */
+    /* Más grande en pantallas pequeñas */
     @media (max-width: 600px) {
       body {
-        font-size: 18px; /* más grande en móvil */
-      }
-      .feedback-container {
-        padding: 20px;
+        font-size: 18px; /* sube la fuente en móvil */
       }
     }
     .feedback-container {
@@ -29,53 +23,77 @@
       padding: 20px;
       font-family: sans-serif;
     }
+    /* Mensaje de confirmación oculto inicialmente */
     #thankYouMessage {
-      color: green; 
+      color: green;
       margin-top: 15px;
       font-weight: bold;
-      display: none; /* oculto por defecto */
+      display: none; 
     }
   </style>
 </head>
 <body>
-  
+
+  <!-- Navbar / menú si lo deseas -->
   <nav class="navbar">
-    <div class="logo">
-        <a href="https://www.papyrus-ai.com/" target="_blank">
-          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
-        </a>
-      </div>
-    <button class="hamburger" onclick="toggleMenu()">☰</button> 
-    <ul class="menu">
-      <ul class="menu">
-        <li><a href="https://papyrus-ai.com/">WEB</a></li>
-        <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
-        <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
-        <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
-      </ul>
+    <!-- lo que quieras aquí -->
   </nav>
 
-  <div style="max-width:600px; margin:0 auto; text-align:center; padding:20px;">
+  <div class="feedback-container">
     <h1>¡Gracias por tu valoración!</h1>
-    <p>¿Quieres dejarnos un comentario adicional?</p>
+    <p>¿Qué podríamos mejorar?</p>
 
-    <!-- Al cargar esta página, tenemos en la URL algo como feedback.html?fid=xxxx -->
-    <!-- Asegúrate de parsear "fid" en JS y meterlo en el form -->
-
-    <form action="/feedback-comment" method="POST">
-      <input type="hidden" name="fid" id="fidField" value="">
-      <textarea name="comentario" rows="5" cols="50" placeholder="Escribe tu comentario..."></textarea>
+    <!-- Form SIN action, usaremos JS fetch -->
+    <form id="feedbackForm">
+      <!-- fid hidden -->
+      <input type="hidden" name="fid" id="fidField" />
+      <!-- comentario -->
+      <textarea name="comentario" id="comentario" rows="5" cols="50" placeholder="Escribe tu comentario..."></textarea>
       <br><br>
       <button type="submit">Enviar comentario</button>
     </form>
+
+    <!-- Mensaje de confirmación tras enviar comentario -->
+    <div id="thankYouMessage">
+      ¡Feedback enviado, muchas gracias!
+    </div>
   </div>
 
   <script>
-    // Parse fid from la query string
+    // 1) Tomar fid de la URL
     const urlParams = new URLSearchParams(window.location.search);
     const fid = urlParams.get('fid');
     document.getElementById('fidField').value = fid;
-  </script>
 
+    // 2) Capturar submit y usar fetch
+    const form = document.getElementById('feedbackForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Evitar recarga de página
+
+      const comentario = document.getElementById('comentario').value;
+
+      try {
+        const resp = await fetch('/feedback-comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fid, comentario })
+        });
+        if (!resp.ok) {
+          const errorMsg = await resp.text();
+          alert('Error enviando comentario: ' + errorMsg);
+          return;
+        }
+
+        // Exito => mostrar “Feedback enviado”
+        document.getElementById('thankYouMessage').style.display = 'block';
+        // Opcional: limpiar textarea
+        document.getElementById('comentario').value = '';
+
+      } catch (err) {
+        console.error('Error fetch =>', err);
+        alert('Error enviando comentario');
+      }
+    });
+  </script>
 </body>
 </html>

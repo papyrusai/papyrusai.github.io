@@ -371,38 +371,76 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
 
      <div style="text-align:center; margin: 20px 0;">
-      <p>¿Qué te ha parecido el resumen normativo?</p>
-   <!-- Fila de “estrellas” (1–5) con color #83a300 -->
-  <p style="font-size:24px; margin:0;">
-    <!-- 1 estrella -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★☆☆☆☆
-    </a>
-    <!-- 2 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★☆☆☆
-    </a>
-    <!-- 3 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★★☆☆
-    </a>
-    <!-- 4 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★★★☆
-    </a>
-    <!-- 5 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★★★★
-    </a>
+  <p style="font-size:16px; color:#092534; font-weight:bold; margin-bottom:10px;">
+    ¿Qué te ha parecido este resumen normativo?
   </p>
-    </div>
 
-      <p style="font-size:0.9em; color:#666; text-align:center;">
+  <!-- Tabla para alinear los 5 cuadrados -->
+  <table align="center" style="border-spacing:10px;">
+    <tr>
+      <!-- Cuadrado #1 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          1
+        </a>
+      </td>
+      <!-- Cuadrado #2 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          2
+        </a>
+      </td>
+      <!-- Cuadrado #3 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          3
+        </a>
+      </td>
+      <!-- Cuadrado #4 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          4
+        </a>
+      </td>
+      <!-- Cuadrado #5 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          5
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <!-- Debajo del #1 => “Poco satisfecho” -->
+      <td style="text-align:center; font-size:12px; color:#092534;">
+        Poco<br>satisfecho
+      </td>
+      <!-- Celdas vacías para 2,3,4 -->
+      <td style="">&nbsp;</td>
+      <td style="">&nbsp;</td>
+      <td style="">&nbsp;</td>
+      <!-- Debajo del #5 => “Muy satisfecho” -->
+      <td style="text-align:center; font-size:12px; color:#092534;">
+        Muy<br>satisfecho
+      </td>
+    </tr>
+  </table>
+</div>
+ <p style="font-size:0.9em; color:#666; text-align:center;">
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
       </p>
 
@@ -598,38 +636,76 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       ${detailBlocks}
 
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
-     <div style="text-align:center; margin: 20px 0;">
- <p>Valora el resumen normativo</p>
-<!-- Fila de “estrellas” (1–5) con color #83a300 -->
-   <p>¿Qué te ha parecido el resumen normativo?</p>
-   <!-- Fila de “estrellas” (1–5) con color #83a300 -->
-  <p style="font-size:24px; margin:0;">
-    <!-- 1 estrella -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★☆☆☆☆
-    </a>
-    <!-- 2 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★☆☆☆
-    </a>
-    <!-- 3 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★★☆☆
-    </a>
-    <!-- 4 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★★★☆
-    </a>
-    <!-- 5 estrellas -->
-    <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
-       style="color:#83a300; text-decoration:none; margin-right:4px; font-family:sans-serif;">
-       ★★★★★
-    </a>
+     
+<div style="text-align:center; margin: 20px 0;">
+  <p style="font-size:16px; color:#092534; font-weight:bold; margin-bottom:10px;">
+    ¿Qué te ha parecido este resumen normativo?
   </p>
+
+  <!-- Tabla para alinear los 5 cuadrados -->
+  <table align="center" style="border-spacing:10px;">
+    <tr>
+      <!-- Cuadrado #1 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          1
+        </a>
+      </td>
+      <!-- Cuadrado #2 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          2
+        </a>
+      </td>
+      <!-- Cuadrado #3 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          3
+        </a>
+      </td>
+      <!-- Cuadrado #4 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          4
+        </a>
+      </td>
+      <!-- Cuadrado #5 -->
+      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+        <a 
+          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
+        >
+          5
+        </a>
+      </td>
+    </tr>
+    <tr>
+      <!-- Debajo del #1 => “Poco satisfecho” -->
+      <td style="text-align:center; font-size:12px; color:#092534;">
+        Poco<br>satisfecho
+      </td>
+      <!-- Celdas vacías para 2,3,4 -->
+      <td style="">&nbsp;</td>
+      <td style="">&nbsp;</td>
+      <td style="">&nbsp;</td>
+      <!-- Debajo del #5 => “Muy satisfecho” -->
+      <td style="text-align:center; font-size:12px; color:#092534;">
+        Muy<br>satisfecho
+      </td>
+    </tr>
+  </table>
 </div>
       <p style="font-size:0.9em; color:#666; text-align:center;">
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
@@ -687,7 +763,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     const allUsers = await usersCollection.find({}).toArray();
 
     // ***** AÑADE ESTE FILTRO: solo "6inimartin6@gmail.com" *****
-const filteredUsers = allUsers; //allUsers.filter(u => u.email === '6inimartin6@gmail.com');
+const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com'); //allUsers;
 
     // For each user, build "cnae" + "subRama" groups
     for (const user of  filteredUsers){ //ELIMINAR EN PRODUCCION
