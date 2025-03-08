@@ -13,6 +13,20 @@
      display:block;
       }
 
+      /*impacto*/
+
+      .button-impacto {
+        background-color: #092534;
+        color: white;
+        padding: 4px 5px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-bottom: 3%;
+        font-size: 12px;
+        text-decoration: none;
+      }
+
       /* 2) Make .header-row stack vertically, so .date goes below .id-values */
   .header-row {
     flex-direction: column;    /* Column layout on mobile */

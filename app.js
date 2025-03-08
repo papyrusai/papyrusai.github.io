@@ -310,7 +310,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     const database = client.db("papyrus");
     const boeCollection = database.collection("BOE"); // Collection hardcoded
 
-    // Projection for the required fields.
+    // Projection for the required fields (including seccion).
     const projection = {
       short_name: 1,
       etiquetas_cuatrecasas: 1,
@@ -319,7 +319,8 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       anio: 1,
       resumen: 1,
       url_pdf: 1,
-      _id: 1
+      _id: 1,
+      seccion: 1
     };
 
     const today = new Date();
@@ -373,10 +374,12 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
           </div>
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-          <div>
+          <div class="margin-impacto">
             <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
           </div>
+          <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+          <!-- Hidden seccion field -->
+          <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
         </div>
       `;
     });
@@ -397,6 +400,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     await client.close();
   }
 });
+
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
@@ -488,10 +492,10 @@ app.get('/profile', async (req, res) => {
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-            <div>
+            <div class="margin-impacto>
               <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
             </div>
+            <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
           </div>
         `;
       }).join('');
@@ -679,10 +683,10 @@ app.get('/data', async (req, res) => {
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <a class="leer mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-            <div>
+            <div class="margin-impacto>
               <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
             </div>
+            <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
           </div>
         `;
       }).join('');

@@ -44,7 +44,7 @@
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  margin-top: 2%;
+  margin-bottom: 2%;
   font-size: 14px;
   text-decoration: none;
 }
@@ -243,6 +243,9 @@ a {
 }
 .leer-mas {
   color:#83a300;
+}
+.margin-impacto {
+  margin-bottom: 1%;
 }
 /*loading icon*/
 .loader{

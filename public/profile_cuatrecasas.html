@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Profile Cuatrecasas</title>
   <link rel="icon" href="assets/papyrus_logo.png" type="image/png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <link rel="stylesheet" type="text/css" href="styles/styles.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
@@ -13,14 +12,13 @@
   <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
   <style>
-    /* Additional styles for the special dropdowns */
+    /* Additional styles for dropdowns */
     #serviciosDropdown, #tipoDropdown {
       max-height: 200px;
       overflow-y: auto;
       position: absolute;
       z-index: 1000;
     }
-    /* Bottom caret styling */
     #serviciosDropdown .dropdown-bottom,
     #tipoDropdown .dropdown-bottom {
       text-align: center;
@@ -31,10 +29,9 @@
     .dropdown { position: relative; }
     /* Boletín Oficial: only BOE selectable */
     .filter-options input[type="checkbox"]:not([value="BOE"]) {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
+      opacity: 0.5;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -102,6 +99,7 @@
             <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
             <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
             <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
+              <i class="fa fa-caret-down"></i>
             </div>
           </div>
         </div>
@@ -112,7 +110,7 @@
         <div class="etiquetas-label">Tipo disposición</div>
         <div class="dropdown" style="margin-bottom: 10px;">
           <button onclick="toggleTipoDropdown()" class="dropbtn">
-            <span id="selectedTipo">Todos</span>
+            <span id="selectedTipo">Disposiciones generales</span>
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="tipoDropdown" class="dropdown-content">
@@ -120,6 +118,7 @@
             <a href="#" onclick="selectTipo('Disposiciones generales')">Disposiciones generales</a>
             <a href="#" onclick="selectTipo('Otras disposiciones')">Otras disposiciones</a>
             <div class="dropdown-bottom" onclick="toggleTipoDropdown()">
+              <i class="fa fa-caret-down"></i>
             </div>
           </div>
         </div>
@@ -217,9 +216,11 @@
       docs.forEach(doc => {
         // Retrieve the text inside etiquetas-values.
         const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
+        // Retrieve hidden seccion value.
+        const seccionText = doc.querySelector('.doc-seccion').innerText;
         // Check if document matches the selected criteria.
         let matchServicio = (servicio === 'Todos') || (etiquetasText.includes(servicio));
-        let matchTipo = (tipo === 'Todos') || (etiquetasText.includes(tipo));
+        let matchTipo = (tipo === 'Todos') || (seccionText.includes(tipo));
         // Show the doc only if both conditions match.
         if (matchServicio && matchTipo) {
           doc.style.display = '';
