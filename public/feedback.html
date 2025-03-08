@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <title>Feedback</title>
-
-  <!-- Vinculamos tu CSS global y cualquier otro que uses -->
-  <link rel="stylesheet" href="/styles/styles.css">
-  <link rel="stylesheet" href="/styles/mobile.css">
-
-  <!-- Ajuste de estilo inline para la sección de feedback -->
+  <link rel="icon" href="assets/papyrus_logo.png" type="image/png"> 
+  <!-- Tus hojas de estilo habituales -->
+  <link rel="stylesheet" href="styles/styles.css">
+  <link rel="stylesheet" href="styles/mobile.css">
+  
+  <link rel="stylesheet" href="styles/menu.css">
+  
+  <!-- Tipografías que uses -->
+  <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
+  
   <style>
-    /* Más grande en pantallas pequeñas */
+    /* Ajuste principal para mobile: sube la fuente a 20px en pantallas <= 600px */
     @media (max-width: 600px) {
       body {
-        font-size: 18px; /* sube la fuente en móvil */
+        font-size: 20px; /* más grande en móvil */
       }
     }
     .feedback-container {
@@ -28,47 +32,62 @@
       color: green;
       margin-top: 15px;
       font-weight: bold;
-      display: none; 
+      display: none;
     }
   </style>
 </head>
+
 <body>
-
-  <!-- Navbar / menú si lo deseas -->
+  <!-- Navbar / menú -->
   <nav class="navbar">
-    <!-- lo que quieras aquí -->
+    <div class="logo">
+      <a href="https://www.papyrus-ai.com/" target="_blank">
+        <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+      </a>
+    </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+      <li><a href="https://papyrus-ai.com/">WEB</a></li>
+      <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li>
+      <li><a href="https://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+      <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+    </ul>
   </nav>
-
+  
+  <!-- Contenedor principal de feedback -->
   <div class="feedback-container">
     <h1>¡Gracias por tu valoración!</h1>
     <p>¿Qué podríamos mejorar?</p>
 
-    <!-- Form SIN action, usaremos JS fetch -->
+    <!-- Form sin “action” para que enviemos por JS fetch -->
     <form id="feedbackForm">
-      <!-- fid hidden -->
-      <input type="hidden" name="fid" id="fidField" />
-      <!-- comentario -->
+      <input type="hidden" name="fid" id="fidField" value="">
       <textarea name="comentario" id="comentario" rows="5" cols="50" placeholder="Escribe tu comentario..."></textarea>
       <br><br>
       <button type="submit">Enviar comentario</button>
     </form>
 
-    <!-- Mensaje de confirmación tras enviar comentario -->
     <div id="thankYouMessage">
       ¡Feedback enviado, muchas gracias!
     </div>
   </div>
 
   <script>
-    // 1) Tomar fid de la URL
+    // Para el botón “☰” si lo necesitas
+    function toggleMenu() {
+      const menu = document.querySelector('.menu');
+      menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+    }
+
+    // Tomar fid de la query string
     const urlParams = new URLSearchParams(window.location.search);
     const fid = urlParams.get('fid');
     document.getElementById('fidField').value = fid;
 
-    // 2) Capturar submit y usar fetch
+    // Capturar submit => fetch + mostrar “gracias”
     const form = document.getElementById('feedbackForm');
     form.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Evitar recarga de página
+      e.preventDefault(); // no recarga la página
 
       const comentario = document.getElementById('comentario').value;
 
@@ -79,18 +98,17 @@
           body: JSON.stringify({ fid, comentario })
         });
         if (!resp.ok) {
-          const errorMsg = await resp.text();
-          alert('Error enviando comentario: ' + errorMsg);
+          const errorText = await resp.text();
+          alert('Error enviando comentario: ' + errorText);
           return;
         }
-
         // Exito => mostrar “Feedback enviado”
         document.getElementById('thankYouMessage').style.display = 'block';
-        // Opcional: limpiar textarea
+        // Limpia el textarea si deseas
         document.getElementById('comentario').value = '';
 
       } catch (err) {
-        console.error('Error fetch =>', err);
+        console.error('Error al enviar feedback =>', err);
         alert('Error enviando comentario');
       }
     });
