@@ -212,8 +212,18 @@ document.addEventListener('click', function(event) {
     if (!event.target.closest('.dropdown')) {
       dd.classList.remove('show');
     }
-  });
+  });  
 });
 
+document.addEventListener('click', function(event) {
+  // Find all dropdown-content elements (e.g. #myDropdown, #ramaDropdown, etc.)
+  const ramaDropdown = document.getElementById('#ramaDropdown');
+  ramaDropdown.forEach(function(dd) {
+    // If the click is NOT inside an element with class "dropdown", close this dropdown
+    if (!event.target.closest('.dropdown')) {
+      dd.classList.remove('show');
+    }
+  });
+});
 
 });
