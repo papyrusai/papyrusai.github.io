@@ -29,6 +29,11 @@
     z-index: 1;
   }
   
+
+  .dropdown-content.show {
+    display: block; /* or flex, etc. */
+  }
+  
   .dropdown-content a {
     color: black;
     padding: 12px 16px;
