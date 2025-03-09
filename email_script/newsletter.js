@@ -2,9 +2,11 @@
  * newsletter.js
  *
  * To run:
- *    node newsletter.js
- * Variables: solo enviamos BOE
- * * Produccion: ELIMINAR EN produccion --> cambiar filteredUsers to allUsers
+ *   node newsletter.js
+ *
+ * - Cada usuario recibe un email con matches de
+ *   las colecciones definidas en user.cobertura_legal,
+ *   o BOE si no existe/está vacío.
  ************************************************/
 const { MongoClient } = require('mongodb');
 const nodemailer = require('nodemailer');
@@ -14,24 +16,15 @@ const path = require('path');
 
 require('dotenv').config();
 
-// 1) Some configuration
+// 1) Configuration
 const MONGODB_URI = process.env.DB_URI;
 const DB_NAME = 'papyrus';
 
-// Example: Hard-coded date for testing => 2025-01-24
-
-/*const TODAY = moment().utc();
-const anioToday = 2025;
-const mesToday  = 1;
-const diaToday  = 24;
-*/
-
-// If you want the real "today," comment out the lines above and do:
+// Take today's date in real time
 const TODAY = moment().utc();
-const anioToday = TODAY.year();
-const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date();
-
+const anioToday = 2025 //TODAY.year();
+const mesToday  = 3 //TODAY.month() + 1;
+const diaToday  = 7 //TODAY.date();
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -43,61 +36,44 @@ const transporter = nodemailer.createTransport(
   })
 );
 
-/**
- * Convert a collection name (BOE, BOA, BOPV, BOCM, BOJA)
- * into its descriptive text for display.
- */
+/** Mapea ciertos nombres de colección a textos más descriptivos */
 function mapCollectionNameToDisplay(cName) {
   const upper = (cName || '').toUpperCase();
   switch (upper) {
-    case 'BOE':
-      return 'Boletín Oficial del Estado';
-    case 'BOCM':
-      return 'Boletín Oficial de la Comunidad de Madrid';
-    case 'BOA':
-      return 'Boletín Oficial de Aragón';
-    case 'BOJA':
-      return 'Boletín Oficial de la Junta de Andalucía';
-    case 'BOPV':
-      return 'Boletín Oficial del País Vasco';
-    default:
-      return upper; // fallback if none match
+    case 'BOE':   return 'Boletín Oficial del Estado';
+    case 'BOCM':  return 'Boletín Oficial de la Comunidad de Madrid';
+    case 'BOA':   return 'Boletín Oficial de Aragón';
+    case 'BOJA':  return 'Boletín Oficial de la Junta de Andalucía';
+    case 'BOPV':  return 'Boletín Oficial del País Vasco';
+    case 'CNMV':  return 'Comisión Nacional del Mercado de Valores';
+    // Añade más si deseas
+    default:      return upper;
   }
 }
 
 /**
- * Build the HTML snippet for each doc, optionally without an <hr> if it's the last doc.
- * doc.divisiones_cnae and doc.sub_rama_juridica are now pre-filtered to only matches.
+ * buildDocumentHTML:
+ * Genera un snippet HTML para un único doc.
  */
 function buildDocumentHTML(doc, isLastDoc) {
-  // Ensure arrays
   let cnaes = doc.divisiones_cnae || [];
   if (!Array.isArray(cnaes)) cnaes = [cnaes];
 
   let subRamas = doc.sub_rama_juridica || [];
   if (!Array.isArray(subRamas)) subRamas = [subRamas];
 
-  // Build CNAE HTML
-  let cnaeHTML = '';
-  if (cnaes.length > 0) {
-    cnaeHTML = cnaes
-      .map(div => `<span class="etiqueta">${div}</span>`)
-      .join('');
-  }
+  const cnaeHTML = cnaes.length
+    ? cnaes.map(div => `<span class="etiqueta">${div}</span>`).join('')
+    : '';
 
-  // Build sub-rama HTML
-  let subRamaHTML = '';
-  if (subRamas.length > 0) {
-    subRamaHTML = subRamas
-      .map(sr => 
+  const subRamaHTML = subRamas.length
+    ? subRamas.map(sr =>
         `<span style="padding:5px 0; color:#83a300; margin-left:10px;">
           <i><b>#${sr}</b></i>
         </span>`
-      )
-      .join(' ');
-  }
+      ).join(' ')
+    : '';
 
-  // Possibly insert HR
   const hrOrNot = isLastDoc
     ? ''
     : `
@@ -131,22 +107,25 @@ function buildDocumentHTML(doc, isLastDoc) {
 }
 
 /**
- * Build the "normal" newsletter (some matches for the user).
+ * buildNewsletterHTML:
+ * Construye el newsletter con matches para un usuario.
+ * [CAMBIO] => en el bloque "detailBlocks", ya no hardcodeamos "BOE".
+ *            Se agrupan docs por doc.collectionName real.
  */
-function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
-  // Split out cnae-based vs sub-rama-based
+function buildNewsletterHTML(userName, userId, dateString, groupedData) {
+  // Filtrar 'cnae' vs 'subRama'
   const cnaeGroups = groupedData.filter(g => g.type === 'cnae');
   const subRamaGroups = groupedData.filter(g => g.type === 'subRama');
 
-  // Summaries for each group
-  const cnaeSummaryHTML = cnaeGroups.map(group => {
-    const docCount = group.docs.length;
-    return `<li>${docCount} Alertas de <span style="color:#89A231;">${group.coincidentValue}</span></li>`;
+  // Summaries
+  const cnaeSummaryHTML = cnaeGroups.map(g => {
+    const docCount = g.docs.length;
+    return `<li>${docCount} Alertas de <span style="color:#89A231;">${g.coincidentValue}</span></li>`;
   }).join('');
 
-  const subRamaSummaryHTML = subRamaGroups.map(group => {
-    const docCount = group.docs.length;
-    return `<li>${docCount} Alertas de <span style="color:#89A231;">${group.coincidentValue}</span></li>`;
+  const subRamaSummaryHTML = subRamaGroups.map(g => {
+    const docCount = g.docs.length;
+    return `<li>${docCount} Alertas de <span style="color:#89A231;">${g.coincidentValue}</span></li>`;
   }).join('');
 
   let summarySection = '';
@@ -171,46 +150,47 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
     `;
   }
 
-  // Build detail blocks from groupedData
+  // [CAMBIO] => detailBlocks: agrupar docs por group, luego agrupar por doc.collectionName
   const detailBlocks = groupedData.map(group => {
-    // A visual separator for the group
+    // Bloque separador para 'coincidentValue'
     const separatorBlock = `
-      <div style="background-color:#89A231;  
-                  margin:5% 0; 
-                  padding:5px 20px; 
-                  border-radius:20px;">
+      <div style="background-color:#89A231; margin:5% 0; padding:5px 20px; border-radius:20px;">
         <h2 style="margin:0; color:#FAF7F0; font-size:14px;">
           ${group.coincidentValue.toUpperCase()}
         </h2>
       </div>
     `;
 
-    // Group docs by collection
+    // Agrupamos docs por collectionName en lugar de forzar "BOE"
     const byCollection = {};
     group.docs.forEach(doc => {
-      const cName = 'BOE';  // Hard-coded for "solo enviamos BOE"
-      if (!byCollection[cName]) byCollection[cName] = [];
+      const cName = doc.collectionName || 'BOE'; 
+      if (!byCollection[cName]) {
+        byCollection[cName] = [];
+      }
       byCollection[cName].push(doc);
     });
 
-    // Typically we'd do "BOE first" sorting, but we only have BOE
+    // [CAMBIO] => "BOE" primero, luego resto
     let collArr = Object.keys(byCollection).map(key => ({
       collectionName: key,
       docs: byCollection[key],
     }));
-    // Not strictly necessary, but let's keep code consistent
+    // localizamos BOE si existe
     const boeIndex = collArr.findIndex(c => c.collectionName.toUpperCase() === 'BOE');
     let boeItem = null;
     if (boeIndex >= 0) {
       boeItem = collArr.splice(boeIndex, 1)[0];
     }
+    // Ordenamos asc por docCount
     collArr.sort((a, b) => a.docs.length - b.docs.length);
     if (boeItem) {
       collArr.unshift(boeItem);
     }
 
+    // Contruimos un 'collectionBlock' por cada colec
     const collectionBlocks = collArr.map(collObj => {
-      const cName = collObj.collectionName; 
+      const cName = collObj.collectionName;
       const displayName = mapCollectionNameToDisplay(cName);
 
       const docsHTML = collObj.docs.map((doc, idx) => {
@@ -226,15 +206,14 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
           margin: 10px auto;
         ">
       `;
-
       return `
         ${collectionSeparator}
         <h3 style="
-            color:#092534; 
-            margin: 3% auto; 
-            margin-top:5%;
-            text-align:center; 
-            font-style:italic;
+          color:#092534;
+          margin: 3% auto;
+          margin-top:5%;
+          text-align:center;
+          font-style:italic;
         ">
           ${displayName}
         </h3>
@@ -245,7 +224,7 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
     return separatorBlock + collectionBlocks;
   }).join('');
 
-  // Return the final HTML
+  // HTML final
   return `
   <!DOCTYPE html>
   <html lang="es">
@@ -273,7 +252,7 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       h2 {
-        color: #092534; 
+        color: #092534;
         margin-bottom: 10px;
       }
       a:hover {
@@ -300,7 +279,6 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
       ul {
         margin-left: 20px;
       }
-      /* "Ver online" link top-right */
       .online-link {
         text-align: right;
         font-size: 12px;
@@ -310,7 +288,6 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
         color: #092534;
         text-decoration: underline;
       }
-      /* Logo styling */
       .logo-container {
         margin-top: 10px;
         margin-bottom: 20px;
@@ -318,27 +295,25 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
       }
       @media (max-width: 600px) {
         .container {
-          margin: 10px auto;  
-          padding: 15px;      
-          width: 95%;        
+          margin: 10px auto;
+          padding: 15px;
+          width: 95%;
         }
         .less-opacity {
-          display: block; 
-          margin-top: 5px; 
+          display: block;
+          margin-top: 5px;
         }
         h2 {
-            font-size: 18px;
+          font-size: 18px;
         }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <!-- top-right "Ver online" link -->
       <div class="online-link">
         <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
       </div>
-      <!-- Embedded logo -->
       <div class="logo-container">
         <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
       </div>
@@ -348,7 +323,7 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
       ${summarySection}
 
       <div style="text-align:center; margin:15px 0;">
-        <a href="https://papyrus-ai.com/" 
+        <a href="https://papyrus-ai.com/"
            style="
              display:inline-block;
              background-color:#83a300;
@@ -370,88 +345,69 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
 
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
 
-     <div style="text-align:center; margin: 20px 0;">
-  <p style="font-size:16px; color:#092534; font-weight:bold; margin-bottom:10px;">
-    ¿Qué te ha parecido este resumen normativo?
-  </p>
+      <!-- Bloque de 1-5 satisfecho -->
+      <div style="text-align:center; margin: 20px 0;">
+        <p style="font-size:16px; color:#092534; font-weight:bold; margin-bottom:10px;">
+          ¿Qué te ha parecido este resumen normativo?
+        </p>
+        <table align="center" style="border-spacing:10px;">
+          <tr>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+                 style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                1
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+                 style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                2
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+                 style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                3
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+                 style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                4
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+                 style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                5
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align:center; font-size:12px; color:#092534;">
+              Poco<br>satisfecho
+            </td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td style="text-align:center; font-size:12px; color:#092534;">
+              Muy<br>satisfecho
+            </td>
+          </tr>
+        </table>
+      </div>
 
-  <!-- Tabla para alinear los 5 cuadrados -->
-  <table align="center" style="border-spacing:10px;">
-    <tr>
-      <!-- Cuadrado #1 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          1
-        </a>
-      </td>
-      <!-- Cuadrado #2 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          2
-        </a>
-      </td>
-      <!-- Cuadrado #3 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          3
-        </a>
-      </td>
-      <!-- Cuadrado #4 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          4
-        </a>
-      </td>
-      <!-- Cuadrado #5 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          5
-        </a>
-      </td>
-    </tr>
-    <tr>
-      <!-- Debajo del #1 => “Poco satisfecho” -->
-      <td style="text-align:center; font-size:12px; color:#092534;">
-        Poco<br>satisfecho
-      </td>
-      <!-- Celdas vacías para 2,3,4 -->
-      <td style="">&nbsp;</td>
-      <td style="">&nbsp;</td>
-      <td style="">&nbsp;</td>
-      <!-- Debajo del #5 => “Muy satisfecho” -->
-      <td style="text-align:center; font-size:12px; color:#092534;">
-        Muy<br>satisfecho
-      </td>
-    </tr>
-  </table>
-</div>
- <p style="font-size:0.9em; color:#666; text-align:center;">
+      <p style="font-size:0.9em; color:#666; text-align:center;">
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
       </p>
 
       <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion.html" 
-           target="_blank" 
+        <a href="https://papyrus-ai.com/suscripcion.html"
+           target="_blank"
            style="color: #092534; text-decoration: underline; font-size: 12px;">
           Cancelar Suscripción
         </a>
       </div>
-
     </div>
   </body>
   </html>
@@ -462,14 +418,32 @@ function buildNewsletterHTML(userName,userId,  dateString, groupedData) {
  * Newsletter "no matches" scenario.
  * Only BOE docs, grouped by divisiones_cnae, 'Genérico' last.
  */
+/**
+ * Newsletter "no matches" scenario (actualizado).
+ * Muestra SOLO docs BOE con seccion = "Disposiciones Generales".
+ * Si no hay ninguno => “No se han publicado disposiciones generales en el BOE hoy”.
+ */
 function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
+  // [1] Filtrar docs BOE para que solo queden con doc.seccion === "Disposiciones Generales"
+  const boeGeneralDocs = boeDocs.filter(doc => doc.seccion === "Disposiciones Generales");
+
+  // [2] Si no hay ninguno => Cambiamos el texto del párrafo principal
+  let introText = '';
+  if (boeGeneralDocs.length === 0) {
+    introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
+  } else {
+    introText = `<p>A continuación, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy</p>`;
+  }
+
+  // Mapeo de CNAE
   const cnaeMap = {};
 
-  boeDocs.forEach(doc => {
+  // Igual que antes, generamos sub_rama_juridica y clasificamos en cnaeMap
+  boeGeneralDocs.forEach(doc => {
     let cnaes = doc.divisiones_cnae || [];
     if (!Array.isArray(cnaes)) cnaes = [cnaes];
 
-    // Normalize sub‐ramas for display
+    // Normalizamos sub‐ramas
     let subRamas = [];
     if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
       for (const arr of Object.values(doc.ramas_juridicas)) {
@@ -486,13 +460,14 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         cnaeMap[c].push(doc);
       });
     } else {
+      // Si no tiene cnaes => agruparlo como "Genérico"
       const placeholder = 'Genérico';
       if (!cnaeMap[placeholder]) cnaeMap[placeholder] = [];
       cnaeMap[placeholder].push(doc);
     }
   });
 
-  // reorder "Genérico" last
+  // Reordenar "Genérico" al final
   const cnaeKeys = Object.keys(cnaeMap);
   const genIndex = cnaeKeys.findIndex(k => k.toLowerCase().trim() === 'genérico');
   if (genIndex >= 0) {
@@ -500,6 +475,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     cnaeKeys.push(generic);
   }
 
+  // Construimos detailBlocks
   const detailBlocks = cnaeKeys.map(cnae => {
     const docs = cnaeMap[cnae];
     const heading = `
@@ -605,9 +581,11 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   </head>
   <body>
     <div class="container">
+      <!-- top-right "Ver online" link -->
       <div class="online-link">
         <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
       </div>
+      <!-- Embedded logo -->
       <div class="logo-container">
         <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
       </div>
@@ -631,89 +609,73 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       </div>
 
       <hr style="border:none; border-top:1px solid #ddd; margin:5% 0;">
-      <p>A continuación, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy</p>
+
+      <!-- [CAMBIO 1/2] => Si no hay docs boeGeneralDocs => "No se han publicado..." -->
+      ${introText}
 
       ${detailBlocks}
 
       <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
-     
-<div style="text-align:center; margin: 20px 0;">
-  <p style="font-size:16px; color:#092534; font-weight:bold; margin-bottom:10px;">
-    ¿Qué te ha parecido este resumen normativo?
-  </p>
 
-  <!-- Tabla para alinear los 5 cuadrados -->
-  <table align="center" style="border-spacing:10px;">
-    <tr>
-      <!-- Cuadrado #1 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          1
-        </a>
-      </td>
-      <!-- Cuadrado #2 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          2
-        </a>
-      </td>
-      <!-- Cuadrado #3 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          3
-        </a>
-      </td>
-      <!-- Cuadrado #4 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          4
-        </a>
-      </td>
-      <!-- Cuadrado #5 -->
-      <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
-        <a 
-          href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
-          style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;"
-        >
-          5
-        </a>
-      </td>
-    </tr>
-    <tr>
-      <!-- Debajo del #1 => “Poco satisfecho” -->
-      <td style="text-align:center; font-size:12px; color:#092534;">
-        Poco<br>satisfecho
-      </td>
-      <!-- Celdas vacías para 2,3,4 -->
-      <td style="">&nbsp;</td>
-      <td style="">&nbsp;</td>
-      <td style="">&nbsp;</td>
-      <!-- Debajo del #5 => “Muy satisfecho” -->
-      <td style="text-align:center; font-size:12px; color:#092534;">
-        Muy<br>satisfecho
-      </td>
-    </tr>
-  </table>
-</div>
+      <!-- Bloque de 1-5 satisfecho (estrellas/cuadros) -->
+      <div style="text-align:center; margin: 20px 0;">
+        <p style="font-size:16px; color:#092534; font-weight:bold; margin-bottom:10px;">
+          ¿Qué te ha parecido este resumen normativo?
+        </p>
+        <table align="center" style="border-spacing:10px;">
+          <tr>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                1
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                2
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                3
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                4
+              </a>
+            </td>
+            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                5
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="text-align:center; font-size:12px; color:#092534;">
+              Poco<br>satisfecho
+            </td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td style="text-align:center; font-size:12px; color:#092534;">
+              Muy<br>satisfecho
+            </td>
+          </tr>
+        </table>
+      </div>
+
       <p style="font-size:0.9em; color:#666; text-align:center;">
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
       </p>
 
       <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion" 
-           target="_blank" 
+        <a href="https://papyrus-ai.com/suscripcion"
+           target="_blank"
            style="color: #092534; text-decoration: underline; font-size: 12px;">
           Cancelar Suscripción
         </a>
@@ -725,154 +687,134 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   `;
 }
 
+
 // MAIN EXECUTION
+/**
+ * MAIN EXECUTION
+ */
 (async () => {
   let client;
   try {
-    client = new MongoClient(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    client = new MongoClient(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
     await client.connect();
     console.log('Connected to MongoDB');
 
     const db = client.db(DB_NAME);
-
-    // Only BOE collection
-    const docCollections = ['BOE'];
-
-    // Query for today's docs
-    const queryToday = {
-      anio: anioToday,
-      mes: mesToday,
-      dia: diaToday,
-    };
-    const allMatchingDocs = [];
-
-    // Get docs from only BOE
-    for (const collName of docCollections) {
-      const coll = db.collection(collName);
-      const docs = await coll.find(queryToday).toArray();
-      docs.forEach(doc => {
-        allMatchingDocs.push({ collectionName: collName, doc });
-      });
-    }
-
-    // Retrieve users
     const usersCollection = db.collection('users');
+
+    // 1) Cargamos todos los usuarios
     const allUsers = await usersCollection.find({}).toArray();
 
-    // ***** AÑADE ESTE FILTRO: solo "6inimartin6@gmail.com" *****
-const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com'); //allUsers;
+    const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com');
 
-    // For each user, build "cnae" + "subRama" groups
-    for (const user of  filteredUsers){ //ELIMINAR EN PRODUCCION
-      // We'll keep separate grouping structures, then combine them
+    for (const user of filteredUsers) {
+      // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
+      const coverageObj = user.cobertura_legal || {}; // ejemplo => {"Nacional y Europeo":["BOE"],"Autonomico":["BOA","BOJA"],"Reguladores":["CNMV"]}
+      let coverageCollections = [];
+      Object.values(coverageObj).forEach(arr => {
+        if (Array.isArray(arr)) coverageCollections.push(...arr);
+      });
+      if (coverageCollections.length === 0) {
+        coverageCollections = ["BOE"]; // fallback
+      }
+
+      // 3) Recogemos docs de HOY de las colecciones
+      const queryToday = { anio: anioToday, mes: mesToday, dia: diaToday };
+      const userMatchingDocs = [];
+      for (const collName of coverageCollections) {
+        // Si la coleccion no existe, skip / try-catch
+        try {
+          const coll = db.collection(collName);
+          const docs = await coll.find(queryToday).toArray();
+          docs.forEach(d => userMatchingDocs.push({ collectionName: collName, doc: d }));
+        } catch (err) {
+          console.warn(`No existe la colección ${collName} o error =>`, err);
+        }
+      }
+
+      // 4) Build cnae & subRama matching
       const cnaeGroups = {};
       const ramaGroups = {};
 
-      // For each doc => see if it has matching cnaes & sub-ramas
-      allMatchingDocs.forEach(({ collectionName, doc }) => {
-        // 1) Find matched cnaes
-        const docCnaes = Array.isArray(doc.divisiones_cnae)
-          ? doc.divisiones_cnae
-          : doc.divisiones_cnae
-          ? [doc.divisiones_cnae]
-          : [];
-        // Intersection with user.industry_tags
-        const matchedCnaes = docCnaes.filter(c =>
-          user.industry_tags?.includes(c)
-        );
+      userMatchingDocs.forEach(({ collectionName, doc }) => {
+        // cnae intersection
+        let cnaes = doc.divisiones_cnae || [];
+        if (!Array.isArray(cnaes)) cnaes = [cnaes];
+        const matchedCnaes = cnaes.filter(c => user.industry_tags?.includes(c));
 
-        // 2) Build sub-rama matches
-        // doc.ramas_juridicas => { "Derecho Fiscal": ["IVA", "IS", ...], ... }
-        let matchedSubs = []; // store all matched sub-ramas across all "ramas"
+        // sub-rama intersection
+        let matchedSubs = [];
         if (doc.ramas_juridicas && user.sub_rama_map) {
-          for (const [ramaName, docSubArr] of Object.entries(doc.ramas_juridicas)) {
-            // intersection with user.sub_rama_map[ramaName]
+          for (const [ramaName, docSubsArr] of Object.entries(doc.ramas_juridicas)) {
             const userSubs = user.sub_rama_map[ramaName] || [];
-            const intersection = (docSubArr || []).filter(sr => userSubs.includes(sr));
+            const intersection = (docSubsArr || []).filter(x => userSubs.includes(x));
             if (intersection.length > 0) {
-              // We'll push them into matchedSubs
               matchedSubs.push(...intersection);
-              // Also group the doc in ramaGroups[ramaName], but doc should only have "sub_rama_juridica" set to intersection
+              // push doc => ramaGroups[ramaName]
               if (!ramaGroups[ramaName]) ramaGroups[ramaName] = [];
               ramaGroups[ramaName].push({
                 ...doc,
                 collectionName,
-                // Overwrite doc.sub_rama_juridica with just the matched sub-ramas
                 sub_rama_juridica: intersection,
-                // We'll restore doc.divisiones_cnae with only the matched ones for display
                 divisiones_cnae: matchedCnaes
               });
             }
           }
         }
 
-        // Overwrite doc with only matched cnaes if any
         if (matchedCnaes.length > 0) {
-          matchedCnaes.forEach(cName => {
-            if (!cnaeGroups[cName]) cnaeGroups[cName] = [];
-            cnaeGroups[cName].push({
+          matchedCnaes.forEach(cv => {
+            if (!cnaeGroups[cv]) cnaeGroups[cv] = [];
+            cnaeGroups[cv].push({
               ...doc,
               collectionName,
-              // Overwrite doc.divisiones_cnae with the matchedCnaes
               divisiones_cnae: matchedCnaes,
-              // Overwrite doc.sub_rama_juridica with nothing or the real matchedSubs?
-              // Actually we do not want to break sub-rama logic here, so let's do blank and
-              // sub-rama is handled in the ramaGroups logic
-              sub_rama_juridica: []
+              sub_rama_juridica: [] // sub-rama handled above
             });
           });
         }
       });
 
-      // Now transform cnaeGroups => array
-      const cnaeArr = Object.keys(cnaeGroups).map(cnae => ({
-        coincidentValue: cnae,
-        docs: cnaeGroups[cnae],
+      const cnaeArr = Object.keys(cnaeGroups).map(key => ({
+        coincidentValue: key,
+        docs: cnaeGroups[key],
         type: 'cnae'
       }));
-      // Transform ramaGroups => array
-      const ramaArr = Object.keys(ramaGroups).map(rama => ({
-        coincidentValue: rama,
-        docs: ramaGroups[rama],
+      const ramaArr = Object.keys(ramaGroups).map(key => ({
+        coincidentValue: key,
+        docs: ramaGroups[key],
         type: 'subRama'
       }));
 
-      // Combine them
-      const finalGroups = [...cnaeArr, ...ramaArr];
-      // Sort descending by doc count
-      finalGroups.sort((a, b) => b.docs.length - a.docs.length);
+      const finalGroups = [...cnaeArr, ...ramaArr].sort((a,b)=> b.docs.length - a.docs.length);
 
-      // If no matches => noMatches template
+      // 5) Build HTML
       let htmlBody = '';
-      if (finalGroups.length === 0) {
-        const boeDocs = allMatchingDocs
-          .filter(item => item.collectionName.toLowerCase() === 'boe')
-          .map(item => {
-            // For no-matches, we just display doc with all cnaes and sub-ramas
-            // but let's unify sub-ramas for buildDocumentHTML
-            let subRamas = [];
-            if (item.doc.ramas_juridicas && typeof item.doc.ramas_juridicas === 'object') {
-              for (const arr of Object.values(item.doc.ramas_juridicas)) {
-                if (Array.isArray(arr)) subRamas.push(...arr);
-              }
-            }
-            item.doc.sub_rama_juridica = subRamas;
-            return item.doc;
-          });
-        htmlBody = buildNewsletterHTMLNoMatches(user.name,  user._id.toString(),moment().format('YYYY-MM-DD'), boeDocs);
+      if (!finalGroups.length) {
+        // No matches => fallback noMatches con boeDocs
+        const boeDocs = userMatchingDocs
+          .filter(x => (x.collectionName || '').toLowerCase() === 'boe')
+          .map(x => x.doc);
+
+        htmlBody = buildNewsletterHTMLNoMatches(
+          user.name,
+          user._id.toString(),
+          moment().format('YYYY-MM-DD'),
+          boeDocs
+        );
       } else {
-        htmlBody = buildNewsletterHTML(user.name,  user._id.toString(),moment().format('YYYY-MM-DD'), finalGroups);
+        htmlBody = buildNewsletterHTML(
+          user.name,
+          user._id.toString(),
+          moment().format('YYYY-MM-DD'),
+          finalGroups
+        );
       }
 
-      // Log email size
-      const emailSizeBytes = Buffer.byteLength(htmlBody, 'utf8');
-      const emailSizeKB = (emailSizeBytes / 1024).toFixed(2);
-      console.log(`Email size for ${user.email}: ${emailSizeBytes} bytes (${emailSizeKB} KB)`);
+      // 6) Send email
+      const emailSize = Buffer.byteLength(htmlBody, 'utf8');
+      console.log(`Email size for ${user.email}: ${emailSize} bytes (~${(emailSize/1024).toFixed(2)} KB)`);
 
-      // Send
       const mailOptions = {
         from: 'Papyrus <info@papyrus-ai.com>',
         to: user.email,
@@ -886,21 +828,18 @@ const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com');
           }
         ]
       };
-
       try {
         await transporter.sendMail(mailOptions);
         console.log(`Email sent to ${user.email}.`);
-      } catch (err) {
+      } catch(err) {
         console.error(`Error sending email to ${user.email}:`, err);
       }
     }
 
     console.log('All done. Closing DB.');
     await client.close();
-  } catch (error) {
-    console.error('Error =>', error);
-    if (client) {
-      await client.close();
-    }
+
+  } catch (err) {
+    console.error('Error =>', err);
   }
 })();
