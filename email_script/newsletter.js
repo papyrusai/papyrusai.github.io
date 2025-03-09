@@ -92,6 +92,13 @@ function buildDocumentHTML(doc, isLastDoc) {
       <p>${subRamaHTML}</p>
       <p>${doc.resumen}</p>
       <p>
+  <div class="margin-impacto">
+    <a class="button-impacto"
+           href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+           style="margin-right: 10px;">
+          Análisis impacto normativo
+        </a>
+</div>
         <a href="${doc.url_pdf}" target="_blank" style="color:#83a300;">
           Leer más: ${doc._id}
         </a>
@@ -251,6 +258,25 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
+            .button-impacto {
+      background-color: #092534;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 2%;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .button-impacto:hover {
+      background-color: #83a300; /* Darker blue on hover */
+    }
+      
+    .margin-impacto {
+      margin-bottom: 1%;
+    }
       h2 {
         color: #092534;
         margin-bottom: 10px;

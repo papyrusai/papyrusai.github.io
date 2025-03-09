@@ -69,6 +69,10 @@ app.get('/suscripcion.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'suscripcion.html'));
 });
 
+app.get('/norma.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'norma.html'));
+});
+
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
