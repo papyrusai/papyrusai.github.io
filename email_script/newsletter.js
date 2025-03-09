@@ -275,7 +275,7 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
     }
       
     .margin-impacto {
-      margin-bottom: 1%;
+      margin-bottom: 3%;
     }
       h2 {
         color: #092534;
