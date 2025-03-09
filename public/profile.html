@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <title>Profile</title>
-  <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+  <link rel="icon" href="assets/papyrus_logo.png" type="image/png"> 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
   <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
@@ -15,30 +14,66 @@
   <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
   <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+
+  <style>
+    /* Loader overlay styling (optional) */
+    #pageLoaderOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .page-loader {
+      width: 50px; height: 50px;
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    /* All dropdowns (Sector Económico, Rama Jurídica, etc.) have max-height 200px and scroll */
+    #myDropdown, 
+    #ramaDropdown, 
+    #serviciosDropdown, 
+    #tipoDropdown {
+      max-height: 200px;
+      overflow-y: auto;
+      position: absolute; 
+      z-index: 1000; 
+    }
+
+    .dropdown-content.show {
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <!-- Loader overlay -->
-<div id="pageLoaderOverlay">
-  <div class="page-loader"></div>
-</div>
+  <div id="pageLoaderOverlay">
+    <div class="page-loader"></div>
+  </div>
 
   <nav class="navbar">
     <div class="logo">
-        <a href="https://www.papyrus-ai.com/" target="_blank">
-          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
-        </a>
-      </div>
-    <button class="hamburger" onclick="toggleMenu()">☰</button> 
+      <a href="https://www.papyrus-ai.com/" target="_blank">
+        <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+      </a>
+    </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button>
     <ul class="menu">
-      <ul class="menu">
-        <li><a href="https://papyrus-ai.com/">WEB</a></li>
-        <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
-        <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
-        <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
-      </ul>
+      <li><a href="https://papyrus-ai.com/">WEB</a></li>
+      <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li>
+      <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+      <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+    </ul>
   </nav>
+
   <h1>Hola {{name}}</h1>
-  <!-- <p>Email: {{email}}</p> -->
   <div id="data-container">
     <div class="detalle-cuenta">
       <div>
@@ -50,220 +85,138 @@
         <div class="etiquetas-values" id="ramasContainer"></div>
       </div>
     </div>
-    <a href="#" id="editIndustriesLink" class ="change-subscription">Editar Suscripción</a>
-<div class="analytics-label busqueda">Búsqueda Avanzada</div>
 
-<!-- We embed user industries & user.ramas as JSON in hidden script tags -->
-<script id="industryTags" type="application/json">{{industry_tags_json}}</script>
-<script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
-<script id="userSubRamaMap" type="application/json">
-  { 
-    "Derecho Civil": [
-      "genérico", "familia", "sucesiones", "divorcios", "arrendamientos",
-      "responsabilidad civil", "contratos", "obligaciones", "propiedad", 
-      "derechos reales", "hipotecas", "servidumbres", "donaciones"
-    ],
-    "Derecho Mercantil": [
-      "genérico", "M&A", "financiero", "inmobiliario", "mercados de capital",
-      "societario", "gobierno corporativo", "seguros", "propiedad industrial",
-      "contratos mercantiles", "banca y seguros", "franquicias", 
-      "marcas y patentes", "quiebras y reestructuración empresarial"
-    ],
-    "Derecho Administrativo": [
-      "genérico", "energía", "medio ambiente", "urbanismo", "sectores regulados",
-      "bancario", "contratación pública", "contencioso-administrativo",
-      "subvenciones", "expropiaciones", "licencias y permisos", 
-      "responsabilidad patrimonial", "transparencia y buen gobierno"
-    ],
-    "Derecho Fiscal": [
-      "genérico", "tributación internacional", "IVA", "IS", "IRNR",
-      "planificación fiscal", "impuestos locales", "procedimientos tributarios",
-      "impuestos indirectos", "impuestos directos", "fiscalidad empresarial", 
-      "fiscalidad de personas físicas", "precios de transferencia"
-    ],
-    "Derecho Laboral": [
-      "genérico", "contratación", "despidos", "negociación colectiva", 
-      "reclamaciones salariales", "prevención de riesgos laborales", 
-      "seguridad social", "expatriados", "acoso laboral", "movilidad geográfica",
-      "conflictos colectivos", "externalización"
-    ],
-    "Derecho Procesal-Civil": [
-      "genérico", "pleitos masa (cláusulas suelo, cárteles)", 
-      "impugnación acuerdos societarios", "desahucio", 
-      "ejecución de sentencias", "medidas cautelares", 
-      "responsabilidad civil", "arbitraje", "mediación", 
-      "procesos monitorios"
-    ],
-    "Derecho Procesal-Penal": [
-      "genérico", "delitos medioambientales", "delitos económicos",
-      "delitos de sangre", "delitos informáticos", "blanqueo de capitales",
-      "violencia de género", "delitos contra la propiedad", 
-      "delitos contra la seguridad vial", "delitos de corrupción", 
-      "delitos societarios", "delitos fiscales"
-    ],
-    "Derecho Constitucional": [
-      "genérico", "derechos fundamentales", "control de constitucionalidad", 
-      "reparto de competencias", "procedimientos constitucionales", 
-      "amparo constitucional", "estado de derecho", 
-      "sistemas electorales", "reformas constitucionales"
-    ],
-    "Derecho de la UE": [
-      "genérico", "mercado interior", "competencia", 
-      "protección de datos (GDPR)", "ayudas de Estado", 
-      "derechos fundamentales de la UE", "normativa comunitaria", 
-      "política agraria común", "libre circulación de bienes y personas"
-    ],
-    "Derecho Internacional Privado": [
-      "genérico", "conflictos de leyes", "contratos internacionales",
-      "reconocimiento de sentencias extranjeras", "matrimonios internacionales", 
-      "adopciones internacionales", "arbitraje internacional", 
-      "comercio internacional"
-    ],
-    "Derecho Internacional Público": [
-      "genérico", "tratados internacionales", "derecho diplomático", 
-      "derecho humanitario", "organismos internacionales", 
-      "derechos humanos", "derecho del mar", "derecho penal internacional", 
-      "conflictos armados", "resolución de disputas internacionales"
-    ],
-    "Derecho Penal Económico": [
-      "genérico", "fraudes", "insolvencias punibles", "blanqueo de capitales",
-      "delitos societarios", "delitos fiscales", "corrupción", "cárteles"
-    ],
-    "Derecho Informático": [
-      "genérico", "protección de datos", "ciberseguridad", 
-      "contratos tecnológicos", "blockchain y criptomonedas", 
-      "propiedad intelectual digital", "regulación de IA", 
-      "delitos informáticos"
-    ],
-    "Derecho Ambiental": [
-      "genérico", "cambio climático", "protección de la biodiversidad", 
-      "gestión de residuos", "energías renovables", "impacto ambiental", 
-      "contaminación", "legislación sobre agua", "legislación forestal"
-    ]
-  }
-  </script>
-  
+    <a href="#" id="editIndustriesLink" class="change-subscription">Editar Suscripción</a>
+    <div class="analytics-label busqueda">Búsqueda Avanzada</div>
 
-<div id="Filtrar">
-  <div class="filter-item">
-    <div class="etiquetas-label">Sector Económico</div>
-    <div class="dropdown">
-      <button onclick="myFunction()" class="dropbtn"><span id="selectedIndustry">Cargando...</span>
-        <i class="fa fa-caret-down"></i>
-      </button>
-      <div id="myDropdown" class="dropdown-content">
+    <!-- JSON data for industries, ramas, subramas, etc. -->
+    <script id="industryTags" type="application/json">{{industry_tags_json}}</script>
+    <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
+    <script id="userSubRamaMap" type="application/json">
+    {
+      "Derecho Civil": ["genérico","familia","sucesiones","divorcios","arrendamientos","responsabilidad civil","contratos","obligaciones","propiedad","derechos reales","hipotecas","servidumbres","donaciones"],
+      "Derecho Mercantil": ["genérico","M&A","financiero","inmobiliario","mercados de capital","societario","gobierno corporativo","seguros","propiedad industrial","contratos mercantiles","banca y seguros","franquicias","marcas y patentes","quiebras y reestructuración empresarial"],
+      "Derecho Administrativo": ["genérico","energía","medio ambiente","urbanismo","sectores regulados","bancario","contratación pública","contencioso-administrativo","subvenciones","expropiaciones","licencias y permisos","responsabilidad patrimonial","transparencia y buen gobierno"],
+      "Derecho Fiscal": ["genérico","tributación internacional","IVA","IS","IRNR","planificación fiscal","impuestos locales","procedimientos tributarios","impuestos indirectos","impuestos directos","fiscalidad empresarial","fiscalidad de personas físicas","precios de transferencia"],
+      "Derecho Laboral": ["genérico","contratación","despidos","negociación colectiva","reclamaciones salariales","prevención de riesgos laborales","seguridad social","expatriados","acoso laboral","movilidad geográfica","conflictos colectivos","externalización"],
+      "Derecho Procesal-Civil": ["genérico","pleitos masa (cláusulas suelo, cárteles)","impugnación acuerdos societarios","desahucio","ejecución de sentencias","medidas cautelares","responsabilidad civil","arbitraje","mediación","procesos monitorios"],
+      "Derecho Procesal-Penal": ["genérico","delitos medioambientales","delitos económicos","delitos de sangre","delitos informáticos","blanqueo de capitales","violencia de género","delitos contra la propiedad","delitos contra la seguridad vial","delitos de corrupción","delitos societarios","delitos fiscales"],
+      "Derecho Constitucional": ["genérico","derechos fundamentales","control de constitucionalidad","reparto de competencias","procedimientos constitucionales","amparo constitucional","estado de derecho","sistemas electorales","reformas constitucionales"],
+      "Derecho de la UE": ["genérico","mercado interior","competencia","protección de datos (GDPR)","ayudas de Estado","derechos fundamentales de la UE","normativa comunitaria","política agraria común","libre circulación de bienes y personas"],
+      "Derecho Internacional Privado": ["genérico","conflictos de leyes","contratos internacionales","reconocimiento de sentencias extranjeras","matrimonios internacionales","adopciones internacionales","arbitraje internacional","comercio internacional"],
+      "Derecho Internacional Público": ["genérico","tratados internacionales","derecho diplomático","derecho humanitario","organismos internacionales","derechos humanos","derecho del mar","derecho penal internacional","conflictos armados","resolución de disputas internacionales"],
+      "Derecho Penal Económico": ["genérico","fraudes","insolvencias punibles","blanqueo de capitales","delitos societarios","delitos fiscales","corrupción","cárteles"],
+      "Derecho Informático": ["genérico","protección de datos","ciberseguridad","contratos tecnológicos","blockchain y criptomonedas","propiedad intelectual digital","regulación de IA","delitos informáticos"],
+      "Derecho Ambiental": ["genérico","cambio climático","protección de la biodiversidad","gestión de residuos","energías renovables","impacto ambiental","contaminación","legislación sobre agua","legislación forestal"]
+    }
+    </script>
+
+    <!-- Filter Section -->
+    <div id="Filtrar">
+      <div class="filter-item">
+        <div class="etiquetas-label">Sector Económico</div>
+        <div class="dropdown">
+          <button onclick="toggleIndustryDropdown()" class="dropbtn">
+            <span id="selectedIndustry">Cargando...</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="myDropdown" class="dropdown-content">
+            <!-- Dynamically populated by dropdown.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <div class="etiquetas-label">Rama Jurídica</div>
+        <div class="dropdown" style="margin-bottom: 10px;">
+          <button onclick="toggleRamaDropdown()" class="dropbtn">
+            <span id="selectedRama">Todas</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="ramaDropdown" class="dropdown-content">
+            <!-- Dynamically populated by dropdown.js -->
+          </div>
+        </div>
+        <div id="subRamasCheckboxContainer" style="display: none; padding: 6px; border-radius: 4px;">
+          <!-- Sub-ramas checkboxes appear here -->
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <div class="filter-section">
+          <div class="etiquetas-label">Boletín Oficial</div>
+          <div class="filter-options">
+            <label class="filter-option"><input type="checkbox" name="boletin" value="BOE" checked> BOE</label>
+            <label class="filter-option"><input type="checkbox" name="boletin" value="BOCM"> BOCM</label>
+            <label class="filter-option"><input type="checkbox" name="boletin" value="BOA"> BOA</label>
+            <label class="filter-option"><input type="checkbox" name="boletin" value="BOJA"> BOJA</label>
+            <label class="filter-option"><input type="checkbox" name="boletin" value="BOPV"> BOPV</label>
+            <label class="filter-option"><input type="checkbox" name="boletin" value="DOUE"> DOUE</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-item">
+        <div class="etiquetas-label">Fecha de publicación</div>
+        <div class="date-filter">
+          <label for="startDate">Desde:</label>
+          <input type="date" id="startDate" name="startDate" />
+          <label for="endDate">Hasta:</label>
+          <input type="date" id="endDate" name="endDate" />
+        </div>
       </div>
     </div>
-  </div>
 
- <!-- Insert inside <div id="Filtrar"> (after "Industria" and "Boletín", etc.) -->
-  <div class="filter-item">
-    <div class="etiquetas-label">Rama Jurídica</div>
-    
-    <!-- A small dropdown for main Ramas -->
-    <div class="dropdown" style="margin-bottom: 10px;">
-      <button onclick="toggleRamaDropdown()" class="dropbtn">
-        <span id="selectedRama">Todas</span>
-        <i class="fa fa-caret-down"></i>
-      </button>
-      <div id="ramaDropdown" class="dropdown-content">
-        <!-- Filled dynamically by JS or statically if you prefer -->
-      </div>
+    <div style="text-align: right;">
+      <button id="buscarBtn" onclick="handleBuscar()">Buscar</button>
     </div>
-  
-    <!-- Sub-ramas checkboxes section -->
-    <div id="subRamasCheckboxContainer" style="display: none; padding: 6px; border-radius: 4px;">
-    </div>
-  </div>
 
-  <div class="filter-item">
-    <div class="filter-section">
-      <div class="etiquetas-label">Boletín Oficial</div>
-      <div class="filter-options">
-        <label class="filter-option">
-          <input type="checkbox" name="boletin" value="BOE" checked> BOE
-        </label>
-        <label class="filter-option">
-          <input type="checkbox" name="boletin" value="BOCM"> BOCM
-        </label>
-        <label class="filter-option">
-          <input type="checkbox" name="boletin" value="BOA"> BOA
-        </label>
-        <label class="filter-option">
-          <input type="checkbox" name="boletin" value="BOJA"> BOJA
-        </label>
-        <label class="filter-option">
-          <input type="checkbox" name="boletin" value="BOPV"> BOPV
-        </label>
-        <!-- New DOUE option -->
-        <label class="filter-option">
-          <input type="checkbox" name="boletin" value="DOUE"> DOUE
-        </label>
-      </div>
-    
-    </div>
-  </div>
-  <div class="filter-item">
-    <div class="etiquetas-label">Fecha de publicación</div>
-    <div class="date-filter">
-      <label for="startDate">Desde:</label>
-      <input type="date" id="startDate" name="startDate" />
-      <label for="endDate">Hasta:</label>
-      <input type="date" id="endDate" name="endDate" />
-    </div>
-  </div>
-
-</div>
-
-
-<div style="text-align: right;">
-  <button id="buscarBtn" onclick="handleBuscar()">Buscar</button>
-</div>
-     <!-- <div class = "chart" id="chart"></div> -->
-     <div class="analytics-label">Estadísticas de la búsqueda</div>
-     <div id="loading-icon-chart" style="display: none;">
+    <div class="analytics-label">Estadísticas de la búsqueda</div>
+    <div id="loading-icon-chart" style="display: none;">
       <div class="loader"></div>
-  </div>
-     <div id="chartContainer"> 
-      <canvas id="documentsChart"></canvas>
-      </div>
-      <div class="analytics-label">Documentos</div>
-      <div id="loading-icon" style="display: none;">
-        <div class="loader"></div>
     </div>
-     <!-- <div class="analytics-label">Publicaciones BOE</div> -->
-      <div class="collectionDocs">{{boeDocuments}}</div>
+    <div id="chartContainer">
+      <canvas id="documentsChart"></canvas>
+    </div>
+
+    <div class="analytics-label">Documentos</div>
+    <div id="loading-icon" style="display: none;">
+      <div class="loader"></div>
+    </div>
+    <div class="collectionDocs">{{boeDocuments}}</div>
   </div>
+
   <div class="logout-container">
     <a href="/logout">Logout</a>
-</div>
+  </div>
 
-  <script id="industryTags" type="application/json">{{industry_tags_json}}</script> <!-- Add this line -->
-    <!-- Include hidden script tags to embed variables -->
-    <script id="monthsData" type="application/json">{{months_json}}</script>
-    <script id="countsData" type="application/json">{{counts_json}}</script>
-    <script id="userPlan" type="application/json">{{subscription_plan}}</script>
-    <script id="startDateInput" type="application/json">{{start_date}}</script>
+  <!-- Additional JSON data for the chart and plan, etc. -->
+  <script id="monthsData" type="application/json">{{months_json}}</script>
+  <script id="countsData" type="application/json">{{counts_json}}</script>
+  <script id="userPlan" type="application/json">{{subscription_plan}}</script>
+  <script id="startDateInput" type="application/json">{{start_date}}</script>
+  <script id="endDateInput" type="application/json">{{end_date}}</script>
 
- <!-- <script type="module" src="/dist/index.js"></script> --> <!-- Update this path to point to the bundled file -->
+  <!-- Scripts for building dropdowns, etc. -->
   <script src="dropdown.js"></script>
-  <script src="displayTags.js"></script> 
-  <script src="collections.js"></script> 
-  <script src="chart.js"></script> 
+  <script src="displayTags.js"></script>
+  <script src="collections.js"></script>
+  <script src="chart.js"></script>
+
   <script>
     function toggleMenu() {
-        const menu = document.querySelector('.menu');
-        menu.classList.toggle('active');
-         }
-         // Close the menu if clicking outside of it
-document.addEventListener('click', function(event) {
-    const menu = document.querySelector('.menu');
-    const hamburger = document.querySelector('.hamburger');
-    
-    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
-        menu.classList.remove('active');
+      const menu = document.querySelector('.menu');
+      menu.classList.toggle('active');
     }
-});
-</script>
+
+    // Close the menu if clicking outside
+    document.addEventListener('click', function(event) {
+      const menu = document.querySelector('.menu');
+      const hamburger = document.querySelector('.hamburger');
+      if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+      }
+    });
+  </script>
 </body>
 </html>
