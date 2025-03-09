@@ -409,22 +409,24 @@ app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
   }
-
   const client = new MongoClient(uri, mongodbOptions);
   try {
     await client.connect();
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
+    // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-
     const userSubRamaMap = user.sub_rama_map || {};
     const collections = req.query.collections || ['BOE']; // default if none chosen
 
+    // Set default dates: startDate is today minus 1 month; endDate is today.
     const now = new Date();
     const startDate = new Date();
     startDate.setMonth(now.getMonth() - 1);
+    const endDate = now;
 
+    // Build the query to fetch documents from startDate until today.
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
@@ -457,6 +459,7 @@ app.get('/profile', async (req, res) => {
     for (const collectionName of collections) {
       const collection = database.collection(collectionName);
       const documents = await collection.find(query).project(projection).toArray();
+      // Inject the collection name into each document.
       documents.forEach(doc => {
         doc.collectionName = collectionName;
       });
@@ -466,16 +469,16 @@ app.get('/profile', async (req, res) => {
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
-      return dateB - dateA; // descending
+      return dateB - dateA; // descending order
     });
 
-    // (The remainder of your filtering and HTML building code remains unchanged)
+    // (Your existing filtering code goes here—unchanged.)
     let documentsHtml;
     if (allDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
     } else {
       documentsHtml = allDocuments.map(doc => {
-        // Build HTML for each document. (Your existing code)
+        // Build HTML for each document.
         const cnaesHtml = (doc.matched_cnaes || [])
           .map(div => `<span>${div}</span>`)
           .join('');
@@ -496,7 +499,7 @@ app.get('/profile', async (req, res) => {
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <div class="margin-impacto>
+            <div class="margin-impacto">
               <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
             </div>
             <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
@@ -505,7 +508,16 @@ app.get('/profile', async (req, res) => {
       }).join('');
     }
 
-    // (Rest of your code to fill profile template)
+    // (For chart data – assuming these variables are built as before)
+    const documentsByMonth = {};
+    allDocuments.forEach(doc => {
+      const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
+      documentsByMonth[month] = (documentsByMonth[month] || 0) + 1;
+    });
+    const months = Object.keys(documentsByMonth).sort();
+    const counts = months.map(m => documentsByMonth[m]);
+
+    // Read the profile.html template and inject values, including the dates.
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
@@ -514,8 +526,12 @@ app.get('/profile', async (req, res) => {
       .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags))
       .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas || {}))
       .replace('{{boeDocuments}}', documentsHtml)
-      // ... other replacements ...
-      ;
+      .replace('{{months_json}}', JSON.stringify(months))
+      .replace('{{counts_json}}', JSON.stringify(counts))
+      .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
+      .replace('{{start_date}}', JSON.stringify(startDate))
+      .replace('{{end_date}}', JSON.stringify(endDate));
+
     res.send(profileHtml);
   } catch (err) {
     console.error('Error connecting to MongoDB', err);
@@ -524,6 +540,8 @@ app.get('/profile', async (req, res) => {
     await client.close();
   }
 });
+
+
 app.get('/data', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Unauthorized' });
