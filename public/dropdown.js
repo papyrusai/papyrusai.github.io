@@ -203,13 +203,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
   //========================== GLOBAL CLICK TO CLOSE DROPDOWNS ==========================
   // This ensures if the user clicks anywhere outside a .dropdown, we hide them
-  document.addEventListener('click', function(event) {
-    // If the click is not in an element with class .dropdown or its descendants, close
-    const dropdowns = document.querySelectorAll('.dropdown-content');
-    dropdowns.forEach(function(dd) {
-      if (!event.target.closest('.dropdown')) {
-        dd.classList.remove('show');
-      }
-    });
+  // Close any open dropdown if the user clicks outside .dropdown
+document.addEventListener('click', function(event) {
+  // Find all dropdown-content elements (e.g. #myDropdown, #ramaDropdown, etc.)
+  const allDropdowns = document.querySelectorAll('.dropdown-content');
+  allDropdowns.forEach(function(dd) {
+    // If the click is NOT inside an element with class "dropdown", close this dropdown
+    if (!event.target.closest('.dropdown')) {
+      dd.classList.remove('show');
+    }
   });
+});
+
+
 });
