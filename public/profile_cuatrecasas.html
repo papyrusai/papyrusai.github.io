@@ -14,21 +14,23 @@
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
   <style>
     /* Additional styles for dropdowns */
-    #serviciosDropdown, #tipoDropdown {
+    #serviciosDropdown, #tipoDropdown, #rangoDropdown {
       max-height: 200px;
       overflow-y: auto;
       position: absolute;
       z-index: 1000;
     }
     #serviciosDropdown .dropdown-bottom,
-    #tipoDropdown .dropdown-bottom {
+    #tipoDropdown .dropdown-bottom,
+    #rangoDropdown .dropdown-bottom {
       text-align: center;
       padding: 5px;
       border-top: 1px solid #ccc;
       cursor: pointer;
     }
     .dropdown { position: relative; }
-    /* Boletín Oficial: only BOE selectable */
+
+    /* Boletín Oficial: only BOE selectable (others are dimmed) */
     .filter-options input[type="checkbox"]:not([value="BOE"]) {
       opacity: 0.5;
       pointer-events: none;
@@ -39,7 +41,7 @@
   <nav class="navbar">
     <div class="logo">
       <a href="https://www.papyrus-ai.com/" target="_blank">
-        <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+        <img src="assets/cuatrecasas_logo.png" alt="Papyrus Logo" style="height: 55px;">
       </a>
     </div>
     <button class="hamburger" onclick="toggleMenu()">☰</button>
@@ -68,7 +70,9 @@
             <span id="selectedServicio">Todos</span>
             <i class="fa fa-caret-down"></i>
           </button>
-          <div id="serviciosDropdown" class="dropdown-content"><a href="#" onclick="selectServicio('Todos')">Todos</a>
+          <div id="serviciosDropdown" class="dropdown-content">
+            <!-- Various "Servicios" options -->
+            <a href="#" onclick="selectServicio('Todos')">Todos</a>
             <a href="#" onclick="selectServicio('Arbitraje Internacional')">Arbitraje Internacional</a>
             <a href="#" onclick="selectServicio('Competencia')">Competencia</a>
             <a href="#" onclick="selectServicio('Deporte y Entretenimiento')">Deporte y Entretenimiento</a>
@@ -102,13 +106,21 @@
             <a href="#" onclick="selectServicio('Público - Contratación Pública')">Público - Contratación Pública</a>
             <a href="#" onclick="selectServicio('Público - Medioambiente y Cambio Climático')">Público - Medioambiente y Cambio Climático</a>
             <a href="#" onclick="selectServicio('Público - Sectores Regulados')">Público - Sectores Regulados</a>
-            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda')">Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda</a>
-            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales')">Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales</a>
-            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Corporate y M&A')">Servicios Financieros y de Seguros - Corporate y M&A</a>
-            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Regulatorio')">Servicios Financieros y de Seguros - Regulatorio</a>
+            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda')">
+              Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda
+            </a>
+            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales')">
+              Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales
+            </a>
+            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Corporate y M&A')">
+              Servicios Financieros y de Seguros - Corporate y M&A
+            </a>
+            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Regulatorio')">
+              Servicios Financieros y de Seguros - Regulatorio
+            </a>
             <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
             <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
-            
+
             <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
@@ -116,7 +128,7 @@
         </div>
       </div>
 
-      <!-- Nuevo filtro: Tipo disposición -->
+      <!-- Tipo disposición -->
       <div class="filter-item">
         <div class="etiquetas-label">Tipo disposición</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -135,7 +147,31 @@
         </div>
       </div>
 
-      <!-- Boletín Oficial (only BOE selectable; others visible but disabled) -->
+      <!-- NEW filter: Rango -->
+      <div class="filter-item">
+        <div class="etiquetas-label">Rango</div>
+        <div class="dropdown" style="margin-bottom: 10px;">
+          <button onclick="toggleRangoDropdown()" class="dropbtn">
+            <span id="selectedRango">Todos</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="rangoDropdown" class="dropdown-content">
+            <a href="#" onclick="selectRango('Todos')">Todos</a>
+            <a href="#" onclick="selectRango('Leyes')">Leyes</a>
+            <a href="#" onclick="selectRango('Reglamentos')">Reglamentos</a>
+            <a href="#" onclick="selectRango('Decisiones interpretativas y Reguladores')">
+              Decisiones interpretativas y Reguladores
+            </a>
+            <a href="#" onclick="selectRango('Jurisprudencia')">Jurisprudencia</a>
+            <a href="#" onclick="selectRango('Palabras_clave_otras')">Palabras_clave_otras</a>
+            <div class="dropdown-bottom" onclick="toggleRangoDropdown()">
+              <i class="fa fa-caret-down"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Boletín Oficial (only BOE is selectable) -->
       <div class="filter-item">
         <div class="filter-section">
           <div class="etiquetas-label">Boletín Oficial</div>
@@ -161,9 +197,8 @@
           </div>
         </div>
       </div>
-      <!-- Fecha de publicación removed -->
     </div>
-                   
+
     <div style="text-align: right;">
       <button id="buscarBtn" onclick="handleBuscar_cuatrecasas()">Buscar</button>
     </div>
@@ -180,26 +215,44 @@
   </div>
 
   <script>
+    // Menu toggling
     function toggleMenu() {
       const menu = document.querySelector('.menu');
       menu.classList.toggle('active');
     }
+
+    // On click anywhere else, close dropdowns & menu
     document.addEventListener('click', function(event) {
-      // Hide dropdowns if clicking outside
+      // Hide Servicios dropdown if open
       const serviciosDropdown = document.getElementById('serviciosDropdown');
-      if (serviciosDropdown && serviciosDropdown.classList.contains('show') && !event.target.closest('.dropdown')) {
+      if (serviciosDropdown && serviciosDropdown.classList.contains('show')
+          && !event.target.closest('.dropdown')) {
         serviciosDropdown.classList.remove('show');
       }
+
+      // Hide Tipo dropdown if open
       const tipoDropdown = document.getElementById('tipoDropdown');
-      if (tipoDropdown && tipoDropdown.classList.contains('show') && !event.target.closest('.dropdown')) {
+      if (tipoDropdown && tipoDropdown.classList.contains('show')
+          && !event.target.closest('.dropdown')) {
         tipoDropdown.classList.remove('show');
       }
+
+      // Hide Rango dropdown if open
+      const rangoDropdown = document.getElementById('rangoDropdown');
+      if (rangoDropdown && rangoDropdown.classList.contains('show')
+          && !event.target.closest('.dropdown')) {
+        rangoDropdown.classList.remove('show');
+      }
+
+      // Hide hamburger menu if clicking outside
       const menu = document.querySelector('.menu');
       const hamburger = document.querySelector('.hamburger');
       if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
         menu.classList.remove('active');
       }
     });
+
+    // Servicios toggling
     function toggleServiciosDropdown() {
       const dropdown = document.getElementById('serviciosDropdown');
       dropdown.classList.toggle('show');
@@ -208,6 +261,8 @@
       document.getElementById('selectedServicio').textContent = servicio;
       document.getElementById('serviciosDropdown').classList.remove('show');
     }
+
+    // Tipo toggling
     function toggleTipoDropdown() {
       const dropdown = document.getElementById('tipoDropdown');
       dropdown.classList.toggle('show');
@@ -216,24 +271,41 @@
       document.getElementById('selectedTipo').textContent = tipo;
       document.getElementById('tipoDropdown').classList.remove('show');
     }
-    
-    // Updated filtering function for Buscar.
+
+    // **New** Rango toggling
+    function toggleRangoDropdown() {
+      const dropdown = document.getElementById('rangoDropdown');
+      dropdown.classList.toggle('show');
+    }
+    function selectRango(rango) {
+      document.getElementById('selectedRango').textContent = rango;
+      document.getElementById('rangoDropdown').classList.remove('show');
+    }
+
+    // Filtering logic
     function handleBuscar_cuatrecasas() {
-      // Get current dropdown selections.
+      // Read user’s selected values
       const servicio = document.getElementById('selectedServicio').textContent.trim();
       const tipo = document.getElementById('selectedTipo').textContent.trim();
-      // Get all document items.
+      const rango = document.getElementById('selectedRango').textContent.trim();
+
+      // All documents
       const docs = document.querySelectorAll('.collectionDocs .data-item');
       docs.forEach(doc => {
-        // Retrieve the text inside etiquetas-values.
+        // 1) The text in etiquetas-values => used to check "Servicios"
         const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
-        // Retrieve hidden seccion value.
+
+        // 2) The hidden doc-seccion => used to check "Tipo disposición"
         const seccionText = doc.querySelector('.doc-seccion').innerText;
-        // Check if document matches the selected criteria.
-        let matchServicio = (servicio === 'Todos') || (etiquetasText.includes(servicio));
-        let matchTipo = (tipo === 'Todos') || (seccionText.includes(tipo));
-        // Show the doc only if both conditions match.
-        if (matchServicio && matchTipo) {
+
+        // 3) The hidden doc-rango => used to check "Rango"
+        const rangoText = doc.querySelector('.doc-rango').innerText;
+
+        let matchServicio = (servicio === 'Todos') || etiquetasText.includes(servicio);
+        let matchTipo = (tipo === 'Todos') || seccionText.includes(tipo);
+        let matchRango = (rango === 'Todos') || rangoText.includes(rango);
+
+        if (matchServicio && matchTipo && matchRango) {
           doc.style.display = '';
         } else {
           doc.style.display = 'none';

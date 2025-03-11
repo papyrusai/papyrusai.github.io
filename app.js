@@ -312,9 +312,9 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
   try {
     await client.connect();
     const database = client.db("papyrus");
-    const boeCollection = database.collection("BOE"); // Collection hardcoded
+    const boeCollection = database.collection("BOE"); // Hardcoded to "BOE"
 
-    // Projection for the required fields (including seccion).
+    // Include rango_titulo in projection
     const projection = {
       short_name: 1,
       etiquetas_cuatrecasas: 1,
@@ -324,9 +324,11 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       resumen: 1,
       url_pdf: 1,
       _id: 1,
-      seccion: 1
+      seccion: 1,
+      rango_titulo: 1 // <-- new field
     };
 
+    // Attempt to load docs for today's date:
     const today = new Date();
     const queryToday = {
       anio: today.getFullYear(),
@@ -334,13 +336,16 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       dia: today.getDate()
     };
 
-    // Try to get documents with today's date.
     let docs = await boeCollection.find(queryToday).project(projection).toArray();
     let docDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
 
-    // If no docs found for today, find the most recent day with documents.
+    // If none found for today, find the most recent day with documents:
     if (docs.length === 0) {
-      const latestDocsArr = await boeCollection.find({}).sort({ anio: -1, mes: -1, dia: -1 }).limit(1).toArray();
+      const latestDocsArr = await boeCollection.find({})
+        .sort({ anio: -1, mes: -1, dia: -1 })
+        .limit(1)
+        .toArray();
+
       if (latestDocsArr.length > 0) {
         const latestDoc = latestDocsArr[0];
         const queryLatest = {
@@ -353,25 +358,36 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       }
     }
 
-    // Inject collection name for each document.
+    // Mark each doc with collectionName = "BOE"
     docs.forEach(doc => {
       doc.collectionName = "BOE";
     });
 
-    // Build the HTML for each document.
+    // Build HTML for the documents
     let documentsHtml = "";
     docs.forEach(doc => {
+      // Build etiquetas_cuatrecasas or default
       let etiquetasHtml = "";
-      if (doc.etiquetas_cuatrecasas && Array.isArray(doc.etiquetas_cuatrecasas) && doc.etiquetas_cuatrecasas.length > 0) {
+      if (doc.etiquetas_cuatrecasas &&
+          Array.isArray(doc.etiquetas_cuatrecasas) &&
+          doc.etiquetas_cuatrecasas.length > 0) {
         etiquetasHtml = doc.etiquetas_cuatrecasas.map(e => `<span>${e}</span>`).join('');
       } else {
         etiquetasHtml = `<span>Genérico</span>`;
       }
+
+      // Build rango_titulo or default "Indefinido"
+      const rangoToShow = doc.rango_titulo || "Indefinido";
+
       documentsHtml += `
         <div class="data-item">
           <div class="header-row">
             <div class="id-values">${doc.short_name}</div>
             <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+          </div>
+          <!-- Rango displayed in small gray text below header row -->
+          <div style="color: gray; font-size: 0.9em; margin-bottom: 6px;">
+            Rango: ${rangoToShow}
           </div>
           <div class="etiquetas-values">
             ${etiquetasHtml}
@@ -379,23 +395,32 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
           <div class="resumen-label">Resumen</div>
           <div class="resumen-content">${doc.resumen}</div>
           <div class="margin-impacto">
-            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
+              Análisis impacto normativo
+            </a>
           </div>
           <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
-          <!-- Hidden seccion field -->
+          <!-- Hidden fields for 'seccion' and 'rango' used by the JS filters -->
           <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
+          <span class="doc-rango" style="display:none;">${rangoToShow}</span>
         </div>
       `;
     });
 
-    let template = fs.readFileSync(path.join(__dirname, 'public', 'profile_cuatrecasas.html'), 'utf8');
+    // Load the profile_cuatrecasas.html template
+    let template = fs.readFileSync(
+      path.join(__dirname, 'public', 'profile_cuatrecasas.html'),
+      'utf8'
+    );
     template = template.replace('{{boeDocuments}}', documentsHtml);
     template = template.replace('{{documentDate}}', docDate);
 
+    // Also get the user’s name
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     template = template.replace('{{name}}', user.name || '');
 
+    // Send final
     res.send(template);
   } catch (err) {
     console.error("Error in /profile_cuatrecasas:", err);
@@ -404,6 +429,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     await client.close();
   }
 });
+
 
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
