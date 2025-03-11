@@ -386,8 +386,8 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
             <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
           </div>
           <!-- Rango displayed in small gray text below header row -->
-          <div style="color: gray; font-size: 0.9em; margin-bottom: 6px;">
-            Rango: ${rangoToShow}
+          <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+             ${rangoToShow}
           </div>
           <div class="etiquetas-values">
             ${etiquetasHtml}
