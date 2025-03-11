@@ -11,7 +11,7 @@ const { spawn } = require('child_process'); // Import the spawn function
 const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
 
-const SPECIAL_DOMAIN = "@gmail.com";
+const SPECIAL_DOMAIN = "@gmail.xxx";
 const SPECIAL_ADDRESS = "@papyrus-ai.com";
 
 //to avoid deprecation error
@@ -52,7 +52,7 @@ app.get('/', (req, res) => {
 
 
 // This array holds the A&O labels in JS
-// but in the database, they will be stored under the key "etiquetas_a&o".
+// but in the database, they will be stored under the key "etiquetas_ao".
 const etiquetasAandO = [
   "Chemicals",
   "Consumer and retail",
@@ -214,7 +214,7 @@ async function processAODomainUser(user) {
       return aoUser;
     } else {
       // Create a new user with A&O defaults
-      // Notice how the property name in the DB is "etiquetas_a&o"
+      // Notice how the property name in the DB is "etiquetas_ao"
       const specialDefaults = {
         email: user.email,
         cobertura_legal: {
@@ -225,7 +225,7 @@ async function processAODomainUser(user) {
         profile_type: "Departamento conocimiento",
         company_name: "A&O", // or "Allen & Overy"
         subscription_plan: "plan2",
-        "etiquetas_a&o": etiquetasAandO
+        etiquetas_ao: etiquetasAandO
       };
 
       const result = await usersCollection.insertOne(specialDefaults);
@@ -537,10 +537,10 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
     const database = client.db("papyrus");
     const boeCollection = database.collection("BOE"); // Or whatever your collection is
 
-    // We project "etiquetas_a&o" to match the property name in the DB
+    // We project "etiquetas_ao" to match the property name in the DB
     const projection = {
       short_name: 1,
-      "etiquetas_a&o": 1,
+      etiquetas_ao: 1,
       dia: 1,
       mes: 1,
       anio: 1,
@@ -590,7 +590,7 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
     docs.forEach(doc => {
       let etiquetasHtml = "";
       // Access the A&O labels using bracket notation
-      const aoTags = doc["etiquetas_a&o"];
+      const aoTags = doc.etiquetas_ao;
       if (aoTags && Array.isArray(aoTags) && aoTags.length > 0) {
         etiquetasHtml = aoTags.map(e => `<span>${e}</span>`).join('');
       } else {
