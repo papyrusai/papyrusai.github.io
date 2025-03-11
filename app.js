@@ -406,10 +406,9 @@ app.get('/auth/google/callback',
 );
 
 
-// NEW: Route for profile_cuatrecasas
-// -----------------------------------------------------------------------------
+//
 // 1) PROFILE_CUATRECASAS
-// -----------------------------------------------------------------------------
+//
 app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
   const client = new MongoClient(uri, mongodbOptions);
   try {
@@ -417,167 +416,9 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     const database = client.db("papyrus");
     const boeCollection = database.collection("BOE"); // Hardcoded to "BOE"
 
-    // Include rango_titulo in projection
     const projection = {
       short_name: 1,
       etiquetas_cuatrecasas: 1,
-      dia: 1,
-      mes: 1,
-      anio: 1,
-      resumen: 1,
-      url_pdf: 1,
-      _id: 1,
-      seccion: 1,
-      rango_titulo: 1
-    };
-
-    // Attempt to load docs for today's date:
-    const today = new Date();
-    const queryToday = {
-      anio: today.getFullYear(),
-      mes: today.getMonth() + 1,
-      dia: today.getDate()
-    };
-
-    let docs = await boeCollection.find(queryToday).project(projection).toArray();
-    let docDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-
-    // If none found for today, find the most recent day with documents:
-    if (docs.length === 0) {
-      const latestDocsArr = await boeCollection.find({})
-        .sort({ anio: -1, mes: -1, dia: -1 })
-        .limit(1)
-        .toArray();
-      if (latestDocsArr.length > 0) {
-        const latestDoc = latestDocsArr[0];
-        const queryLatest = {
-          anio: latestDoc.anio,
-          mes: latestDoc.mes,
-          dia: latestDoc.dia
-        };
-        docs = await boeCollection.find(queryLatest).project(projection).toArray();
-        docDate = `${latestDoc.dia}-${latestDoc.mes}-${latestDoc.anio}`;
-      }
-    }
-
-    // Mark each doc with collectionName = "BOE"
-    docs.forEach(doc => {
-      doc.collectionName = "BOE";
-    });
-
-    // Build HTML for the documents, inserting thumbs-up/down icons
-    let documentsHtml = "";
-    docs.forEach(doc => {
-      // Build etiquetas_cuatrecasas or default
-      let etiquetasHtml = "";
-      if (
-        doc.etiquetas_cuatrecasas &&
-        Array.isArray(doc.etiquetas_cuatrecasas) &&
-        doc.etiquetas_cuatrecasas.length > 0
-      ) {
-        etiquetasHtml = doc.etiquetas_cuatrecasas.map(e => `<span>${e}</span>`).join('');
-      } else {
-        etiquetasHtml = `<span>Genérico</span>`;
-      }
-
-      // Build rango_titulo or default "Indefinido"
-      const rangoToShow = doc.rango_titulo || "Indefinido";
-
-      documentsHtml += `
-        <div class="data-item">
-          <div class="header-row">
-            <div class="id-values">${doc.short_name}</div>
-            <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
-          </div>
-          <!-- Rango displayed in small gray text below header row -->
-          <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
-             ${rangoToShow}
-          </div>
-          <div class="etiquetas-values">
-            ${etiquetasHtml}
-          </div>
-          <div class="resumen-label">Resumen</div>
-          <div class="resumen-content">${doc.resumen}</div>
-          <div class="margin-impacto">
-            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
-              Análisis impacto normativo
-            </a>
-          </div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
-            Leer más: ${doc._id}
-          </a>
-          <!-- Thumbs up/down icons to send feedback -->
-          <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
-            &#128077;
-          </span>
-          <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
-            &#128078;
-          </span>
-
-          <!-- Hidden fields for 'seccion' and 'rango' used by the JS filters -->
-          <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
-          <span class="doc-rango" style="display:none;">${rangoToShow}</span>
-        </div>
-      `;
-    });
-
-    // Load the profile_cuatrecasas.html template
-    let template = fs.readFileSync(
-      path.join(__dirname, 'public', 'profile_cuatrecasas.html'),
-      'utf8'
-    );
-    template = template.replace('{{boeDocuments}}', documentsHtml);
-    template = template.replace('{{documentDate}}', docDate);
-
-    // Also get the user’s name
-    const usersCollection = database.collection("users");
-    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-    template = template.replace('{{name}}', user.name || '');
-
-    // Include a <script> for feedback submission
-    // (We only pass docId + feedbackType. The server uses req.user to get user info.)
-    const feedbackScript = `
-      <script>
-        function sendFeedback(docId, feedbackType) {
-          fetch('/feedback-thumbs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ docId: docId, feedback: feedbackType })
-          })
-          .then(response => response.json())
-          .then(data => {
-            console.log('Feedback response:', data);
-          })
-          .catch(err => console.error('Error sending feedback:', err));
-        }
-      </script>
-    `;
-    template += feedbackScript;
-
-    // Send final
-    res.send(template);
-  } catch (err) {
-    console.error("Error in /profile_cuatrecasas:", err);
-    res.status(500).send("Error retrieving documents");
-  } finally {
-    await client.close();
-  }
-});
-
-// -----------------------------------------------------------------------------
-// 2) PROFILE_A&O
-// -----------------------------------------------------------------------------
-app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
-  const client = new MongoClient(uri, mongodbOptions);
-  try {
-    await client.connect();
-    const database = client.db("papyrus");
-    const boeCollection = database.collection("BOE"); // Or whatever your collection is
-
-    // We project "etiquetas_ao" to match the property name in the DB
-    const projection = {
-      short_name: 1,
-      etiquetas_ao: 1,
       dia: 1,
       mes: 1,
       anio: 1,
@@ -599,7 +440,7 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
     let docs = await boeCollection.find(queryToday).project(projection).toArray();
     let docDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
 
-    // If none found, find the most recent
+    // If none found, load the most recent
     if (docs.length === 0) {
       const latestDocsArr = await boeCollection.find({})
         .sort({ anio: -1, mes: -1, dia: -1 })
@@ -622,7 +463,169 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
       doc.collectionName = "BOE";
     });
 
-    // Build HTML (now adding thumbs icons)
+    // Build HTML with thumbs icons
+    let documentsHtml = "";
+    docs.forEach(doc => {
+      let etiquetasHtml = "";
+      if (
+        doc.etiquetas_cuatrecasas &&
+        Array.isArray(doc.etiquetas_cuatrecasas) &&
+        doc.etiquetas_cuatrecasas.length > 0
+      ) {
+        etiquetasHtml = doc.etiquetas_cuatrecasas.map(e => `<span>${e}</span>`).join('');
+      } else {
+        etiquetasHtml = `<span>Genérico</span>`;
+      }
+
+      const rangoToShow = doc.rango_titulo || "Indefinido";
+
+      documentsHtml += `
+        <div class="data-item">
+          <div class="header-row">
+            <div class="id-values">${doc.short_name}</div>
+            <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+          </div>
+          <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+             ${rangoToShow}
+          </div>
+          <div class="etiquetas-values">
+            ${etiquetasHtml}
+          </div>
+          <div class="resumen-label">Resumen</div>
+          <div class="resumen-content">${doc.resumen}</div>
+          <div class="margin-impacto">
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
+              Análisis impacto normativo
+            </a>
+          </div>
+          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+            Leer más: ${doc._id}
+          </a>
+          <!-- Thumbs up/down icons -->
+          <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
+          <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
+             onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+
+          <!-- Hidden for filters -->
+          <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
+          <span class="doc-rango" style="display:none;">${rangoToShow}</span>
+        </div>
+      `;
+    });
+
+    let template = fs.readFileSync(
+      path.join(__dirname, 'public', 'profile_cuatrecasas.html'),
+      'utf8'
+    );
+    template = template.replace('{{boeDocuments}}', documentsHtml);
+    template = template.replace('{{documentDate}}', docDate);
+
+    // Insert user name
+    const usersCollection = database.collection("users");
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    template = template.replace('{{name}}', user.name || '');
+
+    // CSS + script for feedback
+    const feedbackScript = `
+      <style>
+        .thumb-icon {
+          border: 2px solid #092534;
+          border-radius: 4px;
+          padding: 4px;
+          color: #092534;
+          cursor: pointer;
+        }
+        .thumb-icon.selected {
+          background-color: #092534;
+          color: #fff;
+        }
+      </style>
+      <script>
+        function sendFeedback(docId, feedbackType, element) {
+          // Toggle the 'selected' class on the clicked icon
+          element.classList.toggle('selected');
+
+          // Optionally, if you want to unselect the other icon in the same data-item, do that here.
+          // For now, we just independently toggle the clicked one.
+
+          fetch('/feedback-thumbs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ docId: docId, feedback: feedbackType })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Feedback response:', data);
+          })
+          .catch(err => console.error('Error sending feedback:', err));
+        }
+      </script>
+    `;
+    template += feedbackScript;
+
+    res.send(template);
+  } catch (err) {
+    console.error("Error in /profile_cuatrecasas:", err);
+    res.status(500).send("Error retrieving documents");
+  } finally {
+    await client.close();
+  }
+});
+
+//
+// 2) PROFILE_A&O
+//
+app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const boeCollection = database.collection("BOE");
+
+    const projection = {
+      short_name: 1,
+      etiquetas_ao: 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      resumen: 1,
+      url_pdf: 1,
+      _id: 1,
+      seccion: 1,
+      rango_titulo: 1
+    };
+
+    const today = new Date();
+    const queryToday = {
+      anio: today.getFullYear(),
+      mes: today.getMonth() + 1,
+      dia: today.getDate()
+    };
+
+    let docs = await boeCollection.find(queryToday).project(projection).toArray();
+    let docDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+
+    if (docs.length === 0) {
+      const latestDocsArr = await boeCollection.find({})
+        .sort({ anio: -1, mes: -1, dia: -1 })
+        .limit(1)
+        .toArray();
+      if (latestDocsArr.length > 0) {
+        const latestDoc = latestDocsArr[0];
+        const queryLatest = {
+          anio: latestDoc.anio,
+          mes: latestDoc.mes,
+          dia: latestDoc.dia
+        };
+        docs = await boeCollection.find(queryLatest).project(projection).toArray();
+        docDate = `${latestDoc.dia}-${latestDoc.mes}-${latestDoc.anio}`;
+      }
+    }
+
+    docs.forEach(doc => {
+      doc.collectionName = "BOE";
+    });
+
     let documentsHtml = "";
     docs.forEach(doc => {
       let etiquetasHtml = "";
@@ -658,21 +661,16 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
             Leer más: ${doc._id}
           </a>
           <!-- Thumbs up/down icons -->
-          <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
-            &#128077;
-          </span>
-          <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
-            &#128078;
-          </span>
+          <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
+          <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
+             onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
 
-          <!-- Hidden fields for filtering -->
           <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
           <span class="doc-rango" style="display:none;">${rangoToShow}</span>
         </div>
       `;
     });
 
-    // Load template for A&O
     let template = fs.readFileSync(
       path.join(__dirname, 'public', 'profile_a&o.html'),
       'utf8'
@@ -680,15 +678,29 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
     template = template.replace('{{boeDocuments}}', documentsHtml);
     template = template.replace('{{documentDate}}', docDate);
 
-    // Insert user's name
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     template = template.replace('{{name}}', user.name || '');
 
-    // Add the feedback script
+    // Add style + feedback script
     const feedbackScript = `
+      <style>
+        .thumb-icon {
+          border: 2px solid #092534;
+          border-radius: 4px;
+          padding: 4px;
+          color: #092534;
+          cursor: pointer;
+        }
+        .thumb-icon.selected {
+          background-color: #092534;
+          color: #fff;
+        }
+      </style>
       <script>
-        function sendFeedback(docId, feedbackType) {
+        function sendFeedback(docId, feedbackType, element) {
+          element.classList.toggle('selected');
+
           fetch('/feedback-thumbs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -713,9 +725,9 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
+//
 // 3) NORMAL PROFILE
-// -----------------------------------------------------------------------------
+//
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
@@ -726,18 +738,15 @@ app.get('/profile', async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
-    const collections = req.query.collections || ['BOE']; // default if none chosen
+    const collections = req.query.collections || ['BOE'];
 
-    // Set default dates: startDate is today minus 1 month; endDate is today.
     const now = new Date();
     const startDate = new Date();
     startDate.setMonth(now.getMonth() - 1);
     const endDate = now;
 
-    // Build the query to fetch documents from startDate until today.
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
@@ -763,28 +772,25 @@ app.get('/profile', async (req, res) => {
       url_pdf: 1,
       ramas_juridicas: 1,
       _id: 1
-      // We'll inject collectionName manually.
     };
 
     let allDocuments = [];
     for (const collectionName of collections) {
       const collection = database.collection(collectionName);
       const documents = await collection.find(query).project(projection).toArray();
-      // Inject the collection name into each document.
       documents.forEach(doc => {
         doc.collectionName = collectionName;
       });
       allDocuments = allDocuments.concat(documents);
     }
 
-    // Sort descending by date
+    // Sort desc
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
 
-    // Build HTML for each doc
     let documentsHtml;
     if (allDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
@@ -808,18 +814,15 @@ app.get('/profile', async (req, res) => {
               Leer más: ${doc._id}
             </a>
             <!-- Thumbs up/down icons -->
-            <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
-              &#128077;
-            </span>
-            <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
-              &#128078;
-            </span>
+            <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
+            <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
+               onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
           </div>
         `;
       }).join('');
     }
 
-    // For chart data
+    // Chart data
     const documentsByMonth = {};
     allDocuments.forEach(doc => {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -828,7 +831,6 @@ app.get('/profile', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // Load the profile.html template
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
@@ -843,10 +845,25 @@ app.get('/profile', async (req, res) => {
       .replace('{{start_date}}', JSON.stringify(startDate))
       .replace('{{end_date}}', JSON.stringify(endDate));
 
-    // Insert a <script> for feedback
+    // Insert style + script
     const feedbackScript = `
+      <style>
+        .thumb-icon {
+          border: 2px solid #092534;
+          border-radius: 4px;
+          padding: 4px;
+          color: #092534;
+          cursor: pointer;
+        }
+        .thumb-icon.selected {
+          background-color: #092534;
+          color: #fff;
+        }
+      </style>
       <script>
-        function sendFeedback(docId, feedbackType) {
+        function sendFeedback(docId, feedbackType, element) {
+          element.classList.toggle('selected');
+
           fetch('/feedback-thumbs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -871,9 +888,9 @@ app.get('/profile', async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
-// 4) /DATA ENDPOINT – returns JSON, but includes HTML for docs
-// -----------------------------------------------------------------------------
+//
+// 4) /DATA ENDPOINT
+//
 app.get('/data', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -1037,7 +1054,7 @@ app.get('/data', async (req, res) => {
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
-              <a class="button-impacto" 
+              <a class="button-impacto"
                 href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
                 Análisis impacto normativo
               </a>
@@ -1046,18 +1063,15 @@ app.get('/data', async (req, res) => {
               Leer más: ${doc._id}
             </a>
             <!-- Thumbs up/down icons -->
-            <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
-              &#128077;
-            </span>
-            <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
-              &#128078;
-            </span>
+            <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
+            <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
+               onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
           </div>
         `;
       }).join('');
     }
 
-    // For chart data
+    // Count by month
     const documentsByMonth = {};
     for (const doc of filteredDocuments) {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -1066,7 +1080,7 @@ app.get('/data', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // Return JSON, but includes documentsHtml for front-end usage
+    // Return JSON (front-end can include <style> etc. as it likes).
     res.json({
       documentsHtml,
       months,
@@ -1080,29 +1094,28 @@ app.get('/data', async (req, res) => {
   }
 });
 
-// -----------------------------------------------------------------------------
-// 5) NEW FEEDBACK ENDPOINT
-// -----------------------------------------------------------------------------
+//
+// 5) FEEDBACK POST ROUTE
+//
 app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
   const { docId, feedback } = req.body;
   if (!docId || !feedback) {
     return res.status(400).json({ error: 'Missing docId or feedback' });
   }
 
-  // Prepare the feedback document
-  const userId = req.user._id;        // from session
-  const userEmail = req.user.email;   // from session
+  const userId = req.user._id;
+  const userEmail = req.user.email;
   const contentEvaluated = 'norma';
   const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth()+1).padStart(2, '0')}-${now.getFullYear()}`;
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
   const feedbackDoc = {
     user_id: userId,
     user_email: userEmail,
     content_evaluated: contentEvaluated,
     doc_id: docId,
-    fecha: dateStr,    // dd-mm-yyyy
-    feedback: feedback // "like" or "dislike"
+    fecha: dateStr,   // dd-mm-yyyy
+    feedback: feedback
   };
 
   const client = new MongoClient(uri, mongodbOptions);
@@ -1121,6 +1134,7 @@ app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
     await client.close();
   }
 });
+
 
 
 app.get('/search-ramas-juridicas', async (req, res) => {
