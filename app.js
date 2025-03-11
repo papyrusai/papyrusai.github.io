@@ -11,7 +11,8 @@ const { spawn } = require('child_process'); // Import the spawn function
 const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
 
-const SPECIAL_DOMAIN = "@papyrus-ai.com";
+const SPECIAL_DOMAIN = "@gmail.com";
+const SPECIAL_ADDRESS = "@papyrus-ai.com";
 
 //to avoid deprecation error
 const mongodbOptions = {
@@ -50,6 +51,37 @@ app.get('/', (req, res) => {
 });
 
 
+// This array holds the A&O labels in JS
+// but in the database, they will be stored under the key "etiquetas_a&o".
+const etiquetasAandO = [
+  "Chemicals",
+  "Consumer and retail",
+  "Communications, media and entertainment - Sports",
+  "Communications, media and entertainment - Media",
+  "Communications, media and entertainment - Telecommunications",
+  "Energy - Oil and gas",
+  "Energy - Hydrogen",
+  "Energy - Carbon capture and storage",
+  "Energy - Power",
+  "Energy - Energy networks",
+  "Energy - Nuclear",
+  "Financial institutions - Banks",
+  "Financial institutions - Insurance",
+  "Financial institutions - Fintech",
+  "Industrials and manufacturing - Automotive",
+  "Industrials and manufacturing - Aerospace and defense",
+  "Infrastructure and transport - Aviation",
+  "Infrastructure and transport - Digital infrastructure",
+  "Life sciences and healthcare",
+  "Mining and metals",
+  "Private capital - Family office",
+  "Private capital - Infrastructure funds",
+  "Private capital - Private credit",
+  "Private capital - Private equity",
+  "Private capital - Sovereign wealth and institutional investors",
+  "Capital solutions",
+  "Technology"
+];
 
 // Middleware to ensure user is authenticated
 function ensureAuthenticated(req, res, next) {
@@ -168,7 +200,42 @@ async function processSpecialDomainUser(user) {
   }
 }
 
+async function processAODomainUser(user) {
+  // This is specifically for A&O
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
 
+    // Check if the user already exists
+    const aoUser = await usersCollection.findOne({ email: user.email });
+    if (aoUser) {
+      return aoUser;
+    } else {
+      // Create a new user with A&O defaults
+      // Notice how the property name in the DB is "etiquetas_a&o"
+      const specialDefaults = {
+        email: user.email,
+        cobertura_legal: {
+          "Nacional y Europeo": ["BOE", "DOUE"],
+          "Autonomico": ["BOA", "BOCM", "BOCYL", "BOJA", "BOPV"],
+          "Reguladores": ["CNMV"]
+        },
+        profile_type: "Departamento conocimiento",
+        company_name: "A&O", // or "Allen & Overy"
+        subscription_plan: "plan2",
+        "etiquetas_a&o": etiquetasAandO
+      };
+
+      const result = await usersCollection.insertOne(specialDefaults);
+      specialDefaults._id = result.insertedId;
+      return specialDefaults;
+    }
+  } finally {
+    await client.close();
+  }
+}
 
 
 // New route for email/password login using Passport Local Strategy
@@ -178,18 +245,29 @@ app.post('/login', (req, res, next) => {
       return res.status(500).json({ error: "Error interno de autenticación" });
     }
     if (!user) {
-      return res.status(400).json({ error: "Correo o contraseña equivocada, por favor, intente de nuevo" });
+      return res.status(400).json({
+        error: "Correo o contraseña equivocada, por favor, intente de nuevo"
+      });
     }
+
     req.logIn(user, async (err) => {
       if (err) {
         return res.status(500).json({ error: "Error al iniciar sesión" });
       }
-      // If the email ends with our special domain, process as a cuatrecasas user.
+
+      // If the email ends with Cuatrecasas domain
       if (user.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
         await processSpecialDomainUser(user);
         return res.status(200).json({ redirectUrl: '/profile_cuatrecasas' });
       }
-      // Otherwise, normal flow.
+
+      // If the email ends with A&O domain
+      if (user.email.toLowerCase().endsWith(SPECIAL_ADDRESS)) {
+        await processAODomainUser(user);
+        return res.status(200).json({ redirectUrl: '/profile_a&o' });
+      }
+
+      // Otherwise normal flow
       if (user.subscription_plan) {
         return res.status(200).json({ redirectUrl: '/profile' });
       } else {
@@ -204,57 +282,72 @@ app.post('/login', (req, res, next) => {
 /*register*/
 // Registration route for new users
 app.post('/register', async (req, res) => {
-  const { email, password, confirmPassword } = req.body; // No "name" field now
+  const { email, password, confirmPassword } = req.body;
   const bcrypt = require('bcryptjs');
 
-  // Server-side validations
+  // Basic validations
   if (password !== confirmPassword) {
     return res.status(400).json({ error: "Las contraseñas no coinciden." });
   }
   if (password.length < 7) {
-    return res.status(400).json({ error: "La contraseña debe tener al menos 7 caracteres." });
+    return res.status(400).json({
+      error: "La contraseña debe tener al menos 7 caracteres."
+    });
   }
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    return res.status(400).json({ error: "La contraseña debe contener al menos un carácter especial." });
+    return res.status(400).json({
+      error: "La contraseña debe contener al menos un carácter especial."
+    });
   }
 
-  const client = new MongoClient(process.env.DB_URI, mongodbOptions);
+  const client = new MongoClient(uri, mongodbOptions);
   try {
     await client.connect();
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
-    // Check if user exists by email.
+    // Check if user exists by email
     const existingUser = await usersCollection.findOne({ email: email });
     if (existingUser) {
-      return res.status(400).json({ error: "El usuario ya existe, por favor inicia sesión" });
+      return res.status(400).json({
+        error: "El usuario ya existe, por favor inicia sesión"
+      });
     }
-    
-    // Hash the password and create the new user.
+
+    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
       email,
-      password: hashedPassword,
-      // subscription_plan remains undefined for new users.
+      password: hashedPassword
+      // subscription_plan remains undefined for new users
     };
-    
+
     const result = await usersCollection.insertOne(newUser);
     newUser._id = result.insertedId;
-    
+
     req.login(newUser, async (err) => {
       if (err) {
         console.error("Error during login after registration:", err);
-        return res.status(500).json({ error: "Registro completado, pero fallo al iniciar sesión" });
+        return res.status(500).json({
+          error: "Registro completado, pero fallo al iniciar sesión"
+        });
       }
-      // If the email is special, process it.
+
+      // If the email is Cuatrecasas
       if (newUser.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
         await processSpecialDomainUser(newUser);
         return res.status(200).json({ redirectUrl: '/profile_cuatrecasas' });
       }
-      // New users (normal) without subscription_plan go to multistep.
+
+      // If the email is A&O
+      if (newUser.email.toLowerCase().endsWith(SPECIAL_ADDRESS)) {
+        await processAODomainUser(newUser);
+        return res.status(200).json({ redirectUrl: '/profile_a&o' });
+      }
+
+      // Otherwise normal new user flow
       return res.status(200).json({ redirectUrl: '/multistep.html' });
     });
-    
   } catch (err) {
     console.error("Error registering user:", err);
     return res.status(500).json({ error: "Error al registrar el usuario." });
@@ -266,10 +359,10 @@ app.post('/register', async (req, res) => {
 
 
 
-// Google OAuth routes with prompt to re-authenticate
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/' }),
+app.get('/auth/google/callback',
+  passport.authenticate('google', { failureRedirect: '/' }),
   async (req, res) => {
     const client = new MongoClient(uri, mongodbOptions);
     try {
@@ -277,15 +370,22 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
       const database = client.db("papyrus");
       const usersCollection = database.collection("users");
 
-      // Fetch the user using the _id from the session.
+      // Fetch the user from DB
       const existingUser = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
 
-      // If the user's email ends with our special domain, process accordingly.
+      // If user is Cuatrecasas
       if (req.user.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
         await processSpecialDomainUser(req.user);
         return res.redirect('/profile_cuatrecasas');
       }
 
+      // If user is A&O
+      if (req.user.email.toLowerCase().endsWith(SPECIAL_ADDRESS)) {
+        await processAODomainUser(req.user);
+        return res.redirect('/profile_a&o');
+      }
+
+      // Otherwise normal flow
       if (existingUser && existingUser.industry_tags && existingUser.industry_tags.length > 0) {
         if (req.session.returnTo) {
           const redirectPath = req.session.returnTo;
@@ -424,6 +524,124 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     res.send(template);
   } catch (err) {
     console.error("Error in /profile_cuatrecasas:", err);
+    res.status(500).send("Error retrieving documents");
+  } finally {
+    await client.close();
+  }
+});
+
+app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const boeCollection = database.collection("BOE"); // Or whatever your collection is
+
+    // We project "etiquetas_a&o" to match the property name in the DB
+    const projection = {
+      short_name: 1,
+      "etiquetas_a&o": 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      resumen: 1,
+      url_pdf: 1,
+      _id: 1,
+      seccion: 1,
+      rango_titulo: 1
+    };
+
+    // Attempt to load docs for today's date
+    const today = new Date();
+    const queryToday = {
+      anio: today.getFullYear(),
+      mes: today.getMonth() + 1,
+      dia: today.getDate()
+    };
+
+    let docs = await boeCollection.find(queryToday).project(projection).toArray();
+    let docDate = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+
+    // If none found, find the most recent
+    if (docs.length === 0) {
+      const latestDocsArr = await boeCollection.find({})
+        .sort({ anio: -1, mes: -1, dia: -1 })
+        .limit(1)
+        .toArray();
+      if (latestDocsArr.length > 0) {
+        const latestDoc = latestDocsArr[0];
+        const queryLatest = {
+          anio: latestDoc.anio,
+          mes: latestDoc.mes,
+          dia: latestDoc.dia
+        };
+        docs = await boeCollection.find(queryLatest).project(projection).toArray();
+        docDate = `${latestDoc.dia}-${latestDoc.mes}-${latestDoc.anio}`;
+      }
+    }
+
+    // Mark each doc
+    docs.forEach(doc => {
+      doc.collectionName = "BOE";
+    });
+
+    // Build HTML
+    let documentsHtml = "";
+    docs.forEach(doc => {
+      let etiquetasHtml = "";
+      // Access the A&O labels using bracket notation
+      const aoTags = doc["etiquetas_a&o"];
+      if (aoTags && Array.isArray(aoTags) && aoTags.length > 0) {
+        etiquetasHtml = aoTags.map(e => `<span>${e}</span>`).join('');
+      } else {
+        etiquetasHtml = `<span>Genérico</span>`;
+      }
+
+      const rangoToShow = doc.rango_titulo || "Indefinido";
+
+      documentsHtml += `
+        <div class="data-item">
+          <div class="header-row">
+            <div class="id-values">${doc.short_name}</div>
+            <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+          </div>
+          <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+            ${rangoToShow}
+          </div>
+          <div class="etiquetas-values">
+            ${etiquetasHtml}
+          </div>
+          <div class="resumen-label">Resumen</div>
+          <div class="resumen-content">${doc.resumen}</div>
+          <div class="margin-impacto">
+            <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
+              Análisis impacto normativo
+            </a>
+          </div>
+          <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+          <!-- Hidden fields for filtering -->
+          <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
+          <span class="doc-rango" style="display:none;">${rangoToShow}</span>
+        </div>
+      `;
+    });
+
+    // Load template for A&O
+    let template = fs.readFileSync(
+      path.join(__dirname, 'public', 'profile_a&o.html'),
+      'utf8'
+    );
+    template = template.replace('{{boeDocuments}}', documentsHtml);
+    template = template.replace('{{documentDate}}', docDate);
+
+    // Insert user's name
+    const usersCollection = database.collection("users");
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    template = template.replace('{{name}}', user.name || '');
+
+    res.send(template);
+  } catch (err) {
+    console.error("Error in /profile_a&o:", err);
     res.status(500).send("Error retrieving documents");
   } finally {
     await client.close();

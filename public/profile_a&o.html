@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-  <title>Profile Cuatrecasas</title>
+  <title>Profile A&amp;O</title>
   <link rel="icon" href="assets/papyrus_logo.png" type="image/png">
   <link rel="stylesheet" type="text/css" href="styles/styles.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
@@ -47,80 +47,74 @@
     <button class="hamburger" onclick="toggleMenu()">☰</button>
     <ul class="menu">
       <li><a href="https://papyrus-ai.com/">WEB</a></li>
-      <li><a href="/profile_cuatrecasas">PANEL DE CONTROL</a></li>
+      <li><a href="/profile_a&o">PANEL DE CONTROL</a></li>
       <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
       <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
     </ul>
   </nav>
 
-  <!-- Profile Header with Cuatrecasas logo -->
+  <!-- Profile Header with A&O logo -->
   <div class="profile-header" style="display: flex; align-items: center; gap: 15px; margin: 20px;">
-    <img src="assets/cuatrecasas_logo.png" alt="Cuatrecasas Logo" style="height: 160px;">
+    <img src="assets/a&o_logo.png" alt="A&amp;O Logo" style="height: 160px;">
   </div>
 
   <h1>Resumen diario Boletines Oficiales</h1>
   <div id="data-container">
     <!-- Filter Section -->
     <div id="Filtrar">
-      <!-- Servicios Cuatrecasas Dropdown -->
+      <!-- Servicios A&O Dropdown -->
       <div class="filter-item">
-        <div class="etiquetas-label">Servicios Cuatrecasas</div>
+        <div class="etiquetas-label">Servicios A&amp;O</div>
         <div class="dropdown" style="margin-bottom: 10px;">
           <button onclick="toggleServiciosDropdown()" class="dropbtn">
             <span id="selectedServicio">Todos</span>
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="serviciosDropdown" class="dropdown-content">
-            <!-- Various "Servicios" options -->
             <a href="#" onclick="selectServicio('Todos')">Todos</a>
-            <a href="#" onclick="selectServicio('Arbitraje Internacional')">Arbitraje Internacional</a>
-            <a href="#" onclick="selectServicio('Competencia')">Competencia</a>
-            <a href="#" onclick="selectServicio('Deporte y Entretenimiento')">Deporte y Entretenimiento</a>
-            <a href="#" onclick="selectServicio('Empresa y Derechos Humanos')">Empresa y Derechos Humanos</a>
-            <a href="#" onclick="selectServicio('Energía e Infraestructura - Energías Renovables')">Energía e Infraestructura - Energías Renovables</a>
-            <a href="#" onclick="selectServicio('Energía e Infraestructura - Petróleo, Gas y Minería')">Energía e Infraestructura - Petróleo, Gas y Minería</a>
-            <a href="#" onclick="selectServicio('Energía e Infraestructura - Infraestructuras')">Energía e Infraestructura - Infraestructuras</a>
-            <a href="#" onclick="selectServicio('Farmacéutico y Sanitario')">Farmacéutico y Sanitario</a>
-            <a href="#" onclick="selectServicio('Financiero')">Financiero</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Contenciosa')">Fiscalidad Contenciosa</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Corporativa')">Fiscalidad Corporativa</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Financiera')">Fiscalidad Financiera</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Indirecta')">Fiscalidad Indirecta</a>
-            <a href="#" onclick="selectServicio('Fondos')">Fondos</a>
-            <a href="#" onclick="selectServicio('Gobierno Corporativo y Compliance')">Gobierno Corporativo y Compliance</a>
-            <a href="#" onclick="selectServicio('Inmobiliario y Urbanismo')">Inmobiliario y Urbanismo</a>
-            <a href="#" onclick="selectServicio('Laboral')">Laboral</a>
-            <a href="#" onclick="selectServicio('Litigación - Conflictos Societarios y de M&A')">Litigación - Conflictos Societarios y de M&A</a>
-            <a href="#" onclick="selectServicio('Litigación - Litigación de Construcción e Inmobiliaria')">Litigación - Litigación de Construcción e Inmobiliaria</a>
-            <a href="#" onclick="selectServicio('Litigación - Litigación a Gran Escala')">Litigación - Litigación a Gran Escala</a>
-            <a href="#" onclick="selectServicio('Mercado de Capitales - Equity')">Mercado de Capitales - Equity</a>
-            <a href="#" onclick="selectServicio('Mercado de Capitales - Debt')">Mercado de Capitales - Debt</a>
-            <a href="#" onclick="selectServicio('Mercantil y M&A')">Mercantil y M&A</a>
-            <a href="#" onclick="selectServicio('Penal - Compliance Penal')">Penal - Compliance Penal</a>
-            <a href="#" onclick="selectServicio('Penal - Derecho Penal Económico')">Penal - Derecho Penal Económico</a>
-            <a href="#" onclick="selectServicio('Precios de Transferencia y Tax Governance')">Precios de Transferencia y Tax Governance</a>
-            <a href="#" onclick="selectServicio('Private Client & Wealth Management')">Private Client & Wealth Management</a>
-            <a href="#" onclick="selectServicio('Private Equity')">Private Equity</a>
-            <a href="#" onclick="selectServicio('Propiedad Intelectual, Industrial y Secretos')">Propiedad Intelectual, Industrial y Secretos</a>
-            <a href="#" onclick="selectServicio('Protección de Datos')">Protección de Datos</a>
-            <a href="#" onclick="selectServicio('Público - Contratación Pública')">Público - Contratación Pública</a>
-            <a href="#" onclick="selectServicio('Público - Medioambiente y Cambio Climático')">Público - Medioambiente y Cambio Climático</a>
-            <a href="#" onclick="selectServicio('Público - Sectores Regulados')">Público - Sectores Regulados</a>
-            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda')">
-              Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda
+            <a href="#" onclick="selectServicio('Chemicals')">Chemicals</a>
+            <a href="#" onclick="selectServicio('Consumer and retail')">Consumer and retail</a>
+            <a href="#" onclick="selectServicio('Communications, media and entertainment - Sports')">
+              Communications, media and entertainment - Sports
             </a>
-            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales')">
-              Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales
+            <a href="#" onclick="selectServicio('Communications, media and entertainment - Media')">
+              Communications, media and entertainment - Media
             </a>
-            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Corporate y M&A')">
-              Servicios Financieros y de Seguros - Corporate y M&A
+            <a href="#" onclick="selectServicio('Communications, media and entertainment - Telecommunications')">
+              Communications, media and entertainment - Telecommunications
             </a>
-            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Regulatorio')">
-              Servicios Financieros y de Seguros - Regulatorio
+            <a href="#" onclick="selectServicio('Energy - Oil and gas')">Energy - Oil and gas</a>
+            <a href="#" onclick="selectServicio('Energy - Hydrogen')">Energy - Hydrogen</a>
+            <a href="#" onclick="selectServicio('Energy - Carbon capture and storage')">Energy - Carbon capture and storage</a>
+            <a href="#" onclick="selectServicio('Energy - Power')">Energy - Power</a>
+            <a href="#" onclick="selectServicio('Energy - Energy networks')">Energy - Energy networks</a>
+            <a href="#" onclick="selectServicio('Energy - Nuclear')">Energy - Nuclear</a>
+            <a href="#" onclick="selectServicio('Financial institutions - Banks')">Financial institutions - Banks</a>
+            <a href="#" onclick="selectServicio('Financial institutions - Insurance')">Financial institutions - Insurance</a>
+            <a href="#" onclick="selectServicio('Financial institutions - Fintech')">Financial institutions - Fintech</a>
+            <a href="#" onclick="selectServicio('Industrials and manufacturing - Automotive')">
+              Industrials and manufacturing - Automotive
             </a>
-            <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
-            <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
-
+            <a href="#" onclick="selectServicio('Industrials and manufacturing - Aerospace and defense')">
+              Industrials and manufacturing - Aerospace and defense
+            </a>
+            <a href="#" onclick="selectServicio('Infrastructure and transport - Aviation')">
+              Infrastructure and transport - Aviation
+            </a>
+            <a href="#" onclick="selectServicio('Infrastructure and transport - Digital infrastructure')">
+              Infrastructure and transport - Digital infrastructure
+            </a>
+            <a href="#" onclick="selectServicio('Life sciences and healthcare')">Life sciences and healthcare</a>
+            <a href="#" onclick="selectServicio('Mining and metals')">Mining and metals</a>
+            <a href="#" onclick="selectServicio('Private capital - Family office')">Private capital - Family office</a>
+            <a href="#" onclick="selectServicio('Private capital - Infrastructure funds')">Private capital - Infrastructure funds</a>
+            <a href="#" onclick="selectServicio('Private capital - Private credit')">Private capital - Private credit</a>
+            <a href="#" onclick="selectServicio('Private capital - Private equity')">Private capital - Private equity</a>
+            <a href="#" onclick="selectServicio('Private capital - Sovereign wealth and institutional investors')">
+              Private capital - Sovereign wealth and institutional investors
+            </a>
+            <a href="#" onclick="selectServicio('Capital solutions')">Capital solutions</a>
+            <a href="#" onclick="selectServicio('Technology')">Technology</a>
             <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
@@ -147,7 +141,7 @@
         </div>
       </div>
 
-      <!-- NEW filter: Rango -->
+      <!-- Rango -->
       <div class="filter-item">
         <div class="etiquetas-label">Rango</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -201,7 +195,7 @@
     </div>
 
     <div style="text-align: right;">
-      <button id="buscarBtn" onclick="handleBuscar_cuatrecasas()">Buscar</button>
+      <button id="buscarBtn" onclick="handleBuscar_ao()">Buscar</button>
     </div>
 
     <!-- Documentos Section -->
@@ -273,7 +267,7 @@
       document.getElementById('tipoDropdown').classList.remove('show');
     }
 
-    // **New** Rango toggling
+    // Rango toggling
     function toggleRangoDropdown() {
       const dropdown = document.getElementById('rangoDropdown');
       dropdown.classList.toggle('show');
@@ -284,7 +278,7 @@
     }
 
     // Filtering logic
-    function handleBuscar_cuatrecasas() {
+    function handleBuscar_ao() {
       // Read user’s selected values
       const servicio = document.getElementById('selectedServicio').textContent.trim();
       const tipo = document.getElementById('selectedTipo').textContent.trim();
