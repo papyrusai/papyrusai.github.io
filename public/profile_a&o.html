@@ -35,6 +35,15 @@
       opacity: 0.5;
       pointer-events: none;
     }
+    .client-logo{
+        height: 160px;
+    }
+
+    @media (max-width: 600px) {
+     .client-logo{
+        height: 120px;
+    }
+}
   </style>
 </head>
 <body>
@@ -55,7 +64,7 @@
 
   <!-- Profile Header with A&O logo -->
   <div class="profile-header" style="display: flex; align-items: center; gap: 15px; margin: 20px;">
-    <img src="assets/a&o_logo.png" alt="A&amp;O Logo" style="height: 160px;">
+    <img class="client-logo" src="assets/a&o_logo.png" alt="A&amp;O Logo" >
   </div>
 
   <h1>Resumen diario Boletines Oficiales</h1>
@@ -64,7 +73,7 @@
     <div id="Filtrar">
       <!-- Servicios A&O Dropdown -->
       <div class="filter-item">
-        <div class="etiquetas-label">Servicios A&amp;O</div>
+        <div class="etiquetas-label">Industrias A&amp;O Shearman </div>
         <div class="dropdown" style="margin-bottom: 10px;">
           <button onclick="toggleServiciosDropdown()" class="dropbtn">
             <span id="selectedServicio">Todos</span>

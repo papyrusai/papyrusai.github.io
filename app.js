@@ -407,6 +407,9 @@ app.get('/auth/google/callback',
 
 
 // NEW: Route for profile_cuatrecasas
+// -----------------------------------------------------------------------------
+// 1) PROFILE_CUATRECASAS
+// -----------------------------------------------------------------------------
 app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
   const client = new MongoClient(uri, mongodbOptions);
   try {
@@ -425,7 +428,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       url_pdf: 1,
       _id: 1,
       seccion: 1,
-      rango_titulo: 1 // <-- new field
+      rango_titulo: 1
     };
 
     // Attempt to load docs for today's date:
@@ -445,7 +448,6 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
         .sort({ anio: -1, mes: -1, dia: -1 })
         .limit(1)
         .toArray();
-
       if (latestDocsArr.length > 0) {
         const latestDoc = latestDocsArr[0];
         const queryLatest = {
@@ -463,14 +465,16 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       doc.collectionName = "BOE";
     });
 
-    // Build HTML for the documents
+    // Build HTML for the documents, inserting thumbs-up/down icons
     let documentsHtml = "";
     docs.forEach(doc => {
       // Build etiquetas_cuatrecasas or default
       let etiquetasHtml = "";
-      if (doc.etiquetas_cuatrecasas &&
-          Array.isArray(doc.etiquetas_cuatrecasas) &&
-          doc.etiquetas_cuatrecasas.length > 0) {
+      if (
+        doc.etiquetas_cuatrecasas &&
+        Array.isArray(doc.etiquetas_cuatrecasas) &&
+        doc.etiquetas_cuatrecasas.length > 0
+      ) {
         etiquetasHtml = doc.etiquetas_cuatrecasas.map(e => `<span>${e}</span>`).join('');
       } else {
         etiquetasHtml = `<span>Genérico</span>`;
@@ -499,7 +503,17 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
               Análisis impacto normativo
             </a>
           </div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+            Leer más: ${doc._id}
+          </a>
+          <!-- Thumbs up/down icons to send feedback -->
+          <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
+            &#128077;
+          </span>
+          <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
+            &#128078;
+          </span>
+
           <!-- Hidden fields for 'seccion' and 'rango' used by the JS filters -->
           <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
           <span class="doc-rango" style="display:none;">${rangoToShow}</span>
@@ -520,6 +534,26 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     template = template.replace('{{name}}', user.name || '');
 
+    // Include a <script> for feedback submission
+    // (We only pass docId + feedbackType. The server uses req.user to get user info.)
+    const feedbackScript = `
+      <script>
+        function sendFeedback(docId, feedbackType) {
+          fetch('/feedback-thumbs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ docId: docId, feedback: feedbackType })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Feedback response:', data);
+          })
+          .catch(err => console.error('Error sending feedback:', err));
+        }
+      </script>
+    `;
+    template += feedbackScript;
+
     // Send final
     res.send(template);
   } catch (err) {
@@ -530,6 +564,9 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
   }
 });
 
+// -----------------------------------------------------------------------------
+// 2) PROFILE_A&O
+// -----------------------------------------------------------------------------
 app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
   const client = new MongoClient(uri, mongodbOptions);
   try {
@@ -585,11 +622,10 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
       doc.collectionName = "BOE";
     });
 
-    // Build HTML
+    // Build HTML (now adding thumbs icons)
     let documentsHtml = "";
     docs.forEach(doc => {
       let etiquetasHtml = "";
-      // Access the A&O labels using bracket notation
       const aoTags = doc.etiquetas_ao;
       if (aoTags && Array.isArray(aoTags) && aoTags.length > 0) {
         etiquetasHtml = aoTags.map(e => `<span>${e}</span>`).join('');
@@ -618,7 +654,17 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
               Análisis impacto normativo
             </a>
           </div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+            Leer más: ${doc._id}
+          </a>
+          <!-- Thumbs up/down icons -->
+          <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
+            &#128077;
+          </span>
+          <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
+            &#128078;
+          </span>
+
           <!-- Hidden fields for filtering -->
           <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
           <span class="doc-rango" style="display:none;">${rangoToShow}</span>
@@ -639,6 +685,25 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     template = template.replace('{{name}}', user.name || '');
 
+    // Add the feedback script
+    const feedbackScript = `
+      <script>
+        function sendFeedback(docId, feedbackType) {
+          fetch('/feedback-thumbs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ docId: docId, feedback: feedbackType })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Feedback response:', data);
+          })
+          .catch(err => console.error('Error sending feedback:', err));
+        }
+      </script>
+    `;
+    template += feedbackScript;
+
     res.send(template);
   } catch (err) {
     console.error("Error in /profile_a&o:", err);
@@ -648,7 +713,9 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
   }
 });
 
-
+// -----------------------------------------------------------------------------
+// 3) NORMAL PROFILE
+// -----------------------------------------------------------------------------
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
@@ -710,49 +777,49 @@ app.get('/profile', async (req, res) => {
       allDocuments = allDocuments.concat(documents);
     }
 
+    // Sort descending by date
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
-      return dateB - dateA; // descending order
+      return dateB - dateA;
     });
 
-    // (Your existing filtering code goes here—unchanged.)
+    // Build HTML for each doc
     let documentsHtml;
     if (allDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
     } else {
       documentsHtml = allDocuments.map(doc => {
-        // Build HTML for each document.
-        const cnaesHtml = (doc.matched_cnaes || [])
-          .map(div => `<span>${div}</span>`)
-          .join('');
-        const ramaHtml = (doc.matched_rama_juridica || [])
-          .map(r => `<span class="rama-value">${r}</span>`)
-          .join('');
-        const subRamasHtml = (doc.matched_sub_rama_juridica || [])
-          .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
-          .join(' ');
         return `
           <div class="data-item">
             <div class="header-row">
               <div class="id-values">${doc.short_name}</div>
               <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
             </div>
-            <div class="etiquetas-values">${cnaesHtml}</div>
-            <div class="rama-juridica-values">${ramaHtml}</div>
-            <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
-              <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
+              <a class="button-impacto" 
+                 href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
+                 Análisis impacto normativo
+              </a>
             </div>
-            <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+            <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>
+            <!-- Thumbs up/down icons -->
+            <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
+              &#128077;
+            </span>
+            <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
+              &#128078;
+            </span>
           </div>
         `;
       }).join('');
     }
 
-    // (For chart data – assuming these variables are built as before)
+    // For chart data
     const documentsByMonth = {};
     allDocuments.forEach(doc => {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -761,7 +828,7 @@ app.get('/profile', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // Read the profile.html template and inject values, including the dates.
+    // Load the profile.html template
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
@@ -776,6 +843,25 @@ app.get('/profile', async (req, res) => {
       .replace('{{start_date}}', JSON.stringify(startDate))
       .replace('{{end_date}}', JSON.stringify(endDate));
 
+    // Insert a <script> for feedback
+    const feedbackScript = `
+      <script>
+        function sendFeedback(docId, feedbackType) {
+          fetch('/feedback-thumbs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ docId: docId, feedback: feedbackType })
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log('Feedback response:', data);
+          })
+          .catch(err => console.error('Error sending feedback:', err));
+        }
+      </script>
+    `;
+    profileHtml += feedbackScript;
+
     res.send(profileHtml);
   } catch (err) {
     console.error('Error connecting to MongoDB', err);
@@ -785,7 +871,9 @@ app.get('/profile', async (req, res) => {
   }
 });
 
-
+// -----------------------------------------------------------------------------
+// 4) /DATA ENDPOINT – returns JSON, but includes HTML for docs
+// -----------------------------------------------------------------------------
 app.get('/data', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -862,6 +950,7 @@ app.get('/data', async (req, res) => {
       allDocuments = allDocuments.concat(docs);
     }
 
+    // Sort desc
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
@@ -930,14 +1019,12 @@ app.get('/data', async (req, res) => {
     } else {
       documentsHtml = filteredDocuments.map(doc => {
         const cnaesHtml = (doc.matched_cnaes || [])
-          .map(div => `<span>${div}</span>`)
-          .join('');
+          .map(div => `<span>${div}</span>`).join('');
         const ramaHtml = (doc.matched_rama_juridica || [])
-          .map(r => `<span class="rama-value">${r}</span>`)
-          .join('');
+          .map(r => `<span class="rama-value">${r}</span>`).join('');
         const subRamasHtml = (doc.matched_sub_rama_juridica || [])
-          .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
-          .join(' ');
+          .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ');
+
         return `
           <div class="data-item">
             <div class="header-row">
@@ -949,15 +1036,28 @@ app.get('/data', async (req, res) => {
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
-            <div class="margin-impacto>
-              <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Análisis impacto normativo</a>
+            <div class="margin-impacto">
+              <a class="button-impacto" 
+                href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
+                Análisis impacto normativo
+              </a>
             </div>
-            <a class="leer-mas" href="${doc.url_pdf}" target="_blank">Leer más: ${doc._id}</a>
+            <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>
+            <!-- Thumbs up/down icons -->
+            <span style="cursor: pointer;" onclick="sendFeedback('${doc._id}', 'like')">
+              &#128077;
+            </span>
+            <span style="margin-left: 10px; cursor: pointer;" onclick="sendFeedback('${doc._id}', 'dislike')">
+              &#128078;
+            </span>
           </div>
         `;
       }).join('');
     }
 
+    // For chart data
     const documentsByMonth = {};
     for (const doc of filteredDocuments) {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -966,6 +1066,7 @@ app.get('/data', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
+    // Return JSON, but includes documentsHtml for front-end usage
     res.json({
       documentsHtml,
       months,
@@ -974,6 +1075,48 @@ app.get('/data', async (req, res) => {
   } catch (err) {
     console.error('Error retrieving data:', err);
     res.status(500).json({ error: 'Error retrieving data' });
+  } finally {
+    await client.close();
+  }
+});
+
+// -----------------------------------------------------------------------------
+// 5) NEW FEEDBACK ENDPOINT
+// -----------------------------------------------------------------------------
+app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
+  const { docId, feedback } = req.body;
+  if (!docId || !feedback) {
+    return res.status(400).json({ error: 'Missing docId or feedback' });
+  }
+
+  // Prepare the feedback document
+  const userId = req.user._id;        // from session
+  const userEmail = req.user.email;   // from session
+  const contentEvaluated = 'norma';
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth()+1).padStart(2, '0')}-${now.getFullYear()}`;
+
+  const feedbackDoc = {
+    user_id: userId,
+    user_email: userEmail,
+    content_evaluated: contentEvaluated,
+    doc_id: docId,
+    fecha: dateStr,    // dd-mm-yyyy
+    feedback: feedback // "like" or "dislike"
+  };
+
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const feedbackCollection = database.collection("Feedback");
+
+    await feedbackCollection.insertOne(feedbackDoc);
+
+    return res.json({ success: true, message: 'Feedback saved successfully' });
+  } catch (err) {
+    console.error('Error saving feedback:', err);
+    return res.status(500).json({ error: 'Failed to save feedback' });
   } finally {
     await client.close();
   }
