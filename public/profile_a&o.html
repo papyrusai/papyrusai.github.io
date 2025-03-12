@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+  />
   <title>Profile A&amp;O</title>
   <link rel="icon" href="assets/papyrus_logo.png" type="image/png">
   <link rel="stylesheet" type="text/css" href="styles/styles.css" />
@@ -14,12 +17,14 @@
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
   <style>
     /* Additional styles for dropdowns */
-    #serviciosDropdown, #tipoDropdown, #rangoDropdown {
+    #serviciosDropdown,
+    #tipoDropdown,
+    #rangoDropdown {
       max-height: 200px;
       overflow-y: auto;
       position: absolute;
       z-index: 1000;
-      background: #fff; /* Make sure the list is visible */
+      background: #fff;
       border: 1px solid #ccc;
       padding: 5px;
     }
@@ -45,20 +50,37 @@
     .client-logo {
       height: 160px;
     }
+
     @media (max-width: 600px) {
       .client-logo {
         height: 120px;
       }
     }
 
-    /* Basic styling for checkboxes inside the dropdown */
+    /* Multi-check styling: smaller font, border separator between each label */
     .dropdown-content label {
       display: block;
-      margin: 3px 0;
+      padding: 4px 2px;
+      margin: 0;
       cursor: pointer;
+      font-size: 0.85em;
+      border-bottom: 1px solid #ddd;
     }
+    .dropdown-content label:last-child {
+      border-bottom: none; /* no bottom border on last item */
+    }
+
+    /* Make the "Todos" label bold */
+    label.todos-label {
+      font-weight: bold;
+    }
+
+    /* Make checkboxes smaller + green accent color (#83a300) when checked */
     .dropdown-content input[type="checkbox"] {
-      margin-right: 5px;
+      width: 16px;
+      height: 16px;
+      transform: scale(0.9);
+      accent-color: #83a300; /* Most modern browsers support accent-color */
     }
   </style>
 </head>
@@ -100,7 +122,7 @@
           <!-- MULTI-CHECK DROPDOWN -->
           <div id="serviciosDropdown" class="dropdown-content">
             <!-- "Todos" is a special checkbox that toggles all. -->
-            <label>
+            <label class="todos-label">
               <input type="checkbox" value="Todos" id="chkTodos" onclick="toggleAllIndustries()"> 
               Todos
             </label>
@@ -284,11 +306,13 @@
       const chkTodos = document.getElementById('chkTodos');
       let selectedCount = 0;
       let totalCount = 0;
+      let singleSelectedValue = "";
 
       checkboxes.forEach(cb => {
         totalCount++;
         if (cb.checked) {
           selectedCount++;
+          singleSelectedValue = cb.value; // track the most recent one checked
         }
       });
 
@@ -305,6 +329,8 @@
         buttonLabel.textContent = "Ninguno";
       } else if (selectedCount === totalCount) {
         buttonLabel.textContent = "Todos";
+      } else if (selectedCount === 1) {
+        buttonLabel.textContent = singleSelectedValue;
       } else {
         buttonLabel.textContent = selectedCount + " seleccionados";
       }
@@ -350,13 +376,9 @@
                           ? doc.querySelector('.doc-rango').innerText
                           : "";
 
-        // ----- Industry matching -----
-        // If no industry is selected, that means "Ninguno"? 
-        // Usually you might want "0 selected = show none", or show all, depends on your preference.
-        // We'll interpret "0 selected" as "show no docs." 
+        // If 0 industries selected => show none 
         let matchIndustria = false;
         if (selectedIndustries.length === 0) {
-          // No industries selected => doc won't match
           matchIndustria = false; 
         } else {
           // Document matches if its 'etiquetas-values' includes ANY of the selected industries
@@ -368,13 +390,9 @@
           }
         }
 
-        // ----- Tipo matching -----
         let matchTipo = (tipo === 'Todos') || seccionText.includes(tipo);
-
-        // ----- Rango matching -----
         let matchRango = (rango === 'Todos') || rangoText.includes(rango);
 
-        // Combine
         if (matchIndustria && matchTipo && matchRango) {
           doc.style.display = '';
         } else {
