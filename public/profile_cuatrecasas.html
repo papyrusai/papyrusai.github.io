@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+  />
   <title>Profile Cuatrecasas</title>
   <link rel="icon" href="assets/papyrus_logo.png" type="image/png">
   <link rel="stylesheet" type="text/css" href="styles/styles.css" />
@@ -14,11 +17,16 @@
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
   <style>
     /* Additional styles for dropdowns */
-    #serviciosDropdown, #tipoDropdown, #rangoDropdown {
+    #serviciosDropdown,
+    #tipoDropdown,
+    #rangoDropdown {
       max-height: 200px;
       overflow-y: auto;
       position: absolute;
       z-index: 1000;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
     }
     #serviciosDropdown .dropdown-bottom,
     #tipoDropdown .dropdown-bottom,
@@ -28,12 +36,42 @@
       border-top: 1px solid #ccc;
       cursor: pointer;
     }
-    .dropdown { position: relative; }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
 
     /* Boletín Oficial: only BOE selectable (others are dimmed) */
     .filter-options input[type="checkbox"]:not([value="BOE"]) {
       opacity: 0.5;
       pointer-events: none;
+    }
+
+    /* Make the dropdown labels smaller font, with border bottom as separator */
+    .dropdown-content label {
+      display: block;
+      padding: 4px 2px;
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.85em;
+      border-bottom: 1px solid #ddd;
+    }
+    .dropdown-content label:last-child {
+      border-bottom: none;
+    }
+
+    /* "Todos" label in bold */
+    label.todos-label {
+      font-weight: bold;
+    }
+
+    /* Make checkboxes smaller + green accent color (#83a300) when checked */
+    .dropdown-content input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      transform: scale(0.9);
+      accent-color: #83a300; /* Modern browsers */
     }
   </style>
 </head>
@@ -71,55 +109,50 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="serviciosDropdown" class="dropdown-content">
-            <!-- Various "Servicios" options -->
-            <a href="#" onclick="selectServicio('Todos')">Todos</a>
-            <a href="#" onclick="selectServicio('Arbitraje Internacional')">Arbitraje Internacional</a>
-            <a href="#" onclick="selectServicio('Competencia')">Competencia</a>
-            <a href="#" onclick="selectServicio('Deporte y Entretenimiento')">Deporte y Entretenimiento</a>
-            <a href="#" onclick="selectServicio('Empresa y Derechos Humanos')">Empresa y Derechos Humanos</a>
-            <a href="#" onclick="selectServicio('Energía e Infraestructura - Energías Renovables')">Energía e Infraestructura - Energías Renovables</a>
-            <a href="#" onclick="selectServicio('Energía e Infraestructura - Petróleo, Gas y Minería')">Energía e Infraestructura - Petróleo, Gas y Minería</a>
-            <a href="#" onclick="selectServicio('Energía e Infraestructura - Infraestructuras')">Energía e Infraestructura - Infraestructuras</a>
-            <a href="#" onclick="selectServicio('Farmacéutico y Sanitario')">Farmacéutico y Sanitario</a>
-            <a href="#" onclick="selectServicio('Financiero')">Financiero</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Contenciosa')">Fiscalidad Contenciosa</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Corporativa')">Fiscalidad Corporativa</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Financiera')">Fiscalidad Financiera</a>
-            <a href="#" onclick="selectServicio('Fiscalidad Indirecta')">Fiscalidad Indirecta</a>
-            <a href="#" onclick="selectServicio('Fondos')">Fondos</a>
-            <a href="#" onclick="selectServicio('Gobierno Corporativo y Compliance')">Gobierno Corporativo y Compliance</a>
-            <a href="#" onclick="selectServicio('Inmobiliario y Urbanismo')">Inmobiliario y Urbanismo</a>
-            <a href="#" onclick="selectServicio('Laboral')">Laboral</a>
-            <a href="#" onclick="selectServicio('Litigación - Conflictos Societarios y de M&A')">Litigación - Conflictos Societarios y de M&A</a>
-            <a href="#" onclick="selectServicio('Litigación - Litigación de Construcción e Inmobiliaria')">Litigación - Litigación de Construcción e Inmobiliaria</a>
-            <a href="#" onclick="selectServicio('Litigación - Litigación a Gran Escala')">Litigación - Litigación a Gran Escala</a>
-            <a href="#" onclick="selectServicio('Mercado de Capitales - Equity')">Mercado de Capitales - Equity</a>
-            <a href="#" onclick="selectServicio('Mercado de Capitales - Debt')">Mercado de Capitales - Debt</a>
-            <a href="#" onclick="selectServicio('Mercantil y M&A')">Mercantil y M&A</a>
-            <a href="#" onclick="selectServicio('Penal - Compliance Penal')">Penal - Compliance Penal</a>
-            <a href="#" onclick="selectServicio('Penal - Derecho Penal Económico')">Penal - Derecho Penal Económico</a>
-            <a href="#" onclick="selectServicio('Precios de Transferencia y Tax Governance')">Precios de Transferencia y Tax Governance</a>
-            <a href="#" onclick="selectServicio('Private Client & Wealth Management')">Private Client & Wealth Management</a>
-            <a href="#" onclick="selectServicio('Private Equity')">Private Equity</a>
-            <a href="#" onclick="selectServicio('Propiedad Intelectual, Industrial y Secretos')">Propiedad Intelectual, Industrial y Secretos</a>
-            <a href="#" onclick="selectServicio('Protección de Datos')">Protección de Datos</a>
-            <a href="#" onclick="selectServicio('Público - Contratación Pública')">Público - Contratación Pública</a>
-            <a href="#" onclick="selectServicio('Público - Medioambiente y Cambio Climático')">Público - Medioambiente y Cambio Climático</a>
-            <a href="#" onclick="selectServicio('Público - Sectores Regulados')">Público - Sectores Regulados</a>
-            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda')">
-              Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda
-            </a>
-            <a href="#" onclick="selectServicio('Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales')">
-              Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales
-            </a>
-            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Corporate y M&A')">
-              Servicios Financieros y de Seguros - Corporate y M&A
-            </a>
-            <a href="#" onclick="selectServicio('Servicios Financieros y de Seguros - Regulatorio')">
-              Servicios Financieros y de Seguros - Regulatorio
-            </a>
-            <a href="#" onclick="selectServicio('Tecnologías y Medios Digitales')">Tecnologías y Medios Digitales</a>
-            <a href="#" onclick="selectServicio('Venture Capital')">Venture Capital</a>
+            <!-- "Todos" is a special checkbox that toggles all -->
+            <label class="todos-label">
+              <input type="checkbox" value="Todos" id="chkTodos" onclick="toggleAllServicios()">
+              Todos
+            </label>
+            <label><input type="checkbox" value="Arbitraje Internacional" onclick="updateSelectedServicios()">Arbitraje Internacional</label>
+            <label><input type="checkbox" value="Competencia" onclick="updateSelectedServicios()">Competencia</label>
+            <label><input type="checkbox" value="Deporte y Entretenimiento" onclick="updateSelectedServicios()">Deporte y Entretenimiento</label>
+            <label><input type="checkbox" value="Empresa y Derechos Humanos" onclick="updateSelectedServicios()">Empresa y Derechos Humanos</label>
+            <label><input type="checkbox" value="Energía e Infraestructura - Energías Renovables" onclick="updateSelectedServicios()">Energía e Infraestructura - Energías Renovables</label>
+            <label><input type="checkbox" value="Energía e Infraestructura - Petróleo, Gas y Minería" onclick="updateSelectedServicios()">Energía e Infraestructura - Petróleo, Gas y Minería</label>
+            <label><input type="checkbox" value="Energía e Infraestructura - Infraestructuras" onclick="updateSelectedServicios()">Energía e Infraestructura - Infraestructuras</label>
+            <label><input type="checkbox" value="Farmacéutico y Sanitario" onclick="updateSelectedServicios()">Farmacéutico y Sanitario</label>
+            <label><input type="checkbox" value="Financiero" onclick="updateSelectedServicios()">Financiero</label>
+            <label><input type="checkbox" value="Fiscalidad Contenciosa" onclick="updateSelectedServicios()">Fiscalidad Contenciosa</label>
+            <label><input type="checkbox" value="Fiscalidad Corporativa" onclick="updateSelectedServicios()">Fiscalidad Corporativa</label>
+            <label><input type="checkbox" value="Fiscalidad Financiera" onclick="updateSelectedServicios()">Fiscalidad Financiera</label>
+            <label><input type="checkbox" value="Fiscalidad Indirecta" onclick="updateSelectedServicios()">Fiscalidad Indirecta</label>
+            <label><input type="checkbox" value="Fondos" onclick="updateSelectedServicios()">Fondos</label>
+            <label><input type="checkbox" value="Gobierno Corporativo y Compliance" onclick="updateSelectedServicios()">Gobierno Corporativo y Compliance</label>
+            <label><input type="checkbox" value="Inmobiliario y Urbanismo" onclick="updateSelectedServicios()">Inmobiliario y Urbanismo</label>
+            <label><input type="checkbox" value="Laboral" onclick="updateSelectedServicios()">Laboral</label>
+            <label><input type="checkbox" value="Litigación - Conflictos Societarios y de M&A" onclick="updateSelectedServicios()">Litigación - Conflictos Societarios y de M&A</label>
+            <label><input type="checkbox" value="Litigación - Litigación de Construcción e Inmobiliaria" onclick="updateSelectedServicios()">Litigación - Litigación de Construcción e Inmobiliaria</label>
+            <label><input type="checkbox" value="Litigación - Litigación a Gran Escala" onclick="updateSelectedServicios()">Litigación - Litigación a Gran Escala</label>
+            <label><input type="checkbox" value="Mercado de Capitales - Equity" onclick="updateSelectedServicios()">Mercado de Capitales - Equity</label>
+            <label><input type="checkbox" value="Mercado de Capitales - Debt" onclick="updateSelectedServicios()">Mercado de Capitales - Debt</label>
+            <label><input type="checkbox" value="Mercantil y M&A" onclick="updateSelectedServicios()">Mercantil y M&A</label>
+            <label><input type="checkbox" value="Penal - Compliance Penal" onclick="updateSelectedServicios()">Penal - Compliance Penal</label>
+            <label><input type="checkbox" value="Penal - Derecho Penal Económico" onclick="updateSelectedServicios()">Penal - Derecho Penal Económico</label>
+            <label><input type="checkbox" value="Precios de Transferencia y Tax Governance" onclick="updateSelectedServicios()">Precios de Transferencia y Tax Governance</label>
+            <label><input type="checkbox" value="Private Client & Wealth Management" onclick="updateSelectedServicios()">Private Client & Wealth Management</label>
+            <label><input type="checkbox" value="Private Equity" onclick="updateSelectedServicios()">Private Equity</label>
+            <label><input type="checkbox" value="Propiedad Intelectual, Industrial y Secretos" onclick="updateSelectedServicios()">Propiedad Intelectual, Industrial y Secretos</label>
+            <label><input type="checkbox" value="Protección de Datos" onclick="updateSelectedServicios()">Protección de Datos</label>
+            <label><input type="checkbox" value="Público - Contratación Pública" onclick="updateSelectedServicios()">Público - Contratación Pública</label>
+            <label><input type="checkbox" value="Público - Medioambiente y Cambio Climático" onclick="updateSelectedServicios()">Público - Medioambiente y Cambio Climático</label>
+            <label><input type="checkbox" value="Público - Sectores Regulados" onclick="updateSelectedServicios()">Público - Sectores Regulados</label>
+            <label><input type="checkbox" value="Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda" onclick="updateSelectedServicios()">Reestructuraciones, Insolvencias y Situaciones Especiales - Refinanciación y Reestructuración de Deuda</label>
+            <label><input type="checkbox" value="Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales" onclick="updateSelectedServicios()">Reestructuraciones, Insolvencias y Situaciones Especiales - Insolvencias y Situaciones Especiales</label>
+            <label><input type="checkbox" value="Servicios Financieros y de Seguros - Corporate y M&A" onclick="updateSelectedServicios()">Servicios Financieros y de Seguros - Corporate y M&A</label>
+            <label><input type="checkbox" value="Servicios Financieros y de Seguros - Regulatorio" onclick="updateSelectedServicios()">Servicios Financieros y de Seguros - Regulatorio</label>
+            <label><input type="checkbox" value="Tecnologías y Medios Digitales" onclick="updateSelectedServicios()">Tecnologías y Medios Digitales</label>
+            <label><input type="checkbox" value="Venture Capital" onclick="updateSelectedServicios()">Venture Capital</label>
 
             <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
               <i class="fa fa-caret-down"></i>
@@ -147,7 +180,7 @@
         </div>
       </div>
 
-      <!-- NEW filter: Rango -->
+      <!-- Rango -->
       <div class="filter-item">
         <div class="etiquetas-label">Rango</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -216,13 +249,12 @@
   </div>
 
   <script>
-    // Menu toggling
+    // -------------- Menu toggling --------------
     function toggleMenu() {
       const menu = document.querySelector('.menu');
       menu.classList.toggle('active');
     }
 
-    // On click anywhere else, close dropdowns & menu
     document.addEventListener('click', function(event) {
       // Hide Servicios dropdown if open
       const serviciosDropdown = document.getElementById('serviciosDropdown');
@@ -253,56 +285,120 @@
       }
     });
 
-    // Servicios toggling
+    // -------------- Dropdown toggles --------------
     function toggleServiciosDropdown() {
       const dropdown = document.getElementById('serviciosDropdown');
       dropdown.classList.toggle('show');
     }
-    function selectServicio(servicio) {
-      document.getElementById('selectedServicio').textContent = servicio;
-      document.getElementById('serviciosDropdown').classList.remove('show');
-    }
-
-    // Tipo toggling
     function toggleTipoDropdown() {
       const dropdown = document.getElementById('tipoDropdown');
       dropdown.classList.toggle('show');
     }
-    function selectTipo(tipo) {
-      document.getElementById('selectedTipo').textContent = tipo;
-      document.getElementById('tipoDropdown').classList.remove('show');
-    }
-
-    // **New** Rango toggling
     function toggleRangoDropdown() {
       const dropdown = document.getElementById('rangoDropdown');
       dropdown.classList.toggle('show');
+    }
+
+    // -------------- Multi-Select Logic for "Servicios" --------------
+    // Called if "Todos" is toggled
+    function toggleAllServicios() {
+      const chkTodos = document.getElementById('chkTodos');
+      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      if (chkTodos.checked) {
+        // Check everything
+        checkboxes.forEach(cb => (cb.checked = true));
+      } else {
+        // Uncheck everything
+        checkboxes.forEach(cb => (cb.checked = false));
+      }
+      // Then update label
+      updateSelectedServicios();
+    }
+
+    // Called whenever a single service checkbox is toggled
+    function updateSelectedServicios() {
+      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      const chkTodos = document.getElementById('chkTodos');
+      let selectedCount = 0;
+      let totalCount = 0;
+      let singleSelectedValue = "";
+
+      checkboxes.forEach(cb => {
+        totalCount++;
+        if (cb.checked) {
+          selectedCount++;
+          singleSelectedValue = cb.value;
+        }
+      });
+
+      // If user selected all => set chkTodos
+      if (selectedCount === totalCount) {
+        chkTodos.checked = true;
+      } else {
+        chkTodos.checked = false;
+      }
+
+      // Update the button label
+      const buttonLabel = document.getElementById('selectedServicio');
+      if (selectedCount === 0) {
+        buttonLabel.textContent = "Ninguno";
+      } else if (selectedCount === totalCount) {
+        buttonLabel.textContent = "Todos";
+      } else if (selectedCount === 1) {
+        buttonLabel.textContent = singleSelectedValue;
+      } else {
+        buttonLabel.textContent = selectedCount + " seleccionados";
+      }
+    }
+
+    // -------------- Filtering Logic --------------
+    function selectTipo(tipo) {
+      document.getElementById('selectedTipo').textContent = tipo;
+      document.getElementById('tipoDropdown').classList.remove('show');
     }
     function selectRango(rango) {
       document.getElementById('selectedRango').textContent = rango;
       document.getElementById('rangoDropdown').classList.remove('show');
     }
 
-    // Filtering logic
     function handleBuscar_cuatrecasas() {
-      // Read user’s selected values
-      const servicio = document.getElementById('selectedServicio').textContent.trim();
+      // 1) Gather the selected services
+      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      let selectedServicios = [];
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedServicios.push(cb.value);
+        }
+      });
+
       const tipo = document.getElementById('selectedTipo').textContent.trim();
       const rango = document.getElementById('selectedRango').textContent.trim();
 
       // All documents
       const docs = document.querySelectorAll('.collectionDocs .data-item');
       docs.forEach(doc => {
-        // 1) The text in etiquetas-values => used to check "Servicios"
         const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
+        const seccionText = doc.querySelector('.doc-seccion')
+                          ? doc.querySelector('.doc-seccion').innerText
+                          : "";
+        const rangoText = doc.querySelector('.doc-rango')
+                          ? doc.querySelector('.doc-rango').innerText
+                          : "";
 
-        // 2) The hidden doc-seccion => used to check "Tipo disposición"
-        const seccionText = doc.querySelector('.doc-seccion').innerText;
+        // If 0 selected => show none
+        let matchServicio = false;
+        if (selectedServicios.length === 0) {
+          matchServicio = false;
+        } else {
+          // Document matches if "etiquetas-values" includes ANY selected service
+          for (let s of selectedServicios) {
+            if (etiquetasText.includes(s)) {
+              matchServicio = true;
+              break;
+            }
+          }
+        }
 
-        // 3) The hidden doc-rango => used to check "Rango"
-        const rangoText = doc.querySelector('.doc-rango').innerText;
-
-        let matchServicio = (servicio === 'Todos') || etiquetasText.includes(servicio);
         let matchTipo = (tipo === 'Todos') || seccionText.includes(tipo);
         let matchRango = (rango === 'Todos') || rangoText.includes(rango);
 
