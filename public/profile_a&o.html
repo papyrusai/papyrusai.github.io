@@ -15,6 +15,7 @@
   <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
   <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+
   <style>
     /* Additional styles for dropdowns */
     #serviciosDropdown,
@@ -36,6 +37,7 @@
       border-top: 1px solid #ccc;
       cursor: pointer;
     }
+
     .dropdown {
       position: relative;
       display: inline-block;
@@ -70,17 +72,12 @@
       border-bottom: none; /* no bottom border on last item */
     }
 
-    /* Make the "Todos" label bold */
-    label.todos-label {
-      font-weight: bold;
-    }
-
-    /* Make checkboxes smaller + green accent color (#83a300) when checked */
+    /* Make checkboxes smaller + green accent color (#83a300) */
     .dropdown-content input[type="checkbox"] {
       width: 16px;
       height: 16px;
       transform: scale(0.9);
-      accent-color: #83a300; /* Most modern browsers support accent-color */
+      accent-color: #83a300;
     }
   </style>
 </head>
@@ -119,10 +116,10 @@
             <i class="fa fa-caret-down"></i>
           </button>
 
-          <!-- MULTI-CHECK DROPDOWN -->
+          <!-- MULTI-CHECK DROPDOWN for INDUSTRIES -->
           <div id="serviciosDropdown" class="dropdown-content">
             <!-- "Todos" is a special checkbox that toggles all. -->
-            <label class="todos-label">
+            <label>
               <input type="checkbox" value="Todos" id="chkTodos" onclick="toggleAllIndustries()"> 
               Todos
             </label>
@@ -158,11 +155,11 @@
             <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
-          </div> <!-- End serviciosDropdown -->
+          </div>
         </div>
       </div>
 
-      <!-- Tipo disposición -->
+      <!-- TIPO DISPOSICIÓN (Multi-Select) -->
       <div class="filter-item">
         <div class="etiquetas-label">Tipo disposición</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -171,9 +168,14 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="tipoDropdown" class="dropdown-content">
-            <a href="#" onclick="selectTipo('Todos')">Todos</a>
-            <a href="#" onclick="selectTipo('Disposiciones generales')">Disposiciones generales</a>
-            <a href="#" onclick="selectTipo('Otras disposiciones')">Otras disposiciones</a>
+            <!-- "Todos" for Tipo -->
+            <label>
+              <input type="checkbox" value="Todos" id="chkTodosTipo" onclick="toggleAllTipo()">
+              Todos
+            </label>
+            <label><input type="checkbox" value="Disposiciones generales" onclick="updateSelectedTipo()">Disposiciones generales</label>
+            <label><input type="checkbox" value="Otras disposiciones" onclick="updateSelectedTipo()">Otras disposiciones</label>
+
             <div class="dropdown-bottom" onclick="toggleTipoDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
@@ -181,7 +183,7 @@
         </div>
       </div>
 
-      <!-- Rango -->
+      <!-- RANGO (Multi-Select) -->
       <div class="filter-item">
         <div class="etiquetas-label">Rango</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -190,15 +192,18 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="rangoDropdown" class="dropdown-content">
-            <a href="#" onclick="selectRango('Todos')">Todos</a>
-            <a href="#" onclick="selectRango('Leyes')">Leyes</a>
-            <a href="#" onclick="selectRango('Reglamentos')">Reglamentos</a>
-            <a href="#" onclick="selectRango('Decisiones interpretativas y Reguladores')">
-              Decisiones interpretativas y Reguladores
-            </a>
-            <a href="#" onclick="selectRango('Jurisprudencia')">Jurisprudencia</a>
-            <a href="#" onclick="selectRango('Ayudas,subvenciones y premios')">Ayudas, subvenciones y premios</a>
-            <a href="#" onclick="selectRango('Otras')">Otras</a>
+            <!-- "Todos" for Rango -->
+            <label>
+              <input type="checkbox" value="Todos" id="chkTodosRango" onclick="toggleAllRango()">
+              Todos
+            </label>
+            <label><input type="checkbox" value="Leyes" onclick="updateSelectedRango()">Leyes</label>
+            <label><input type="checkbox" value="Reglamentos" onclick="updateSelectedRango()">Reglamentos</label>
+            <label><input type="checkbox" value="Decisiones interpretativas y Reguladores" onclick="updateSelectedRango()">Decisiones interpretativas y Reguladores</label>
+            <label><input type="checkbox" value="Jurisprudencia" onclick="updateSelectedRango()">Jurisprudencia</label>
+            <label><input type="checkbox" value="Ayudas,subvenciones y premios" onclick="updateSelectedRango()">Ayudas,subvenciones y premios</label>
+            <label><input type="checkbox" value="Otras" onclick="updateSelectedRango()">Otras</label>
+
             <div class="dropdown-bottom" onclick="toggleRangoDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
@@ -258,26 +263,24 @@
 
     // On click anywhere else, close dropdowns & menu
     document.addEventListener('click', function(event) {
-      // Hide Servicios
       const serviciosDropdown = document.getElementById('serviciosDropdown');
       if (serviciosDropdown && serviciosDropdown.classList.contains('show')
           && !event.target.closest('.dropdown')) {
         serviciosDropdown.classList.remove('show');
       }
-      // Hide Tipo
+
       const tipoDropdown = document.getElementById('tipoDropdown');
       if (tipoDropdown && tipoDropdown.classList.contains('show')
           && !event.target.closest('.dropdown')) {
         tipoDropdown.classList.remove('show');
       }
-      // Hide Rango
+
       const rangoDropdown = document.getElementById('rangoDropdown');
       if (rangoDropdown && rangoDropdown.classList.contains('show')
           && !event.target.closest('.dropdown')) {
         rangoDropdown.classList.remove('show');
       }
 
-      // Hide hamburger menu if clicking outside
       const menu = document.querySelector('.menu');
       const hamburger = document.querySelector('.hamburger');
       if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
@@ -299,8 +302,7 @@
       dropdown.classList.toggle('show');
     }
 
-    // -------------- Multi-Select Logic for Industrias --------------
-    // Called whenever a single industry is (un)checked
+    // -------------- Multi-Select Logic: Industrias --------------
     function updateSelectedIndustries() {
       const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
       const chkTodos = document.getElementById('chkTodos');
@@ -312,19 +314,17 @@
         totalCount++;
         if (cb.checked) {
           selectedCount++;
-          singleSelectedValue = cb.value; // track the most recent one checked
+          singleSelectedValue = cb.value;
         }
       });
 
-      // If all are selected, check "Todos"
       if (selectedCount === totalCount) {
         chkTodos.checked = true;
       } else {
         chkTodos.checked = false;
       }
 
-      // Update the dropdown button text
-      let buttonLabel = document.getElementById('selectedServicio');
+      const buttonLabel = document.getElementById('selectedServicio');
       if (selectedCount === 0) {
         buttonLabel.textContent = "Ninguno";
       } else if (selectedCount === totalCount) {
@@ -335,53 +335,150 @@
         buttonLabel.textContent = selectedCount + " seleccionados";
       }
     }
-
-    // Called if "Todos" is toggled
     function toggleAllIndustries() {
       const chkTodos = document.getElementById('chkTodos');
       const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
       if (chkTodos.checked) {
-        // Check everything
         checkboxes.forEach(cb => (cb.checked = true));
       } else {
-        // Uncheck everything
         checkboxes.forEach(cb => (cb.checked = false));
       }
-      // Refresh button label
       updateSelectedIndustries();
     }
 
-    // -------------- Filtering logic on "Buscar" --------------
-    function handleBuscar_ao() {
-      // 1) Gather the selected industries
-      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
-      let selectedIndustries = [];
+    // -------------- Multi-Select Logic: TIPO DISPOSICIÓN --------------
+    function updateSelectedTipo() {
+      const checkboxes = document.querySelectorAll('#tipoDropdown input[type="checkbox"]:not(#chkTodosTipo)');
+      const chkTodosTipo = document.getElementById('chkTodosTipo');
+      let selectedCount = 0;
+      let totalCount = 0;
+      let singleValue = "";
+
       checkboxes.forEach(cb => {
+        totalCount++;
+        if (cb.checked) {
+          selectedCount++;
+          singleValue = cb.value;
+        }
+      });
+
+      if (selectedCount === totalCount) {
+        chkTodosTipo.checked = true;
+      } else {
+        chkTodosTipo.checked = false;
+      }
+
+      const tipoLabel = document.getElementById('selectedTipo');
+      if (selectedCount === 0) {
+        tipoLabel.textContent = "Ninguno";
+      } else if (selectedCount === totalCount) {
+        tipoLabel.textContent = "Todos";
+      } else if (selectedCount === 1) {
+        tipoLabel.textContent = singleValue;
+      } else {
+        tipoLabel.textContent = selectedCount + " seleccionados";
+      }
+    }
+    function toggleAllTipo() {
+      const chkTodosTipo = document.getElementById('chkTodosTipo');
+      const checkboxes = document.querySelectorAll('#tipoDropdown input[type="checkbox"]:not(#chkTodosTipo)');
+      if (chkTodosTipo.checked) {
+        checkboxes.forEach(cb => (cb.checked = true));
+      } else {
+        checkboxes.forEach(cb => (cb.checked = false));
+      }
+      updateSelectedTipo();
+    }
+
+    // -------------- Multi-Select Logic: RANGO --------------
+    function updateSelectedRango() {
+      const checkboxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkTodosRango)');
+      const chkTodosRango = document.getElementById('chkTodosRango');
+      let selectedCount = 0;
+      let totalCount = 0;
+      let singleVal = "";
+
+      checkboxes.forEach(cb => {
+        totalCount++;
+        if (cb.checked) {
+          selectedCount++;
+          singleVal = cb.value;
+        }
+      });
+
+      if (selectedCount === totalCount) {
+        chkTodosRango.checked = true;
+      } else {
+        chkTodosRango.checked = false;
+      }
+
+      const rangoLabel = document.getElementById('selectedRango');
+      if (selectedCount === 0) {
+        rangoLabel.textContent = "Ninguno";
+      } else if (selectedCount === totalCount) {
+        rangoLabel.textContent = "Todos";
+      } else if (selectedCount === 1) {
+        rangoLabel.textContent = singleVal;
+      } else {
+        rangoLabel.textContent = selectedCount + " seleccionados";
+      }
+    }
+    function toggleAllRango() {
+      const chkTodosRango = document.getElementById('chkTodosRango');
+      const checkboxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkTodosRango)');
+      if (chkTodosRango.checked) {
+        checkboxes.forEach(cb => (cb.checked = true));
+      } else {
+        checkboxes.forEach(cb => (cb.checked = false));
+      }
+      updateSelectedRango();
+    }
+
+    // -------------- "Buscar" Filter Logic --------------
+    function handleBuscar_ao() {
+      // 1) Gather selected industries
+      const industryCbs = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      let selectedIndustries = [];
+      industryCbs.forEach(cb => {
         if (cb.checked) {
           selectedIndustries.push(cb.value);
         }
       });
 
-      const tipo = document.getElementById('selectedTipo').textContent.trim();
-      const rango = document.getElementById('selectedRango').textContent.trim();
+      // 2) Gather selected TIPO
+      const tipoCbs = document.querySelectorAll('#tipoDropdown input[type="checkbox"]:not(#chkTodosTipo)');
+      let selectedTipos = [];
+      tipoCbs.forEach(cb => {
+        if (cb.checked) {
+          selectedTipos.push(cb.value);
+        }
+      });
 
-      // All documents
+      // 3) Gather selected RANGO
+      const rangoCbs = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkTodosRango)');
+      let selectedRangos = [];
+      rangoCbs.forEach(cb => {
+        if (cb.checked) {
+          selectedRangos.push(cb.value);
+        }
+      });
+
+      // All document items
       const docs = document.querySelectorAll('.collectionDocs .data-item');
       docs.forEach(doc => {
         const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
-        const seccionText = doc.querySelector('.doc-seccion') 
+        const seccionText = doc.querySelector('.doc-seccion')
                           ? doc.querySelector('.doc-seccion').innerText
                           : "";
         const rangoText = doc.querySelector('.doc-rango')
                           ? doc.querySelector('.doc-rango').innerText
                           : "";
 
-        // If 0 industries selected => show none 
+        // ----- Industry match -----
         let matchIndustria = false;
         if (selectedIndustries.length === 0) {
-          matchIndustria = false; 
+          matchIndustria = false;
         } else {
-          // Document matches if its 'etiquetas-values' includes ANY of the selected industries
           for (let ind of selectedIndustries) {
             if (etiquetasText.includes(ind)) {
               matchIndustria = true;
@@ -390,9 +487,33 @@
           }
         }
 
-        let matchTipo = (tipo === 'Todos') || seccionText.includes(tipo);
-        let matchRango = (rango === 'Todos') || rangoText.includes(rango);
+        // ----- Tipo match -----
+        let matchTipo = false;
+        if (selectedTipos.length === 0) {
+          matchTipo = false;
+        } else {
+          for (let t of selectedTipos) {
+            if (seccionText.includes(t)) {
+              matchTipo = true;
+              break;
+            }
+          }
+        }
 
+        // ----- Rango match -----
+        let matchRango = false;
+        if (selectedRangos.length === 0) {
+          matchRango = false;
+        } else {
+          for (let r of selectedRangos) {
+            if (rangoText.includes(r)) {
+              matchRango = true;
+              break;
+            }
+          }
+        }
+
+        // Only show if all three are matched
         if (matchIndustria && matchTipo && matchRango) {
           doc.style.display = '';
         } else {
