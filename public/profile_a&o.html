@@ -19,6 +19,9 @@
       overflow-y: auto;
       position: absolute;
       z-index: 1000;
+      background: #fff; /* Make sure the list is visible */
+      border: 1px solid #ccc;
+      padding: 5px;
     }
     #serviciosDropdown .dropdown-bottom,
     #tipoDropdown .dropdown-bottom,
@@ -28,24 +31,38 @@
       border-top: 1px solid #ccc;
       cursor: pointer;
     }
-    .dropdown { position: relative; }
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
 
     /* Boletín Oficial: only BOE selectable (others are dimmed) */
     .filter-options input[type="checkbox"]:not([value="BOE"]) {
       opacity: 0.5;
       pointer-events: none;
     }
-    .client-logo{
-        height: 160px;
+
+    .client-logo {
+      height: 160px;
+    }
+    @media (max-width: 600px) {
+      .client-logo {
+        height: 120px;
+      }
     }
 
-    @media (max-width: 600px) {
-     .client-logo{
-        height: 120px;
+    /* Basic styling for checkboxes inside the dropdown */
+    .dropdown-content label {
+      display: block;
+      margin: 3px 0;
+      cursor: pointer;
     }
-}
+    .dropdown-content input[type="checkbox"] {
+      margin-right: 5px;
+    }
   </style>
 </head>
+
 <body>
   <nav class="navbar">
     <div class="logo">
@@ -64,70 +81,62 @@
 
   <!-- Profile Header with A&O logo -->
   <div class="profile-header" style="display: flex; align-items: center; gap: 15px; margin: 20px;">
-    <img class="client-logo" src="assets/a&o_logo.png" alt="A&amp;O Logo" >
+    <img class="client-logo" src="assets/a&o_logo.png" alt="A&amp;O Logo">
   </div>
 
   <h1>Resumen diario Boletines Oficiales</h1>
   <div id="data-container">
     <!-- Filter Section -->
     <div id="Filtrar">
-      <!-- Servicios A&O Dropdown -->
+      <!-- INDUSTRIAS / Servicios A&O -->
       <div class="filter-item">
-        <div class="etiquetas-label">Industrias A&amp;O Shearman </div>
+        <div class="etiquetas-label">Industrias A&amp;O Shearman</div>
         <div class="dropdown" style="margin-bottom: 10px;">
           <button onclick="toggleServiciosDropdown()" class="dropbtn">
             <span id="selectedServicio">Todos</span>
             <i class="fa fa-caret-down"></i>
           </button>
+
+          <!-- MULTI-CHECK DROPDOWN -->
           <div id="serviciosDropdown" class="dropdown-content">
-            <a href="#" onclick="selectServicio('Todos')">Todos</a>
-            <a href="#" onclick="selectServicio('Chemicals')">Chemicals</a>
-            <a href="#" onclick="selectServicio('Consumer and retail')">Consumer and retail</a>
-            <a href="#" onclick="selectServicio('Communications, media and entertainment - Sports')">
-              Communications, media and entertainment - Sports
-            </a>
-            <a href="#" onclick="selectServicio('Communications, media and entertainment - Media')">
-              Communications, media and entertainment - Media
-            </a>
-            <a href="#" onclick="selectServicio('Communications, media and entertainment - Telecommunications')">
-              Communications, media and entertainment - Telecommunications
-            </a>
-            <a href="#" onclick="selectServicio('Energy - Oil and gas')">Energy - Oil and gas</a>
-            <a href="#" onclick="selectServicio('Energy - Hydrogen')">Energy - Hydrogen</a>
-            <a href="#" onclick="selectServicio('Energy - Carbon capture and storage')">Energy - Carbon capture and storage</a>
-            <a href="#" onclick="selectServicio('Energy - Power')">Energy - Power</a>
-            <a href="#" onclick="selectServicio('Energy - Energy networks')">Energy - Energy networks</a>
-            <a href="#" onclick="selectServicio('Energy - Nuclear')">Energy - Nuclear</a>
-            <a href="#" onclick="selectServicio('Financial institutions - Banks')">Financial institutions - Banks</a>
-            <a href="#" onclick="selectServicio('Financial institutions - Insurance')">Financial institutions - Insurance</a>
-            <a href="#" onclick="selectServicio('Financial institutions - Fintech')">Financial institutions - Fintech</a>
-            <a href="#" onclick="selectServicio('Industrials and manufacturing - Automotive')">
-              Industrials and manufacturing - Automotive
-            </a>
-            <a href="#" onclick="selectServicio('Industrials and manufacturing - Aerospace and defense')">
-              Industrials and manufacturing - Aerospace and defense
-            </a>
-            <a href="#" onclick="selectServicio('Infrastructure and transport - Aviation')">
-              Infrastructure and transport - Aviation
-            </a>
-            <a href="#" onclick="selectServicio('Infrastructure and transport - Digital infrastructure')">
-              Infrastructure and transport - Digital infrastructure
-            </a>
-            <a href="#" onclick="selectServicio('Life sciences and healthcare')">Life sciences and healthcare</a>
-            <a href="#" onclick="selectServicio('Mining and metals')">Mining and metals</a>
-            <a href="#" onclick="selectServicio('Private capital - Family office')">Private capital - Family office</a>
-            <a href="#" onclick="selectServicio('Private capital - Infrastructure funds')">Private capital - Infrastructure funds</a>
-            <a href="#" onclick="selectServicio('Private capital - Private credit')">Private capital - Private credit</a>
-            <a href="#" onclick="selectServicio('Private capital - Private equity')">Private capital - Private equity</a>
-            <a href="#" onclick="selectServicio('Private capital - Sovereign wealth and institutional investors')">
-              Private capital - Sovereign wealth and institutional investors
-            </a>
-            <a href="#" onclick="selectServicio('Capital solutions')">Capital solutions</a>
-            <a href="#" onclick="selectServicio('Technology')">Technology</a>
+            <!-- "Todos" is a special checkbox that toggles all. -->
+            <label>
+              <input type="checkbox" value="Todos" id="chkTodos" onclick="toggleAllIndustries()"> 
+              Todos
+            </label>
+            <label><input type="checkbox" value="Chemicals" onclick="updateSelectedIndustries()">Chemicals</label>
+            <label><input type="checkbox" value="Consumer and retail" onclick="updateSelectedIndustries()">Consumer and retail</label>
+            <label><input type="checkbox" value="Communications, media and entertainment - Sports" onclick="updateSelectedIndustries()">Communications, media and entertainment - Sports</label>
+            <label><input type="checkbox" value="Communications, media and entertainment - Media" onclick="updateSelectedIndustries()">Communications, media and entertainment - Media</label>
+            <label><input type="checkbox" value="Communications, media and entertainment - Telecommunications" onclick="updateSelectedIndustries()">Communications, media and entertainment - Telecommunications</label>
+            <label><input type="checkbox" value="Energy - Oil and gas" onclick="updateSelectedIndustries()">Energy - Oil and gas</label>
+            <label><input type="checkbox" value="Energy - Hydrogen" onclick="updateSelectedIndustries()">Energy - Hydrogen</label>
+            <label><input type="checkbox" value="Energy - Carbon capture and storage" onclick="updateSelectedIndustries()">Energy - Carbon capture and storage</label>
+            <label><input type="checkbox" value="Energy - Power" onclick="updateSelectedIndustries()">Energy - Power</label>
+            <label><input type="checkbox" value="Energy - Energy networks" onclick="updateSelectedIndustries()">Energy - Energy networks</label>
+            <label><input type="checkbox" value="Energy - Nuclear" onclick="updateSelectedIndustries()">Energy - Nuclear</label>
+            <label><input type="checkbox" value="Financial institutions - Banks" onclick="updateSelectedIndustries()">Financial institutions - Banks</label>
+            <label><input type="checkbox" value="Financial institutions - Insurance" onclick="updateSelectedIndustries()">Financial institutions - Insurance</label>
+            <label><input type="checkbox" value="Financial institutions - Fintech" onclick="updateSelectedIndustries()">Financial institutions - Fintech</label>
+            <label><input type="checkbox" value="Industrials and manufacturing - Automotive" onclick="updateSelectedIndustries()">Industrials and manufacturing - Automotive</label>
+            <label><input type="checkbox" value="Industrials and manufacturing - Aerospace and defense" onclick="updateSelectedIndustries()">Industrials and manufacturing - Aerospace and defense</label>
+            <label><input type="checkbox" value="Infrastructure and transport - Aviation" onclick="updateSelectedIndustries()">Infrastructure and transport - Aviation</label>
+            <label><input type="checkbox" value="Infrastructure and transport - Digital infrastructure" onclick="updateSelectedIndustries()">Infrastructure and transport - Digital infrastructure</label>
+            <label><input type="checkbox" value="Life sciences and healthcare" onclick="updateSelectedIndustries()">Life sciences and healthcare</label>
+            <label><input type="checkbox" value="Mining and metals" onclick="updateSelectedIndustries()">Mining and metals</label>
+            <label><input type="checkbox" value="Private capital - Family office" onclick="updateSelectedIndustries()">Private capital - Family office</label>
+            <label><input type="checkbox" value="Private capital - Infrastructure funds" onclick="updateSelectedIndustries()">Private capital - Infrastructure funds</label>
+            <label><input type="checkbox" value="Private capital - Private credit" onclick="updateSelectedIndustries()">Private capital - Private credit</label>
+            <label><input type="checkbox" value="Private capital - Private equity" onclick="updateSelectedIndustries()">Private capital - Private equity</label>
+            <label><input type="checkbox" value="Private capital - Sovereign wealth and institutional investors" onclick="updateSelectedIndustries()">Private capital - Sovereign wealth and institutional investors</label>
+            <label><input type="checkbox" value="Capital solutions" onclick="updateSelectedIndustries()">Capital solutions</label>
+            <label><input type="checkbox" value="Technology" onclick="updateSelectedIndustries()">Technology</label>
+
+            <!-- close dropdown button -->
             <div class="dropdown-bottom" onclick="toggleServiciosDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
-          </div>
+          </div> <!-- End serviciosDropdown -->
         </div>
       </div>
 
@@ -219,7 +228,7 @@
   </div>
 
   <script>
-    // Menu toggling
+    // -------------- Menu toggling --------------
     function toggleMenu() {
       const menu = document.querySelector('.menu');
       menu.classList.toggle('active');
@@ -227,21 +236,19 @@
 
     // On click anywhere else, close dropdowns & menu
     document.addEventListener('click', function(event) {
-      // Hide Servicios dropdown if open
+      // Hide Servicios
       const serviciosDropdown = document.getElementById('serviciosDropdown');
       if (serviciosDropdown && serviciosDropdown.classList.contains('show')
           && !event.target.closest('.dropdown')) {
         serviciosDropdown.classList.remove('show');
       }
-
-      // Hide Tipo dropdown if open
+      // Hide Tipo
       const tipoDropdown = document.getElementById('tipoDropdown');
       if (tipoDropdown && tipoDropdown.classList.contains('show')
           && !event.target.closest('.dropdown')) {
         tipoDropdown.classList.remove('show');
       }
-
-      // Hide Rango dropdown if open
+      // Hide Rango
       const rangoDropdown = document.getElementById('rangoDropdown');
       if (rangoDropdown && rangoDropdown.classList.contains('show')
           && !event.target.closest('.dropdown')) {
@@ -256,60 +263,119 @@
       }
     });
 
-    // Servicios toggling
+    // -------------- Dropdown Toggles --------------
     function toggleServiciosDropdown() {
       const dropdown = document.getElementById('serviciosDropdown');
       dropdown.classList.toggle('show');
     }
-    function selectServicio(servicio) {
-      document.getElementById('selectedServicio').textContent = servicio;
-      document.getElementById('serviciosDropdown').classList.remove('show');
-    }
-
-    // Tipo toggling
     function toggleTipoDropdown() {
       const dropdown = document.getElementById('tipoDropdown');
       dropdown.classList.toggle('show');
     }
-    function selectTipo(tipo) {
-      document.getElementById('selectedTipo').textContent = tipo;
-      document.getElementById('tipoDropdown').classList.remove('show');
-    }
-
-    // Rango toggling
     function toggleRangoDropdown() {
       const dropdown = document.getElementById('rangoDropdown');
       dropdown.classList.toggle('show');
     }
-    function selectRango(rango) {
-      document.getElementById('selectedRango').textContent = rango;
-      document.getElementById('rangoDropdown').classList.remove('show');
+
+    // -------------- Multi-Select Logic for Industrias --------------
+    // Called whenever a single industry is (un)checked
+    function updateSelectedIndustries() {
+      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      const chkTodos = document.getElementById('chkTodos');
+      let selectedCount = 0;
+      let totalCount = 0;
+
+      checkboxes.forEach(cb => {
+        totalCount++;
+        if (cb.checked) {
+          selectedCount++;
+        }
+      });
+
+      // If all are selected, check "Todos"
+      if (selectedCount === totalCount) {
+        chkTodos.checked = true;
+      } else {
+        chkTodos.checked = false;
+      }
+
+      // Update the dropdown button text
+      let buttonLabel = document.getElementById('selectedServicio');
+      if (selectedCount === 0) {
+        buttonLabel.textContent = "Ninguno";
+      } else if (selectedCount === totalCount) {
+        buttonLabel.textContent = "Todos";
+      } else {
+        buttonLabel.textContent = selectedCount + " seleccionados";
+      }
     }
 
-    // Filtering logic
+    // Called if "Todos" is toggled
+    function toggleAllIndustries() {
+      const chkTodos = document.getElementById('chkTodos');
+      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      if (chkTodos.checked) {
+        // Check everything
+        checkboxes.forEach(cb => (cb.checked = true));
+      } else {
+        // Uncheck everything
+        checkboxes.forEach(cb => (cb.checked = false));
+      }
+      // Refresh button label
+      updateSelectedIndustries();
+    }
+
+    // -------------- Filtering logic on "Buscar" --------------
     function handleBuscar_ao() {
-      // Read user’s selected values
-      const servicio = document.getElementById('selectedServicio').textContent.trim();
+      // 1) Gather the selected industries
+      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+      let selectedIndustries = [];
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedIndustries.push(cb.value);
+        }
+      });
+
       const tipo = document.getElementById('selectedTipo').textContent.trim();
       const rango = document.getElementById('selectedRango').textContent.trim();
 
       // All documents
       const docs = document.querySelectorAll('.collectionDocs .data-item');
       docs.forEach(doc => {
-        // 1) The text in etiquetas-values => used to check "Servicios"
         const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
+        const seccionText = doc.querySelector('.doc-seccion') 
+                          ? doc.querySelector('.doc-seccion').innerText
+                          : "";
+        const rangoText = doc.querySelector('.doc-rango')
+                          ? doc.querySelector('.doc-rango').innerText
+                          : "";
 
-        // 2) The hidden doc-seccion => used to check "Tipo disposición"
-        const seccionText = doc.querySelector('.doc-seccion').innerText;
+        // ----- Industry matching -----
+        // If no industry is selected, that means "Ninguno"? 
+        // Usually you might want "0 selected = show none", or show all, depends on your preference.
+        // We'll interpret "0 selected" as "show no docs." 
+        let matchIndustria = false;
+        if (selectedIndustries.length === 0) {
+          // No industries selected => doc won't match
+          matchIndustria = false; 
+        } else {
+          // Document matches if its 'etiquetas-values' includes ANY of the selected industries
+          for (let ind of selectedIndustries) {
+            if (etiquetasText.includes(ind)) {
+              matchIndustria = true;
+              break;
+            }
+          }
+        }
 
-        // 3) The hidden doc-rango => used to check "Rango"
-        const rangoText = doc.querySelector('.doc-rango').innerText;
-
-        let matchServicio = (servicio === 'Todos') || etiquetasText.includes(servicio);
+        // ----- Tipo matching -----
         let matchTipo = (tipo === 'Todos') || seccionText.includes(tipo);
+
+        // ----- Rango matching -----
         let matchRango = (rango === 'Todos') || rangoText.includes(rango);
 
-        if (matchServicio && matchTipo && matchRango) {
+        // Combine
+        if (matchIndustria && matchTipo && matchRango) {
           doc.style.display = '';
         } else {
           doc.style.display = 'none';
