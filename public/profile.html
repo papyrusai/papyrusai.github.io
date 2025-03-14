@@ -3,12 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <title>Profile</title>
   <link rel="icon" href="assets/papyrus_logo.png" type="image/png"> 
+
+  <!-- Font Awesome + Chart.js + Basic CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
   <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
+
+  <!-- Your existing CSS files -->
   <link rel="stylesheet" type="text/css" href="styles/styles.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
@@ -37,20 +41,76 @@
     }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* All dropdowns (Sector Económico, Rama Jurídica, etc.) have max-height 200px and scroll */
-    #myDropdown, 
-    #ramaDropdown, 
-    #serviciosDropdown, 
-    #tipoDropdown {
+    /* Dropdowns (Sector Económico, Rama Jurídica) => multi-check style */
+    #myDropdown,
+    #ramaDropdown {
       max-height: 200px;
       overflow-y: auto;
-      position: absolute; 
-      z-index: 1000; 
+      position: absolute;
+      z-index: 1000;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    /* The "Todos" + item checkboxes with smaller font, green accent, etc. */
+    #myDropdown label,
+    #ramaDropdown label {
+      display: block;
+      padding: 4px 2px;
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.85em;
+      border-bottom: 1px solid #ddd;
+    }
+    #myDropdown label:last-child,
+    #ramaDropdown label:last-child {
+      border-bottom: none;
+    }
+    #myDropdown input[type="checkbox"],
+    #ramaDropdown input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      transform: scale(0.9);
+      accent-color: #83a300; /* green accent color */
+      margin-right: 6px;
+    }
+
+    /* Possibly for sub-ramas checkboxes container */
+    #subRamasCheckboxContainer {
+      margin: 10px 0;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      padding: 6px;
+      display: none; /* hidden until user picks a single Rama */
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    #subRamasCheckboxContainer label {
+      display: block;
+      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    #subRamasCheckboxContainer input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      transform: scale(0.9);
+      accent-color: #83a300;
+      margin-right: 6px;
     }
 
     .dropdown-content.show {
       display: block;
     }
+
+    /* Tools for the rest of the page layout */
+    .analytics-label { margin-top: 20px; font-weight: bold; }
+    .detalle-cuenta { display: flex; gap: 50px; margin-bottom: 20px; }
+    .etiquetas-label { font-weight: bold; }
+    .filter-item { margin-bottom: 10px; }
+    .filter-section { margin-bottom: 10px; }
+
+    /* The rest is from your old code or personal styling preferences */
   </style>
 </head>
 <body>
@@ -59,16 +119,17 @@
     <div class="page-loader"></div>
   </div>
 
+  <!-- Navbar -->
   <nav class="navbar">
     <div class="logo">
-      <a href="https://www.papyrus-ai.com/" target="_blank">
+      <a href="https://papyrus-ai.com/" target="_blank">
         <img src="assets/papyrus_app.png" alt="Papyrus Logo">
       </a>
     </div>
     <button class="hamburger" onclick="toggleMenu()">☰</button>
     <ul class="menu">
       <li><a href="https://papyrus-ai.com/">WEB</a></li>
-      <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li>
+      <li><a href="/profile">PANEL DE CONTROL</a></li>
       <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
       <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
     </ul>
@@ -94,39 +155,29 @@
     <script id="industryTags" type="application/json">{{industry_tags_json}}</script>
     <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
     <script id="userSubRamaMap" type="application/json">
-    {
-      "Derecho Civil": ["genérico","familia","sucesiones","divorcios","arrendamientos","responsabilidad civil","contratos","obligaciones","propiedad","derechos reales","hipotecas","servidumbres","donaciones"],
-      "Derecho Mercantil": ["genérico","M&A","financiero","inmobiliario","mercados de capital","societario","gobierno corporativo","seguros","propiedad industrial","contratos mercantiles","banca y seguros","franquicias","marcas y patentes","quiebras y reestructuración empresarial"],
-      "Derecho Administrativo": ["genérico","energía","medio ambiente","urbanismo","sectores regulados","bancario","contratación pública","contencioso-administrativo","subvenciones","expropiaciones","licencias y permisos","responsabilidad patrimonial","transparencia y buen gobierno"],
-      "Derecho Fiscal": ["genérico","tributación internacional","IVA","IS","IRNR","planificación fiscal","impuestos locales","procedimientos tributarios","impuestos indirectos","impuestos directos","fiscalidad empresarial","fiscalidad de personas físicas","precios de transferencia"],
-      "Derecho Laboral": ["genérico","contratación","despidos","negociación colectiva","reclamaciones salariales","prevención de riesgos laborales","seguridad social","expatriados","acoso laboral","movilidad geográfica","conflictos colectivos","externalización"],
-      "Derecho Procesal-Civil": ["genérico","pleitos masa (cláusulas suelo, cárteles)","impugnación acuerdos societarios","desahucio","ejecución de sentencias","medidas cautelares","responsabilidad civil","arbitraje","mediación","procesos monitorios"],
-      "Derecho Procesal-Penal": ["genérico","delitos medioambientales","delitos económicos","delitos de sangre","delitos informáticos","blanqueo de capitales","violencia de género","delitos contra la propiedad","delitos contra la seguridad vial","delitos de corrupción","delitos societarios","delitos fiscales"],
-      "Derecho Constitucional": ["genérico","derechos fundamentales","control de constitucionalidad","reparto de competencias","procedimientos constitucionales","amparo constitucional","estado de derecho","sistemas electorales","reformas constitucionales"],
-      "Derecho de la UE": ["genérico","mercado interior","competencia","protección de datos (GDPR)","ayudas de Estado","derechos fundamentales de la UE","normativa comunitaria","política agraria común","libre circulación de bienes y personas"],
-      "Derecho Internacional Privado": ["genérico","conflictos de leyes","contratos internacionales","reconocimiento de sentencias extranjeras","matrimonios internacionales","adopciones internacionales","arbitraje internacional","comercio internacional"],
-      "Derecho Internacional Público": ["genérico","tratados internacionales","derecho diplomático","derecho humanitario","organismos internacionales","derechos humanos","derecho del mar","derecho penal internacional","conflictos armados","resolución de disputas internacionales"],
-      "Derecho Penal Económico": ["genérico","fraudes","insolvencias punibles","blanqueo de capitales","delitos societarios","delitos fiscales","corrupción","cárteles"],
-      "Derecho Informático": ["genérico","protección de datos","ciberseguridad","contratos tecnológicos","blockchain y criptomonedas","propiedad intelectual digital","regulación de IA","delitos informáticos"],
-      "Derecho Ambiental": ["genérico","cambio climático","protección de la biodiversidad","gestión de residuos","energías renovables","impacto ambiental","contaminación","legislación sobre agua","legislación forestal"]
-    }
+      {
+        "Derecho Civil":["genérico","familia","sucesiones"],
+        "Derecho Administrativo":["genérico","urbanismo","contratación pública"]
+      }
     </script>
 
     <!-- Filter Section -->
     <div id="Filtrar">
+      <!-- Sector Económico multi-check -->
       <div class="filter-item">
         <div class="etiquetas-label">Sector Económico</div>
         <div class="dropdown">
           <button onclick="toggleIndustryDropdown()" class="dropbtn">
-            <span id="selectedIndustry">Cargando...</span>
+            <span id="selectedIndustry">Todas</span>
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="myDropdown" class="dropdown-content">
-            <!-- Dynamically populated by dropdown.js -->
+            <!-- We'll populate with multi-check, default: "Todos" checked, all items checked. -->
           </div>
         </div>
       </div>
 
+      <!-- Rama Jurídica multi-check + sub-ramas -->
       <div class="filter-item">
         <div class="etiquetas-label">Rama Jurídica</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -135,14 +186,14 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="ramaDropdown" class="dropdown-content">
-            <!-- Dynamically populated by dropdown.js -->
+            <!-- Multi-check with "Todos" at top, everything checked by default. -->
           </div>
         </div>
-        <div id="subRamasCheckboxContainer" style="display: none; padding: 6px; border-radius: 4px;">
-          <!-- Sub-ramas checkboxes appear here -->
-        </div>
+        <!-- sub-ramas container if a single rama is chosen -->
+        <div id="subRamasCheckboxContainer"></div>
       </div>
 
+      <!-- Boletín Oficial checkboxes -->
       <div class="filter-item">
         <div class="filter-section">
           <div class="etiquetas-label">Boletín Oficial</div>
@@ -157,6 +208,7 @@
         </div>
       </div>
 
+      <!-- Date filters -->
       <div class="filter-item">
         <div class="etiquetas-label">Fecha de publicación</div>
         <div class="date-filter">
@@ -198,19 +250,13 @@
   <script id="startDateInput" type="application/json">{{start_date}}</script>
   <script id="endDateInput" type="application/json">{{end_date}}</script>
 
-  <!-- Scripts for building dropdowns, etc. -->
-  <script src="dropdown.js"></script>
-  <script src="displayTags.js"></script>
-  <script src="collections.js"></script>
-  <script src="chart.js"></script>
-
+  <!-- Where the scripts for chart, etc., can go. We'll unify logic here. -->
   <script>
+    // ----------------------- NAV/HAMBURGER -----------------------
     function toggleMenu() {
       const menu = document.querySelector('.menu');
       menu.classList.toggle('active');
     }
-
-    // Close the menu if clicking outside
     document.addEventListener('click', function(event) {
       const menu = document.querySelector('.menu');
       const hamburger = document.querySelector('.hamburger');
@@ -218,6 +264,329 @@
         menu.classList.remove('active');
       }
     });
+
+    // ----------------------- LOADER / PAGE LOAD -----------------------
+    document.addEventListener("DOMContentLoaded", () => {
+      // Hide loader
+      const loaderOverlay = document.getElementById("pageLoaderOverlay");
+      if (loaderOverlay) loaderOverlay.style.display = "none";
+      // Fill default date from startDateInput
+      const startDateInput = JSON.parse(document.getElementById("startDateInput").textContent || '"2024-01-01T00:00:00.000Z"');
+      const formattedDate = new Date(startDateInput).toISOString().split('T')[0];
+      const startDate = document.getElementById("startDate");
+      if (formattedDate && startDate) startDate.value = formattedDate;
+    });
+
+    // ----------------------- MISC EDIT SUBSCRIPTION LINK -----------------------
+    document.getElementById('editIndustriesLink').addEventListener('click', function(e){
+      e.preventDefault();
+      window.location.href = '/suscripcion.html';
+    });
+
+    // ----------------------- BOLETIN DISABLES FOR plan1  -----------------------
+    document.addEventListener("DOMContentLoaded", () => {
+      const userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
+      const boletinCheckboxes = document.querySelectorAll('.filter-options input[type="checkbox"]');
+      let banner;
+      if (userPlan === 'plan1') {
+        boletinCheckboxes.forEach((checkbox) => {
+          if (checkbox.value !== 'BOE') {
+            checkbox.disabled = true;
+            checkbox.parentElement.style.opacity = '0.5';
+            const showBanner = () => {
+              if (!banner) {
+                banner = document.createElement("div");
+                banner.textContent = "Mejora tu suscripción para acceder a otros Boletines Oficiales";
+                banner.style.cssText = `
+                  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
+                  background: #ffc107; color: #000; padding: 10px 20px; border-radius: 5px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); z-index: 1000; text-align: center;
+                `;
+                const closeButton = document.createElement("span");
+                closeButton.textContent = " ×";
+                closeButton.style.cssText = `margin-left: 10px; cursor: pointer; font-weight: bold;`;
+                closeButton.onclick = () => {
+                  if (banner) {
+                    banner.remove();
+                    banner = null;
+                  }
+                };
+                banner.appendChild(closeButton);
+                document.body.appendChild(banner);
+                setTimeout(() => {
+                  if (banner) {
+                    banner.remove();
+                    banner = null;
+                  }
+                }, 1500);
+              }
+            };
+            checkbox.parentElement.addEventListener('mouseover', (e) => {
+              e.preventDefault();
+              showBanner();
+            });
+            checkbox.parentElement.addEventListener('click', (e) => {
+              e.preventDefault();
+              showBanner();
+            });
+          }
+        });
+      }
+    });
+
+    // ----------------------- READ user data (industries, ramas, sub-ramas) -----------------------
+    let userIndustries = [];
+    let userRamas = [];
+    let userSubRamaMap = {};
+
+    (function initUserData(){
+      const industryTagScript = document.getElementById('industryTags');
+      if (industryTagScript) {
+        userIndustries = JSON.parse(industryTagScript.textContent) || [];
+      }
+      const ramaScript = document.getElementById('ramaJuridicas');
+      if (ramaScript) {
+        userRamas = JSON.parse(ramaScript.textContent) || [];
+      }
+      const subRamaScript = document.getElementById('userSubRamaMap');
+      if (subRamaScript) {
+        userSubRamaMap = JSON.parse(subRamaScript.textContent) || {};
+      }
+    })();
+
+    // ----------------------- MULTI-CHECK for Sector Económico -----------------------
+    function toggleIndustryDropdown() {
+      const dd = document.getElementById('myDropdown');
+      dd.classList.toggle('show');
+    }
+
+    function populateIndustryDropdown() {
+      const container = document.getElementById('myDropdown');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // "Todos" label => checked by default
+      const labelTodos = document.createElement('label');
+      labelTodos.innerHTML = `
+        <input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos
+      `;
+      container.appendChild(labelTodos);
+
+      // Then each userIndustry => also checked by default
+      userIndustries.forEach(ind => {
+        const lbl = document.createElement('label');
+        lbl.innerHTML = `
+          <input type="checkbox" value="${ind}" checked> ${ind}
+        `;
+        container.appendChild(lbl);
+      });
+
+      // On load => "Todos" if user has industries or if none => 0
+      document.getElementById('selectedIndustry').textContent = 'Todas';
+    }
+
+    // Called whenever an individual industry is toggled
+    // We'll re-check if all are selected or none, etc. 
+    // But we can do that server side. Actually we do want to update the label 
+    // "n seleccionados" or "Todas" or "Ninguno." 
+    // We'll do it on "Buscar" for server filtering. 
+    // But if you want immediate label changes, see the a&o approach.
+
+    // ----------------------- MULTI-CHECK for Rama Jurídica -----------------------
+    function toggleRamaDropdown() {
+      const dd = document.getElementById('ramaDropdown');
+      dd.classList.toggle('show');
+    }
+
+    function populateRamaDropdown() {
+      const container = document.getElementById('ramaDropdown');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // "Todos" => checked by default
+      const lblTodos = document.createElement('label');
+      lblTodos.innerHTML = `
+        <input type="checkbox" id="chkAllRamas" value="Todos" checked> Todos
+      `;
+      container.appendChild(lblTodos);
+
+      // userRamas => each checked by default
+      userRamas.forEach(r => {
+        const lbl = document.createElement('label');
+        lbl.innerHTML = `
+          <input type="checkbox" value="${r}" checked> ${r}
+        `;
+        container.appendChild(lbl);
+      });
+      // Default label => "Todas"
+      document.getElementById('selectedRama').textContent = 'Todas';
+      // Sub-ramas container hidden by default
+      document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+    }
+
+    // We'll only show sub-ramas if EXACTLY one Rama is chosen and it's not "Todos."
+    // For simpler logic in "handleBuscar" we'll gather them at that time.
+
+    // ----------------------- handleBuscar => server filtering -----------------------
+    async function handleBuscar() {
+      // 1) Update the selectedCollections from Boletines
+      const checked = document.querySelectorAll('input[name="boletin"]:checked');
+      let selectedCollections = Array.from(checked).map(ch => ch.value);
+      if (selectedCollections.length === 0) selectedCollections = ['BOE'];
+
+      // 2) Gather selected Industries
+      const indCheckboxes = document.querySelectorAll('#myDropdown input[type="checkbox"]:not(#chkAllIndustry)');
+      let selectedIndustries = [];
+      let totalIndCount = indCheckboxes.length;
+      let indSelectedCount = 0;
+      indCheckboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedIndustries.push(cb.value);
+          indSelectedCount++;
+        }
+      });
+      const chkAllIndustry = document.getElementById('chkAllIndustry');
+      // If "Todos" is checked => means user wants no filter => pass industry=Todas
+      if (chkAllIndustry && chkAllIndustry.checked) {
+        // All or none
+        // Actually if "Todos" is checked but the user unchecks some items, 
+        // we can interpret "partial"? 
+        // But you said you want "Todos" if that box is checked. 
+        // We'll interpret if the "Todos" box is checked => industry=Todas
+        // ignoring partial checks. 
+        selectedIndustries = [];
+      }
+
+      // 3) Gather selected Ramas
+      const ramaCheckboxes = document.querySelectorAll('#ramaDropdown input[type="checkbox"]:not(#chkAllRamas)');
+      let selectedRamas = [];
+      let totalRamaCount = ramaCheckboxes.length;
+      let ramaSelectedCount = 0;
+      ramaCheckboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedRamas.push(cb.value);
+          ramaSelectedCount++;
+        }
+      });
+      const chkAllRamas = document.getElementById('chkAllRamas');
+      // if "Todos" is checked => no filter => rama=Todas
+      if (chkAllRamas && chkAllRamas.checked) {
+        selectedRamas = [];
+      }
+
+      // 4) Possibly sub-ramas if exactly one Rama is chosen and not "Todos."
+      let selectedSubRamas = [];
+      if (chkAllRamas && !chkAllRamas.checked && selectedRamas.length === 1) {
+        // Show sub-ramas for that single
+        const container = document.getElementById('subRamasCheckboxContainer');
+        // But we do multi-check logic. By default all are checked => subRamas array. 
+        const subBoxes = container.querySelectorAll('input[type="checkbox"]');
+        subBoxes.forEach(sb => {
+          if (sb.checked) selectedSubRamas.push(sb.value);
+        });
+      }
+      // 5) Date range
+      const desde = document.getElementById('startDate').value;
+      const hasta = document.getElementById('endDate').value;
+
+      // 6) Build query for /data
+      let parts = [];
+      selectedCollections.forEach(c => parts.push(`collections[]=${encodeURIComponent(c)}`));
+
+      // industry => "Todas" if (chkAllIndustry.checked), else pass them as multiple
+      if (chkAllIndustry && chkAllIndustry.checked) {
+        parts.push(`industry=${encodeURIComponent('Todas')}`);
+      } else if (selectedIndustries.length === 0) {
+        // If user unchecks everything => no docs
+        // You might pass "industry=__none" or something special
+        // Or let the server handle it. 
+        parts.push(`industry=__none`);
+      } else {
+        // If partial 
+        // We'll pass them as a CSV => industry=val1,val2
+        // Or you can pass multiple times. We'll do single param:
+        parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
+      }
+
+      // rama => "Todas" if (chkAllRamas.checked)
+      if (chkAllRamas && chkAllRamas.checked) {
+        parts.push(`rama=${encodeURIComponent('Todas')}`);
+      } else if (selectedRamas.length === 0) {
+        // no rama => none
+        parts.push(`rama=__none`);
+      } else {
+        parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
+      }
+
+      // subRamas => if single, else ignore
+      if (selectedSubRamas.length > 0) {
+        parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
+      }
+
+      if (desde) parts.push(`desde=${encodeURIComponent(desde)}`);
+      if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
+
+      const finalQuery = parts.join('&');
+      const url = `/data?${finalQuery}`;
+
+      // Show the loading icons
+      document.getElementById('chartContainer').style.display = 'none';
+      document.getElementById('loading-icon-chart').style.display = 'block';
+      document.getElementById('loading-icon').style.display = 'block';
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Network error fetching data');
+        const data = await resp.json();
+        // Insert the HTML
+        document.querySelector('.collectionDocs').innerHTML = data.documentsHtml || '';
+        // Update chart
+        if (data.months && data.counts) {
+          loadChart(data.months, data.counts);
+        }
+      } catch(err) {
+        console.error('Error searching data:', err);
+      } finally {
+        document.getElementById('loading-icon').style.display = 'none';
+        document.getElementById('loading-icon-chart').style.display = 'none';
+        document.getElementById('chartContainer').style.display = 'block';
+      }
+    }
+
+    // ----------------------- CHART: loadChart function if you have it -----------
+    function loadChart(months, counts) {
+      const ctx = document.getElementById('documentsChart').getContext('2d');
+      if (window.myChart) {
+        window.myChart.destroy();
+      }
+      window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [
+            {
+              label: 'Documentos',
+              data: counts,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    // ----------------------- ON PAGE LOAD: populate the multi-check dropdowns -----------
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1) Populate Sector Económico
+      populateIndustryDropdown();
+      // 2) Populate Rama Jurídica
+      populateRamaDropdown();
+    });
+
   </script>
 </body>
 </html>
