@@ -21,7 +21,7 @@
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
 
   <style>
-    /* Loader overlay styling (optional) */
+    /* Loader overlay styling */
     #pageLoaderOverlay {
       position: fixed;
       top: 0; left: 0;
@@ -41,7 +41,7 @@
     }
     @keyframes spin { 100% { transform: rotate(360deg); } }
 
-    /* Dropdowns (Sector Económico, Rama Jurídica) => multi-check style */
+    /* Dropdown styling for multi-check logic */
     #myDropdown,
     #ramaDropdown {
       max-height: 200px;
@@ -51,8 +51,13 @@
       background: #fff;
       border: 1px solid #ccc;
       padding: 5px;
+      display: none; /* hidden by default */
     }
-    /* The "Todos" + item checkboxes with smaller font, green accent, etc. */
+    #myDropdown.show,
+    #ramaDropdown.show {
+      display: block;
+    }
+    /* Items inside the dropdown */
     #myDropdown label,
     #ramaDropdown label {
       display: block;
@@ -71,17 +76,17 @@
       width: 16px;
       height: 16px;
       transform: scale(0.9);
-      accent-color: #83a300; /* green accent color */
+      accent-color: #83a300;
       margin-right: 6px;
     }
 
-    /* Possibly for sub-ramas checkboxes container */
+    /* Sub-ramas container */
     #subRamasCheckboxContainer {
       margin: 10px 0;
       background: #f9f9f9;
       border: 1px solid #ccc;
       padding: 6px;
-      display: none; /* hidden until user picks a single Rama */
+      display: none; 
       max-height: 200px;
       overflow-y: auto;
     }
@@ -99,18 +104,16 @@
       margin-right: 6px;
     }
 
-    .dropdown-content.show {
-      display: block;
-    }
-
-    /* Tools for the rest of the page layout */
+    /* Basic layout styling */
     .analytics-label { margin-top: 20px; font-weight: bold; }
     .detalle-cuenta { display: flex; gap: 50px; margin-bottom: 20px; }
     .etiquetas-label { font-weight: bold; }
     .filter-item { margin-bottom: 10px; }
     .filter-section { margin-bottom: 10px; }
+    .collectionDocs { margin-top: 10px; }
+    .menu.active { display: block; }
 
-    /* The rest is from your old code or personal styling preferences */
+    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -136,15 +139,17 @@
   </nav>
 
   <h1>Hola {{name}}</h1>
+
   <div id="data-container">
+    <!-- 1) Show user-subscribed Industries / Ramas in etiquetass-values -->
     <div class="detalle-cuenta">
       <div>
         <div class="etiquetas-label">Sectores Económicos Suscritos</div>
-        <div class="etiquetas-values" id="etiquetasContainer"></div>
+        <div class="etiquetas-values" id="etiquetasContainer"></div> <!-- Populated below -->
       </div>
       <div>
         <div class="etiquetas-label">Ramas Jurídicas Suscritas</div>
-        <div class="etiquetas-values" id="ramasContainer"></div>
+        <div class="etiquetas-values" id="ramasContainer"></div> <!-- Populated below -->
       </div>
     </div>
 
@@ -172,7 +177,7 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="myDropdown" class="dropdown-content">
-            <!-- We'll populate with multi-check, default: "Todos" checked, all items checked. -->
+            <!-- Populated by populateIndustryDropdown(), default: all checked -->
           </div>
         </div>
       </div>
@@ -186,7 +191,7 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="ramaDropdown" class="dropdown-content">
-            <!-- Multi-check with "Todos" at top, everything checked by default. -->
+            <!-- Populated by populateRamaDropdown(), default: all checked -->
           </div>
         </div>
         <!-- sub-ramas container if a single rama is chosen -->
@@ -250,7 +255,6 @@
   <script id="startDateInput" type="application/json">{{start_date}}</script>
   <script id="endDateInput" type="application/json">{{end_date}}</script>
 
-  <!-- Where the scripts for chart, etc., can go. We'll unify logic here. -->
   <script>
     // ----------------------- NAV/HAMBURGER -----------------------
     function toggleMenu() {
@@ -265,25 +269,35 @@
       }
     });
 
-    // ----------------------- LOADER / PAGE LOAD -----------------------
+    // ----------------------- GLOBAL LOADER / PAGE LOAD -----------------------
     document.addEventListener("DOMContentLoaded", () => {
-      // Hide loader
+      // Hide initial loader
       const loaderOverlay = document.getElementById("pageLoaderOverlay");
       if (loaderOverlay) loaderOverlay.style.display = "none";
-      // Fill default date from startDateInput
+
+      // Fill default date from server
       const startDateInput = JSON.parse(document.getElementById("startDateInput").textContent || '"2024-01-01T00:00:00.000Z"');
       const formattedDate = new Date(startDateInput).toISOString().split('T')[0];
       const startDate = document.getElementById("startDate");
-      if (formattedDate && startDate) startDate.value = formattedDate;
+      if (formattedDate && startDate) {
+        startDate.value = formattedDate;
+      }
+
+      // If we have months / counts => load chart on first page load
+      const monthsData = JSON.parse(document.getElementById('monthsData').textContent || '[]');
+      const countsData = JSON.parse(document.getElementById('countsData').textContent || '[]');
+      if (monthsData.length && countsData.length) {
+        loadChart(monthsData, countsData);
+      }
     });
 
-    // ----------------------- MISC EDIT SUBSCRIPTION LINK -----------------------
+    // Edit subscription link
     document.getElementById('editIndustriesLink').addEventListener('click', function(e){
       e.preventDefault();
       window.location.href = '/suscripcion.html';
     });
 
-    // ----------------------- BOLETIN DISABLES FOR plan1  -----------------------
+    // Plan1 logic => disable boe
     document.addEventListener("DOMContentLoaded", () => {
       const userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
       const boletinCheckboxes = document.querySelectorAll('.filter-options input[type="checkbox"]');
@@ -334,191 +348,304 @@
       }
     });
 
-    // ----------------------- READ user data (industries, ramas, sub-ramas) -----------------------
+    // ----------------------- FILL user data in #etiquetasContainer / #ramasContainer -----------------------
     let userIndustries = [];
     let userRamas = [];
     let userSubRamaMap = {};
 
     (function initUserData(){
+      // parse user industries
       const industryTagScript = document.getElementById('industryTags');
       if (industryTagScript) {
         userIndustries = JSON.parse(industryTagScript.textContent) || [];
       }
+      // parse user Ramas
       const ramaScript = document.getElementById('ramaJuridicas');
       if (ramaScript) {
         userRamas = JSON.parse(ramaScript.textContent) || [];
       }
+      // parse userSubRamaMap
       const subRamaScript = document.getElementById('userSubRamaMap');
       if (subRamaScript) {
         userSubRamaMap = JSON.parse(subRamaScript.textContent) || {};
       }
+
+      // 1) Show them in #etiquetasContainer
+      const etcContainer = document.getElementById('etiquetasContainer');
+      if (etcContainer) {
+        if (userIndustries.length > 0) {
+          etcContainer.innerHTML = userIndustries.map(i => `<span>${i}</span>`).join('');
+        } else {
+          etcContainer.innerHTML = `<span>No hay sectores suscritos</span>`;
+        }
+      }
+      // 2) Show them in #ramasContainer
+      const ramaContainer = document.getElementById('ramasContainer');
+      if (ramaContainer) {
+        if (userRamas.length > 0) {
+          ramaContainer.innerHTML = userRamas.map(r => `<span>${r}</span>`).join('');
+        } else {
+          ramaContainer.innerHTML = `<span>No hay ramas suscritas</span>`;
+        }
+      }
     })();
 
-    // ----------------------- MULTI-CHECK for Sector Económico -----------------------
+    // ----------------------- MULTI-CHECK logic for "Sector Económico" -----------------------
     function toggleIndustryDropdown() {
       const dd = document.getElementById('myDropdown');
       dd.classList.toggle('show');
     }
-
     function populateIndustryDropdown() {
       const container = document.getElementById('myDropdown');
       if (!container) return;
       container.innerHTML = '';
 
-      // "Todos" label => checked by default
+      // "Todos" => checked
       const labelTodos = document.createElement('label');
       labelTodos.innerHTML = `
         <input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos
       `;
       container.appendChild(labelTodos);
 
-      // Then each userIndustry => also checked by default
+      // userIndustries => each checked
       userIndustries.forEach(ind => {
         const lbl = document.createElement('label');
-        lbl.innerHTML = `
-          <input type="checkbox" value="${ind}" checked> ${ind}
-        `;
+        lbl.innerHTML = `<input type="checkbox" value="${ind}" checked> ${ind}`;
         container.appendChild(lbl);
       });
 
-      // On load => "Todos" if user has industries or if none => 0
+      // event listeners to handle toggles
+      // 1) if #chkAllIndustry changed => toggle all
+      const chkAllIndustry = labelTodos.querySelector('#chkAllIndustry');
+      chkAllIndustry.addEventListener('change', () => {
+        const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+        if (chkAllIndustry.checked) {
+          others.forEach(o => o.checked = true);
+        } else {
+          others.forEach(o => o.checked = false);
+        }
+        updateIndustryLabel();
+      });
+      // 2) if user toggles any item => check if all or none
+      const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+      otherBoxes.forEach(box => {
+        box.addEventListener('change', () => {
+          const allChecked = [...otherBoxes].every(b => b.checked);
+          chkAllIndustry.checked = allChecked;
+          updateIndustryLabel();
+        });
+      });
+
+      // set the label => "Todas"
       document.getElementById('selectedIndustry').textContent = 'Todas';
     }
+    function updateIndustryLabel() {
+      const container = document.getElementById('myDropdown');
+      const chkAllIndustry = container.querySelector('#chkAllIndustry');
+      const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+      const labelSpan = document.getElementById('selectedIndustry');
 
-    // Called whenever an individual industry is toggled
-    // We'll re-check if all are selected or none, etc. 
-    // But we can do that server side. Actually we do want to update the label 
-    // "n seleccionados" or "Todas" or "Ninguno." 
-    // We'll do it on "Buscar" for server filtering. 
-    // But if you want immediate label changes, see the a&o approach.
+      if (chkAllIndustry.checked) {
+        labelSpan.textContent = 'Todas';
+        return;
+      }
+      // count how many are checked
+      let checkedCount = 0;
+      let singleValue = '';
+      otherBoxes.forEach(b => {
+        if (b.checked) {
+          checkedCount++;
+          singleValue = b.value;
+        }
+      });
+      if (checkedCount === 0) {
+        labelSpan.textContent = 'Ninguno';
+      } else if (checkedCount === 1) {
+        labelSpan.textContent = singleValue;
+      } else if (checkedCount === otherBoxes.length) {
+        labelSpan.textContent = 'Todas';
+        chkAllIndustry.checked = true;
+      } else {
+        labelSpan.textContent = checkedCount + ' seleccionados';
+      }
+    }
 
-    // ----------------------- MULTI-CHECK for Rama Jurídica -----------------------
+    // ----------------------- MULTI-CHECK logic for "Rama Jurídica" -----------------------
     function toggleRamaDropdown() {
       const dd = document.getElementById('ramaDropdown');
       dd.classList.toggle('show');
     }
-
     function populateRamaDropdown() {
       const container = document.getElementById('ramaDropdown');
       if (!container) return;
       container.innerHTML = '';
 
-      // "Todos" => checked by default
+      // "Todos" => checked
       const lblTodos = document.createElement('label');
       lblTodos.innerHTML = `
         <input type="checkbox" id="chkAllRamas" value="Todos" checked> Todos
       `;
       container.appendChild(lblTodos);
 
-      // userRamas => each checked by default
+      // userRamas => each checked
       userRamas.forEach(r => {
         const lbl = document.createElement('label');
-        lbl.innerHTML = `
-          <input type="checkbox" value="${r}" checked> ${r}
-        `;
+        lbl.innerHTML = `<input type="checkbox" value="${r}" checked> ${r}`;
         container.appendChild(lbl);
       });
-      // Default label => "Todas"
+
+      // event listeners
+      const chkAllRamas = lblTodos.querySelector('#chkAllRamas');
+      chkAllRamas.addEventListener('change', () => {
+        const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
+        if (chkAllRamas.checked) {
+          others.forEach(o => o.checked = true);
+        } else {
+          others.forEach(o => o.checked = false);
+        }
+        updateRamaLabel();
+      });
+
+      const otherRamas = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
+      otherRamas.forEach(box => {
+        box.addEventListener('change', () => {
+          const allChecked = [...otherRamas].every(b => b.checked);
+          chkAllRamas.checked = allChecked;
+          updateRamaLabel();
+        });
+      });
+
       document.getElementById('selectedRama').textContent = 'Todas';
-      // Sub-ramas container hidden by default
       document.getElementById('subRamasCheckboxContainer').style.display = 'none';
     }
+    function updateRamaLabel() {
+      const container = document.getElementById('ramaDropdown');
+      const chkAllRamas = container.querySelector('#chkAllRamas');
+      const otherRamas = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
+      const labelSpan = document.getElementById('selectedRama');
 
-    // We'll only show sub-ramas if EXACTLY one Rama is chosen and it's not "Todos."
-    // For simpler logic in "handleBuscar" we'll gather them at that time.
+      if (chkAllRamas.checked) {
+        labelSpan.textContent = 'Todas';
+        document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+        return;
+      }
+      let checkedCount = 0;
+      let singleValue = '';
+      otherRamas.forEach(b => {
+        if (b.checked) {
+          checkedCount++;
+          singleValue = b.value;
+        }
+      });
+      if (checkedCount === 0) {
+        labelSpan.textContent = 'Ninguno';
+        document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+      } else if (checkedCount === 1) {
+        labelSpan.textContent = singleValue;
+        // Potentially show sub-ramas for that one
+        fillSubRamas(singleValue);
+      } else if (checkedCount === otherRamas.length) {
+        labelSpan.textContent = 'Todas';
+        chkAllRamas.checked = true;
+        document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+      } else {
+        labelSpan.textContent = checkedCount + ' seleccionados';
+        document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+      }
+    }
+    function fillSubRamas(ramaName) {
+      const container = document.getElementById('subRamasCheckboxContainer');
+      container.innerHTML = '';
+      if (!userSubRamaMap[ramaName] || userSubRamaMap[ramaName].length === 0) {
+        container.style.display = 'none';
+        return;
+      }
+      container.style.display = 'block';
+      userSubRamaMap[ramaName].forEach(sub => {
+        const lbl = document.createElement('label');
+        lbl.innerHTML = `<input type="checkbox" value="${sub}" checked> ${sub}`;
+        container.appendChild(lbl);
+      });
+    }
 
-    // ----------------------- handleBuscar => server filtering -----------------------
+    // If user clicks outside the dropdown => hide
+    document.addEventListener('click', function(e) {
+      const isIndustryDrop = e.target.closest('#myDropdown') || e.target.closest('#selectedIndustry');
+      if (!isIndustryDrop) {
+        document.getElementById('myDropdown').classList.remove('show');
+      }
+      const isRamaDrop = e.target.closest('#ramaDropdown') || e.target.closest('#selectedRama');
+      if (!isRamaDrop) {
+        document.getElementById('ramaDropdown').classList.remove('show');
+      }
+    });
+
+    // ----------------------- SERVER FETCH ON handleBuscar() -----------------------
     async function handleBuscar() {
-      // 1) Update the selectedCollections from Boletines
+      // 1) Boletines
       const checked = document.querySelectorAll('input[name="boletin"]:checked');
       let selectedCollections = Array.from(checked).map(ch => ch.value);
       if (selectedCollections.length === 0) selectedCollections = ['BOE'];
 
-      // 2) Gather selected Industries
-      const indCheckboxes = document.querySelectorAll('#myDropdown input[type="checkbox"]:not(#chkAllIndustry)');
+      // 2) Industry
+      const containerInd = document.getElementById('myDropdown');
+      const chkAllIndustry = containerInd.querySelector('#chkAllIndustry');
+      const otherInds = containerInd.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
       let selectedIndustries = [];
-      let totalIndCount = indCheckboxes.length;
-      let indSelectedCount = 0;
-      indCheckboxes.forEach(cb => {
-        if (cb.checked) {
-          selectedIndustries.push(cb.value);
-          indSelectedCount++;
-        }
-      });
-      const chkAllIndustry = document.getElementById('chkAllIndustry');
-      // If "Todos" is checked => means user wants no filter => pass industry=Todas
-      if (chkAllIndustry && chkAllIndustry.checked) {
-        // All or none
-        // Actually if "Todos" is checked but the user unchecks some items, 
-        // we can interpret "partial"? 
-        // But you said you want "Todos" if that box is checked. 
-        // We'll interpret if the "Todos" box is checked => industry=Todas
-        // ignoring partial checks. 
-        selectedIndustries = [];
+      if (chkAllIndustry.checked) {
+        // user wants "Todas"
+      } else {
+        otherInds.forEach(cb => {
+          if (cb.checked) selectedIndustries.push(cb.value);
+        });
       }
 
-      // 3) Gather selected Ramas
-      const ramaCheckboxes = document.querySelectorAll('#ramaDropdown input[type="checkbox"]:not(#chkAllRamas)');
+      // 3) Rama
+      const containerRama = document.getElementById('ramaDropdown');
+      const chkAllRamas = containerRama.querySelector('#chkAllRamas');
+      const otherRamas = containerRama.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
       let selectedRamas = [];
-      let totalRamaCount = ramaCheckboxes.length;
-      let ramaSelectedCount = 0;
-      ramaCheckboxes.forEach(cb => {
-        if (cb.checked) {
-          selectedRamas.push(cb.value);
-          ramaSelectedCount++;
-        }
-      });
-      const chkAllRamas = document.getElementById('chkAllRamas');
-      // if "Todos" is checked => no filter => rama=Todas
-      if (chkAllRamas && chkAllRamas.checked) {
-        selectedRamas = [];
+      if (chkAllRamas.checked) {
+        // "Todas"
+      } else {
+        otherRamas.forEach(cb => {
+          if (cb.checked) selectedRamas.push(cb.value);
+        });
       }
 
-      // 4) Possibly sub-ramas if exactly one Rama is chosen and not "Todos."
+      // subRamas if exactly one
       let selectedSubRamas = [];
-      if (chkAllRamas && !chkAllRamas.checked && selectedRamas.length === 1) {
-        // Show sub-ramas for that single
-        const container = document.getElementById('subRamasCheckboxContainer');
-        // But we do multi-check logic. By default all are checked => subRamas array. 
-        const subBoxes = container.querySelectorAll('input[type="checkbox"]');
+      if (!chkAllRamas.checked && selectedRamas.length === 1) {
+        const subBoxes = document.querySelectorAll('#subRamasCheckboxContainer input[type="checkbox"]');
         subBoxes.forEach(sb => {
           if (sb.checked) selectedSubRamas.push(sb.value);
         });
       }
-      // 5) Date range
+
+      // 4) date range
       const desde = document.getElementById('startDate').value;
       const hasta = document.getElementById('endDate').value;
 
-      // 6) Build query for /data
+      // 5) Build query
       let parts = [];
       selectedCollections.forEach(c => parts.push(`collections[]=${encodeURIComponent(c)}`));
 
-      // industry => "Todas" if (chkAllIndustry.checked), else pass them as multiple
-      if (chkAllIndustry && chkAllIndustry.checked) {
-        parts.push(`industry=${encodeURIComponent('Todas')}`);
+      if (chkAllIndustry.checked) {
+        parts.push(`industry=Todas`);
       } else if (selectedIndustries.length === 0) {
-        // If user unchecks everything => no docs
-        // You might pass "industry=__none" or something special
-        // Or let the server handle it. 
         parts.push(`industry=__none`);
       } else {
-        // If partial 
-        // We'll pass them as a CSV => industry=val1,val2
-        // Or you can pass multiple times. We'll do single param:
         parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
       }
 
-      // rama => "Todas" if (chkAllRamas.checked)
-      if (chkAllRamas && chkAllRamas.checked) {
-        parts.push(`rama=${encodeURIComponent('Todas')}`);
+      if (chkAllRamas.checked) {
+        parts.push(`rama=Todas`);
       } else if (selectedRamas.length === 0) {
-        // no rama => none
         parts.push(`rama=__none`);
       } else {
         parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
       }
 
-      // subRamas => if single, else ignore
       if (selectedSubRamas.length > 0) {
         parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
       }
@@ -529,7 +656,7 @@
       const finalQuery = parts.join('&');
       const url = `/data?${finalQuery}`;
 
-      // Show the loading icons
+      // Show loaders
       document.getElementById('chartContainer').style.display = 'none';
       document.getElementById('loading-icon-chart').style.display = 'block';
       document.getElementById('loading-icon').style.display = 'block';
@@ -538,9 +665,7 @@
         const resp = await fetch(url);
         if (!resp.ok) throw new Error('Network error fetching data');
         const data = await resp.json();
-        // Insert the HTML
         document.querySelector('.collectionDocs').innerHTML = data.documentsHtml || '';
-        // Update chart
         if (data.months && data.counts) {
           loadChart(data.months, data.counts);
         }
@@ -553,22 +678,21 @@
       }
     }
 
-    // ----------------------- CHART: loadChart function if you have it -----------
+    // ----------------------- CHART LOAD -----------------------
+    let myChart;
     function loadChart(months, counts) {
       const ctx = document.getElementById('documentsChart').getContext('2d');
-      if (window.myChart) {
-        window.myChart.destroy();
+      if (myChart) {
+        myChart.destroy();
       }
-      window.myChart = new Chart(ctx, {
+      myChart = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: months,
-          datasets: [
-            {
-              label: 'Documentos',
-              data: counts,
-            }
-          ]
+          datasets: [{
+            label: 'Documentos',
+            data: counts,
+          }]
         },
         options: {
           responsive: true,
@@ -579,14 +703,13 @@
       });
     }
 
-    // ----------------------- ON PAGE LOAD: populate the multi-check dropdowns -----------
+    // ----------------------- ON PAGE LOAD: populate dropdowns & sub data -----------
     document.addEventListener('DOMContentLoaded', () => {
-      // 1) Populate Sector Económico
       populateIndustryDropdown();
-      // 2) Populate Rama Jurídica
       populateRamaDropdown();
-    });
 
+      // If userRamas or userIndustries => fill them in the container. (Done above in initUserData)
+    });
   </script>
 </body>
 </html>
