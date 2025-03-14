@@ -191,7 +191,8 @@
       <div class="filter-item">
         <div class="etiquetas-label">Sector Económico</div>
         <div class="dropdown">
-          <button class="dropbtn" id="btnSectorEconomico">
+          <!-- Clicking anywhere on this button toggles the dropdown -->
+          <button class="dropbtn" id="btnSectorEconomico" onclick="toggleIndustryDropdown()">
             <span id="selectedIndustry">Todas</span>
             <i class="fa fa-caret-down"></i>
           </button>
@@ -205,7 +206,7 @@
       <div class="filter-item">
         <div class="etiquetas-label">Rama Jurídica</div>
         <div class="dropdown" style="margin-bottom: 10px;">
-          <button class="dropbtn" id="btnRamaJuridica">
+          <button class="dropbtn" id="btnRamaJuridica" onclick="toggleRamaDropdown()">
             <span id="selectedRama">Todas</span>
             <i class="fa fa-caret-down"></i>
           </button>
@@ -471,7 +472,7 @@
         }
       });
       if (checkedCount === 0) {
-        // NEW => show "-"
+        // show "-"
         labelSpan.textContent = '-';
       } else if (checkedCount === 1) {
         labelSpan.textContent = singleValue;
@@ -546,8 +547,7 @@
         }
       });
       if (checkedCount === 0) {
-        // NEW => labelSpan => "-"
-        labelSpan.textContent = '-';
+        labelSpan.textContent = '-'; // no items => no filter param
         subRamasContainer.style.display = 'none';
       } else if (checkedCount === 1) {
         labelSpan.textContent = singleValue;
@@ -603,11 +603,8 @@
       const chkAllIndustry = containerInd.querySelector('#chkAllIndustry');
       const otherInds = containerInd.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
       let selectedIndustries = [];
-      // If "Todos" is checked, user wants no filter => we skip it
-      // If 0 are checked => also skip => no filter
-      // Otherwise pass them
+      // If "Todos" is checked or 0 items => skip => no filter param
       if (!chkAllIndustry.checked) {
-        // gather the ones that are checked
         const checkedInds = [];
         otherInds.forEach(cb => {
           if (cb.checked) checkedInds.push(cb.value);
@@ -649,21 +646,15 @@
       let parts = [];
       selectedCollections.forEach(c => parts.push(`collections[]=${encodeURIComponent(c)}`));
 
-      // If selectedIndustries is empty => no param => means "no filter"
-      // If partial => pass them
       if (selectedIndustries.length > 0) {
         parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
       }
-
-      // If selectedRamas is empty => no param => means "no filter"
       if (selectedRamas.length > 0) {
         parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
       }
-
       if (selectedSubRamas.length > 0) {
         parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
       }
-
       if (desde) parts.push(`desde=${encodeURIComponent(desde)}`);
       if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
 
