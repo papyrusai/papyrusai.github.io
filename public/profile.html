@@ -51,8 +51,10 @@
       padding: 8px 12px;
       display: inline-flex;
       align-items: center;
-      background-color: #83a300;
+      background-color: #83a300;  /* background color for consistency */
       border-radius: 4px;
+      color: #fff;
+      border: none; /* remove default border */
     }
     .dropbtn i {
       margin-left: 6px;
@@ -60,7 +62,8 @@
 
     /* The actual dropdown menus */
     #myDropdown,
-    #ramaDropdown {
+    #ramaDropdown,
+    #boletinDropdown {
       max-height: 200px;
       overflow-y: auto;
       position: absolute;
@@ -71,13 +74,15 @@
       display: none; /* hidden by default */
     }
     #myDropdown.show,
-    #ramaDropdown.show {
+    #ramaDropdown.show,
+    #boletinDropdown.show {
       display: block;
     }
 
     /* Items inside the dropdown */
     #myDropdown label,
-    #ramaDropdown label {
+    #ramaDropdown label,
+    #boletinDropdown label {
       display: block;
       padding: 4px 2px;
       margin: 0;
@@ -86,11 +91,13 @@
       border-bottom: 1px solid #ddd;
     }
     #myDropdown label:last-child,
-    #ramaDropdown label:last-child {
+    #ramaDropdown label:last-child,
+    #boletinDropdown label:last-child {
       border-bottom: none;
     }
     #myDropdown input[type="checkbox"],
-    #ramaDropdown input[type="checkbox"] {
+    #ramaDropdown input[type="checkbox"],
+    #boletinDropdown input[type="checkbox"] {
       width: 16px;
       height: 16px;
       transform: scale(0.9);
@@ -130,8 +137,6 @@
     .filter-section { margin-bottom: 10px; }
     .collectionDocs { margin-top: 10px; }
     .menu.active { display: block; }
-
-    @keyframes spin { 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -179,8 +184,8 @@
     <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
     <script id="userSubRamaMap" type="application/json">
       {
-        "Derecho Civil":["genérico","familia","sucesiones"],
-        "Derecho Administrativo":["genérico","urbanismo","contratación pública"]
+        "Derecho Civil": ["genérico","familia","sucesiones"],
+        "Derecho Administrativo": ["genérico","urbanismo","contratación pública"]
       }
     </script>
 
@@ -190,7 +195,6 @@
       <div class="filter-item">
         <div class="etiquetas-label">Sector Económico</div>
         <div class="dropdown">
-          <!-- Clicking anywhere on this button toggles the dropdown -->
           <button class="dropbtn" id="btnSectorEconomico" onclick="toggleIndustryDropdown()">
             <span id="selectedIndustry">Todas</span>
             <i class="fa fa-caret-down"></i>
@@ -217,17 +221,16 @@
         <div id="subRamasCheckboxContainer"></div>
       </div>
 
-      <!-- Boletín Oficial checkboxes -->
+      <!-- Boletín Oficial multi-check, same style as above -->
       <div class="filter-item">
-        <div class="filter-section">
-          <div class="etiquetas-label">Boletín Oficial</div>
-          <div class="filter-options">
-            <label class="filter-option"><input type="checkbox" name="boletin" value="BOE" checked> BOE</label>
-            <label class="filter-option"><input type="checkbox" name="boletin" value="BOCM"> BOCM</label>
-            <label class="filter-option"><input type="checkbox" name="boletin" value="BOA"> BOA</label>
-            <label class="filter-option"><input type="checkbox" name="boletin" value="BOJA"> BOJA</label>
-            <label class="filter-option"><input type="checkbox" name="boletin" value="BOPV"> BOPV</label>
-            <label class="filter-option"><input type="checkbox" name="boletin" value="DOUE"> DOUE</label>
+        <div class="etiquetas-label">Boletín Oficial</div>
+        <div class="dropdown">
+          <button class="dropbtn" id="btnBoletin" onclick="toggleBoletinDropdown()">
+            <span id="selectedBoletines">Todas</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="boletinDropdown" class="dropdown-content">
+            <!-- We'll populate this with "Todos" + the bulletins, all checked by default. -->
           </div>
         </div>
       </div>
@@ -317,60 +320,16 @@
     });
 
     // -------------- BOLETIN DISABLE FOR plan1 --------------
+    let userPlan;
     document.addEventListener("DOMContentLoaded", () => {
-      const userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
-      const boletinCheckboxes = document.querySelectorAll('.filter-options input[type="checkbox"]');
-      let banner;
-      if (userPlan === 'plan1') {
-        boletinCheckboxes.forEach((checkbox) => {
-          if (checkbox.value !== 'BOE') {
-            checkbox.disabled = true;
-            checkbox.parentElement.style.opacity = '0.5';
-            const showBanner = () => {
-              if (!banner) {
-                banner = document.createElement("div");
-                banner.textContent = "Mejora tu suscripción para acceder a otros Boletines Oficiales";
-                banner.style.cssText = `
-                  position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%);
-                  background: #ffc107; color: #000; padding: 10px 20px; border-radius: 5px;
-                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); z-index: 1000; text-align: center;
-                `;
-                const closeButton = document.createElement("span");
-                closeButton.textContent = " ×";
-                closeButton.style.cssText = `margin-left: 10px; cursor: pointer; font-weight: bold;`;
-                closeButton.onclick = () => {
-                  if (banner) {
-                    banner.remove();
-                    banner = null;
-                  }
-                };
-                banner.appendChild(closeButton);
-                document.body.appendChild(banner);
-                setTimeout(() => {
-                  if (banner) {
-                    banner.remove();
-                    banner = null;
-                  }
-                }, 1500);
-              }
-            };
-            checkbox.parentElement.addEventListener('mouseover', (e) => {
-              e.preventDefault();
-              showBanner();
-            });
-            checkbox.parentElement.addEventListener('click', (e) => {
-              e.preventDefault();
-              showBanner();
-            });
-          }
-        });
-      }
+      userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
     });
 
     // -------------- SHOW SUBSCRIBED USER VALUES --------------
     let userIndustries = [];
     let userRamas = [];
     let userSubRamaMap = {};
+    const allBulletins = ["BOE","BOCM","BOA","BOJA","BOPV","DOUE"]; // We'll handle these the same way.
 
     (function initUserData(){
       // parse user industries
@@ -426,7 +385,6 @@
         container.appendChild(lbl);
       });
 
-      // event listeners
       const chkAllIndustry = labelTodos.querySelector('#chkAllIndustry');
       chkAllIndustry.addEventListener('change', () => {
         const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
@@ -446,7 +404,6 @@
         });
       });
 
-      // default label => "Todas"
       document.getElementById('selectedIndustry').textContent = 'Todas';
     }
     function toggleIndustryDropdown() {
@@ -471,7 +428,6 @@
         }
       });
       if (checkedCount === 0) {
-        // show "-"
         labelSpan.textContent = '-';
       } else if (checkedCount === 1) {
         labelSpan.textContent = singleValue;
@@ -546,7 +502,7 @@
         }
       });
       if (checkedCount === 0) {
-        labelSpan.textContent = '-'; // no items => no filter param
+        labelSpan.textContent = '-';
         subRamasContainer.style.display = 'none';
       } else if (checkedCount === 1) {
         labelSpan.textContent = singleValue;
@@ -575,34 +531,147 @@
       });
     }
 
+    // -------------- BOLETINES => new multi-check dropdown --------------
+    function populateBoletinDropdown() {
+      const container = document.getElementById('boletinDropdown');
+      if (!container) return;
+      container.innerHTML = '';
+
+      // "Todos" => checked
+      const lblTodos = document.createElement('label');
+      lblTodos.innerHTML = `<input type="checkbox" id="chkAllBoletines" value="Todos" checked> Todos`;
+      container.appendChild(lblTodos);
+
+      allBulletins.forEach(bol => {
+        const lbl = document.createElement('label');
+        lbl.innerHTML = `<input type="checkbox" value="${bol}" checked> ${bol}`;
+        container.appendChild(lbl);
+      });
+
+      // plan1 => disable everything except BOE
+      if (userPlan === 'plan1') {
+        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+          if (cb.value !== 'Todos' && cb.value !== 'BOE') {
+            cb.disabled = true;
+            cb.parentElement.style.opacity = '0.5';
+          }
+        });
+      }
+
+      // event listeners
+      const chkAllBol = lblTodos.querySelector('#chkAllBoletines');
+      chkAllBol.addEventListener('change', () => {
+        const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+        if (chkAllBol.checked) {
+          others.forEach(o => { 
+            if (!o.disabled) o.checked = true; 
+          });
+        } else {
+          others.forEach(o => { 
+            if (!o.disabled) o.checked = false; 
+          });
+        }
+        updateBoletinLabel();
+      });
+      const otherBol = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+      otherBol.forEach(box => {
+        box.addEventListener('change', () => {
+          const allChecked = [...otherBol].filter(x=>!x.disabled).every(b => b.checked);
+          chkAllBol.checked = allChecked;
+          updateBoletinLabel();
+        });
+      });
+
+      document.getElementById('selectedBoletines').textContent = 'Todas';
+    }
+    function toggleBoletinDropdown() {
+      document.getElementById('boletinDropdown').classList.toggle('show');
+    }
+    function updateBoletinLabel() {
+      const container = document.getElementById('boletinDropdown');
+      const chkAll = container.querySelector('#chkAllBoletines');
+      const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+      const labelSpan = document.getElementById('selectedBoletines');
+
+      if (chkAll.checked) {
+        labelSpan.textContent = 'Todas';
+        return;
+      }
+      let checkedCount = 0;
+      let singleValue = '';
+      others.forEach(b => {
+        if (b.checked && !b.disabled) {
+          checkedCount++;
+          singleValue = b.value;
+        }
+      });
+      if (checkedCount === 0) {
+        labelSpan.textContent = '-';
+      } else if (checkedCount === 1) {
+        labelSpan.textContent = singleValue;
+      } else if (checkedCount + container.querySelectorAll('input[disabled]').length === allBulletins.length) {
+        // means all non-disabled are checked => "Todas"
+        labelSpan.textContent = 'Todas';
+        chkAll.checked = true;
+      } else {
+        labelSpan.textContent = checkedCount + ' seleccionados';
+      }
+    }
+
     // -------------- CLICK OUTSIDE => HIDE DROPDOWNS --------------
     document.addEventListener('click', function(e) {
+      // Industry
       const isIndustryButton = e.target.closest('#btnSectorEconomico');
       const isIndustryDropdown = e.target.closest('#myDropdown');
       if (!isIndustryButton && !isIndustryDropdown) {
         document.getElementById('myDropdown').classList.remove('show');
       }
 
+      // Rama
       const isRamaButton = e.target.closest('#btnRamaJuridica');
       const isRamaDropdown = e.target.closest('#ramaDropdown');
       if (!isRamaButton && !isRamaDropdown) {
         document.getElementById('ramaDropdown').classList.remove('show');
       }
+
+      // Boletines
+      const isBoletinButton = e.target.closest('#btnBoletin');
+      const isBoletinDropdown = e.target.closest('#boletinDropdown');
+      if (!isBoletinButton && !isBoletinDropdown) {
+        document.getElementById('boletinDropdown').classList.remove('show');
+      }
     });
 
     // -------------- handleBuscar => server filtering --------------
     async function handleBuscar() {
-      // 1) Boletines
-      const checked = document.querySelectorAll('input[name="boletin"]:checked');
-      let selectedCollections = Array.from(checked).map(ch => ch.value);
-      if (selectedCollections.length === 0) selectedCollections = ['BOE'];
+      // 1) Gather bulletins from the new dropdown
+      const containerBol = document.getElementById('boletinDropdown');
+      const chkAllBol = containerBol.querySelector('#chkAllBoletines');
+      const othersBol = containerBol.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+      let selectedBulletins = [];
+      if (!chkAllBol.checked) {
+        const checkedBols = [];
+        othersBol.forEach(cb => {
+          if (cb.checked && !cb.disabled) checkedBols.push(cb.value);
+        });
+        if (checkedBols.length > 0) {
+          selectedBulletins = checkedBols;
+        }
+      } else {
+        // "Todos" => if plan1 => only BOE is truly available if the others are disabled
+        if (userPlan === 'plan1') {
+          // pass only BOE
+          selectedBulletins = ["BOE"];
+        } else {
+          selectedBulletins = allBulletins.slice(); // copy all
+        }
+      }
 
       // 2) Industry
       const containerInd = document.getElementById('myDropdown');
       const chkAllIndustry = containerInd.querySelector('#chkAllIndustry');
       const otherInds = containerInd.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
       let selectedIndustries = [];
-      // If "Todos" is checked or 0 items => skip => no filter param
       if (!chkAllIndustry.checked) {
         const checkedInds = [];
         otherInds.forEach(cb => {
@@ -643,17 +712,27 @@
 
       // 5) Build query
       let parts = [];
-      selectedCollections.forEach(c => parts.push(`collections[]=${encodeURIComponent(c)}`));
+      // For bulletins => each selected => pass as collections[]=...
+      // If no bulletins => no param => means 0 bulletins
+      if (selectedBulletins.length > 0) {
+        selectedBulletins.forEach(b => {
+          parts.push(`collections[]=${encodeURIComponent(b)}`);
+        });
+      }
 
+      // Industry => if partial => industry=..., else skip
       if (selectedIndustries.length > 0) {
         parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
       }
+
+      // Rama => partial => rama=..., else skip
       if (selectedRamas.length > 0) {
         parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
       }
       if (selectedSubRamas.length > 0) {
         parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
       }
+
       if (desde) parts.push(`desde=${encodeURIComponent(desde)}`);
       if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
 
@@ -714,6 +793,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       populateIndustryDropdown();
       populateRamaDropdown();
+      populateBoletinDropdown(); // new
     });
   </script>
 </body>
