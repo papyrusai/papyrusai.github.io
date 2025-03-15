@@ -738,15 +738,20 @@ app.get('/profile', async (req, res) => {
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
+    // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
+
+    // For bulletins (collections), or default to ['BOE']
     const collections = req.query.collections || ['BOE'];
 
+    // Default date range for “profile”: from 1 month ago to now
     const now = new Date();
     const startDate = new Date();
     startDate.setMonth(now.getMonth() - 1);
     const endDate = now;
 
+    // We'll do a date-based query from the last month
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
@@ -762,6 +767,7 @@ app.get('/profile', async (req, res) => {
       ]
     };
 
+    // Now we also project the "rango_titulo"
     const projection = {
       short_name: 1,
       divisiones_cnae: 1,
@@ -771,37 +777,47 @@ app.get('/profile', async (req, res) => {
       anio: 1,
       url_pdf: 1,
       ramas_juridicas: 1,
+      rango_titulo: 1,    // <-- new field
       _id: 1
     };
 
     let allDocuments = [];
+    // For each chosen collection => gather docs
     for (const collectionName of collections) {
-      const collection = database.collection(collectionName);
-      const documents = await collection.find(query).project(projection).toArray();
-      documents.forEach(doc => {
+      const coll = database.collection(collectionName);
+      const docs = await coll.find(query).project(projection).toArray();
+      docs.forEach(doc => {
         doc.collectionName = collectionName;
       });
-      allDocuments = allDocuments.concat(documents);
+      allDocuments = allDocuments.concat(docs);
     }
 
-    // Sort desc
+    // Sort descending by date
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
 
+    // Build HTML
     let documentsHtml;
     if (allDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
     } else {
       documentsHtml = allDocuments.map(doc => {
+        const rangoToShow = doc.rango_titulo || "Indefinido";
+
         return `
           <div class="data-item">
             <div class="header-row">
               <div class="id-values">${doc.short_name}</div>
               <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
             </div>
+            <!-- Rango shown in gray, or 'Indefinido' if missing -->
+            <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+              ${rangoToShow}
+            </div>
+
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
@@ -817,12 +833,16 @@ app.get('/profile', async (req, res) => {
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+
+            <!-- Hidden fields for potential front-end filtering on seccion/rango -->
+            <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
+            <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
         `;
       }).join('');
     }
 
-    // Chart data
+    // Build chart data (by year-month)
     const documentsByMonth = {};
     allDocuments.forEach(doc => {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -831,6 +851,7 @@ app.get('/profile', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
+    // Read and fill in the profile.html template
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
@@ -845,7 +866,7 @@ app.get('/profile', async (req, res) => {
       .replace('{{start_date}}', JSON.stringify(startDate))
       .replace('{{end_date}}', JSON.stringify(endDate));
 
-    // Insert style + script
+    // Insert style + script for thumbs
     const feedbackScript = `
       <style>
         .thumb-icon {
@@ -891,6 +912,7 @@ app.get('/profile', async (req, res) => {
 //
 // 4) /DATA ENDPOINT
 //
+
 app.get('/data', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -908,6 +930,8 @@ app.get('/data', async (req, res) => {
     }
     const userSubRamaMap = user.sub_rama_map || {};
 
+    // Now the client might pass multiple bulletins in `collections[]`,
+    // or just a single. We'll default to ['BOE'] if none provided
     const collections = req.query.collections || ['BOE'];
     const industry = req.query.industry || 'Todas';
     const ramaValue = req.query.rama || 'Todas';
@@ -916,9 +940,11 @@ app.get('/data', async (req, res) => {
     const endDate = req.query.hasta;
 
     const query = {};
+    // If user gave us a specific "industry" param != "Todas", we filter by that
     if (industry.toLowerCase() !== 'todas') {
       query.divisiones_cnae = industry;
     }
+    // Date range filter if provided
     if (startDate || endDate) {
       query.$and = query.$and || [];
       if (startDate) {
@@ -945,6 +971,7 @@ app.get('/data', async (req, res) => {
 
     console.log('Final DB-level query =>', JSON.stringify(query, null, 2));
 
+    // We now also project "rango_titulo"
     const projection = {
       short_name: 1,
       divisiones_cnae: 1,
@@ -954,6 +981,7 @@ app.get('/data', async (req, res) => {
       anio: 1,
       url_pdf: 1,
       ramas_juridicas: 1,
+      rango_titulo: 1,  // <--- new field
       collectionName: 1
     };
 
@@ -967,13 +995,14 @@ app.get('/data', async (req, res) => {
       allDocuments = allDocuments.concat(docs);
     }
 
-    // Sort desc
+    // Sort descending
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
 
+    // If user specified subRamas
     let chosenSubRamas = [];
     if (subRamasStr.trim() !== '') {
       chosenSubRamas = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
@@ -981,10 +1010,12 @@ app.get('/data', async (req, res) => {
 
     const filteredDocuments = [];
     for (const doc of allDocuments) {
+      // cnae logic
       let cnaes = doc.divisiones_cnae || [];
       if (!Array.isArray(cnaes)) cnaes = [cnaes];
       const matchedCnaes = cnaes.filter(c => user.industry_tags.includes(c));
 
+      // rama + subrama logic
       let matchedRamas = [];
       let matchedSubRamas = [];
       if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
@@ -1007,17 +1038,20 @@ app.get('/data', async (req, res) => {
         }
       }
 
+      // If user specified a single "rama" not "Todas", doc must have matched that
       let passesChosenRama = true;
       if (ramaValue.toLowerCase() !== 'todas') {
         passesChosenRama = matchedRamas.includes(ramaValue);
       }
 
+      // If user specified subRamas, doc must match at least one
       let passesChosenSubRamas = true;
       if (chosenSubRamas.length > 0) {
         const docIntersection = matchedSubRamas.filter(sr => chosenSubRamas.includes(sr));
         passesChosenSubRamas = docIntersection.length > 0;
       }
 
+      // Filter in if doc matches cnae or rama
       if ((matchedCnaes.length > 0 || matchedRamas.length > 0) &&
           passesChosenRama &&
           passesChosenSubRamas) {
@@ -1030,6 +1064,7 @@ app.get('/data', async (req, res) => {
       }
     }
 
+    // Build HTML
     let documentsHtml;
     if (filteredDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
@@ -1042,15 +1077,24 @@ app.get('/data', async (req, res) => {
         const subRamasHtml = (doc.matched_sub_rama_juridica || [])
           .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ');
 
+        // new: range
+        const rangoToShow = doc.rango_titulo || "Indefinido";
+
         return `
           <div class="data-item">
             <div class="header-row">
               <div class="id-values">${doc.short_name}</div>
               <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
             </div>
+            <!-- Rango shown in gray or 'Indefinido' -->
+            <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+              ${rangoToShow}
+            </div>
+
             <div class="etiquetas-values">${cnaesHtml}</div>
             <div class="rama-juridica-values">${ramaHtml}</div>
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
+
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
@@ -1066,12 +1110,15 @@ app.get('/data', async (req, res) => {
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+
+            <!-- Hidden fields for .doc-rango or doc-seccion -->
+            <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
         `;
       }).join('');
     }
 
-    // Count by month
+    // Build chart data
     const documentsByMonth = {};
     for (const doc of filteredDocuments) {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -1080,7 +1127,7 @@ app.get('/data', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // Return JSON (front-end can include <style> etc. as it likes).
+    // Return JSON with documentsHtml + chart data
     res.json({
       documentsHtml,
       months,
@@ -1093,6 +1140,7 @@ app.get('/data', async (req, res) => {
     await client.close();
   }
 });
+
 
 //
 // 5) FEEDBACK POST ROUTE
