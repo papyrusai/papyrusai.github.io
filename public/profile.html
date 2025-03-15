@@ -39,7 +39,9 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
-    @keyframes spin { 100% { transform: rotate(360deg); } }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
 
     /* Dropdown styling for multi-check logic */
     .dropdown {
@@ -135,13 +137,30 @@
     }
 
     /* Basic layout styling */
-    .analytics-label { margin-top: 20px; font-weight: bold; }
-    .detalle-cuenta { display: flex; gap: 50px; margin-bottom: 20px; }
-    .etiquetas-label { font-weight: bold; }
-    .filter-item { margin-bottom: 10px; }
-    .filter-section { margin-bottom: 10px; }
-    .collectionDocs { margin-top: 10px; }
-    .menu.active { display: block; }
+    .analytics-label {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .detalle-cuenta {
+      display: flex;
+      gap: 50px;
+      margin-bottom: 20px;
+    }
+    .etiquetas-label {
+      font-weight: bold;
+    }
+    .filter-item {
+      margin-bottom: 10px;
+    }
+    .filter-section {
+      margin-bottom: 10px;
+    }
+    .collectionDocs {
+      margin-top: 10px;
+    }
+    .menu.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -205,7 +224,7 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="myDropdown" class="dropdown-content">
-            <!-- Will be populated on DOMContentLoaded -->
+            <!-- Populated on DOMContentLoaded -->
           </div>
         </div>
       </div>
@@ -219,7 +238,7 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="ramaDropdown" class="dropdown-content">
-            <!-- Will be populated on DOMContentLoaded -->
+            <!-- Populated on DOMContentLoaded -->
           </div>
         </div>
         <!-- sub-ramas container if a single rama is chosen -->
@@ -235,12 +254,12 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="boletinDropdown" class="dropdown-content">
-            <!-- Populated with "Todos" + bulletins on DOMContentLoaded -->
+            <!-- "Todos" + bulletins, all checked by default, on DOMContentLoaded -->
           </div>
         </div>
       </div>
 
-      <!-- RANGO (Multi-Select) -->
+      <!-- RANGO multi-check -->
       <div class="filter-item">
         <div class="etiquetas-label">Rango</div>
         <div class="dropdown" style="margin-bottom: 10px;">
@@ -249,16 +268,13 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="rangoDropdown" class="dropdown-content">
-            <label>
-              <input type="checkbox" value="Todos" id="chkAllRango" checked onclick="toggleAllRango()">
-              Todos
-            </label>
-            <label><input type="checkbox" value="Leyes" checked onclick="updateSelectedRango()">Leyes</label>
-            <label><input type="checkbox" value="Reglamentos" checked onclick="updateSelectedRango()">Reglamentos</label>
-            <label><input type="checkbox" value="Decisiones interpretativas y Reguladores" checked onclick="updateSelectedRango()">Decisiones interpretativas y Reguladores</label>
-            <label><input type="checkbox" value="Jurisprudencia" checked onclick="updateSelectedRango()">Jurisprudencia</label>
-            <label><input type="checkbox" value="Ayudas,subvenciones y premios" checked onclick="updateSelectedRango()">Ayudas,subvenciones y premios</label>
-            <label><input type="checkbox" value="Otras" checked onclick="updateSelectedRango()">Otras</label>
+            <label><input type="checkbox" value="Todos" id="chkAllRango" checked> Todos</label>
+            <label><input type="checkbox" value="Leyes" checked> Leyes</label>
+            <label><input type="checkbox" value="Reglamentos" checked> Reglamentos</label>
+            <label><input type="checkbox" value="Decisiones interpretativas y Reguladores" checked> Decisiones interpretativas y Reguladores</label>
+            <label><input type="checkbox" value="Jurisprudencia" checked> Jurisprudencia</label>
+            <label><input type="checkbox" value="Ayudas,subvenciones y premios" checked> Ayudas,subvenciones y premios</label>
+            <label><input type="checkbox" value="Otras" checked> Otras</label>
           </div>
         </div>
       </div>
@@ -306,7 +322,7 @@
   <script id="endDateInput" type="application/json">{{end_date}}</script>
 
   <script>
-    // -------------- NAV / HAMBURGER --------------
+    // --------------------- NAV / HAMBURGER ---------------------
     function toggleMenu() {
       const menu = document.querySelector('.menu');
       menu.classList.toggle('active');
@@ -319,9 +335,9 @@
       }
     });
 
-    // -------------- LOADER / CHART ON LOAD --------------
+    // --------------------- LOADER / CHART ON LOAD ---------------------
     document.addEventListener("DOMContentLoaded", () => {
-      // Hide the loader overlay
+      // Hide initial loader
       const loaderOverlay = document.getElementById("pageLoaderOverlay");
       if (loaderOverlay) loaderOverlay.style.display = "none";
 
@@ -333,7 +349,7 @@
         startDate.value = formattedDate;
       }
 
-      // Chart on first load if monthsData / countsData exist
+      // If we have months/counts => load chart on first load
       const monthsData = JSON.parse(document.getElementById('monthsData').textContent || '[]');
       const countsData = JSON.parse(document.getElementById('countsData').textContent || '[]');
       if (monthsData.length && countsData.length) {
@@ -341,23 +357,28 @@
       }
     });
 
-    // -------------- EDIT SUBSCRIPTION LINK --------------
+    // --------------------- EDIT SUBSCRIPTION LINK ---------------------
     document.getElementById('editIndustriesLink').addEventListener('click', function(e){
       e.preventDefault();
       window.location.href = '/suscripcion.html';
     });
 
-    // -------------- Plan logic => disabling bulletins if plan1 --------------
+    // --------------------- plan logic => disabling bulletins if plan1 ---------------------
     let userPlan;
     document.addEventListener("DOMContentLoaded", () => {
       userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
     });
 
-    // -------------- LOAD USER DATA --------------
+    // --------------------- LOAD USER DATA ---------------------
     let userIndustries = [];
     let userRamas = [];
     let userSubRamaMap = {};
     const allBulletins = ["BOE","BOCM","BOA","BOJA","BOPV","DOUE"];
+    // We also have a set of possible Rango values
+    const allRangos = [
+      "Leyes","Reglamentos","Decisiones interpretativas y Reguladores",
+      "Jurisprudencia","Ayudas,subvenciones y premios","Otras"
+    ];
 
     (function initUserData(){
       // parse user industries
@@ -395,11 +416,13 @@
       }
     })();
 
-    // -------------- Sector Económico --------------
+    // --------------------- DROPDOWN for Sector Económico ---------------------
     function populateIndustryDropdown() {
       const container = document.getElementById('myDropdown');
+      if (!container) return;
       container.innerHTML = '';
 
+      // "Todos" => checked
       const lblTodos = document.createElement('label');
       lblTodos.innerHTML = `<input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos`;
       container.appendChild(lblTodos);
@@ -410,10 +433,10 @@
         container.appendChild(lbl);
       });
 
-      const chkAll = lblTodos.querySelector('#chkAllIndustry');
-      chkAll.addEventListener('change', () => {
+      const chkAllIndustry = lblTodos.querySelector('#chkAllIndustry');
+      chkAllIndustry.addEventListener('change', () => {
         const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
-        if (chkAll.checked) {
+        if (chkAllIndustry.checked) {
           others.forEach(o => o.checked = true);
         } else {
           others.forEach(o => o.checked = false);
@@ -421,10 +444,10 @@
         updateIndustryLabel();
       });
       const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
-      otherBoxes.forEach(b => {
-        b.addEventListener('change', () => {
-          const allChecked = [...otherBoxes].every(x => x.checked);
-          chkAll.checked = allChecked;
+      otherBoxes.forEach(box => {
+        box.addEventListener('change', () => {
+          const allChecked = [...otherBoxes].every(b => b.checked);
+          chkAllIndustry.checked = allChecked;
           updateIndustryLabel();
         });
       });
@@ -436,39 +459,41 @@
     }
     function updateIndustryLabel() {
       const container = document.getElementById('myDropdown');
-      const chkAll = container.querySelector('#chkAllIndustry');
-      const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+      const chkAllIndustry = container.querySelector('#chkAllIndustry');
+      const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
       const labelSpan = document.getElementById('selectedIndustry');
 
-      if (chkAll.checked) {
+      if (chkAllIndustry.checked) {
         labelSpan.textContent = 'Todas';
         return;
       }
       let checkedCount = 0;
-      let singleVal = '';
-      others.forEach(b => {
+      let singleValue = '';
+      otherBoxes.forEach(b => {
         if (b.checked) {
           checkedCount++;
-          singleVal = b.value;
+          singleValue = b.value;
         }
       });
       if (checkedCount === 0) {
         labelSpan.textContent = '-';
       } else if (checkedCount === 1) {
-        labelSpan.textContent = singleVal;
-      } else if (checkedCount === others.length) {
+        labelSpan.textContent = singleValue;
+      } else if (checkedCount === otherBoxes.length) {
         labelSpan.textContent = 'Todas';
-        chkAll.checked = true;
+        chkAllIndustry.checked = true;
       } else {
         labelSpan.textContent = checkedCount + ' seleccionados';
       }
     }
 
-    // -------------- Rama Jurídica --------------
+    // --------------------- DROPDOWN for Ramas ---------------------
     function populateRamaDropdown() {
       const container = document.getElementById('ramaDropdown');
+      if (!container) return;
       container.innerHTML = '';
 
+      // "Todos" => checked
       const lblTodos = document.createElement('label');
       lblTodos.innerHTML = `<input type="checkbox" id="chkAllRamas" value="Todos" checked> Todos`;
       container.appendChild(lblTodos);
@@ -490,9 +515,9 @@
         updateRamaLabel();
       });
       const otherRamas = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
-      otherRamas.forEach(b => {
-        b.addEventListener('change', () => {
-          const allChecked = [...otherRamas].every(x => x.checked);
+      otherRamas.forEach(box => {
+        box.addEventListener('change', () => {
+          const allChecked = [...otherRamas].every(b => b.checked);
           chkAllRamas.checked = allChecked;
           updateRamaLabel();
         });
@@ -554,9 +579,10 @@
       });
     }
 
-    // -------------- BOLETines => multi-check --------------
+    // --------------------- DROPDOWN for BOLETINES  ---------------------
     function populateBoletinDropdown() {
       const container = document.getElementById('boletinDropdown');
+      if (!container) return;
       container.innerHTML = '';
 
       const lblTodos = document.createElement('label');
@@ -583,9 +609,13 @@
       chkAllBol.addEventListener('change', () => {
         const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
         if (chkAllBol.checked) {
-          others.forEach(o => { if (!o.disabled) o.checked = true; });
+          others.forEach(o => { 
+            if (!o.disabled) o.checked = true; 
+          });
         } else {
-          others.forEach(o => { if (!o.disabled) o.checked = false; });
+          others.forEach(o => { 
+            if (!o.disabled) o.checked = false; 
+          });
         }
         updateBoletinLabel();
       });
@@ -633,43 +663,52 @@
       }
     }
 
-    // -------------- RANGO => multi-check --------------
+    // --------------------- DROPDOWN for RANGO (server filtering) ---------------------
     function toggleRangoDropdown() {
       document.getElementById('rangoDropdown').classList.toggle('show');
     }
-    function toggleAllRango() {
-      const chkAll = document.getElementById('chkAllRango');
-      const checkboxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
-      if (chkAll.checked) {
-        checkboxes.forEach(cb => cb.checked = true);
-      } else {
-        checkboxes.forEach(cb => cb.checked = false);
-      }
-      updateSelectedRango();
-    }
-    function updateSelectedRango() {
-      const chkAllRango = document.getElementById('chkAllRango');
-      const otherBoxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
-      const rangoSpan = document.getElementById('selectedRango');
 
+    // We'll gather these in handleBuscar to pass as "rango=r1||r2||..."
+    function getSelectedRangos() {
+      const chkAllRango = document.getElementById('chkAllRango');
+      const others = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
+      if (chkAllRango.checked) {
+        // "Todos" => skip param => no filter
+        return [];
+      }
+      let selected = [];
+      others.forEach(cb => {
+        if (cb.checked) {
+          selected.push(cb.value);
+        }
+      });
+      return selected;
+    }
+
+    // We also update the label
+    function updateRangoLabel() {
+      const chkAllRango = document.getElementById('chkAllRango');
+      const others = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
       let selectedCount = 0;
       let singleVal = '';
-      otherBoxes.forEach(cb => {
+
+      others.forEach(cb => {
         if (cb.checked) {
           selectedCount++;
           singleVal = cb.value;
         }
       });
-
-      if (selectedCount === otherBoxes.length) {
+      // If all are selected => "Todos"
+      if (selectedCount === others.length) {
         chkAllRango.checked = true;
       } else {
         chkAllRango.checked = false;
       }
 
+      const rangoSpan = document.getElementById('selectedRango');
       if (selectedCount === 0) {
         rangoSpan.textContent = 'Ninguno';
-      } else if (selectedCount === otherBoxes.length) {
+      } else if (selectedCount === others.length) {
         rangoSpan.textContent = 'Todos';
       } else if (selectedCount === 1) {
         rangoSpan.textContent = singleVal;
@@ -678,30 +717,7 @@
       }
     }
 
-    // -------------- CLICK OUTSIDE => HIDE DROPDOWNS --------------
     document.addEventListener('click', function(e) {
-      // Industry
-      const isIndustryButton = e.target.closest('#btnSectorEconomico');
-      const isIndustryDropdown = e.target.closest('#myDropdown');
-      if (!isIndustryButton && !isIndustryDropdown) {
-        document.getElementById('myDropdown').classList.remove('show');
-      }
-
-      // Rama
-      const isRamaButton = e.target.closest('#btnRamaJuridica');
-      const isRamaDropdown = e.target.closest('#ramaDropdown');
-      if (!isRamaButton && !isRamaDropdown) {
-        document.getElementById('ramaDropdown').classList.remove('show');
-      }
-
-      // Boletines
-      const isBoletinButton = e.target.closest('#btnBoletin');
-      const isBoletinDropdown = e.target.closest('#boletinDropdown');
-      if (!isBoletinButton && !isBoletinDropdown) {
-        document.getElementById('boletinDropdown').classList.remove('show');
-      }
-
-      // Rango
       const isRangoButton = e.target.closest('#btnRango');
       const isRangoDropdown = e.target.closest('#rangoDropdown');
       if (!isRangoButton && !isRangoDropdown) {
@@ -709,9 +725,21 @@
       }
     });
 
-    // -------------- handleBuscar => front-end filter by doc-rango, doc-seccion, etc. --------------
+    // "Todos" => check / uncheck
+    function toggleAllRango() {
+      const chkAll = document.getElementById('chkAllRango');
+      const others = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
+      if (chkAll.checked) {
+        others.forEach(o => o.checked = true);
+      } else {
+        others.forEach(o => o.checked = false);
+      }
+      updateRangoLabel();
+    }
+
+    // --------------------- handleBuscar => calls /data with query params ---------------------
     async function handleBuscar() {
-      // 1) Gather bulletins from the new dropdown
+      // 1) Gather bulletins
       const containerBol = document.getElementById('boletinDropdown');
       const chkAllBol = containerBol.querySelector('#chkAllBoletines');
       const othersBol = containerBol.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
@@ -725,7 +753,7 @@
           selectedBulletins = checkedBols;
         }
       } else {
-        // "Todos" => if plan1 => only BOE is truly available if the others are disabled
+        // "Todos"
         if (userPlan === 'plan1') {
           selectedBulletins = ["BOE"];
         } else {
@@ -733,7 +761,7 @@
         }
       }
 
-      // 2) Gather selected Industry
+      // 2) Industry
       const containerInd = document.getElementById('myDropdown');
       const chkAllIndustry = containerInd.querySelector('#chkAllIndustry');
       const otherInds = containerInd.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
@@ -748,7 +776,7 @@
         }
       }
 
-      // 3) Gather selected Ramas
+      // 3) Ramas
       const containerRama = document.getElementById('ramaDropdown');
       const chkAllRamas = containerRama.querySelector('#chkAllRamas');
       const otherRamas = containerRama.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
@@ -762,6 +790,7 @@
           selectedRamas = checkedRamas;
         }
       }
+      // subRamas if exactly one
       let selectedSubRamas = [];
       if (!chkAllRamas.checked && selectedRamas.length === 1) {
         const subBoxes = document.querySelectorAll('#subRamasCheckboxContainer input[type="checkbox"]');
@@ -770,7 +799,7 @@
         });
       }
 
-      // 4) Gather selected Rango
+      // 4) Rango
       const chkAllRango = document.getElementById('chkAllRango');
       const rangoBoxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
       let selectedRangos = [];
@@ -780,70 +809,69 @@
         });
       }
 
-      // 5) Filter the displayed documents in .collectionDocs
-      const docs = document.querySelectorAll('.collectionDocs .data-item');
-      docs.forEach(doc => {
-        // If we built .doc-rango or .doc-seccion or .etiquetas-values
-        const boletinName = doc.querySelector('.collectionName') 
-              ? doc.querySelector('.collectionName').innerText 
-              : (doc.getAttribute('data-collection') || '');
-        const etiquetasText = doc.querySelector('.etiquetas-values') 
-              ? doc.querySelector('.etiquetas-values').innerText 
-              : '';
-        const ramaText = doc.querySelector('.rama-juridica-values')
-              ? doc.querySelector('.rama-juridica-values').innerText
-              : '';
-        const subRamasText = doc.querySelector('.sub-rama-juridica-values')
-              ? doc.querySelector('.sub-rama-juridica-values').innerText
-              : '';
-        const rangoText = doc.querySelector('.doc-rango')
-              ? doc.querySelector('.doc-rango').innerText
-              : '';
+      // 5) date range
+      const desde = document.getElementById('startDate').value;
+      const hasta = document.getElementById('endDate').value;
 
-        // 5A) Boletin check
-        // if user selected partial bulletins => doc must be in that set
-        let matchBoletin = true;
-        if (selectedBulletins.length > 0) {
-          // we require doc's collectionName is in selectedBulletins
-          // but the doc might store it in an attribute or hidden field
-          // e.g. doc has data-collection
-          const docCollection = doc.getAttribute('data-collectionName') 
-                || doc.getAttribute('data-collection') 
-                || boletinName; // fallback
-          matchBoletin = selectedBulletins.includes(docCollection);
-        }
+      // 6) Build query for /data
+      const parts = [];
 
-        // 5B) Industry check
-        let matchIndustria = true;
-        if (selectedIndustries.length > 0) {
-          // doc must contain any of the selectedIndustries in its .etiquetas-values
-          matchIndustria = selectedIndustries.some(ind => etiquetasText.includes(ind));
-        }
+      // bulletins => collections[]=...
+      if (selectedBulletins.length > 0) {
+        selectedBulletins.forEach(b => {
+          parts.push(`collections[]=${encodeURIComponent(b)}`);
+        });
+      }
+      // if partial Industry => industry=val1||val2
+      if (selectedIndustries.length > 0) {
+        parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
+      }
+      // if partial Ramas => rama=val1||val2
+      if (selectedRamas.length > 0) {
+        parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
+      }
+      // subRamas => subRamas=val1,val2
+      if (selectedSubRamas.length > 0) {
+        parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
+      }
+      // if partial Rango => rango=val1||val2
+      if (selectedRangos.length > 0) {
+        parts.push(`rango=${encodeURIComponent(selectedRangos.join('||'))}`);
+      }
+      // date
+      if (desde) parts.push(`desde=${encodeURIComponent(desde)}`);
+      if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
 
-        // 5C) Ramas check
-        let matchRama = true;
-        if (selectedRamas.length > 0) {
-          // doc must contain at least 1 selected rama
-          matchRama = selectedRamas.some(r => ramaText.includes(r));
-        }
-        // subRamas => if single
-        // omitted for brevity, you'd parse subRamasText. But let's skip
+      const finalQuery = parts.join('&');
+      const url = `/data?${finalQuery}`;
 
-        // 5D) Rango check
-        let matchRango = true;
-        if (selectedRangos.length > 0) {
-          matchRango = selectedRangos.some(r => rangoText.includes(r));
-        }
+      // Show loaders
+      document.getElementById('chartContainer').style.display = 'none';
+      document.getElementById('loading-icon-chart').style.display = 'block';
+      document.getElementById('loading-icon').style.display = 'block';
 
-        if (matchBoletin && matchIndustria && matchRama && matchRango) {
-          doc.style.display = '';
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Network error fetching data');
+        const data = await resp.json();
+        // Insert HTML
+        document.querySelector('.collectionDocs').innerHTML = data.documentsHtml || '';
+        // Chart
+        if (data.months && data.counts) {
+          loadChart(data.months, data.counts);
         } else {
-          doc.style.display = 'none';
+          loadChart([], []);
         }
-      });
+      } catch(err) {
+        console.error('Error searching data:', err);
+      } finally {
+        document.getElementById('loading-icon').style.display = 'none';
+        document.getElementById('loading-icon-chart').style.display = 'none';
+        document.getElementById('chartContainer').style.display = 'block';
+      }
     }
 
-    // -------------- CHART LOAD --------------
+    // --------------------- CHART LOAD ---------------------
     let myChart;
     function loadChart(months, counts) {
       const ctx = document.getElementById('documentsChart').getContext('2d');
@@ -868,13 +896,36 @@
       });
     }
 
-    // -------------- ON PAGE LOAD => fill dropdowns --------------
+    // --------------------- ON PAGE LOAD => fill dropdowns ---------------------
     document.addEventListener('DOMContentLoaded', () => {
       populateIndustryDropdown();
       populateRamaDropdown();
       populateBoletinDropdown();
-      // Also default the Rango checks
-      updateSelectedRango();
+
+      // For Rango => check "Todos" by default => no param => no Rango filtering
+      // But we attach event listeners so the user can uncheck, etc.
+      const rangoDropdown = document.getElementById('rangoDropdown');
+      const chkAllRango = document.getElementById('chkAllRango');
+      const otherRangoBoxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+
+      // Listen for changes
+      chkAllRango.addEventListener('change', () => {
+        if (chkAllRango.checked) {
+          otherRangoBoxes.forEach(o => o.checked = true);
+        } else {
+          otherRangoBoxes.forEach(o => o.checked = false);
+        }
+        updateRangoLabel();
+      });
+      otherRangoBoxes.forEach(box => {
+        box.addEventListener('change', () => {
+          const allChecked = [...otherRangoBoxes].every(x => x.checked);
+          chkAllRango.checked = allChecked;
+          updateRangoLabel();
+        });
+      });
+
+      updateRangoLabel();
     });
   </script>
 </body>
