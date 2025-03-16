@@ -102,9 +102,7 @@ app.get('/profile.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-app.get('/data', ensureAuthenticated, (req, res) => {
 
-});
 
 
 // Route to serve multistep.html only if authenticated
