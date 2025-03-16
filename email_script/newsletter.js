@@ -731,7 +731,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     // 1) Cargamos todos los usuarios
     const allUsers = await usersCollection.find({}).toArray();
 
-    const filteredUsers = allUsers.filter(u => u.email === '6inimartin6@gmail.com');
+    const filteredUsers = allUsers;   //allUsers.filter(u => u.email === '6inimartin6@gmail.com');
 
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
