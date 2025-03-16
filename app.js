@@ -103,7 +103,7 @@ app.get('/profile.html', ensureAuthenticated, (req, res) => {
 });
 
 app.get('/data', ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+
 });
 
 
@@ -941,29 +941,36 @@ app.get('/data', async (req, res) => {
     }
     const userSubRamaMap = user.sub_rama_map || {};
 
-    // 1) Collect the query parameters
-    const collections = req.query.collections || ['BOE'];     // bulletins
-    const industry = req.query.industry || 'Todas';          // industry => "val1||val2"
-    const ramaValue = req.query.rama || 'Todas';             // rama => "val1||val2"
+    // 1) Collect query parameters from the front-end
+    const collections = req.query.collections || ['BOE']; // bulletins
+    const industry = req.query.industry || 'Todas';       // e.g. "val1||val2"
+    const ramaRaw = req.query.rama || 'Todas';            // e.g. "Derecho Civil||Derecho Mercantil"
     const subRamasStr = req.query.subRamas || '';
+    const rangoStr = req.query.rango || '';              // e.g. "Leyes||Reglamentos"
     const startDate = req.query.desde;
     const endDate = req.query.hasta;
 
-    // 2) Rango string => "val1||val2"
-    const rangoStr = req.query.rango || '';
+    // 2) Parse multiple Ramas
+    // If "Todas" => no filter on specific Ramas
+    let chosenRamas = [];
+    if (ramaRaw.toLowerCase() !== 'todas') {
+      chosenRamas = ramaRaw.split('||').map(s => s.trim()).filter(Boolean);
+    }
+
+    // 3) Parse multiple Rango
     let chosenRangos = [];
     if (rangoStr.trim() !== '') {
       chosenRangos = rangoStr.split('||').map(s => s.trim()).filter(Boolean);
     }
 
-    // 3) Build the base MongoDB query
+    // 4) Build base MongoDB query for DB-level fields: bulletins, date, industry
     const query = {};
-    // Industry-based filter at DB level (like in your code)
+    // a) Industry => if not "Todas", we do a direct cnae filter
     if (industry.toLowerCase() !== 'todas') {
       query.divisiones_cnae = industry;
     }
 
-    // Date range
+    // b) Date range
     if (startDate || endDate) {
       query.$and = query.$and || [];
       if (startDate) {
@@ -990,7 +997,7 @@ app.get('/data', async (req, res) => {
 
     console.log('Final DB-level query =>', JSON.stringify(query, null, 2));
 
-    // 4) Projection (includes rango_titulo)
+    // 5) We also project "rango_titulo" for in-memory filtering
     const projection = {
       short_name: 1,
       divisiones_cnae: 1,
@@ -1000,43 +1007,43 @@ app.get('/data', async (req, res) => {
       anio: 1,
       url_pdf: 1,
       ramas_juridicas: 1,
-      rango_titulo: 1,  // <--- new field
+      rango_titulo: 1, // <--- new field
       collectionName: 1
     };
 
-    // 5) Gather docs from each selected collection
+    // 6) Collect documents from each chosen bulletin
     let allDocuments = [];
-    for (const collectionName of collections) {
-      const coll = database.collection(collectionName);
+    for (const cName of collections) {
+      const coll = database.collection(cName);
       const docs = await coll.find(query).project(projection).toArray();
-      docs.forEach(doc => {
-        doc.collectionName = collectionName;
+      docs.forEach(d => {
+        d.collectionName = cName;
       });
       allDocuments = allDocuments.concat(docs);
     }
 
-    // Sort descending by date
+    // Sort all docs descending by date
     allDocuments.sort((a, b) => {
       const dateA = new Date(a.anio, a.mes - 1, a.dia);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
 
-    // 6) Additional subRamas logic
+    // 7) Also parse subRamas from subRamasStr => e.g. "genérico,arrendamientos"
     let chosenSubRamas = [];
     if (subRamasStr.trim() !== '') {
       chosenSubRamas = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
     }
 
-    // 7) Filter in-memory for cnae or rama, plus sub-rama, plus RANGO
+    // 8) Final in-memory filter for Ramas, subRamas, cnaes, and Rango
     const filteredDocuments = [];
     for (const doc of allDocuments) {
-      // A) Industry => cnae => doc.divisiones_cnae
+      // a) cnae => doc.divisiones_cnae
       let cnaes = doc.divisiones_cnae || [];
       if (!Array.isArray(cnaes)) cnaes = [cnaes];
       const matchedCnaes = cnaes.filter(c => user.industry_tags.includes(c));
 
-      // B) Ramas => doc.ramas_juridicas
+      // b) Ramas => doc.ramas_juridicas
       let matchedRamas = [];
       let matchedSubRamas = [];
       if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
@@ -1045,11 +1052,13 @@ app.get('/data', async (req, res) => {
           if (!userSubArr) continue;
           const docSubRamas = Array.isArray(rawSubRamas) ? rawSubRamas : [];
           if (docSubRamas.length === 0) {
+            // If doc has "no subramas" but user includes "genérico"
             if (userSubArr.includes("genérico")) {
               matchedRamas.push(ramaName);
               matchedSubRamas.push("genérico");
             }
           } else {
+            // intersection
             const intersection = docSubRamas.filter(sr => userSubArr.includes(sr));
             if (intersection.length > 0) {
               matchedRamas.push(ramaName);
@@ -1059,34 +1068,37 @@ app.get('/data', async (req, res) => {
         }
       }
 
-      // Evaluate if user specified a single Rama => doc must match
+      // c) Multiple Ramas: we require doc to match at least one of the chosen Ramas (if any were chosen)
       let passesChosenRama = true;
-      if (ramaValue.toLowerCase() !== 'todas') {
-        passesChosenRama = matchedRamas.includes(ramaValue);
+      if (chosenRamas.length > 0) {
+        // if doc has intersection with chosenRamas => pass
+        const intersectionRamas = matchedRamas.filter(r => chosenRamas.includes(r));
+        passesChosenRama = intersectionRamas.length > 0;
       }
-      // subRamas => doc must have at least 1 subRama in chosenSubRamas
+
+      // d) subRamas => doc must have at least 1 sub-rama from chosenSubRamas
+      // if chosenSubRamas is non-empty
       let passesChosenSubRamas = true;
       if (chosenSubRamas.length > 0) {
         const docIntersection = matchedSubRamas.filter(sr => chosenSubRamas.includes(sr));
         passesChosenSubRamas = docIntersection.length > 0;
       }
 
-      // C) Rango => check doc.rango_titulo vs chosenRangos
+      // e) Rango => check doc.rango_titulo vs chosenRangos
       const docRango = doc.rango_titulo || "Indefinido";
       let passesChosenRango = true;
       if (chosenRangos.length > 0) {
-        // If doc's range is included => pass, else fail
         passesChosenRango = chosenRangos.includes(docRango);
       }
 
-      // doc is included if:
-      // - cnae or rama matched
-      // - it satisfies subRamas
-      // - it satisfies chosen Rango
-      if ((matchedCnaes.length > 0 || matchedRamas.length > 0) &&
-          passesChosenRama &&
-          passesChosenSubRamas &&
-          passesChosenRango
+      // f) cnae or rama => doc must have matched cnae or matchedRamas
+      const passesIndustryOrRama = (matchedCnaes.length > 0 || matchedRamas.length > 0);
+
+      if (
+        passesIndustryOrRama &&
+        passesChosenRama &&
+        passesChosenSubRamas &&
+        passesChosenRango
       ) {
         doc.matched_cnaes = matchedCnaes;
         doc.matched_rama_juridica = [...new Set(matchedRamas)];
@@ -1095,7 +1107,7 @@ app.get('/data', async (req, res) => {
       }
     }
 
-    // 8) Build documentsHtml
+    // 9) Build documentsHtml
     let documentsHtml;
     if (filteredDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
@@ -1137,19 +1149,19 @@ app.get('/data', async (req, res) => {
               Leer más: ${doc._id}
             </a>
 
-            <!-- Thumbs up/down icons, optional -->
+            <!-- Optional feedback icons -->
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
 
-            <!-- Hidden fields for .doc-rango or doc-seccion, if needed -->
+            <!-- Hidden fields for doc-rango or doc-seccion, if needed -->
             <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
         `;
       }).join('');
     }
 
-    // 9) Chart data
+    // 10) Chart data
     const documentsByMonth = {};
     for (const doc of filteredDocuments) {
       const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
@@ -1158,7 +1170,7 @@ app.get('/data', async (req, res) => {
     const months = Object.keys(documentsByMonth).sort();
     const counts = months.map(m => documentsByMonth[m]);
 
-    // 10) Return JSON
+    // Return JSON with final HTML + chart data
     res.json({
       documentsHtml,
       months,
@@ -1172,6 +1184,7 @@ app.get('/data', async (req, res) => {
     await client.close();
   }
 });
+
 
 
 //
