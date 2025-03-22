@@ -559,26 +559,30 @@ function filtrarRangos() {
     dropdown.appendChild(option);
   });}
 
-function seleccionarRango(value) {
-  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas")) || {};
-  if (!etiquetas.rangos_normativos) etiquetas.rangos_normativos = [];
-  let maxNum = 0;
-  etiquetas.rangos_normativos.forEach(rango => {
-    const match = rango.match(/^(\d+)\./);
-    if (match) {
-      const num = parseInt(match[1]);
-      if (num > maxNum) maxNum = num;
+  function seleccionarRango(value) {
+    // Get current etiquetas from sessionStorage
+    const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas")) || {};
+    
+    // Initialize rangos_normativos array if it doesn't exist
+    if (!etiquetas.rangos_normativos) etiquetas.rangos_normativos = [];
+    
+    // Check if the value already exists in the array to avoid duplicates
+    if (!etiquetas.rangos_normativos.includes(value)) {
+      // Add the value as is, without any numbering
+      etiquetas.rangos_normativos.push(value);
+      
+      // Save updated etiquetas back to sessionStorage
+      sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+      
+      // Reload the UI to show the updated list
+      cargarRangosPredefinidos();
     }
-  });
-  const nuevoRango = `${maxNum + 1}. ${value}`;
-  if (!etiquetas.rangos_normativos.includes(nuevoRango)) {
-    etiquetas.rangos_normativos.push(nuevoRango);
-    sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
-    cargarRangosPredefinidos();
+    
+    // Clear the filter input and dropdown
+    document.getElementById('filtro-rangos').value = "";
+    document.getElementById('dropdown-rangos').innerHTML = "";
   }
-  document.getElementById('filtro-rangos').value = "";
-  document.getElementById('dropdown-rangos').innerHTML = "";
-}
+  
 
 /* ------------------ Utility Functions ------------------ */
 function eliminarEtiqueta(categoria, etiqueta) {

@@ -398,7 +398,27 @@
   const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
   const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
   const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
-  const feedback = JSON.parse(sessionStorage.getItem('feedback') || '{}');
+  // CRITICAL: Properly parse the feedback object with correct structure
+  let feedback;
+      try {
+        feedback = JSON.parse(sessionStorage.getItem('feedback') || '{}');
+        // Ensure feedback has all required fields
+        feedback = {
+          industrias: feedback.industrias || '',
+          ramas: feedback.ramas || '',
+          fuentes_reguladores: feedback.fuentes_reguladores || '',
+          rangos: feedback.rangos || ''
+        };
+        console.log('Parsed feedback:', feedback);
+      } catch (error) {
+        console.error('Error parsing feedback:', error);
+        feedback = {
+          industrias: '',
+          ramas: '',
+          fuentes_reguladores: '',
+          rangos: ''
+        };
+      }
   
   // Add a single event handler for the submit button
   const submitButton = document.getElementById('nextBtn');
@@ -424,8 +444,8 @@
       sub_rama_map: subRamaMap,
       rangos,
       cobertura_legal: {
-        "fuentes-gobierno": userData.fuentes || coberturaLegal["fuentes-gobierno"] || [],
-        "fuentes-reguladores": userData.reguladores || coberturaLegal["fuentes-reguladores"] || []
+        "fuentes-gobierno":  coberturaLegal["fuentes-gobierno"] || [], // || userData.fuentes || ,
+        "fuentes-reguladores": coberturaLegal["fuentes-reguladores"] || [] // || userData.reguladores, || 
       },
       feedback,
       // CRITICAL: Get user profile data directly from userData object
