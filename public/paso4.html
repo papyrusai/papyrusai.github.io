@@ -607,4 +607,95 @@
       }
     }
 </script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Get all data from sessionStorage
+    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+    const industryTags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+    const ramaJuridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
+    const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
+    const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
+    const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
+    const feedback = JSON.parse(sessionStorage.getItem('feedback') || '{}');
+    
+    // Store the full userData in hidden inputs for form submission
+    const hiddenInputsContainer = document.createElement('div');
+    hiddenInputsContainer.style.display = 'none';
+    hiddenInputsContainer.innerHTML = `
+        <input type="hidden" name="name" id="name" value="${userData.nombre || ''}">
+        <input type="hidden" name="web" id="web" value="${userData.webEmpresa || ''}">
+        <input type="hidden" name="linkedin" id="linkedin" value="${userData.linkedin || ''}">
+        <input type="hidden" name="perfil_profesional" id="perfil_profesional" value="${Array.isArray(userData.perfil) ? userData.perfil.join(',') : ''}">
+        <input type="hidden" name="company_name" id="company_name" value="${userData.webEmpresa || ''}">
+        <input type="hidden" name="profile_type" id="profile_type" value="${userData.otro_perfil || userData.perfil?.[0] || ''}">
+    `;
+    document.body.appendChild(hiddenInputsContainer);
+    
+    // Handle form submission for any plan selection button
+    document.querySelectorAll('.btn-finalizar, button[type="submit"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Get selected plan
+            const planType = this.getAttribute('data-plan') || 'free';
+            
+            // Create payload with ALL required data
+            const payload = {
+                plan: planType,
+                industry_tags: industryTags,
+                rama_juridicas: ramaJuridicas,
+                sub_rama_map: subRamaMap,
+                rangos: rangos,
+                cobertura_legal: {
+                    "fuentes-gobierno": userData.fuentes || coberturaLegal["fuentes-gobierno"] || [],
+                    "fuentes-reguladores": userData.reguladores || coberturaLegal["fuentes-reguladores"] || []
+                },
+                feedback: feedback,
+                name: userData.nombre || '',
+                web: userData.webEmpresa || '',
+                linkedin: userData.linkedin || '',
+                perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
+                company_name: userData.webEmpresa || '',
+                profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : '')
+            };
+            
+            // Send data to server
+            fetch('/save-free-plan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
+            });
+        });
+    });
+    
+    // For debugging purposes - remove in production
+    console.log('User data from session:', userData);
+    console.log('Sending to server:', {
+        industryTags,
+        ramaJuridicas,
+        subRamaMap,
+        rangos,
+        coberturaLegal,
+        userData
+    });
+});
+
+</script>
 </html>
