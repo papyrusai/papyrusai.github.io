@@ -734,9 +734,9 @@ function finalizarOnboarding() {
   
   // Store the feedback from any feedback inputs
   const feedback = {
-    industrias: document.getElementById('industrias_feedback')?.value || '',
-    ramas: document.getElementById('ramas_feedback')?.value || '',
-    fuentes_reguladores: document.getElementById('fuentes_reguladores_feedback')?.value || '',
+    industrias: document.getElementById('feedback-industria')?.value || '',
+    ramas: document.getElementById('feedback-ramas')?.value || '',
+    fuentes_reguladores: document.getElementById('feedback-fuentes-reguladores')?.value || '',
     rangos: document.getElementById('feedback-rangos')?.value || ''
   };
   
