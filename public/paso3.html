@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Personalización - Papyrus</title>
+  <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+  <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/onboarding.css">
   <style>
     /* ----------------- Submenu Styles ----------------- */
@@ -202,6 +204,22 @@
   </style>
 </head>
 <body>
+  
+  <nav class="navbar">
+    <div class="logo">
+        <a href="https://www.papyrus-ai.com/" target="_blank">
+          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+        </a>
+      </div>
+   <button class="hamburger" onclick="toggleMenu()">☰</button> 
+   <ul class="menu">
+    <li><a href="https://papyrus-ai.com/">WEB</a></li>
+    <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
+    <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+    <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+  </ul>
+  </nav>
+
   <div class="container">
     <!-- Progress Bar -->
     <div class="progress-container">

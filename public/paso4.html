@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Suscripción - Papyrus</title>
+  <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
+  <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/onboarding.css">
   <style>
     /* Additional styles specific for paso4 */
@@ -257,13 +259,29 @@
   </style>
 </head>
 <body>
+  
+  <nav class="navbar">
+    <div class="logo">
+        <a href="https://www.papyrus-ai.com/" target="_blank">
+          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+        </a>
+      </div>
+   <button class="hamburger" onclick="toggleMenu()">☰</button> 
+   <ul class="menu">
+    <li><a href="https://papyrus-ai.com/">WEB</a></li>
+    <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
+    <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+    <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+  </ul>
+  </nav>
+
   <div class="container">
     <!-- Progress Bar -->
     <div class="progress-container">
       <div class="progress-steps">
         <div class="step">1. Usuario</div>
         <div class="step">2. Personalización</div>
-        <div class="step active">3. Suscripción</div>
+        <div class="step active">3. Plan</div>
       </div>
       <div class="progress-bar">
         <div class="progress-fill" style="width: 100%;"></div>
@@ -334,12 +352,11 @@
   </div>
 </body>
 <script>
-    // Global variable to control plan2 free status
-    let plan2isfree = true; // Set to true for now as requested
-
-    // Add event listeners when document is loaded
     document.addEventListener('DOMContentLoaded', function() {
-   // Set up plan selection functionality
+  // Global variable to control plan2 free status
+  let plan2isfree = true;
+  
+  // Set up plan selection functionality
   const planBoxes = document.querySelectorAll('.plan-box');
   const selectedPlanInput = document.getElementById('selectedPlan');
   
@@ -365,337 +382,98 @@
     });
   });
   
-  // Select plan4 by default instead of plan1
+  // Select plan4 by default
   const plan4Box = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
   if (plan4Box && !plan4Box.getAttribute('data-disabled')) {
     plan4Box.click();
   }
   
-  // Handle the "Continuar" button click
-  const continueBtn = document.getElementById('nextBtn');
-  if (continueBtn) {
-    continueBtn.addEventListener('click', function() {
-      // Get the selected plan from hidden input
-      const selectedPlan = document.getElementById('selectedPlan').value;
-      if (!selectedPlan) {
-        alert('Por favor, selecciona un plan');
-        return;
+  // CRITICAL: Get userData from the original source in sessionStorage
+  const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+  console.log('User data from step 1:', userData);
+  
+  // Get data from step 3
+  const industryTags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+  const ramaJuridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
+  const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
+  const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
+  const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
+  const feedback = JSON.parse(sessionStorage.getItem('feedback') || '{}');
+  
+  // Add a single event handler for the submit button
+  const submitButton = document.getElementById('nextBtn');
+  submitButton.addEventListener('click', async function(e) {
+    e.preventDefault();
+    
+    // Get selected plan value
+    const planType = selectedPlanInput.value;
+    if (!planType) {
+      alert('Por favor, selecciona un plan');
+      return;
+    }
+    
+    // Show loading state
+    submitButton.innerHTML = '<div class="loader"></div>';
+    submitButton.disabled = true;
+    
+    // Create a complete payload with ALL user data
+    const payload = {
+      plan: planType,
+      industry_tags: industryTags,
+      rama_juridicas: ramaJuridicas,
+      sub_rama_map: subRamaMap,
+      rangos,
+      cobertura_legal: {
+        "fuentes-gobierno": userData.fuentes || coberturaLegal["fuentes-gobierno"] || [],
+        "fuentes-reguladores": userData.reguladores || coberturaLegal["fuentes-reguladores"] || []
+      },
+      feedback,
+      // CRITICAL: Get user profile data directly from userData object
+      name: userData.nombre || '',
+      web: userData.webEmpresa || '',
+      linkedin: userData.linkedin || '',
+      perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
+      company_name: userData.webEmpresa || '',
+      profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : '')
+    };
+    
+    console.log('Sending complete payload to server:', payload);
+    
+    try {
+      // Determine endpoint based on plan type
+      let endpoint = '/save-free-plan';
+      
+      // For paid plans that aren't free trial
+      if (planType === 'plan3' || (planType === 'plan2' && !plan2isfree)) {
+        endpoint = '/create-checkout-session';
       }
-          
-          // Get profile type from sessionStorage
-          const profileType = sessionStorage.getItem('profile_type') || 'individual';
-          
-          // Get company name if applicable
-          const companyName = sessionStorage.getItem('company_name') || '';
-          
-          // Decide which function to call based on selected plan
-          if (selectedPlan === 'plan1') {
-            handleFreePlanSubmission(selectedPlan, profileType, companyName);
-          } else if (selectedPlan === 'plan2') {
-            if (plan2isfree) {
-              handleFreePlanSubmission(selectedPlan, profileType, companyName);
-            } else {
-              handleStripeCheckout(selectedPlan, profileType, companyName);
-            }
-          } else if (selectedPlan === 'plan3') {
-            handleStripeCheckout(selectedPlan, profileType, companyName);
-          } else if (selectedPlan === 'plan4') {
-            handleFreePlanSubmission(selectedPlan, profileType, companyName);
-          }
-        });
-      }
-    });
-
-    // Function to collect profile information
-    function getProfileInfo() {
-      return {
-        name: sessionStorage.getItem('name') || '',
-        web: sessionStorage.getItem('web') || '',
-        linkedin: sessionStorage.getItem('linkedin') || '',
-        perfil_profesional: sessionStorage.getItem('perfil_profesional') || ''
-      };
-    }
-
-    // Function to collect feedback information
-    function collectFeedback() {
-      const feedbackData = sessionStorage.getItem('feedback');
-      return feedbackData ? JSON.parse(feedbackData) : {
-        industrias: '',
-        ramas: '',
-        fuentes_reguladores: '',
-        rangos: ''
-      };
-    }
-
-    // Function to build sub_rama_map
-    function buildSubRamaMap() {
-      const subRamaMapData = sessionStorage.getItem('sub_rama_map');
-      return subRamaMapData ? JSON.parse(subRamaMapData) : {};
-    }
-
-    // Updated handleFreePlanSubmission function with new variables
-    async function handleFreePlanSubmission(plan, profileType, companyName) {
-      // Get profile info
-      const profileInfo = getProfileInfo();
       
-      // Get the cobertura legal data from sessionStorage
-      const fuentesGobierno = JSON.parse(sessionStorage.getItem('fuentesGobiernoInput') || '[]');
-      const fuentesReguladores = JSON.parse(sessionStorage.getItem('fuentesReguladoresInput') || '[]');
-      const cobertura_legal = {
-        "fuentes-gobierno": fuentesGobierno,
-        "fuentes-reguladores": fuentesReguladores
-      };
-      
-      // Get selected industry tags from sessionStorage
-      const industry_tags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
-      
-      // Get selected rangos from sessionStorage
-      const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
-      
-      // Get selected rama jurídicas from sessionStorage
-      const rama_juridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
-      
-      // Build sub_rama_map
-      const sub_rama_map = buildSubRamaMap();
-      
-      // Get feedback
-      const feedback = collectFeedback();
-
-      const submitButton = document.getElementById('nextBtn');
-      submitButton.innerHTML = '<div class="loader"></div>';
-      submitButton.disabled = true;
-
-      // Log all data being sent to server
-      console.log('Free Plan Submission Data:', {
-        plan,
-        profile_type: profileType,
-        company_name: companyName,
-        name: profileInfo.name,
-        web: profileInfo.web,
-        linkedin: profileInfo.linkedin,
-        perfil_profesional: profileInfo.perfil_profesional,
-        industry_tags,
-        rama_juridicas,
-        rangos,
-        sub_rama_map,
-        cobertura_legal,
-        feedback
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
       });
-
-      try {
-        const resp = await fetch('/save-free-plan', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            plan,
-            industry_tags,
-            rama_juridicas,
-            profile_type: profileType,
-            sub_rama_map,
-            cobertura_legal,
-            company_name: companyName,
-            name: profileInfo.name,
-            web: profileInfo.web,
-            linkedin: profileInfo.linkedin,
-            perfil_profesional: profileInfo.perfil_profesional,
-            rangos,
-            feedback
-          }),
-        });
-        
-        if (!resp.ok) throw new Error('Failed to save free plan data');
-        const result = await resp.json();
-        if (result.redirectUrl) {
-          window.location.href = result.redirectUrl;
-        } else {
-          throw new Error('No redirectUrl from server');
-        }
-      } catch (err) {
-        console.error('Error saving free plan:', err);
-        alert('Failed to process your request. Please try again.');
-        submitButton.innerHTML = 'Finalizar';
-        submitButton.disabled = false;
-      }
-    }
-
-    // Updated handleStripeCheckout function with new variables
-    async function handleStripeCheckout(plan, profileType, companyName) {
-      // Get profile info
-      const profileInfo = getProfileInfo();
       
-      // Get the cobertura legal data from sessionStorage
-      const fuentesGobierno = JSON.parse(sessionStorage.getItem('fuentesGobiernoInput') || '[]');
-      const fuentesReguladores = JSON.parse(sessionStorage.getItem('fuentesReguladoresInput') || '[]');
-      const cobertura_legal = {
-        "fuentes-gobierno": fuentesGobierno,
-        "fuentes-reguladores": fuentesReguladores
-      };
+      if (!resp.ok) throw new Error(`Failed to save plan data: ${resp.status}`);
       
-      // Get selected industry tags from sessionStorage
-      const industry_tags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+      const result = await resp.json();
       
-      // Get selected rangos from sessionStorage
-      const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
-      
-      // Get selected rama jurídicas from sessionStorage
-      const rama_juridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
-      
-      // Build sub_rama_map
-      const sub_rama_map = buildSubRamaMap();
-      
-      // Get feedback
-      const feedback = collectFeedback();
-
-      const submitButton = document.getElementById('nextBtn');
-      submitButton.innerHTML = '<div class="loader"></div>';
-      submitButton.disabled = true;
-
-      let isTrial = false;
-      if (plan === 'plan2') {
-        isTrial = true;
-      }
-
-      // Log all data being sent to server
-      console.log('Stripe Checkout Data:', {
-        plan,
-        profile_type: profileType,
-        company_name: companyName,
-        name: profileInfo.name,
-        web: profileInfo.web,
-        linkedin: profileInfo.linkedin,
-        perfil_profesional: profileInfo.perfil_profesional,
-        industry_tags,
-        rama_juridicas,
-        rangos,
-        sub_rama_map,
-        cobertura_legal,
-        feedback,
-        isTrial
-      });
-
-      try {
-        const resp = await fetch('/create-checkout-session', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({
-            plan,
-            industry_tags,
-            rama_juridicas,
-            profile_type: profileType,
-            sub_rama_map,
-            isTrial,
-            cobertura_legal,
-            company_name: companyName,
-            name: profileInfo.name,
-            web: profileInfo.web,
-            linkedin: profileInfo.linkedin,
-            perfil_profesional: profileInfo.perfil_profesional,
-            rangos,
-            feedback
-          }),
-        });
-        
-        if (!resp.ok) throw new Error('Failed to create Checkout Session');
-        const { sessionId } = await resp.json();
-        const stripe = Stripe('pk_live_51QOlLCEpe9srfTKE4ymTYWhMSWs7qDvRQvmnzgoh0FmOWQ9cYTlOawWNiWQReOQeDx7Uslw7cbj9ClBGFas8heQq00wKegaiJg'); //live
+      if (endpoint === '/create-checkout-session') {
+        const { sessionId } = result;
+        const stripe = Stripe('pk_live_51QOlLCEpe9srfTKE4ymTYWhMSWs7qDvRQvmnzgoh0FmOWQ9cYTlOawWNiWQReOQeDx7Uslw7cbj9ClBGFas8heQq00wKegaiJg');
         await stripe.redirectToCheckout({ sessionId });
-      } catch (err) {
-        console.error('Stripe checkout error:', err);
-        alert('Failed to redirect to payment page. Please try again.');
-        submitButton.innerHTML = 'Continuar';
-        submitButton.disabled = false;
+      } else if (result.redirectUrl) {
+        window.location.href = result.redirectUrl;
       }
+    } catch (error) {
+      console.error('Error saving data:', error);
+      alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
+      submitButton.innerHTML = 'Finalizar';
+      submitButton.disabled = false;
     }
-</script>
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Get all data from sessionStorage
-    const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-    const industryTags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
-    const ramaJuridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
-    const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
-    const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
-    const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
-    const feedback = JSON.parse(sessionStorage.getItem('feedback') || '{}');
-    
-    // Store the full userData in hidden inputs for form submission
-    const hiddenInputsContainer = document.createElement('div');
-    hiddenInputsContainer.style.display = 'none';
-    hiddenInputsContainer.innerHTML = `
-        <input type="hidden" name="name" id="name" value="${userData.nombre || ''}">
-        <input type="hidden" name="web" id="web" value="${userData.webEmpresa || ''}">
-        <input type="hidden" name="linkedin" id="linkedin" value="${userData.linkedin || ''}">
-        <input type="hidden" name="perfil_profesional" id="perfil_profesional" value="${Array.isArray(userData.perfil) ? userData.perfil.join(',') : ''}">
-        <input type="hidden" name="company_name" id="company_name" value="${userData.webEmpresa || ''}">
-        <input type="hidden" name="profile_type" id="profile_type" value="${userData.otro_perfil || userData.perfil?.[0] || ''}">
-    `;
-    document.body.appendChild(hiddenInputsContainer);
-    
-    // Handle form submission for any plan selection button
-    document.querySelectorAll('.btn-finalizar, button[type="submit"]').forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Get selected plan
-            const planType = this.getAttribute('data-plan') || 'free';
-            
-            // Create payload with ALL required data
-            const payload = {
-                plan: planType,
-                industry_tags: industryTags,
-                rama_juridicas: ramaJuridicas,
-                sub_rama_map: subRamaMap,
-                rangos: rangos,
-                cobertura_legal: {
-                    "fuentes-gobierno": userData.fuentes || coberturaLegal["fuentes-gobierno"] || [],
-                    "fuentes-reguladores": userData.reguladores || coberturaLegal["fuentes-reguladores"] || []
-                },
-                feedback: feedback,
-                name: userData.nombre || '',
-                web: userData.webEmpresa || '',
-                linkedin: userData.linkedin || '',
-                perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
-                company_name: userData.webEmpresa || '',
-                profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : '')
-            };
-            
-            // Send data to server
-            fetch('/save-free-plan', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.redirectUrl) {
-                    window.location.href = data.redirectUrl;
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
-            });
-        });
-    });
-    
-    // For debugging purposes - remove in production
-    console.log('User data from session:', userData);
-    console.log('Sending to server:', {
-        industryTags,
-        ramaJuridicas,
-        subRamaMap,
-        rangos,
-        coberturaLegal,
-        userData
-    });
+  });
 });
 
 </script>
+
 </html>

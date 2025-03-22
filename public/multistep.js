@@ -321,7 +321,9 @@ function nextPrev(n) {
     const profileType = document.getElementById('userTypeSelect').value.trim();
     
     const companyName =  document.getElementById('companyName').value.trim();
-    
+        
+        // [CHANGED] New toggle for free plan2 on the front-end
+    let isPlan2Free = "yes"; 
 
     // [CHANGED] If plan2 is free => handleFreePlanSubmission with no limit
     if (plan === 'plan2' && isPlan2Free === 'yes') {
