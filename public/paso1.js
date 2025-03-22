@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', cargarYGuardarCatalogo);
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('onboardingForm');
   const perfilEspecializado = document.getElementById('perfil_especializado');
+  const perfilEspecializadoDespacho = document.getElementById('perfil_especializado');
   const especializacionField = document.getElementById('especializacion_field');
   const perfilOtro = document.getElementById('perfil_otro');
   const otroPerfilField = document.getElementById('otro_perfil_field');
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Mostrar/ocultar campos condicionales
   function toggleConditionalFields() {
       especializacionField.style.display = perfilEspecializado.checked ? 'block' : 'none';
+      especializacionField.style.display = perfilEspecializadoDespacho.checked ? 'block' : 'none';
       otroPerfilField.style.display = perfilOtro.checked ? 'block' : 'none';
   }
 
@@ -38,7 +40,6 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('especializacion').focus();
           return;
       }
-      
       if (perfilOtro.checked && document.getElementById('otro_perfil').value.trim() === '') {
           alert('Por favor, especifica tu perfil');
           document.getElementById('otro_perfil').focus();
@@ -61,14 +62,23 @@ document.addEventListener('DOMContentLoaded', function() {
               userData[key] = value;
           }
       }
+
+          // Make sure these fields are included
+      if (perfilEspecializado.checked && document.getElementById('especializacion')) {
+        userData.especializacion = document.getElementById('especializacion').value.trim();
+      }
+      
+      if (perfilOtro.checked && document.getElementById('otro_perfil')) {
+        userData.otro_perfil = document.getElementById('otro_perfil').value.trim();
+      }
       
       console.log('Datos del usuario:', userData);
-      
       // Guardar datos en sessionStorage
       sessionStorage.setItem('userData', JSON.stringify(userData));
-      
       // Redirigir a paso2.html
       window.location.href = 'paso2.html';
+          
+      
   });
 });
 

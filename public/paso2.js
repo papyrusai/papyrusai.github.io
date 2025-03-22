@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
  
   async function conectarConPerplexity(userData) {
-    const API_KEY = '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';
+    const API_KEY = process.env.API_KEY_PERPLEXITY;
     const API_URL = 'https://api.perplexity.ai/chat/completions';
   
     console.log("🔄 Iniciando conexión con API Perplexity");

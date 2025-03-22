@@ -456,7 +456,10 @@
       linkedin: userData.linkedin || '',
       perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
       company_name: userData.webEmpresa || '',
-      profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : '')
+      profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : ''),
+      especializacion: userData.especializacion,
+      otro_perfil: userData.otro_perfil
+
     };
     
     console.log('Sending complete payload to server:', payload);
