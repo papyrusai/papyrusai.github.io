@@ -1484,7 +1484,7 @@ app.get('/save-user', async (req, res) => {
     const profileType = decodeURIComponent(rawProfileType);
     const cobertura_legal = JSON.parse(decodeURIComponent(rawCobertura_legal));
     const company_name = JSON.parse(decodeURIComponent(rawCompanyName));
-    const especializacion = decodeURIComponent(rawEspecializacion);
+    const especializacion = JSON.parse(decodeURIComponent(rawEspecializacion));
     const otro_perfil = JSON.parse(decodeURIComponent(rawOtroperfil));
 
 
