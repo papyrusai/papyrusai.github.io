@@ -1463,6 +1463,8 @@ app.get('/save-user', async (req, res) => {
   const rawProfileType = req.query.profile_type;
   const rawCobertura_legal = req.query.cobertura_legal;
   const rawCompanyName = req.query.company_name;
+  const rawEspecializacion = req.query.especializacion;
+  const rawOtroperfil = req.query.otro_perfil;
 
   // [ADDED] sub_rama_map
   const rawSubRamaMap = req.query.sub_rama_map;
@@ -1480,6 +1482,8 @@ app.get('/save-user', async (req, res) => {
     const profileType = decodeURIComponent(rawProfileType);
     const cobertura_legal = JSON.parse(decodeURIComponent(rawCobertura_legal));
     const company_name = JSON.parse(decodeURIComponent(rawCompanyName));
+    const especializacion = JSON.parse(decodeURIComponent(rawEspecializacion));
+    const otro_perfil = JSON.parse(decodeURIComponent(rawOtroperfil));
 
 
     // [CHANGED] parse sub_rama_map
@@ -1512,7 +1516,9 @@ app.get('/save-user', async (req, res) => {
       profile_type: profileType,
       sub_rama_map: subRamaMapObj,
       cobertura_legal: cobertura_legal ,
-      company_name : company_name
+      company_name : company_name,
+      especializacion: especializacion,
+      otro_perfil: otro_perfil
     };
 
     // if we have a valid subscription ID, store it as well

@@ -435,9 +435,11 @@
     }
     
     // Show loading state
-    submitButton.innerHTML = '<div class="loader"></div>';
-    submitButton.disabled = true;
-    
+   // Show loading state - replace text with loader and disable button
+   const originalButtonText = this.textContent.trim();
+      this.innerHTML = '<div class="loader"></div><span>Procesando...</span>';
+      this.classList.add('loading');
+      this.disabled = true;
     // Create a complete payload with ALL user data
     const payload = {
       plan: planType,
@@ -492,9 +494,11 @@
       }
     } catch (error) {
       console.error('Error saving data:', error);
+      // Restore button state on error
+      this.innerHTML = originalButtonText;
+        this.classList.remove('loading');
+        this.disabled = false;
       alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
-      submitButton.innerHTML = 'Finalizar';
-      submitButton.disabled = false;
     }
   });
 });
