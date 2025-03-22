@@ -1466,6 +1466,8 @@ app.get('/save-user', async (req, res) => {
   const rawEspecializacion = req.query.especializacion;
   const rawOtroperfil = req.query.otro_perfil;
 
+  console.log(rawEspecializacion);
+
   // [ADDED] sub_rama_map
   const rawSubRamaMap = req.query.sub_rama_map;
 
@@ -1482,7 +1484,7 @@ app.get('/save-user', async (req, res) => {
     const profileType = decodeURIComponent(rawProfileType);
     const cobertura_legal = JSON.parse(decodeURIComponent(rawCobertura_legal));
     const company_name = JSON.parse(decodeURIComponent(rawCompanyName));
-    const especializacion = JSON.parse(decodeURIComponent(rawEspecializacion));
+    const especializacion = decodeURIComponent(rawEspecializacion);
     const otro_perfil = JSON.parse(decodeURIComponent(rawOtroperfil));
 
 
