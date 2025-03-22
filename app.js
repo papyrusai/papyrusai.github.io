@@ -1451,6 +1451,11 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
+/*fetch api_perplixity*/
+app.get('/api-key', (req, res) => {
+  res.json({ apiKey: process.env.API_KEY_PERPLEXITY });
+});
+
 app.get('/save-user', async (req, res) => {
   const rawIndustryTags = req.query.industry_tags;
   const rawRamaJuridicas = req.query.rama_juridicas;
