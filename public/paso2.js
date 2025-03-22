@@ -18,10 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
  
   async function conectarConPerplexity(userData) {
-    const API_KEY = await getApiKey;
+    const API_KEY = await getApiKey();
     const API_URL = 'https://api.perplexity.ai/chat/completions';
   
     console.log("🔄 Iniciando conexión con API Perplexity");
+    console.log(API_KEY);
   
     try {
       // Construir el prompt con el contexto enriquecido del usuario
