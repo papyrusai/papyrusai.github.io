@@ -97,15 +97,14 @@ app.get('/multistep.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'multistep.html'));
 });
 
-// Route to serve multistep.html only if authenticated
+app.get('/paso1.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'paso1.html'));
+});
+
 app.get('/profile.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-
-
-
-// Route to serve multistep.html only if authenticated
 app.get('/suscripcion.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'suscripcion.html'));
 });
@@ -280,7 +279,7 @@ app.post('/login', (req, res, next) => {
       if (user.subscription_plan) {
         return res.status(200).json({ redirectUrl: '/profile' });
       } else {
-        return res.status(200).json({ redirectUrl: '/multistep.html' });
+        return res.status(200).json({ redirectUrl: '/paso1.html' });
       }
     });
   })(req, res, next);
@@ -355,7 +354,7 @@ app.post('/register', async (req, res) => {
       }
 
       // Otherwise normal new user flow
-      return res.status(200).json({ redirectUrl: '/multistep.html' });
+      return res.status(200).json({ redirectUrl: '/paso1.html' });
     });
   } catch (err) {
     console.error("Error registering user:", err);
@@ -403,7 +402,7 @@ app.get('/auth/google/callback',
         }
         return res.redirect('/profile');
       } else {
-        return res.redirect('/multistep.html');
+        return res.redirect('/paso1.html');
       }
     } catch (err) {
       console.error('Error connecting to MongoDB', err);
@@ -1442,7 +1441,7 @@ app.post('/create-checkout-session', async (req, res) => {
       locale: 'es', // 'es' for Spanish
 
       success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
-      cancel_url: 'https://app.papyrus-ai.com/multistep.html',
+      cancel_url: 'https://app.papyrus-ai.com/paso1.html',
     });
 
     res.json({ sessionId: session.id });
@@ -1531,12 +1530,34 @@ app.get('/save-user', async (req, res) => {
 
 /*free*/
 app.post('/save-free-plan', async (req, res) => {
-  const { plan, industry_tags, rama_juridicas, profile_type, sub_rama_map,cobertura_legal,company_name} = req.body; 
+  const { 
+    plan, 
+    industry_tags, 
+    rama_juridicas, 
+    profile_type, 
+    sub_rama_map, 
+    cobertura_legal, 
+    company_name,
+    name,
+    web,
+    linkedin,
+    perfil_profesional,
+    rangos,
+    feedback
+  } = req.body;
+  
   if (!req.user) {
     return res.status(401).send('Unauthorized');
   }
 
   try {
+    // Create current date in yyyy-mm-dd format
+    const currentDate = new Date();
+    const yyyy = currentDate.getFullYear();
+    const mm = String(currentDate.getMonth() + 1).padStart(2, '0'); // January is 0!
+    const dd = String(currentDate.getDate()).padStart(2, '0');
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
     const db = client.db("papyrus");
@@ -1552,17 +1573,28 @@ app.post('/save-free-plan', async (req, res) => {
           profile_type,
           sub_rama_map,
           cobertura_legal,
-          company_name 
+          company_name,
+          name,
+          web,
+          linkedin,
+          perfil_profesional,
+          rangos,
+          feedback_login: feedback, // Renamed from feedback to feedback_login
+          registration_date: formattedDate,    // String format yyyy-mm-dd
+          registration_date_obj: currentDate   // Also save native Date object for better querying
         }
       },
       { upsert: true }
     );
+    
+    await client.close();
     res.json({ redirectUrl: '/profile' });
   } catch (error) {
     console.error('Error saving free plan data:', error);
     res.status(500).send('Error saving user data');
   }
 });
+
 
 
 /*Feedback*/

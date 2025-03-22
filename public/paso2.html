@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procesando - Papyrus</title>
+  <link rel="stylesheet" href="styles/onboarding.css">
+  <style>
+    /* Keyframes for spinning loader */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Small inline loader style */
+    .small-loader-inline {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 1s linear infinite;
+      margin-right: 10px;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    /* Animated text style for the "Analizando..." effect */
+    #api-status {
+      display: inline-flex;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    #api-status .animate-letter {
+      display: inline-block;
+      animation: colorShift 1.5s linear infinite;
+    }
+    @keyframes colorShift {
+      0%, 100% { color: #333; }
+      50% { color: var(--primary-color); }
+    }
+    /* Staggered animation delays for each letter.
+       Note: The first child is the inline loader, so delays start at the second child. */
+    #api-status .animate-letter:nth-child(2) { animation-delay: 0s; }
+    #api-status .animate-letter:nth-child(3) { animation-delay: 0.1s; }
+    #api-status .animate-letter:nth-child(4) { animation-delay: 0.2s; }
+    #api-status .animate-letter:nth-child(5) { animation-delay: 0.3s; }
+    #api-status .animate-letter:nth-child(6) { animation-delay: 0.4s; }
+    #api-status .animate-letter:nth-child(7) { animation-delay: 0.5s; }
+    #api-status .animate-letter:nth-child(8) { animation-delay: 0.6s; }
+    #api-status .animate-letter:nth-child(9) { animation-delay: 0.7s; }
+    #api-status .animate-letter:nth-child(10) { animation-delay: 0.8s; }
+    #api-status .animate-letter:nth-child(11) { animation-delay: 0.9s; }
+    #api-status .animate-letter:nth-child(12) { animation-delay: 1s; }
+    #api-status .animate-letter:nth-child(13) { animation-delay: 1.1s; }
+    #api-status .animate-letter:nth-child(14) { animation-delay: 1.2s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="progress-container">
+      <div class="progress-steps">
+        <div class="step active">1. Perfil</div>
+        <div class="step">2. Personalización</div>
+        <div class="step">3. Plan</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 66.66%"></div>
+      </div>
+    </div>
+
+    <div class="procesando">
+      <h2>Analizando tu perfil</h2>
+      <p>Estamos procesando tu información para ofrecerte las etiquetas más relevantes para tu trabajo.</p>
+      
+      <p class="procesando-info">Esto puede tardar unos segundos...</p>
+      
+      <div class="debug-panel" style="margin-top: 20px; padding: 10px; border: 1px dashed #ccc;">
+        <h4>Personalización de alertas normativas</h4>
+        <!-- Inline small loader and animated text in one line -->
+        <div id="api-status">
+          <span class="small-loader-inline"></span>
+          <span class="animate-letter">A</span>
+          <span class="animate-letter">n</span>
+          <span class="animate-letter">a</span>
+          <span class="animate-letter">l</span>
+          <span class="animate-letter">i</span>
+          <span class="animate-letter">z</span>
+          <span class="animate-letter">a</span>
+          <span class="animate-letter">n</span>
+          <span class="animate-letter">d</span>
+          <span class="animate-letter">o</span>
+          <span class="animate-letter">.</span>
+          <span class="animate-letter">.</span>
+          <span class="animate-letter">.</span>
+        </div>
+        <button id="btn-continuar" style="display:none; margin-top:10px;">Continuar a Paso 3</button>
+      </div>
+      
+    </div>
+    <!--
+    <div class="debug-section">
+      <h3>Depuración de API</h3>
+      <button id="btn-test-api" class="btn-debug">Probar conexión API</button>
+      <div id="api-test-results" class="debug-results"></div>
+    </div>
+    -->
+  </div>
+
+  <script src="paso2.js"></script>
+</body>
+</html>

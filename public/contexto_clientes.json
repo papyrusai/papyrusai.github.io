@@ -1,0 +1,281 @@
+{
+  "entrevistas": [
+    {
+      "perfil": "socia_fiscal",
+      "nombre": "Gemma De la Calle",
+      "despacho": "Mavens",
+      "industria": "fiscal",
+      "tipo_legislacion": [
+        "Unión Europea",
+        "Estatal",
+        "Autonómico",
+        "Local"
+      ],
+      "necesidades": [
+        "Sentencias",
+        "Legislación del BOE",
+        "Proyectos de ley"
+      ],
+      "sectores": [
+        "Restauración",
+        "Funerarias",
+        "Farmacéutico",
+        "Tecnológico",
+        "Energético"
+      ],
+      "resumen": "Gemma dirige el departamento tributario de Mavens y necesita estar al día con regulaciones fiscales multijurisdiccionales. Su equipo busca información específica sobre sentencias, legislación del BOE y proyectos de ley."
+    },
+    {
+      "perfil": "compliance_officer",
+      "nombre": "Miguel Ruiz",
+      "despacho": "QEnergy",
+      "industria": "energético",
+      "tipo_legislacion": [
+        "Normativas europeas (CNMV, DORA)",
+        "Legislación española sectorial"
+      ],
+      "necesidades": [
+        "Compliance normativo en energía y laboral",
+        "Seguimiento en operaciones internacionales (EE.UU., Reino Unido, Chile)"
+      ],
+      "sectores": [],
+      "resumen": "Miguel Ruiz, compliance officer en QEnergy, busca normativas europeas y españolas relacionadas con energía y compliance. Necesita seguimiento normativo para operaciones internacionales."
+    },
+    {
+      "perfil": "socio_despacho_mediano",
+      "nombre": "Tomás Villatoro",
+      "despacho": "IUS Aequitas",
+      "industria": ["civil", "mercantil", "administrativo"],
+      "tipo_legislacion": [
+        "Leyes",
+        "Reglamentos",
+        "Directivas europeas"
+      ],
+      "necesidades": [
+        "Clasificación normativa por áreas legales e industrias"
+      ],
+      "sectores": [],
+      "resumen": "Tomás Villatoro requiere cobertura completa de leyes, reglamentos y directivas europeas clasificadas por áreas legales e industrias como turismo y sostenibilidad."
+    },
+    {
+      "perfil": "clo_petrolero",
+      "nombre": "José Bento",
+      "despacho": "Q8 Spain",
+      "industria": ["retail", "estaciones de servicio"],
+      "tipo_legislacion": [
+        "Normativa medioambiental e hidrocarburos",
+        "Impuestos especiales"
+      ],
+      "necesidades": [
+        "Seguimiento local para estaciones de servicio (ruido, agua)"
+      ],
+      "sectores": [],
+      "resumen": "José Bento necesita normativa sectorial específica para estaciones de servicio, incluyendo medioambiente e impuestos especiales. Busca cobertura local por ubicación geográfica."
+    },
+    {
+      "perfil": "socio_esg",
+      "nombre": "Sergio",
+      "despacho": "Garrigues",
+      "industria": ["sostenibilidad", "energía"],
+      "tipo_legislacion": [
+        "Normativa europea sobre sostenibilidad",
+        "Ley de Sociedades de Capital"
+      ],
+      "necesidades": [
+        "Servicio que mantenga al día sobre normativa europea y autonómica",
+        "Alertas personalizadas sobre cambios normativos relevantes"
+      ],
+      "sectores": [],
+      "resumen": "Sergio, socio en Garrigues, necesita un sistema que le permita mantenerse al día sobre normativa europea y autonómica en sostenibilidad y energía. Actualmente recibe demasiada información no priorizada."
+    },
+    {
+      "perfil": "clo_cripto",
+      "nombre": "Pedro Méndez de Vigo",
+      "despacho": "Kraken",
+      "industria": ["criptoactivos", "financiero"],
+      "tipo_legislacion": [
+        "EBA y ESMA (autorización y servicios)",
+        "Reglamentos de la UE relacionados con KYC",
+        "Directivas sobre blanqueo de capitales"
+      ],
+      "necesidades": [
+        "Seguimiento detallado de normativas en desarrollo (consultas públicas, transposiciones)",
+        "Centralización de información normativa"
+      ],
+      "sectores": [],
+      "resumen": "Pedro Méndez de Vigo, CLO en Kraken, busca un sistema que centralice la información normativa relacionada con criptoactivos y facilite el seguimiento de normativas en desarrollo."
+    },
+    {
+      "perfil": "equipo_conocimiento",
+      "nombre": "Sara Bento",
+      "despacho": "Pérez-Llorca",
+      "industria": ["gestión del conocimiento"],
+      "tipo_legislacion": [
+        "Normativa estatal (BOE)",
+        "Boletines autonómicos"
+      ],
+      "necesidades": [
+        "Automatización del seguimiento normativo diario",
+        "Clasificación detallada por áreas jurídicas y sectores económicos"
+      ],
+      "sectores": [],
+      "resumen": "Sara Bento, del equipo de conocimiento en Pérez-Llorca, necesita una herramienta que automatice el seguimiento normativo diario (BOE y boletines autonómicos) y clasifique la información por áreas jurídicas."
+    },
+    {
+      "perfil": "gestoría_laboral",
+      "nombre": ["Mónica", "Estela"],
+      "despacho": "Sincro",
+      "industria": ["laboral", "igualdad", "fiscal"],
+      "tipo_legislacion": [
+        "BOE",
+        "BOCA",
+        "Ayudas y subvenciones locales"
+      ],
+      "necesidades": [
+        "Seguimiento normativo en temas laborales e igualdad",
+        "Cobertura específica para cambios jurisprudenciales"
+      ],
+      "sectores": [],
+      "resumen": "Mónica y Estela, abogadas en Sincro, buscan un sistema que facilite el seguimiento normativo laboral e igualdad, incluyendo ayudas locales."
+    },
+    {
+      "perfil": "abogado_junior",
+      "nombre": "Miguel de Gregorio Alonso",
+      "despacho": "AVQ Legal",
+      "industria": "generalista",
+      "tipo_legislacion": [
+        "Estatal",
+        "Unión Europea"
+      ],
+      "necesidades": [
+        "Normativa AEMPS",
+        "Decisiones farmacéuticas europeas",
+        "Dictámenes de la Agencia Española de Protección de Datos"
+      ],
+      "sectores": [
+        "Farmacéutico",
+        "Societario",
+        "Tributario",
+        "Mercantil"
+      ],
+      "resumen": "Miguel es abogado junior en AVQ Legal, un despacho mediano con 40 abogados y oficinas en Madrid y Barcelona. Formado con un Doble Grado en Derecho y ADE y un Doble Máster en Acceso a la Abogacía. Enfrenta desafíos con el exceso de información normativa y busca soluciones de IA para síntesis de regulaciones y generación de contenido."
+    },
+    {
+      "perfil": "directora_legal",
+      "nombre": "Paula Álvarez Osorio",
+      "despacho": "iSalud",
+      "industria": "seguros",
+      "tipo_legislacion": [
+        "Unión Europea",
+        "Estatal"
+      ],
+      "necesidades": [
+        "Tramitación parlamentaria",
+        "Alertas tempranas macro-regulaciones",
+        "Interpretación normativa contextualizada"
+      ],
+      "sectores": [
+        "Mediadores de seguros",
+        "Tecnológico",
+        "Protección de datos",
+        "Ciberseguridad",
+        "Consumo"
+      ],
+      "resumen": "Paula es CLO en iSalud, una empresa mediana de seguros. Necesita priorizar certificaciones de ciberseguridad y seguimiento de regulación específica del sector asegurador. Su equipo legal reducido (2-3 personas) requiere optimización de tiempo en el seguimiento normativo, especialmente en mandatos europeos y su implementación."
+    },
+    {
+      "perfil": "socio_fiscal",
+      "nombre": "Nazario",
+      "despacho": "Zadal",
+      "industria": "fiscal",
+      "tipo_legislacion": [
+        "Estatal",
+        "Autonómico"
+      ],
+      "necesidades": [
+        "Consultas vinculantes DGT",
+        "Resoluciones ICAX",
+        "Notificaciones AEDAF",
+        "Alertas BOE"
+      ],
+      "sectores": [
+        "General tributario",
+        "Fiscal empresarial"
+      ],
+      "resumen": "Nazario es socio fiscal en Zadal, un despacho pequeño. Necesita mantenerse actualizado sobre nuevas regulaciones fiscales, especialmente las publicadas a final de año (noviembre/diciembre). Actualmente utiliza alertas del BOE, Norma CEF y AEDAF para seguimiento fiscal, pero busca soluciones más eficientes para analizar el impacto normativo."
+    },
+    {
+      "perfil": "abogado_mercantil",
+      "nombre": "Álvaro",
+      "despacho": "Zadal",
+      "industria": "mercantil",
+      "tipo_legislacion": [
+        "Estatal",
+        "Autonómico"
+      ],
+      "necesidades": [
+        "Disposiciones de la dirección general del registro del notariado",
+        "Normativa sobre prendas e hipotecas",
+        "Boletines de CCAA principales"
+      ],
+      "sectores": [
+        "Societario",
+        "Mercantil",
+        "Hipotecario"
+      ],
+      "resumen": "Álvaro trabaja en el departamento mercantil de Zadal. Se centra en el seguimiento de disposiciones del BOE y la dirección general del registro del notariado, especialmente en temas de prendas e hipotecas. Utiliza la web de notarios y registradores para asuntos societarios y necesita boletines específicos de comunidades autónomas clave como Cataluña, Madrid y Andalucía."
+    },
+    {
+      "perfil": "compliance_officer",
+      "nombre": "Antonio Madueño",
+      "despacho": "Cartesio",
+      "industria": "financiera",
+      "tipo_legislacion": [
+        "Unión Europea",
+        "Estatal"
+      ],
+      "necesidades": [
+        "Regulaciones ESMA",
+        "Normativa CNMV",
+        "Regulación de entidades gestoras (SGIIC)",
+        "Blanqueo de capitales",
+        "Protección de datos"
+      ],
+      "sectores": [
+        "Fondos de inversión",
+        "Instituciones de inversión colectiva",
+        "Financiero"
+      ],
+      "resumen": "Antonio es compliance officer en Cartesio, un fondo de inversión pequeño. Dedica 15-30 minutos diarios a la lectura de normativas, enfocándose en 3-4 regulaciones importantes al año. No utiliza software especializado actualmente y necesita seguimiento de regulaciones de ESMA, CNMV y normativa sobre blanqueo de capitales, con especial interés en entidades gestoras tipo SGIIC."
+    },
+    {
+      "perfil": "clo_cripto",
+      "nombre": "Enrique",
+      "despacho": null,
+      "industria": ["cripto", "financiero"],
+      "tipo_legislacion": [
+        "RTS, MiCA, DORA",
+        "GAFI/FATF",
+        "Secretaría del Tesoro en España"
+      ],
+      "necesidades": [
+        "Cumplimiento normativo global",
+        "Blanqueo de capitales"
+      ],
+      "sectores": [],
+      "resumen": "Enrique necesita estar al día con regulaciones cripto-financieras globales como RTS, MiCA, DORA."
+    }
+  ],
+  "ejemplos": [
+    {
+      "perfil": "abogado_especializado",
+      "especializacion": "fiscal",
+      "descripcion": {
+        "necesidad_principal": ["Seguimiento fiscal multijurisdiccional"],
+        "industria_relevante": [""]
+      }
+    }
+  ]
+}
+
+  

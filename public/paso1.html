@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Onboarding Papyrus</title>
+  <link rel="stylesheet" href="styles/onboarding.css">
+  <style>
+    /* --- Additional adjustments for a leaner step1 --- */
+    body, .container, .formulario {
+      font-size: 0.85em; /* overall font-size reduced */
+    }
+    .form-group, .section, .dropdown-group {
+      margin-bottom: 10px;
+      padding: 5px;
+    }
+    /* Siguiente button updated */
+    .btn-siguiente {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      width: 140px;
+    padding: 12px 0;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    }
+    /* Dropdown group styles (for both perfiles and cobertura) */
+    .dropdown-group {
+      position: relative;
+      margin-top: 5px;
+    }
+   
+    .dropdown-options {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      max-height: 150px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    .dropdown-options .checkbox-item {
+      padding: 5px 10px;
+      border-bottom: solid 1px #ccc;
+    }
+    .selected-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .selected-tags .tag {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Progress Bar (steps remain as Plan / Perfil / Personalización) -->
+    <div class="progress-container">
+      <div class="progress-steps">
+        <div class="step active">1. Perfil</div>
+        <div class="step">2. Personalización</div>
+        <div class="step">3. Plan</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="formulario">
+      <h2>Información de Usuario</h2>
+      <form id="onboardingForm">
+        <!-- Perfil Section -->
+        <div class="section">
+          <h3>Perfil</h3>
+          <div class="form-group">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" name="nombre" placeholder="Introduce tu nombre" required>
+          </div>
+          <div class="form-group">
+            <label for="linkedin">LinkedIn</label>
+            <input type="url" id="linkedin" name="linkedin" placeholder="URL de tu perfil de LinkedIn">
+            <small>Para mejorar la personalización de tu perfil</small>
+          </div>
+          <div class="form-group">
+            <label for="webEmpresa">Web de la Empresa</label>
+            <input type="url" id="webEmpresa" name="webEmpresa" placeholder="URL de la web de la empresa" required>
+          </div>
+          
+          <!-- Perfiles profesionales dropdown -->
+          <div class="form-group">
+            <label>Perfiles profesionales</label>
+            <!-- Selected profiles will appear here -->
+            <div id="perfil-selected" class="selected-tags"></div>
+            <div class="dropdown-group">
+              <button type="button" class="dropdown-toggle" onclick="toggleDropdown('perfil-dropdown')">Selecciona perfiles profesionales </button>
+              <div id="perfil-dropdown" class="dropdown-options">
+                <div class="checkbox-item">
+                  <input type="checkbox" id="perfil_abogado_empresa" name="perfil[]" value="abogado_empresa" onchange="updateSelected('perfil')">
+                  <label for="perfil_abogado_empresa">Abogado en Empresa</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="perfil_abogado_empresa" name="perfil[]" value="conocimiento_legal" onchange="updateSelected('perfil')">
+                    <label for="perfil_abogado_empresa">Departamento del conocimiento legal</label>
+                  </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="perfil_compliance" name="perfil[]" value="compliance_officer" onchange="updateSelected('perfil')">
+                  <label for="perfil_compliance">Compliance Officer</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="perfil_especializado" name="perfil[]" value="abogado_especializado" onchange="updateSelected('perfil')">
+                  <label for="perfil_especializado">Abogado especializado en</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="perfil_otro" name="perfil[]" value="otro" onchange="updateSelected('perfil')">
+                  <label for="perfil_otro">Otro</label>
+                </div>
+              </div>
+            </div>
+            <!-- Conditional fields -->
+            <div class="conditional-field" id="especializacion_field">
+              <input type="text" id="especializacion" name="especializacion" placeholder="Indica los ámbitos en los que trabajas" class="conditional-input">
+            </div>
+            <div class="conditional-field" id="otro_perfil_field">
+              <input type="text" id="otro_perfil" name="otro_perfil" placeholder="Especifica tu perfil si no encaja en las opciones anteriores" class="conditional-input">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Cobertura Legal Section -->
+        <div class="section">
+          <h3>Cobertura Legal</h3>
+          <div class="form-group">
+            <label>Normativa de la UE, Estatal y Autonómica</label>
+            <!-- Selected sources will appear here -->
+            <div id="fuentes-selected" class="selected-tags"></div>
+            <div class="dropdown-group">
+              <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-fuentes')">Selecciona fuentes legales </button>
+              <div id="cobertura-dropdown-fuentes" class="dropdown-options">
+                <div class="checkbox-item">
+                  <input type="checkbox" id="boe" name="fuentes[]" value="boe" onchange="updateSelected('cobertura')">
+                  <label for="boe">Boletín Oficial del Estado (BOE)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="doue" name="fuentes[]" value="doue" checked onchange="updateSelected('cobertura')">
+                  <label for="doue">Diario Oficial de la Unión Europea (DOUE)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="boa" name="fuentes[]" value="boa" onchange="updateSelected('cobertura')">
+                  <label for="boa">Boletín Oficial de Aragón (BOA)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="bocyl" name="fuentes[]" value="bocyl" onchange="updateSelected('cobertura')">
+                  <label for="bocyl">Boletín Oficial de Castilla y León (BOCyL)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="bocm" name="fuentes[]" value="bocm" onchange="updateSelected('cobertura')">
+                  <label for="bocm">Boletín Oficial de la Comunidad de Madrid (BOCM)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="dog" name="fuentes[]" value="dog" onchange="updateSelected('cobertura')">
+                  <label for="dog">Diario Oficial de Galicia (DOG)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="boja" name="fuentes[]" value="boja" onchange="updateSelected('cobertura')">
+                  <label for="boja">Boletín Oficial de la Junta de Andalucía (BOJA)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="bopv" name="fuentes[]" value="bopv" onchange="updateSelected('cobertura')">
+                  <label for="bopv">Boletín Oficial del País Vasco (BOPV)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Reguladores</label>
+            <!-- Selected sources will appear here -->
+            <div id="fuentes-selected" class="selected-tags"></div>
+            <div class="dropdown-group">
+                <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-reguladores')">Selecciona reguladores</button>
+                <div id="cobertura-dropdown-reguladores" class="dropdown-options">
+            <div class="checkbox-item">
+                  <input type="checkbox" id="cnmv" name="reguladores[]" value="cnmv" onchange="updateSelected('cobertura')">
+                  <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        
+        </div>
+        
+        <button type="submit" class="btn-siguiente">Siguiente</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="paso1.js"></script>
+  <script>
+    // Toggle dropdown visibility
+    function toggleDropdown(dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+    
+    // Update selected tags for either 'perfil' or 'cobertura'
+    function updateSelected(section) {
+      let containerId, inputName;
+      if (section === 'perfil') {
+        containerId = 'perfil-selected';
+        inputName = 'perfil[]';
+      } else if (section === 'cobertura') {
+        containerId = 'fuentes-selected';
+        inputName = 'fuentes[]';
+      }
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+      const inputs = document.querySelectorAll(`input[name="${inputName}"]`);
+      inputs.forEach(input => {
+        if (input.checked) {
+          const tag = document.createElement("div");
+          tag.className = "tag";
+          // Use the label's text for display
+          tag.textContent = input.nextElementSibling.textContent;
+          const removeSpan = document.createElement("span");
+          removeSpan.className = "tag-remove";
+          removeSpan.textContent = "×";
+          removeSpan.onclick = function() {
+            input.checked = false;
+            updateSelected(section);
+          };
+          tag.appendChild(removeSpan);
+          container.appendChild(tag);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

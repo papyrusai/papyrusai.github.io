@@ -1,0 +1,285 @@
+:root {
+  --primary-color: #9EB92C;
+  --secondary-color: #f5f5f5;
+  --border-color: #e0e0e0;
+  --text-color: #333;
+  --placeholder-color: #999;
+  --active-color: #8ca428;
+  --error-color: #d32f2f;
+  --background-color: #f8f4e8;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 10px 20px;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
+}
+
+/* Progress Bar */
+.progress-container {
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+}
+.step {
+  flex: 1;
+  text-align: center;
+  color: #333;
+  font-weight: bold;
+  padding: 5px;
+}
+.step.active {
+  color: var(--primary-color);
+}
+.progress-bar {
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 33.33%;
+  background-color: var(--primary-color);
+  border-radius: 4px;
+}
+
+/* Form Styles */
+.formulario h2 {
+  margin-bottom: 5px;
+  color: var(--text-color);
+  font-size: 24px;
+}
+.section {
+  margin-bottom: 15px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+.section h3 {
+  color: var(--primary-color);
+  font-size: 18px;
+}
+.subsection {
+  margin-bottom: 20px;
+}
+.subsection h4 {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+.form-group {
+  margin-bottom: 1px;
+}
+label {
+  font-weight: bold;
+  font-size: 12px;
+}
+small {
+  color: #666;
+  font-size: 12px;
+}
+input[type="text"],
+input[type="url"],
+input[type="email"],
+select {
+  width: 100%;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+}
+input::placeholder {
+  color: var(--placeholder-color);
+}
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+/* Tags Container & Tag Styles */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 10px;
+}
+.tag {
+  background-color: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 3px 16px;
+  display: inline-block;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-right: 5px;
+}
+.tag:hover {
+  background-color: #f0f0f0;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+.tag-remove {
+  display: inline-block;
+    width: 13px;
+    height: 13px;
+    line-height: 14px;
+    margin-left: 5px;
+    text-align: center;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.tag-remove:hover {
+  background-color: #ccc;
+}
+/* Force uppercase for Fuentes Oficiales tags */
+#fuentes-gobierno-container .tag,
+#fuentes-reguladores-container .tag {
+  text-transform: uppercase;
+}
+
+/* Dropdown Styles for Filtering */
+.dropdown-container {
+  position: relative;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 5px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  z-index: 100;
+  width: 100%;
+}
+.dropdown-item {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.dropdown-item:hover {
+  background-color: var(--secondary-color);
+}
+
+/* Feedback Message */
+.feedback-msg {
+  font-size: 14px;
+  color: #666;
+  margin-top: 10px;
+}
+.feedback-msg + input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+/* Dropdown Group for checkboxes */
+.dropdown-group {
+  position: relative;
+}
+/* Dropdown container */
+.dropdown-group {
+  position: relative;
+  display: inline-block;
+  width: auto;
+  margin-bottom: 15px;
+}
+
+/* Dropdown toggle button */
+.dropdown-toggle {
+  background-color: #fff;
+  color: #333;
+  padding: 10px 35px 10px 15px;
+  border: 1px solid #caced1;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: left;
+  width: auto;
+  min-width: 200px;
+  white-space: nowrap;
+  position: relative;
+  font-size: 14px;
+}
+
+/* Custom arrow with pseudo-element */
+.dropdown-toggle::after {
+  content: "";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border: solid #555;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-50%) rotate(45deg);
+  transition: transform 0.2s ease;
+}
+
+/* Rotate arrow when dropdown is open */
+.dropdown-toggle.active::after {
+  transform: translateY(-50%) rotate(-135deg);
+}
+
+/* Dropdown content */
+.dropdown-options {
+  display: none;
+  position: absolute;
+  background-color: #fff;
+  min-width: 100%;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.1);
+  border-radius: 4px;
+  border: 1px solid #eee;
+  z-index: 10;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+/* Show dropdown on toggle */
+.dropdown-options.show {
+  display: block;
+}
+
+/* Dropdown option items */
+.dropdown-options label {
+  padding: 8px 15px;
+  cursor: pointer;
+}
+
+.dropdown-options label:hover {
+  background-color: #f8f9fa;
+}
+.selected-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.selected-tags .tag {
+  margin: 0;
+}

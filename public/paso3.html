@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personalización - Papyrus</title>
+  <link rel="stylesheet" href="styles/onboarding.css">
+  <style>
+    /* ----------------- Submenu Styles ----------------- */
+    .submenu {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .submenu-item {
+      padding: 10px 20px;
+      cursor: pointer;
+      position: relative;
+      color: #555;
+    }
+    .submenu-item.active {
+      font-weight: bold;
+      color: var(--primary-color);
+      border-bottom: 3px solid var(--primary-color);
+    }
+    .submenu-item.done::after {
+      content: "✓";
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 14px;
+      color: var(--primary-color);
+    }
+    /* ----------------- Section Visibility ----------------- */
+    .section-content {
+      display: none;
+    }
+    .section-content.active {
+      display: block;
+    }
+    /* ----------------- Ramas Jurídicas Specific ----------------- */
+    /* Force each rama box to be full-width and on its own line */
+    #ramas-container .rama-box {
+      width: 100%;
+      display: block;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #f8f8f8;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    /* When collapsed, show only header */
+    #ramas-container .rama-box.collapsed {
+      height: 50px;
+    }
+    #ramas-container .rama-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    #ramas-container .rama-header h4 {
+      margin: 0;
+      color: var(--primary-color);
+    }
+    .toggle-detail {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--primary-color);
+    }
+    .toggle-detail:focus {
+      outline: none;
+    }
+    #ramas-container .rama-detail {
+      padding: 8px 12px;
+      display: none;
+    }
+    /* ----------------- Bottom Buttons ----------------- */
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      width: 300px;
+      margin: 20px auto;
+    }
+    .btn-siguiente,
+    .btn-anterior {
+      width: 140px;
+      padding: 12px 0;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-siguiente {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .btn-siguiente:hover {
+      background-color: var(--active-color);
+    }
+    .btn-anterior {
+      background-color: #ccc;
+      color: #333;
+    }
+    .btn-anterior:hover {
+      background-color: #bbb;
+    }
+        /* Center the confirmar button when it's the only one visible */
+    .button-container.single-button {
+    justify-content: center;
+    }
+
+    /* When in single-button mode, remove any extra width restrictions on the button */
+    .button-container.single-button .btn-siguiente {
+    width: 160px;
+    }
+
+    /* ----------------- Tags Container & Tag Styles ----------------- */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+    .tag {
+      background-color: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      padding: 3px 16px;
+      display: inline-block;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      margin-right: 5px;
+    }
+    .tag:hover {
+      background-color: #f0f0f0;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    .tag-remove {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      margin-left: 8px;
+      text-align: center;
+      border-radius: 50%;
+      background-color: #e0e0e0;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+    .tag-remove:hover {
+      background-color: #ccc;
+    }
+    /* Force uppercase for Fuentes Oficiales tags */
+    #fuentes-gobierno-container .tag,
+    #fuentes-reguladores-container .tag {
+      text-transform: uppercase;
+    }
+    /* ----------------- Dropdown Styles for Filtering ----------------- */
+    .dropdown-container {
+      position: relative;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 5px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      width: 100%;
+    }
+    .dropdown-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .dropdown-item:hover {
+      background-color: var(--secondary-color);
+    }
+    /* ----------------- Feedback Message ----------------- */
+    .feedback-msg {
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+    }
+    .feedback-msg + input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-steps">
+            <div class="step">1. Perfil</div>
+            <div class="step active">2. Personalización</div>
+            <div class="step">3. Plan</div>
+          </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 100%"></div>
+      </div>
+    </div>
+    <div class="formulario">
+      <h2>Avatar Jurídico Personalizado</h2>
+      <p>Hemos seleccionado este avatar jurídico en base a tu perfil. Confirma cada sección para continuar.</p>
+      <!-- Top Submenu -->
+      <div class="submenu">
+        <div class="submenu-item active" data-step="0">Industrias</div>
+        <div class="submenu-item" data-step="1">Ramas Jurídicas</div>
+        <div class="submenu-item" data-step="2">Fuentes Oficiales</div>
+        <div class="submenu-item" data-step="3">Rangos</div>
+      </div>
+      <!-- Section Containers -->
+      <div id="section-industrias" class="section-content active">
+        <div id="industrias-container" class="tags-container">
+          <!-- Selected industries loaded dynamically -->
+        </div>
+        <div class="add-tag">
+          <input type="text" id="filtro-industrias" placeholder="Añadir otras industrias" oninput="filtrarIndustrias()">
+          <div id="dropdown-industrias" class="dropdown-container"></div>
+          <!-- Feedback element -->
+          <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+          <input type="text" id="feedback-industria" placeholder="Escribe aquí...">
+        </div>
+      </div>
+      <div id="section-ramas" class="section-content">
+        <div id="ramas-container" class="tags-container">
+          <!-- Ramas loaded dynamically -->
+        </div>
+        <div class="add-tag">
+          <input type="text" id="filtro-ramas" placeholder="Añadir otras ramas jurídicas" oninput="filtrarRamas()">
+          <div id="dropdown-ramas" class="dropdown-container"></div>
+          <!-- Feedback element -->
+          <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+          <input type="text" id="feedback-ramas" placeholder="Escribe aquí...">
+        </div>
+      </div>
+      <div id="section-fuentes" class="section-content">
+        <div class="subsection">
+          <h4>Regulación de la UE, Estatal y Autonómica</h4>
+          <div id="fuentes-gobierno-container" class="tags-container">
+            <!-- Selected fuentes loaded dynamically -->
+          </div>
+          <div class="add-tag">
+            <input type="text" id="filtro-fuentes-gobierno" placeholder="Añadir otras fuentes (BOE, DOUE, BOCM, BOJA, BOA, BOCYL)..." oninput="filtrarFuentesGobierno()">
+            <div id="dropdown-fuentes-gobierno" class="dropdown-container"></div>
+          </div>
+        </div>
+        <div class="subsection">
+          <h4>Reguladores</h4>
+          <div id="fuentes-reguladores-container" class="tags-container">
+            <!-- Selected reguladores loaded dynamically -->
+          </div>
+          <div class="add-tag">
+            <input type="text" id="filtro-fuentes-reguladores" placeholder="Añadir otros reguladores (CNMV)..." oninput="filtrarFuentesReguladores()">
+            <div id="dropdown-fuentes-reguladores" class="dropdown-container"></div>
+            <!-- Feedback element -->
+            <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+            <input type="text" id="feedback-fuentes-reguladores" placeholder="Escribe aquí...">
+          </div>
+        </div>
+      </div>
+      <div id="section-rangos" class="section-content">
+        <div id="rangos-container" class="tags-container">
+          <!-- Selected rangos loaded dynamically -->
+        </div>
+        <!-- Add a filtering input for rangos on a separate line -->
+        <div class="add-tag">
+          <input type="text" id="filtro-rangos" placeholder="Añadir otros rangos (CNMV, DGT...)" oninput="filtrarRangos()">
+          <div id="dropdown-rangos" class="dropdown-container"></div>
+          <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+          <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
+        </div>
+      </div>
+      <!-- Bottom Buttons -->
+      <div class="button-container">
+        <button type="button" class="btn-anterior" id="anterior-btn" onclick="anteriorSeccion()" style="display: none;">Anterior</button>
+        <button type="button" class="btn-siguiente" id="confirmar-btn" onclick="confirmarSeccion()">Confirmar</button>
+      </div>
+    </div>
+            <!-- Hidden inputs to store data for paso4 -->
+        <input type="hidden" id="fuentesGobiernoInput" value="[]">
+        <input type="hidden" id="fuentesReguladoresInput" value="[]">
+
+  </div>
+  <script src="paso3.js"></script>
+</body>
+</html>

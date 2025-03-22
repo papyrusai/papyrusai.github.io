@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suscripción - Papyrus</title>
+  <link rel="stylesheet" href="styles/onboarding.css">
+  <style>
+    /* Additional styles specific for paso4 */
+ /* Step 3 Plans Container */
+
+/* A small floating message to warn about plan1 limitations */
+.limited-plan-warning {
+    position: fixed;            /* or absolute if you prefer to anchor inside .form-container */
+    top: 10px;                  /* place near top (or center, your choice) */
+    left: 50%;
+    transform: translateX(-50%);  /* center horizontally */
+    background-color: #ac1717;    /* a warning color, e.g., yellowish */
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+    z-index: 9999;             /* on top of other stuff */
+    display: none;             /* hidden by default, show via JS */
+  }
+  
+  /* The close (X) button inside the banner */
+  .limited-plan-warning .close-btn {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    cursor: pointer;
+    color: #092534;
+    background: #ffffff99;
+    border-radius: 50%;
+    padding: 3px 3px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+.choose-plan-heading {
+    text-align: center;
+    font-size: clamp(18px, 2.5vw, 24px);
+    margin-top: clamp(20px, 5vh, 50px);
+    font-weight: bold;
+}
+.plans-container {
+  display: flex;
+  justify-content: space-between;
+  gap: clamp(5px, 1vw, 10px);
+  margin-top: clamp(20px, 3vh, 50px);
+}
+
+.plan-box {
+  position: relative;
+  flex: 1;
+  border-radius: 6px;
+  padding: clamp(8px, 1.5vh, 15px);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  border: 1px solid #092534;
+}
+
+.plan-box h3 {
+  font-size: clamp(12px, 1.5vw, 16px);
+  font-weight: normal;
+  color: #092534bd;
+}
+
+.plan-box h2 {
+  font-size: clamp(16px, 2.5vw, 20px);
+  margin: clamp(3px, 0.8vh, 8px) 0;
+  font-weight: bold;
+}
+
+.plan-box p {
+  font-size: clamp(10px, 1.2vw, 12px);
+  color: #666;
+  margin-bottom: clamp(8px, 1.5vh, 15px);
+}
+
+.plan-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.plan-box ul li {
+  font-size: clamp(10px, 1.2vw, 12px);
+  margin-bottom: clamp(3px, 0.8vh, 8px);
+  padding-bottom: clamp(3px, 0.8vh, 8px);
+  border-bottom: 1px solid #ccccccd9;
+}
+
+    .btn-siguiente {
+      background-color: var(--primary-color);
+      color: white;
+      width: 140px;
+      padding: 12px 0;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+    
+    }
+
+/*banners*/
+
+  /* Common style for all plan badges */
+  .plan-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    color: #092534;
+    padding: 2px 5px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 12px; /* smaller text */
+    z-index: 9999;
+  }
+  
+  /* If you want different colors for each banner: */
+  .free-two-months {
+    background-color: #83a300; /* or #ffcc00, up to you */
+    color: #fbf7ef;
+  }
+  .free{
+    top:-20px;
+    right: 10px;
+  }
+  
+  .coming-soon {
+    background-color: #092534; /* for example pink, or any color */
+    color: #fff;               /* white text for contrast */
+  }
+  
+  /* (Optional) If plan3 is disabled, you can gray it out entirely: */
+  .plan-box[data-disabled="true"] {
+    opacity: 0.6;       /* visually indicate it's not available */
+    cursor: default;    /* no pointer hand */
+  }
+  
+  /* Possibly highlight the banner if the user tries to click Plan 3 */
+  
+  /*.plan-badge.highlighted {
+    animation: pulse 0.8s ease 0s 2 alternate;
+  } */
+  
+  @keyframes pulse {
+    0% { transform: scale(1.0); }
+    100% { transform: scale(1.2); }
+  }
+  
+/* Plan Features List */
+.plan-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.plan-box ul li {
+    font-size: clamp(12px, 1.5vw, 14px);
+    margin-bottom: clamp(5px, 1vh, 10px);
+    padding-bottom: clamp(5px, 1vh, 10px);
+    border-bottom: 1px solid #ccccccd9;
+}
+
+.plan-box ul li:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.step-navigation {
+  margin-top: 3%;
+  display: flex;
+  justify-content: center; /* This centers the button horizontally */
+  width: 100%;
+}
+
+.btn-siguiente {
+  background-color: var(--primary-color);
+  color: white;
+  width: 140px;
+  padding: 12px 0;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  /* Removed any margin that might affect centering */
+}
+
+/* Plan Buttons */
+.plan-button {
+    margin-top: clamp(5px, 1vh, 10px);
+    padding: clamp(5px, 1vh, 10px) clamp(10px, 2vw, 20px);
+    border: none;
+    border-radius: 5px;
+    font-size: clamp(12px, 1.5vw, 14px);
+    cursor: pointer;
+    background-color: #83a300;
+    color: #fff;
+    transition: background-color 0.3s ease;
+}
+
+.plan-box {
+    cursor: pointer;
+    transition: background-color 0.3s ease, border 0.3s ease;
+}
+
+.plan-box:hover {
+    background-color: #e6f7e6;
+}
+
+.plan-box.selected {
+    border: 2px solid #83a300;
+    Box-shadow: 0px 0px 2px #83a300;
+} 
+
+    .choose-plan-heading {
+      margin: 20px 0;
+      font-size: 1.2em;
+      font-weight: bold;
+      text-align: center;
+    }
+    /* Progress bar adjustments for three steps */
+    .progress-container {
+      margin-bottom: 30px;
+    }
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .step {
+      flex: 1;
+      text-align: center;
+      font-weight: bold;
+      padding: 10px;
+    }
+    .step.active {
+      color: var(--primary-color);
+    }
+    .progress-bar {
+      height: 8px;
+      background-color: #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    /* For three steps, assume the current step fills 100% when active */
+    .progress-fill {
+      height: 100%;
+      width: 100%;
+      background-color: var(--primary-color);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Progress Bar -->
+    <div class="progress-container">
+      <div class="progress-steps">
+        <div class="step">1. Usuario</div>
+        <div class="step">2. Personalización</div>
+        <div class="step active">3. Suscripción</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <div class="formulario">
+      <h1>Tipo de Suscripción</h1>
+      <p class="subheading">Seleccione el paquete que más se adapte a sus necesidades</p>
+      <div class="choose-plan-heading">Elige tu plan</div>
+      
+      <div class="plans-container">
+        <!-- Plan 1 -->
+        <div class="plan-box" data-value="plan1">
+          <h3>Básico</h3>
+          <h2>Gratuito</h2>
+          <p>Al mes</p>
+          <ul>
+            <li>Resumen diario general del BOE</li>
+            <li>-</li>
+            <li>-</li>
+          </ul>
+        </div>
+        <!-- Plan 2 -->
+        <div class="plan-box" data-value="plan2">
+          <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
+          <h3>Estándar</h3>
+          <h2>30€</h2>
+          <p>Al mes por fuente oficial</p>
+          <ul>
+            <li>Descuento por cada fuente extra</li>
+            <li>Alertas normativas personalizadas</li>
+            <li>-</li>
+          </ul>
+        </div>
+        <!-- Plan 3 -->
+        <div class="plan-box" data-value="plan3" data-disabled="true">
+          <div class="plan-badge coming-soon">Próximamente</div>
+          <h3>Enterprise</h3>
+          <h2>Contact sales</h2>
+          <p>Al mes</p>
+          <ul>
+            <li>Todo el paqueta Estándar</li>
+            <li>Cobertura legal completa</li>
+            <li>Integración personalizada</li>
+          </ul>
+        </div>
+        <div class="plan-box" data-value="plan4">
+           <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
+          <h3>Prueba</h3>
+          <h2>Gratuito</h2>
+          <p>Un mes</p>
+          <ul>
+            <li>Acceso completo a la plataforma de manera temporal</li>
+            
+            <li>Sin tarjetas, sin compromisos</li>
+
+          </ul>
+      </div>
+      </div>
+      <div class="step-navigation">
+        <button id="nextBtn" class="btn-siguiente">Finalizar</button>
+      </div>
+      
+      <!-- Hidden input to store the selected plan -->
+      <input type="hidden" id="selectedPlan" name="selectedPlan" value="">
+    </div>
+  </div>
+</body>
+<script>
+    // Global variable to control plan2 free status
+    let plan2isfree = true; // Set to true for now as requested
+
+    // Add event listeners when document is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+   // Set up plan selection functionality
+  const planBoxes = document.querySelectorAll('.plan-box');
+  const selectedPlanInput = document.getElementById('selectedPlan');
+  
+  // Add click handlers to each plan box
+  planBoxes.forEach(function(box) {
+    box.addEventListener('click', function() {
+      // Skip if plan is disabled
+      if (box.getAttribute('data-disabled') === 'true') {
+        return;
+      }
+      
+      // Remove selected class from all plans
+      planBoxes.forEach(function(plan) {
+        plan.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked plan
+      box.classList.add('selected');
+      
+      // Store the selected plan value
+      selectedPlanInput.value = box.getAttribute('data-value');
+      console.log('Selected plan:', selectedPlanInput.value);
+    });
+  });
+  
+  // Select plan4 by default instead of plan1
+  const plan4Box = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
+  if (plan4Box && !plan4Box.getAttribute('data-disabled')) {
+    plan4Box.click();
+  }
+  
+  // Handle the "Continuar" button click
+  const continueBtn = document.getElementById('nextBtn');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', function() {
+      // Get the selected plan from hidden input
+      const selectedPlan = document.getElementById('selectedPlan').value;
+      if (!selectedPlan) {
+        alert('Por favor, selecciona un plan');
+        return;
+      }
+          
+          // Get profile type from sessionStorage
+          const profileType = sessionStorage.getItem('profile_type') || 'individual';
+          
+          // Get company name if applicable
+          const companyName = sessionStorage.getItem('company_name') || '';
+          
+          // Decide which function to call based on selected plan
+          if (selectedPlan === 'plan1') {
+            handleFreePlanSubmission(selectedPlan, profileType, companyName);
+          } else if (selectedPlan === 'plan2') {
+            if (plan2isfree) {
+              handleFreePlanSubmission(selectedPlan, profileType, companyName);
+            } else {
+              handleStripeCheckout(selectedPlan, profileType, companyName);
+            }
+          } else if (selectedPlan === 'plan3') {
+            handleStripeCheckout(selectedPlan, profileType, companyName);
+          } else if (selectedPlan === 'plan4') {
+            handleFreePlanSubmission(selectedPlan, profileType, companyName);
+          }
+        });
+      }
+    });
+
+    // Function to collect profile information
+    function getProfileInfo() {
+      return {
+        name: sessionStorage.getItem('name') || '',
+        web: sessionStorage.getItem('web') || '',
+        linkedin: sessionStorage.getItem('linkedin') || '',
+        perfil_profesional: sessionStorage.getItem('perfil_profesional') || ''
+      };
+    }
+
+    // Function to collect feedback information
+    function collectFeedback() {
+      const feedbackData = sessionStorage.getItem('feedback');
+      return feedbackData ? JSON.parse(feedbackData) : {
+        industrias: '',
+        ramas: '',
+        fuentes_reguladores: '',
+        rangos: ''
+      };
+    }
+
+    // Function to build sub_rama_map
+    function buildSubRamaMap() {
+      const subRamaMapData = sessionStorage.getItem('sub_rama_map');
+      return subRamaMapData ? JSON.parse(subRamaMapData) : {};
+    }
+
+    // Updated handleFreePlanSubmission function with new variables
+    async function handleFreePlanSubmission(plan, profileType, companyName) {
+      // Get profile info
+      const profileInfo = getProfileInfo();
+      
+      // Get the cobertura legal data from sessionStorage
+      const fuentesGobierno = JSON.parse(sessionStorage.getItem('fuentesGobiernoInput') || '[]');
+      const fuentesReguladores = JSON.parse(sessionStorage.getItem('fuentesReguladoresInput') || '[]');
+      const cobertura_legal = {
+        "fuentes-gobierno": fuentesGobierno,
+        "fuentes-reguladores": fuentesReguladores
+      };
+      
+      // Get selected industry tags from sessionStorage
+      const industry_tags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+      
+      // Get selected rangos from sessionStorage
+      const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
+      
+      // Get selected rama jurídicas from sessionStorage
+      const rama_juridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
+      
+      // Build sub_rama_map
+      const sub_rama_map = buildSubRamaMap();
+      
+      // Get feedback
+      const feedback = collectFeedback();
+
+      const submitButton = document.getElementById('nextBtn');
+      submitButton.innerHTML = '<div class="loader"></div>';
+      submitButton.disabled = true;
+
+      // Log all data being sent to server
+      console.log('Free Plan Submission Data:', {
+        plan,
+        profile_type: profileType,
+        company_name: companyName,
+        name: profileInfo.name,
+        web: profileInfo.web,
+        linkedin: profileInfo.linkedin,
+        perfil_profesional: profileInfo.perfil_profesional,
+        industry_tags,
+        rama_juridicas,
+        rangos,
+        sub_rama_map,
+        cobertura_legal,
+        feedback
+      });
+
+      try {
+        const resp = await fetch('/save-free-plan', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            plan,
+            industry_tags,
+            rama_juridicas,
+            profile_type: profileType,
+            sub_rama_map,
+            cobertura_legal,
+            company_name: companyName,
+            name: profileInfo.name,
+            web: profileInfo.web,
+            linkedin: profileInfo.linkedin,
+            perfil_profesional: profileInfo.perfil_profesional,
+            rangos,
+            feedback
+          }),
+        });
+        
+        if (!resp.ok) throw new Error('Failed to save free plan data');
+        const result = await resp.json();
+        if (result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+        } else {
+          throw new Error('No redirectUrl from server');
+        }
+      } catch (err) {
+        console.error('Error saving free plan:', err);
+        alert('Failed to process your request. Please try again.');
+        submitButton.innerHTML = 'Finalizar';
+        submitButton.disabled = false;
+      }
+    }
+
+    // Updated handleStripeCheckout function with new variables
+    async function handleStripeCheckout(plan, profileType, companyName) {
+      // Get profile info
+      const profileInfo = getProfileInfo();
+      
+      // Get the cobertura legal data from sessionStorage
+      const fuentesGobierno = JSON.parse(sessionStorage.getItem('fuentesGobiernoInput') || '[]');
+      const fuentesReguladores = JSON.parse(sessionStorage.getItem('fuentesReguladoresInput') || '[]');
+      const cobertura_legal = {
+        "fuentes-gobierno": fuentesGobierno,
+        "fuentes-reguladores": fuentesReguladores
+      };
+      
+      // Get selected industry tags from sessionStorage
+      const industry_tags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+      
+      // Get selected rangos from sessionStorage
+      const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
+      
+      // Get selected rama jurídicas from sessionStorage
+      const rama_juridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
+      
+      // Build sub_rama_map
+      const sub_rama_map = buildSubRamaMap();
+      
+      // Get feedback
+      const feedback = collectFeedback();
+
+      const submitButton = document.getElementById('nextBtn');
+      submitButton.innerHTML = '<div class="loader"></div>';
+      submitButton.disabled = true;
+
+      let isTrial = false;
+      if (plan === 'plan2') {
+        isTrial = true;
+      }
+
+      // Log all data being sent to server
+      console.log('Stripe Checkout Data:', {
+        plan,
+        profile_type: profileType,
+        company_name: companyName,
+        name: profileInfo.name,
+        web: profileInfo.web,
+        linkedin: profileInfo.linkedin,
+        perfil_profesional: profileInfo.perfil_profesional,
+        industry_tags,
+        rama_juridicas,
+        rangos,
+        sub_rama_map,
+        cobertura_legal,
+        feedback,
+        isTrial
+      });
+
+      try {
+        const resp = await fetch('/create-checkout-session', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            plan,
+            industry_tags,
+            rama_juridicas,
+            profile_type: profileType,
+            sub_rama_map,
+            isTrial,
+            cobertura_legal,
+            company_name: companyName,
+            name: profileInfo.name,
+            web: profileInfo.web,
+            linkedin: profileInfo.linkedin,
+            perfil_profesional: profileInfo.perfil_profesional,
+            rangos,
+            feedback
+          }),
+        });
+        
+        if (!resp.ok) throw new Error('Failed to create Checkout Session');
+        const { sessionId } = await resp.json();
+        const stripe = Stripe('pk_live_51QOlLCEpe9srfTKE4ymTYWhMSWs7qDvRQvmnzgoh0FmOWQ9cYTlOawWNiWQReOQeDx7Uslw7cbj9ClBGFas8heQq00wKegaiJg'); //live
+        await stripe.redirectToCheckout({ sessionId });
+      } catch (err) {
+        console.error('Stripe checkout error:', err);
+        alert('Failed to redirect to payment page. Please try again.');
+        submitButton.innerHTML = 'Continuar';
+        submitButton.disabled = false;
+      }
+    }
+</script>
+</html>
