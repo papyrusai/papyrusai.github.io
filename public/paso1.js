@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('especializacion').focus();
           return;
       }
+      if (perfilEspecializadoDespacho.checked && document.getElementById('especializacion').value.trim() === '') {
+        alert('Por favor, indica los ámbitos en los que trabajas');
+        document.getElementById('especializacion').focus();
+        return;
+    }
       if (perfilOtro.checked && document.getElementById('otro_perfil').value.trim() === '') {
           alert('Por favor, especifica tu perfil');
           document.getElementById('otro_perfil').focus();
@@ -65,6 +70,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
           // Make sure these fields are included
       if (perfilEspecializado.checked && document.getElementById('especializacion')) {
+        userData.especializacion = document.getElementById('especializacion').value.trim();
+      }
+      if (perfilEspecializadoDespacho.checked && document.getElementById('especializacion')) {
         userData.especializacion = document.getElementById('especializacion').value.trim();
       }
       
