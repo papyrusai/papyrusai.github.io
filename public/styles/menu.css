@@ -1,3 +1,18 @@
+
+:root {
+  --primary-color: #04db8d;
+  --secondary-color: #455862;
+  --border-color: #e0e0e0;
+  --text-color: #0b2431;
+  --placeholder-color: #999;
+  --active-color: #04db8d;
+  --error-color: #d32f2f;
+  --background-color: #ffffff;
+
+  /*tab background color: #f8f8f8*/
+}
+
+
 body, html {
     margin: 0;
     padding: 0;
@@ -6,24 +21,24 @@ body, html {
 
  
   .navbar {
-    color: #092534;
+    color: var(--text-color);
     font-size: small;
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
     height: 60px; /* Adjust the height as needed */
-    border-bottom: 1px solid #0b2431; /* rgba(251, 247, 239, 0.2);*/
+    border-bottom: 1px solid var(--text-color); /* rgba(251, 247, 239, 0.2);*/
 }
 
 
 
 .navbar.login{
-  background-color: #092534;
+  background-color: var(--text-color);
 }
 
 .logo img {
-    max-height: 60px; /* Adjust the max-height as needed for your logo */
+    max-height: 30px; /* Adjust the max-height as needed for your logo */
     margin-left: 10%;
     width: auto; /* Maintain aspect ratio */
   }
@@ -40,7 +55,7 @@ body, html {
   }
   
   .menu li a {
-    color: #092534;
+    color: var(--background-color);
     text-decoration: none;
     transition: color 0.3s ease;
   }
@@ -119,12 +134,12 @@ body, html {
   font-size: 24px; /* Icon size */
   background: none;
   border: none;
-  color: #092534; /* Hamburger color */
+  color: var(--text-color); /* Hamburger color */
   cursor: pointer;
 }
 
 .hamburger.login{
-  color:#fbf7ef;
+  color:var(--background-color);
 }
 /*hamburger menu*/
 @media (max-width: 600px) {
@@ -140,7 +155,7 @@ body, html {
       position: absolute; /* Position the menu */
       right: 0; 
       top: 60px; /* Adjust based on navbar height */
-      background-color: #fbf7efd6; /* Background color for the dropdown */
+      background-color: var(--background-color); /* Background color for the dropdown */
       width: 70%; /* Full width */
       text-align: right; /* Align items to the right */
       border-radius: 4px;
@@ -151,7 +166,7 @@ body, html {
       margin-right: 10px;
   }
   .menu li a {
-    color: #092534;
+    color: var(--text-color);
 }
   .login-image{
       display:none;

@@ -13,21 +13,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Create overlay with loader
     const overlay = document.createElement('div');
     overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+     position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8);
       z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     `;
     
     const loader = document.createElement('div');
-    loader.className = 'loader';
-    
+    loader.className = 'loader-suscr';
+    loader.style.cssText = `
+     position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 4px solid #092534;
+      border-top: 4px solid var(--primary-color);
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      animation: spin 2s linear infinite;
+    `;
     const style = document.createElement('style');
     style.textContent = `
       @keyframes spin {
@@ -78,12 +87,13 @@ document.addEventListener('DOMContentLoaded', function() {
       sessionStorage.setItem('isEditing', 'true');
       
       // Redirect to step3
-      window.location.href = '/paso3.html';
+      document.body.removeChild(overlay);
       
     } catch (error) {
       console.error('Error fetching user data:', error);
-      alert('Error loading subscription data. Please try again.');
-      document.body.removeChild(overlay);
+     alert('Error loading subscription data. Please try again.');
+     document.body.removeChild(overlay);
+      
     }
   }
   

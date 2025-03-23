@@ -32,10 +32,24 @@
         font-size: 20px; /* más grande en móvil */
       }
     }
-
+    .feedback-btn{
+          background-color: var(--text-color);
+          color: white;
+          border: none;
+        padding: 5px 12px ;
+        font-size: 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        border: none;
+    }
+    .feedback-btn:hover{
+      background-color: var(--primary-color);
+    }
     .feedback-comentario{
       max-width: 80%;
-      padding: 5px;
+      padding: 20px;
+      border-radius: 20px;
+      font-size: 14px;
     }
     /* Contenedor principal de feedback */
     .feedback-container {
@@ -83,7 +97,7 @@
       <input type="hidden" name="fid" id="fidField" value="">
       <textarea class="feedback-comentario" name="comentario" id="comentario" rows="5" cols="50" placeholder="Escribe tu comentario..."></textarea>
       <br><br>
-      <button type="submit">Enviar comentario</button>
+      <button class="feedback-btn" type="submit">Enviar comentario</button>
     </form>
 
     <div id="thankYouMessage">¡Feedback enviado, muchas gracias!</div>
