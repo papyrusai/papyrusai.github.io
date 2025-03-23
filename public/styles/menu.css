@@ -87,13 +87,6 @@ body, html {
       margin-top:10px;
 
   }
-
-  .login-section input[type="email"], .login-section button {
-      font-size: 14px; /* Adjust input and button font size */
-      padding: 8px; /* Adjust input and button padding */
-      display: inline-block;
-      width: 60%;
-  }
 }
 
 @media (max-width: 400px) {
