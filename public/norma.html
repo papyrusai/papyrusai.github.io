@@ -259,7 +259,104 @@
                       analyzeButton.style.backgroundColor = 'var(--text-color)';
                     analysisResultDiv.textContent = 'Error analyzing norma.';
                 });
-            });
+                });
+                        // Función para mostrar la sección de feedback
+            function showFeedbackSection() {
+              const feedbackSection = document.getElementById('feedbackSection');
+              feedbackSection.style.display = 'block';
+            }
+
+            // Configurar los listeners para el feedback
+            function setupFeedbackListeners() {
+              // Toggle para mostrar/ocultar el contenido de feedback
+              document.getElementById('feedbackToggle').addEventListener('click', function() {
+                const feedbackContent = document.getElementById('feedbackContent');
+                const chevron = this.querySelector('.fa');
+                
+                if (feedbackContent.style.display === 'none') {
+                  feedbackContent.style.display = 'block';
+                  chevron.classList.remove('fa-chevron-down');
+                  chevron.classList.add('fa-chevron-up');
+                } else {
+                  feedbackContent.style.display = 'none';
+                  chevron.classList.remove('fa-chevron-up');
+                  chevron.classList.add('fa-chevron-down');
+                }
+              });
+
+              // Enviar feedback
+              document.getElementById('sendFeedbackBtn').addEventListener('click', function() {
+                const feedbackText = document.getElementById('feedbackText').value.trim();
+                
+                if (!feedbackText) {
+                  alert('Por favor, introduce tu feedback antes de enviar.');
+                  return;
+                }
+                
+                this.disabled = true;
+                this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                const documentId = urlParams.get('documentId');
+                const collectionName = urlParams.get('collectionName');
+                const userPrompt = document.getElementById('userPrompt').value;
+                const analysisResults = document.getElementById('analysisResult').innerHTML;
+                
+                // Obtener fecha actual en formato yyyy-mm-dd
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                
+                fetch('/api/feedback-analisis', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    documentId: documentId,
+                    collectionName: collectionName,
+                    userPrompt: userPrompt,
+                    analysisResults: analysisResults,
+                    fecha: dateStr,
+                    feedback: feedbackText,
+                    content_evaluated: 'analisis_impacto'
+                  })
+                })
+                .then(response => response.json())
+                .then(data => {
+                  this.disabled = false;
+                  this.innerHTML = 'Enviar feedback';
+                  
+                  if (data.success) {
+                    const successMsg = document.createElement('div');
+                    successMsg.className = 'feedback-success';
+                    successMsg.textContent = '¡Gracias por tu feedback!';
+                    document.getElementById('feedbackContent').appendChild(successMsg);
+                    
+                    // Limpiar el textarea
+                    document.getElementById('feedbackText').value = '';
+                    
+                    // Ocultar contenido de feedback después de un tiempo
+                    setTimeout(() => {
+                      document.getElementById('feedbackContent').style.display = 'none';
+                      const chevron = document.querySelector('#feedbackToggle .fa');
+                      chevron.classList.remove('fa-chevron-up');
+                      chevron.classList.add('fa-chevron-down');
+                      successMsg.remove();
+                    }, 3000);
+                  } else {
+                    alert('Error al enviar el feedback. Por favor, inténtalo de nuevo.');
+                  }
+                })
+                .catch(error => {
+                  console.error('Error sending feedback:', error);
+                  this.disabled = false;
+                  this.innerHTML = 'Enviar feedback';
+                  alert('Error al enviar el feedback. Por favor, inténtalo de nuevo.');
+                });
+              });
+            }
+            // Inicializar los listeners
+            setupFeedbackListeners();
         });
 </script>
 <script>
