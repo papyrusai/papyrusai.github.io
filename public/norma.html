@@ -1,271 +1,281 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Análisis Normativo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>Profile</title>
+    <link rel="icon" href="assets\papyrus_logo.png" type="image/png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
+    <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="styles/styles.css" />
+    <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+    <link rel="stylesheet" type="text/css" href="styles/toggle.css" />
+    <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
+    <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
+    <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-        }
-        .header-nav {
-            display: flex;
-            gap: 20px;
-        }
-        .nav-item {
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-        }
-        main {
-            padding: 20px;
-        }
-        .actions {
-            margin: 20px 0;
-        }
-        button {
-            padding: 8px 16px;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-        .results-container {
+
+      :root {
+        --primary-color: #04db8d;
+        --secondary-color: #455862;
+        --border-color: #e0e0e0;
+        --text-color: #0b2431;
+        --placeholder-color: #999;
+        --active-color: #04db8d;
+        --error-color: #d32f2f;
+        --background-color: #ffffff;
+
+        /*tab background color: #f8f8f8*/
+      }
+        #analysisResult {
             margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            min-height: 100px;
-        }
-        textarea {
-            width: 100%;
             padding: 10px;
-            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+        }
+
+        body{
+          font-family: 'Satoshi',sans-serif;
+        }
+
+        #loader {
+            display: none; /* Hidden by default */
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .analisis-impacto {
+              background-color: var(--text-color);
+              color: white;
+              padding: 5px 10px;
+              border: none;
+              border-radius: 5px;
+              cursor: pointer;
+              margin-top: 2%;
+              font-size: 14px;
+              text-decoration: none;
+          }
+          .container-norma{
+            margin: 2%;
+          }
+          /* Style the input field */
+          .user-prompt {
+            width: 80%;
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
             box-sizing: border-box;
+            font-size: 16px;
+            font-family: 'Heebo', sans-serif;
+            text-align: left;
+            resize: vertical; /* This enables vertical resizing */
+            overflow: auto;
+            min-height: 100px;
+            /* height: auto;
+            white-space: pre-wrap; /* Allows line breaks within the text area */
+            word-break: break-word;/*Break on new word, not letter*/
+             spellcheck: false; /* Disable spellcheck */
         }
-        
-        /* Feedback styles */
-        .feedback-section {
-            margin-top: 20px;
-            border-top: 1px solid #ddd;
-            padding-top: 15px;
+
+
+        /* Add focus style */
+        .user-prompt:focus {
+          outline: none;
+          border-color: var(--primary-color);
+          box-shadow: 0 0 5px rgba(131, 163, 0, 0.5);
         }
-        
-        .feedback-header {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
+
+        /* Style the container for the input and button */
+        .input-button-container {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start; /* Aligns items to the start (left) */
+          width: 100%;
+          margin-bottom: 20px;
+          /*padding-left: 2%; *//* Matches the left margin of the input */
         }
-        
-        .feedback-header h3 {
-            margin: 0;
-            margin-right: 10px;
+        .input-button-container > * {
+            margin-bottom: 10px; /* Adds spacing between elements */
         }
-        
-        .dropdown-icon {
-            transition: transform 0.3s ease;
+
+        /*feedback*/
+
+                #feedbackSection {
+          margin-top: 20px;
+          border: 1px solid #ccc;
+          border-radius: 20px;
+          overflow: hidden;
         }
-        
-        .dropdown-icon.active {
-            transform: rotate(180deg);
+
+        #feedbackToggle {
+          display: flex;
+          justify-content: space-between;
+          padding: 10px 15px;
+          background-color: #f8f8f8;
+          cursor: pointer;
         }
-        
-        .feedback-content {
-            display: none;
-            margin-top: 10px;
+
+        #feedbackContent {
+          padding: 15px;
         }
-        
-        .feedback-content.active {
-            display: block;
+
+        #feedbackText {
+          width: 100%;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          margin-bottom: 10px;
+          resize: vertical;
+          min-height: 80px;
         }
-        
-        .feedback-input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+
+        #sendFeedbackBtn {
+          margin-top: 10px;
         }
-        
-        .send-feedback-btn {
-            padding: 8px 16px;
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
+
+        .feedback-success {
+          color: var(--primary-color);
+          margin-top: 10px;
+          font-weight: bold;
         }
-        
-        .send-feedback-btn:hover {
-            background-color: #3367d6;
-        }
-        
-        .feedback-sent {
-            display: none;
-            color: green;
-            margin-top: 10px;
-        }
+
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-nav">
-            <a href="#" class="nav-item">PANEL DE CONTROL</a>
-            <a href="#" class="nav-item">EDITAR SUSCRIPCIÓN</a>
-            <a href="#" class="nav-item">AYUDA</a>
+
+     <!-- Loader overlay -->
+<div id="pageLoaderOverlay">
+    <div class="page-loader"></div>
+  </div>
+
+    <nav class="navbar">
+      <div class="logo">
+          <a href="https://www.papyrus-ai.com/" target="_blank">
+            <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+          </a>
         </div>
-    </header>
-    
-    <main>
-        <h1>Análisis Normativo</h1>
-        
-        <div class="user-input-section">
-            <textarea id="userPrompt" placeholder="Ingrese su pregunta aquí"></textarea>
-            <button id="submitQuestion">Consultar</button>
-        </div>
-        
-        <div class="actions">
-            <button id="realizarResumen">Realiza un resumen</button>
-            <button id="analizarImpacto">Analizar Impacto</button>
-        </div>
-        
-        <div id="analysisResults" class="results-container">
-            <!-- Results will be displayed here -->
-        </div>
-        
-        <!-- Feedback Section (initially hidden, will be shown after results load) -->
-        <div id="feedbackSection" class="feedback-section" style="display: none;">
-            <div class="feedback-header" id="feedbackHeader">
-                <h3>Feedback</h3>
-                <span class="dropdown-icon">▼</span>
-            </div>
-            <div class="feedback-content" id="feedbackContent">
-                <textarea 
-                    id="feedbackInput" 
-                    class="feedback-input" 
-                    placeholder="Indícanos tu opinión para que podamos seguir mejorando"
-                ></textarea>
-                <button id="sendFeedbackBtn" class="send-feedback-btn">Enviar feedback</button>
-                <p id="feedbackSent" class="feedback-sent">¡Gracias por tu feedback!</p>
-            </div>
-        </div>
-    </main>
-    
-    <script>
-        // Variables to store document information
-        let currentDocumentId = '';
-        let currentCollectionName = '';
-        
-        // Function to display analysis results and show feedback section
-        function displayAnalysisResults(results) {
-            const resultsContainer = document.getElementById('analysisResults');
-            resultsContainer.innerHTML = results;
-            
-            // Show the feedback section after results are displayed
-            document.getElementById('feedbackSection').style.display = 'block';
-        }
-        
-        // Toggle feedback dropdown
-        document.getElementById('feedbackHeader').addEventListener('click', function() {
-            const dropdownIcon = this.querySelector('.dropdown-icon');
-            const feedbackContent = document.getElementById('feedbackContent');
-            
-            dropdownIcon.classList.toggle('active');
-            feedbackContent.classList.toggle('active');
-        });
-        
-        // Send feedback function
-        document.getElementById('sendFeedbackBtn').addEventListener('click', function() {
-            const userPrompt = document.getElementById('userPrompt').value;
-            const analysisResults = document.getElementById('analysisResults').innerHTML;
-            const userFeedback = document.getElementById('feedbackInput').value;
-            
-            if (!userFeedback.trim()) {
-                alert('Por favor, ingresa tu feedback antes de enviar.');
-                return;
-            }
-            
-            // Send feedback to server
-            fetch('/feedback-analisis', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    documentId: currentDocumentId,
-                    collectionName: currentCollectionName,
-                    userPrompt: userPrompt,
-                    analysisResults: analysisResults,
-                    feedback: userFeedback
+      <button class="hamburger" onclick="toggleMenu()">☰</button> 
+      <ul class="menu">
+        <ul class="menu">
+          <li><a href="https://papyrus-ai.com/">WEB</a></li>
+          <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
+          <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+          <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+        </ul>
+    </nav>
+
+    <div class="container-norma">
+    <h1 style="padding-left:0%">Análisis Normativo</h1>
+    <div id="normaDetails">
+        <!-- This will be populated with data from MongoDB -->
+        <h2>  </h2>
+           <!-- <label for="userPrompt">Custom Prompt:</label> --> </div>
+             <div class="input-button-container">
+  <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Enter your prompt here" spellcheck="false">Realiza un resumen</textarea>
+    <div>
+    <button id="analyzeButton" class="analisis-impacto">Analizar Impacto</button>
+</div>
+<h2 > <span id="normaShortName"></span></h2>
+</div>
+    <div id="analysisResult"></div>
+</div>
+<!-- Sección de Feedback -->
+<div id="feedbackSection" style="display: none;">
+  <div id="feedbackToggle">
+    <span>Feedback</span>
+    <i class="fa fa-chevron-down"></i>
+  </div>
+  <div id="feedbackContent" style="display: none;">
+    <textarea id="feedbackText" placeholder="Indícanos tu opinión para que podamos seguir mejorando"></textarea>
+    <button id="sendFeedbackBtn" class="analisis-impacto">Enviar feedback</button>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const shortNameSpan = document.getElementById('normaShortName');
+        const analyzeButton = document.getElementById('analyzeButton');
+        const analysisResultDiv = document.getElementById('analysisResult');
+        const loaderDiv = document.getElementById('loader');
+        const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
+        const userPromptInput = document.getElementById('userPrompt');
+
+        // Get the document ID from the URL (you can change this if you pass it differently)
+        const urlParams = new URLSearchParams(window.location.search);
+        const documentId = urlParams.get('documentId');
+                const collectionName = urlParams.get('collectionName'); // Get the collection from URL
+
+        // Assuming the document ID is passed as a query parameter
+        // Example: norma.html?documentId=BOE-A-2025-2144
+
+        // Fetch the document details (only the short_name for this example)
+        fetch(`/api/norma-details?documentId=${documentId}&collectionName=${collectionName}`) // New endpoint in app.js
+                .then(response => response.json())
+                .then(data => {
+                    shortNameSpan.textContent = data.short_name;
+                    pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
                 })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Feedback response:', data);
-                // Show confirmation message
-                document.getElementById('feedbackSent').style.display = 'block';
-                // Clear input
-                document.getElementById('feedbackInput').value = '';
-                // Hide after 3 seconds
-                setTimeout(() => {
-                    document.getElementById('feedbackSent').style.display = 'none';
-                    // Also close the dropdown
-                    document.getElementById('feedbackContent').classList.remove('active');
-                    document.querySelector('.dropdown-icon').classList.remove('active');
-                }, 3000);
-            })
-            .catch(err => {
-                console.error('Error sending feedback:', err);
-                alert('Hubo un error al enviar tu feedback. Por favor, intenta de nuevo.');
+                .catch(error => {
+                    console.error('Error fetching norma details:', error);
+                    analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
+                    pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
+                });
+
+                analyzeButton.addEventListener('click', () => {
+                analysisResultDiv.textContent = ''; // Clear previous results
+                //loaderDiv.style.display = 'block'; // Show the loader
+                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
+                //analyzeButton.style.backgroundColor = 'transparent';
+
+                const userPrompt = userPromptInput.value;
+
+                fetch('/api/analyze-norma', { // New endpoint in app.js
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt , collectionName:collectionName})
+                })
+                .then(response => response.text()) // Expecting plain text
+                .then(data => {
+                         const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                        analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
+                        analyzeButton.style.backgroundColor = 'var(--primary-color)';
+                        analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                })
+                .catch(error => {
+                    console.error('Error analyzing norma:', error);
+                    analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
+                      analyzeButton.style.backgroundColor = 'var(--text-color)';
+                    analysisResultDiv.textContent = 'Error analyzing norma.';
+                });
             });
         });
-        
-        // Example function to handle the submission of a question
-        document.getElementById('submitQuestion').addEventListener('click', function() {
-            const userPrompt = document.getElementById('userPrompt').value;
-            
-            if (!userPrompt.trim()) {
-                alert('Por favor, ingresa una pregunta.');
-                return;
-            }
-            
-            // This would be replaced with your actual API call
-            fetch('/analyze-document', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: userPrompt })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Store document information for feedback
-                currentDocumentId = data.documentId;
-                currentCollectionName = data.collectionName;
-                
-                // Display the results
-                displayAnalysisResults(data.analysisResults);
-            })
-            .catch(err => {
-                console.error('Error analyzing document:', err);
-                alert('Hubo un error al analizar el documento. Por favor, intenta de nuevo.');
-            });
-        });
-        
-        // Handle Realiza un resumen button
-        document.getElementById('realizarResumen').addEventListener('click', function() {
-            // Implementation for summary creation
-            console.log("Realizando resumen...");
-            // Add your implementation here
-        });
-        
-        // Handle Analizar Impacto button
-        document.getElementById('analizarImpacto').addEventListener('click', function() {
-            // Implementation for impact analysis
-            console.log("Analizando impacto...");
-            // Add your implementation here
-        });
-    </script>
+</script>
+<script>
+  function toggleMenu() {
+      const menu = document.querySelector('.menu');
+      menu.classList.toggle('active');
+       }
+       // Close the menu if clicking outside of it
+document.addEventListener('click', function(event) {
+  const menu = document.querySelector('.menu');
+  const hamburger = document.querySelector('.hamburger');
+  
+  if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+      menu.classList.remove('active');
+  }
+});
+</script>
 </body>
 </html>

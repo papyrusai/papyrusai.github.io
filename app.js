@@ -1226,29 +1226,26 @@ app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
 });
 
 /*Feedback analisis*/
-app.post('/feedback-analisis', ensureAuthenticated, async (req, res) => {
-  const { documentId, collectionName, userPrompt, analysisResults, feedback } = req.body;
+app.post('/api/feedback-analisis', ensureAuthenticated, async (req, res) => {
+  const { documentId, collectionName, userPrompt, analysisResults, fecha, feedback, content_evaluated } = req.body;
   
   if (!documentId || !feedback) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  const userId = req.user._id;
   const userEmail = req.user.email;
-  const contentEvaluated = "analisis_impacto";
-  
-  // Format date as dd-mm-yyyy to match existing code
-  const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
-  
+
   const feedbackDoc = {
+    user_id: userId,
     user_email: userEmail,
-    documentID: documentId,
-    collectionName: collectionName,
+    content_evaluated: content_evaluated || 'analisis_impacto',
+    doc_id: documentId,
+    collection_name: collectionName,
     user_prompt: userPrompt,
-    analysisResults: analysisResults,
-    fecha: dateStr,  // dd-mm-yyyy
-    user_feedback: feedback,
-    content_evaluated: contentEvaluated
+    analysis_results: analysisResults,
+    fecha: fecha,   // yyyy-mm-dd
+    feedback: feedback
   };
 
   const client = new MongoClient(uri, mongodbOptions);
@@ -1267,6 +1264,7 @@ app.post('/feedback-analisis', ensureAuthenticated, async (req, res) => {
     await client.close();
   }
 });
+
 
 
 

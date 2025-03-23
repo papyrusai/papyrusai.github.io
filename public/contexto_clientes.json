@@ -264,7 +264,197 @@
       ],
       "sectores": [],
       "resumen": "Enrique necesita estar al día con regulaciones cripto-financieras globales como RTS, MiCA, DORA."
+    },
+    {
+      "perfil": "partner_asegurador",
+      "nombre": "Isidoro",
+      "despacho": "Kennedys",
+      "industria": [
+        "abogacía",
+        "seguros",
+        "reclamaciones"
+      ],
+      "tipo_legislacion": [
+        "BOE (temas de seguros)",
+        "DOUE (temas procesales y laborales)",
+        "CCAA (regulaciones autonómicas específicas)",
+        "Dirección General de Seguros y Fondos de Pensiones (DGSJyFP)",
+        "Ministerio de Economía y Hacienda",
+        "Normas de solvencia",
+        "Convenios internacionales",
+        "ESMA",
+        "CNMV",
+        "CNMC"
+      ],
+      "necesidades": [
+        "Ahorro de tiempo en la monitorización legislativa",
+        "Centralización y clasificación de fuentes para abogacía y seguros",
+        "Alertas personalizadas (automatización de análisis y resúmenes)",
+        "Experiencia de usuario sencilla (formato de alertas e interfaz)"
+      ],
+      "sectores": [
+        "legal",
+        "asegurador"
+      ],
+      "resumen": "Isidoro, socio en Kennedys, asesora a aseguradoras en reclamaciones y actualmente se apoya en Aranzadi e INESE para un seguimiento normativo parcial. Precisa un sistema que le permita centralizar fuentes (BOE, DOUE, reguladores como DGS y ministerios), obtener alertas más personalizadas y ahorrar tiempo gestionando normativa civil, laboral, contencioso-administrativo y seguros."
+    },
+    {
+      "perfil": "Socio Despacho en ip_it",
+      "nombre": "Sergio Poza",
+      "despacho": "Letslaw",
+      "industria": [
+        "legal",
+        "propiedad_intelectual",
+        "tecnológico",
+        "consumo",
+        "e-commerce"
+      ],
+      "tipo_legislacion": [
+        "NIS2",
+        "DORA",
+        "MiCA",
+        "AEPD",
+        "Oficina Española de Patentes y Marcas",
+        "EDPB (European Data Protection Board)",
+        "Directrices IA Europeas"
+      ],
+      "necesidades": [
+        "Monitoreo constante de jurisprudencia y directrices (IP, IA, privacidad)",
+        "Creación de newsletters y píldoras informativas para captar clientes",
+        "Cobertura de normativas más allá del BOE (autonómicas y europeas)",
+        "Opciones de etiquetado más especializadas (fiscal, procesal penal, directrices/guidelines)"
+      ],
+      "sectores": [],
+      "resumen": "Abogado de la firma Letslaw con un equipo de 35 abogados, enfocado en derecho tecnológico, consumo, e-commerce e IP. Viene de un despacho grande y valora el seguimiento de normativas y directrices (AEPD, EDPB, patentes y marcas) más completo que el BOE. Desea poder crear contenido breve para clientes y sugiere mejorar el etiquetado para contemplar áreas como fiscal y procesal penal."
+    },
+    {
+      "perfil": "marketing_operations en despacho",
+      "nombre": "Emilia",
+      "despacho": "Tornos",
+      "industria": [
+        "administrativo",
+        "farma",
+        "inmobiliario"
+      ],
+      "tipo_legislacion": [
+        "BOE",
+        "DOUE",
+        "BOPB",
+        "DOGC",
+        "Jurisprudencia",
+        "Doctrina",
+        "Tributos"
+      ],
+      "necesidades": [
+        "Reducir el tiempo de análisis de normativa",
+        "Generar newsletters internas",
+        "Ayudar a los abogados a detectar las normativas más relevantes"
+      ],
+      "sectores": [
+        "empresas pequeñas y medianas"
+      ],
+      "resumen": "Emilia es gerente de marketing y operaciones en Tornos, un despacho de 50 abogados en Barcelona especializado en derecho administrativo, con nichos en farma e inmobiliario. Actualmente, el seguimiento normativo lo realiza un abogado que envía un boletín diario con enlaces a BOE, DOGC, BOPB, jurisprudencia y doctrina. Ven valor en optimizar ese proceso para ahorrar tiempo, elaborar newsletters y agilizar la identificación de normativas relevantes."
+    },
+    {
+      "perfil": "knowledge/departamento del conocimiento de gran despacho",
+      "nombre": "No_proporcionado (Cristina y Fernando)",
+      "despacho": "O&A Shearman",
+      "industria": [
+        "legal",
+        "energía",
+        "fiscal",
+        "M&A",
+        "bancario",
+        "financiero"
+      ],
+      "tipo_legislacion": [
+        "BOE",
+        "Boletines CCAA",
+        "DOUE",
+        "Reguladores españoles y europeos",
+        "Ministerios",
+        "BOCD",
+        "Senado",
+        "Iniciativas legislativas UE",
+        "CNMC (información no ordenada cronológicamente)",
+        "Doctrina administrativa (TEAC, DGT)",
+        "Jurisprudencia enfocada a empresas",
+        "Acuerdos internacionales (doble imposición)",
+        "Planes estratégicos (PRTR, PERTES)",
+        "Normativa autonómica (vivienda, impuestos)"
+      ],
+      "necesidades": [
+        "Optimizar tiempo dedicado al filtrado y análisis diario de normativa",
+        "Obtener resúmenes diarios y semanales consolidados",
+        "Monitoreo de sanciones, informes del Consejo de Estado y acuerdos internacionales",
+        "Alertas sobre doctrina administrativa y jurisprudencia empresarial",
+        "Extracción automática de notas de prensa del Consejo de Ministros",
+        "Enfoque por industria (diferencial)"
+      ],
+      "sectores": [],
+      "resumen": "Cristina (área de Energía) y Fernando (área Fiscal) gestionan el conocimiento normativo en O&A Shearman, centrado en M&A, banca y finanzas. Su flujo de trabajo requiere revisión diaria de múltiples fuentes (BOE, boletines autonómicos, DOUE, CNMC, etc.) y filtrado manual de contenido. Buscan reducir la sobrecarga de información y ahorrar alrededor de una hora diaria con una solución que centralice alertas, resúmenes y áreas específicas como sanciones, doctrina administrativa o iniciativas legislativas. Afrontan restricciones técnicas y necesitan aprobación interna y de ciberseguridad para integrar nuevas herramientas."
+    },
+    {
+      "perfil": "socio de fiscal",
+      "nombre": "José Fernández",
+      "despacho": "Eversheds & Sutherland",
+      "industria": [
+        "fiscal",
+        "energía",
+        "inmobiliario"
+      ],
+      "tipo_legislacion": [
+        "BOE",
+        "DOUE",
+        "CCAA (autonómica)",
+        "Ordenanzas municipales (local)",
+        "Ministerio de Economía y Hacienda",
+        "Dirección General de Tributos (DGT)",
+        "TEAC y TEAR",
+        "TSJs (Tribunales Superiores de Justicia)",
+        "BOCD y Senado (iniciativas legislativas)",
+        "TJUE (Tribunal de Justicia de la Unión Europea)",
+        "Notas de prensa internacionales (impositivas)"
+      ],
+      "necesidades": [
+        "Ahorro de tiempo en filtrado y análisis de normativa",
+        "Mantenerse al día de cambios fiscales (tasas y bonificaciones)",
+        "Monitorear legislación autonómica y local",
+        "Acceso a jurisprudencia y doctrina administrativa relevante",
+        "Herramientas de clasificación y resúmenes IA con posibilidad de ver la fuente original"
+      ],
+      "sectores": [],
+      "resumen": "José Fernández, abogado fiscal en Eversheds & Sutherland, asesora a empresas y particulares en materia tributaria. Busca optimizar el seguimiento de normativas en BOE, DOUE, CCAA y nivel local para temas de tasas y bonificaciones, incluyendo jurisprudencia de TEAC, TEAR y TSJs. Actualmente revisa diversas fuentes manualmente (Lefebvre, La Ley, LinkedIn, Noticiasjurídicas) y prioriza un sistema que ahorre tiempo, ofrezca actualizaciones filtradas y facilite el acceso al texto normativo oficial."
+    },
+    {
+      "perfil": "clo_cripto",
+      "nombre": "Maria José",
+      "despacho": "karpthkey",
+      "industria": [
+        "cripto",
+        "financiero",
+        "internacional"
+      ],
+      "tipo_legislacion": [
+        "International Law",
+        "Corporate Governance",
+        "Anti-Corruption",
+        "DeFi",
+        "KYC/AML (Blanqueo de Capitales)",
+        "EBA",
+        "ESMA"
+      ],
+      "necesidades": [
+        "Seguimiento de normativas en jurisdicciones clave (Suiza, Islas Caimán, Singapur, EE.UU., Panamá, Argentina, UE)",
+        "Monitoreo de actualizaciones en activos financieros y activos digitales/cripto",
+        "Solución que proporcione síntesis y resúmenes diarios de fuentes oficiales",
+        "Ahorro de tiempo y costes en investigación normativa"
+      ],
+      "sectores": [],
+      "resumen": "Profesional con enfoque en activos digitales, DeFi y cumplimiento normativo internacional. Trabaja para una empresa que gestiona activos para DAOs y colabora en proyectos ubicados en múltiples jurisdicciones (Suiza, Caimán, Singapur, EE.UU., Panamá, Argentina, UE). Necesita estar al día en regulaciones relacionadas con KYC/AML y directrices de EBA y ESMA, priorizando una herramienta que ofrezca actualizaciones filtradas y resúmenes diarios para reducir el tiempo invertido en consultar diarios cripto y otras fuentes dispersas."
     }
+    
+        
   ],
   "ejemplos": [
     {
