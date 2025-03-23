@@ -87,8 +87,9 @@ document.addEventListener('DOMContentLoaded', function() {
       sessionStorage.setItem('isEditing', 'true');
       
       // Redirect to step3
-      document.body.removeChild(overlay);
+     
       window.location.href = '/paso3.html';
+      document.body.removeChild(overlay);
 
       
     } catch (error) {

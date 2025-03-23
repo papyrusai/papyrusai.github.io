@@ -35,7 +35,7 @@ body {
 }
 
 .page-loader {
-  border: 5px solid #092534;
+  border: 5px solid var(--text-color);
   border-top: 5px solid var(--primary-color);
   border-radius: 50%;
   width: 50px;
@@ -58,7 +58,7 @@ body {
 }
 
 .button-impacto {
-  background-color: #092534;
+  background-color: var(--text-color);
   color: white;
   padding: 5px 10px;
   border: none;
@@ -75,7 +75,7 @@ body {
 
 
 .change-subscription {
-  background-color: #092534;
+  background-color: var(--text-color);
   color: white;
   padding: 5px 10px;
   border: none;
@@ -95,7 +95,7 @@ body {
     justify-content: space-between;
     align-items: center; 
     padding: 10px;
-    border: 2px solid #092534; /* Border around the Filtrar element */
+    border: 2px solid var(--text-color); /* Border around the Filtrar element */
     margin-bottom: 5px;
     border-radius: 5px;
     background-color: white;
@@ -228,8 +228,7 @@ body {
 }
 
 h1 {
-  color: #092534;
-  font-family: 'Azonix', sans-serif;
+  color: var(--text-color);
   padding-left: 10%;
   padding-right: 10%;
   padding-top: 20px;
@@ -244,7 +243,7 @@ h1 {
 }
 
 a {
-  color:#092534;
+  color:var(--text-color);
 }
 .leer-mas {
   color:var(--primary-color);
@@ -257,7 +256,7 @@ a {
   margin-left: 45%;
   margin-top: 15%;
   margin-bottom: 30%;
-  border: 4px solid #092534; /* Light grey */
+  border: 4px solid var(--text-color); /* Light grey */
   border-top: 4px solid var(--primary-color); /* Blue */
   border-radius: 50%;
   width: 80px;
@@ -308,7 +307,7 @@ a {
   margin-bottom: 15px;
   padding: 2vw;
  /* background-color: #ffffff; */
-  border: 1px solid #092534;
+  border: 1px solid var(--text-color);
   border-radius: 4px;
   background-color: white;
 }
@@ -349,10 +348,10 @@ a {
    /* Etiqueta container settings */
 
   background-color: transparent;
-  border: 1px solid #092534; /* White border */
+  border: 1px solid var(--text-color); /* White border */
   padding: 7px;
   border-radius: 4px;
-  color: #092534;
+  color: var(--text-color);
 }
 
 .etiquetas-values .selectedValue {

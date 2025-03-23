@@ -1225,6 +1225,49 @@ app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
   }
 });
 
+/*Feedback analisis*/
+app.post('/feedback-analisis', ensureAuthenticated, async (req, res) => {
+  const { documentId, collectionName, userPrompt, analysisResults, feedback } = req.body;
+  
+  if (!documentId || !feedback) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const userEmail = req.user.email;
+  const contentEvaluated = "analisis_impacto";
+  
+  // Format date as dd-mm-yyyy to match existing code
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+  
+  const feedbackDoc = {
+    user_email: userEmail,
+    documentID: documentId,
+    collectionName: collectionName,
+    user_prompt: userPrompt,
+    analysisResults: analysisResults,
+    fecha: dateStr,  // dd-mm-yyyy
+    user_feedback: feedback,
+    content_evaluated: contentEvaluated
+  };
+
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const feedbackCollection = database.collection("Feedback");
+
+    await feedbackCollection.insertOne(feedbackDoc);
+
+    return res.json({ success: true, message: 'Feedback saved successfully' });
+  } catch (err) {
+    console.error('Error saving feedback:', err);
+    return res.status(500).json({ error: 'Failed to save feedback' });
+  } finally {
+    await client.close();
+  }
+});
+
 
 
 app.get('/search-ramas-juridicas', async (req, res) => {
