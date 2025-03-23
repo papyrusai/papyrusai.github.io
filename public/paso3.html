@@ -98,20 +98,21 @@
       width: 140px;
       padding: 12px 0;
       font-size: 16px;
-      border-radius: 6px;
+      border-radius: 20px;
       cursor: pointer;
       border: none;
     }
     .btn-siguiente {
-      background-color: var(--primary-color);
+      background-color: var(--text-color);
       color: white;
     }
     .btn-siguiente:hover {
       background-color: var(--active-color);
     }
     .btn-anterior {
-      background-color: #ccc;
-      color: #333;
+      background-color: var(--background-color);
+      color: var(--text-color);
+      broder: 1px solid var(--text-color);
     }
     .btn-anterior:hover {
       background-color: #bbb;
@@ -126,46 +127,7 @@
     width: 160px;
     }
 
-    /* ----------------- Tags Container & Tag Styles ----------------- */
-    .tags-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      max-height: 200px;
-      overflow-y: auto;
-      margin-bottom: 10px;
-    }
-    .tag {
-      background-color: #f8f8f8;
-      border: 1px solid #e0e0e0;
-      border-radius: 20px;
-      padding: 3px 16px;
-      display: inline-block;
-      font-size: 14px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      transition: all 0.2s ease;
-      white-space: nowrap;
-      margin-right: 5px;
-    }
-    .tag:hover {
-      background-color: #f0f0f0;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
-    }
-    .tag-remove {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      line-height: 20px;
-      margin-left: 8px;
-      text-align: center;
-      border-radius: 50%;
-      background-color: #e0e0e0;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-    }
-    .tag-remove:hover {
-      background-color: #ccc;
-    }
+    
     /* Force uppercase for Fuentes Oficiales tags */
     #fuentes-gobierno-container .tag,
     #fuentes-reguladores-container .tag {
@@ -187,10 +149,11 @@
     .dropdown-item {
       padding: 8px 12px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 12px;
     }
     .dropdown-item:hover {
       background-color: var(--secondary-color);
+      color: var(--background-color);
     }
     /* ----------------- Feedback Message ----------------- */
     .feedback-msg {
@@ -233,7 +196,7 @@
             <div class="step">3. Plan</div>
           </div>
       <div class="progress-bar">
-        <div class="progress-fill" style="width: 100%"></div>
+        <div class="progress-fill" style="width: 66%"></div>
       </div>
     </div>
     <div class="formulario">

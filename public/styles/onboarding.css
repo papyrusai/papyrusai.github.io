@@ -109,7 +109,7 @@ select {
   padding: 4px;
   border: 1px solid var(--border-color);
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 12px;
 }
 input::placeholder {
   color: var(--placeholder-color);
@@ -168,7 +168,7 @@ select {
   background-color: #f8f8f8;
   border: 1px solid #e0e0e0;
   border-radius: 20px;
-  padding: 3px 16px;
+  padding: 2px 13px;
   display: inline-block;
   font-size: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);

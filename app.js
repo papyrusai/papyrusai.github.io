@@ -1723,6 +1723,7 @@ app.get('/api/current-user', ensureAuthenticated, async (req, res) => {
   }
 });
 
+/*old user details
 app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
   try {
     const client = new MongoClient(uri, mongodbOptions);
@@ -1747,6 +1748,47 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+*/
+app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
+  try {
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return all relevant user information for onboarding
+    res.json({
+      name: user.name || '',
+      web: user.web || '',
+      linkedin: user.linkedin || '',
+      perfil_profesional: user.perfil_profesional || '',
+      especializacion: user.especializacion || '',
+      otro_perfil: user.otro_perfil || '',
+      subscription_plan: user.subscription_plan || 'plan1',
+      profile_type: user.profile_type || 'individual',
+      company_name: user.company_name || '',
+      industry_tags: user.industry_tags || [],
+      rama_juridicas: user.rama_juridicas || [],
+      sub_rama_map: user.sub_rama_map || {},
+      rangos: user.rangos || [],
+      cobertura_legal: user.cobertura_legal || {
+        "fuentes-gobierno": [],
+        "fuentes-reguladores": []
+      }
+    });
+    
+    await client.close();
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 app.post('/save-same-plan2', async (req, res) => {
   // This is only called if the user is STILL on plan2, 

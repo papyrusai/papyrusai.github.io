@@ -3,7 +3,11 @@ let catalogoEtiquetas = null;
 let currentStep = 0; // 0: Industrias, 1: Ramas, 2: Fuentes, 3: Rangos
 
 document.addEventListener('DOMContentLoaded', async function() {
+  
+  // Check if we're in editing mode
+  const isEditing = sessionStorage.getItem('isEditing') === 'true';
   await cargarCatalogoEtiquetas();
+
   const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas'));
   if (!etiquetas) {
     window.location.href = 'paso2.html';
@@ -15,6 +19,18 @@ document.addEventListener('DOMContentLoaded', async function() {
   updateButtonLayout();
   // Add this line to setup the new click handlers
   setupFilterClickHandlers();
+
+   // Add title to indicate editing mode if needed
+   if (isEditing) {
+    const title = document.querySelector('h2');
+    if (title) {
+      title.textContent = 'Editar Mi Avatar Jurídico';
+    }
+    const subtitle = document.querySelector('p');
+    if (subtitle) {
+      subtitle.textContent = 'Actualiza tus preferencias y filtros según sea necesario.';
+    }
+  }
   
   // The existing code for hiding dropdowns when clicking outside remains the same
   document.addEventListener('click', function(e) {
@@ -761,6 +777,12 @@ function finalizarOnboarding() {
   document.getElementById('fuentesGobiernoInput').value = JSON.stringify(userData.fuentes || []);
   document.getElementById('fuentesReguladoresInput').value = JSON.stringify(userData.reguladores || []);
   
+  // If we're in edit mode, set a flag for paso4
+  if (sessionStorage.getItem('isEditing') === 'true') {
+    sessionStorage.setItem('isEditingPlan', 'true');
+  }
+
+
   console.log("Redirecting to paso4.html with data:", {
     industry_tags: etiquetasFinales.industrias,
     rama_juridicas: etiquetasFinales.ramas_juridicas,

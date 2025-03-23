@@ -9,114 +9,112 @@
   <link rel="stylesheet" href="styles/onboarding.css">
   <style>
     /* Additional styles specific for paso4 */
- /* Step 3 Plans Container */
+    /* Step 3 Plans Container */
 
- :root {
-  --primary-color: #04db8d;
-  --secondary-color: #455862;
-  --border-color: #e0e0e0;
-  --text-color: #0b2431;
-  --placeholder-color: #999;
-  --active-color: #04db8d;
-  --error-color: #d32f2f;
-  --background-color: #ffffff;
-  --primary-transparent:#bffce6fc;
+    :root {
+      --primary-color: #04db8d;
+      --secondary-color: #455862;
+      --border-color: #e0e0e0;
+      --text-color: #0b2431;
+      --placeholder-color: #999;
+      --active-color: #04db8d;
+      --error-color: #d32f2f;
+      --background-color: #ffffff;
+      --primary-transparent:#bffce6fc;
 
-  /*tab background color: #f8f8f8*/
-}
+      /*tab background color: #f8f8f8*/
+    }
 
-*{
-  font-family: 'Satoshi', sans-serif;
-}
-.body{
-  color: var(--text-color);
+    *{
+      font-family: 'Satoshi', sans-serif;
+    }
+    .body{
+      color: var(--text-color);
+    }
 
-}
+    /* A small floating message to warn about plan1 limitations */
+    .limited-plan-warning {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #ac1717;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-size: 14px;
+      box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      display: none;
+    }
+    
+    /* The close (X) button inside the banner */
+    .limited-plan-warning .close-btn {
+      position: absolute;
+      top: 4px;
+      right: 6px;
+      cursor: pointer;
+      color: #092534;
+      background: #ffffff99;
+      border-radius: 50%;
+      padding: 3px 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .choose-plan-heading {
+      text-align: center;
+      font-size: clamp(18px, 2.5vw, 24px);
+      margin-top: clamp(20px, 5vh, 50px);
+      font-weight: bold;
+    }
+    .plans-container {
+      display: flex;
+      justify-content: space-between;
+      gap: clamp(5px, 1vw, 10px);
+      margin-top: clamp(20px, 3vh, 50px);
+    }
 
+    .plan-box {
+      position: relative;
+      flex: 1;
+      border-radius: 6px;
+      padding: clamp(8px, 1.5vh, 15px);
+      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      border: 1px solid #092534;
+    }
 
-/* A small floating message to warn about plan1 limitations */
-.limited-plan-warning {
-    position: fixed;            /* or absolute if you prefer to anchor inside .form-container */
-    top: 10px;                  /* place near top (or center, your choice) */
-    left: 50%;
-    transform: translateX(-50%);  /* center horizontally */
-    background-color: #ac1717;    /* a warning color, e.g., yellowish */
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 14px;
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.2);
-    z-index: 9999;             /* on top of other stuff */
-    display: none;             /* hidden by default, show via JS */
-  }
-  
-  /* The close (X) button inside the banner */
-  .limited-plan-warning .close-btn {
-    position: absolute;
-    top: 4px;
-    right: 6px;
-    cursor: pointer;
-    color: #092534;
-    background: #ffffff99;
-    border-radius: 50%;
-    padding: 3px 3px;
-    font-size: 12px;
-    font-weight: bold;
-  }
-  
-.choose-plan-heading {
-    text-align: center;
-    font-size: clamp(18px, 2.5vw, 24px);
-    margin-top: clamp(20px, 5vh, 50px);
-    font-weight: bold;
-}
-.plans-container {
-  display: flex;
-  justify-content: space-between;
-  gap: clamp(5px, 1vw, 10px);
-  margin-top: clamp(20px, 3vh, 50px);
-}
+    .plan-box h3 {
+      font-size: clamp(12px, 1.5vw, 16px);
+      font-weight: normal;
+      color: #092534bd;
+    }
 
-.plan-box {
-  position: relative;
-  flex: 1;
-  border-radius: 6px;
-  padding: clamp(8px, 1.5vh, 15px);
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  border: 1px solid #092534;
-}
+    .plan-box h2 {
+      font-size: clamp(16px, 2.5vw, 20px);
+      margin: clamp(3px, 0.8vh, 8px) 0;
+      font-weight: bold;
+    }
 
-.plan-box h3 {
-  font-size: clamp(12px, 1.5vw, 16px);
-  font-weight: normal;
-  color: #092534bd;
-}
+    .plan-box p {
+      font-size: clamp(10px, 1.2vw, 12px);
+      color: #666;
+      margin-bottom: clamp(8px, 1.5vh, 15px);
+    }
 
-.plan-box h2 {
-  font-size: clamp(16px, 2.5vw, 20px);
-  margin: clamp(3px, 0.8vh, 8px) 0;
-  font-weight: bold;
-}
+    .plan-box ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
 
-.plan-box p {
-  font-size: clamp(10px, 1.2vw, 12px);
-  color: #666;
-  margin-bottom: clamp(8px, 1.5vh, 15px);
-}
-
-.plan-box ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.plan-box ul li {
-  font-size: clamp(10px, 1.2vw, 12px);
-  margin-bottom: clamp(3px, 0.8vh, 8px);
-  padding-bottom: clamp(3px, 0.8vh, 8px);
-  border-bottom: 1px solid #ccccccd9;
-}
+    .plan-box ul li {
+      font-size: clamp(10px, 1.2vw, 12px);
+      margin-bottom: clamp(3px, 0.8vh, 8px);
+      padding-bottom: clamp(3px, 0.8vh, 8px);
+      border-bottom: 1px solid #ccccccd9;
+    }
 
     .btn-siguiente {
       background-color: var(--primary-color);
@@ -127,121 +125,112 @@
       border-radius: 6px;
       cursor: pointer;
       border: none;
-    
     }
 
-/*banners*/
+    /*banners*/
 
-  /* Common style for all plan badges */
-  .plan-badge {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    color: #092534;
-    padding: 2px 5px;
-    border-radius: 5px;
-    font-weight: bold;
-    font-size: 12px; /* smaller text */
-    z-index: 9999;
-  }
-  
-  /* If you want different colors for each banner: */
-  .free-two-months {
-    background-color: var(--primary-color); /* or #ffcc00, up to you */
-    color: #fbf7ef;
-  }
-  .free{
-    top:-20px;
-    right: 10px;
-  }
-  
-  .coming-soon {
-    background-color: #092534; /* for example pink, or any color */
-    color: #fff;               /* white text for contrast */
-  }
-  
-  /* (Optional) If plan3 is disabled, you can gray it out entirely: */
-  .plan-box[data-disabled="true"] {
-    opacity: 0.6;       /* visually indicate it's not available */
-    cursor: default;    /* no pointer hand */
-  }
-  
-  /* Possibly highlight the banner if the user tries to click Plan 3 */
-  
-  /*.plan-badge.highlighted {
-    animation: pulse 0.8s ease 0s 2 alternate;
-  } */
-  
-  @keyframes pulse {
-    0% { transform: scale(1.0); }
-    100% { transform: scale(1.2); }
-  }
-  
-/* Plan Features List */
-.plan-box ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
+    /* Common style for all plan badges */
+    .plan-badge {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      color: #092534;
+      padding: 2px 5px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 12px; /* smaller text */
+      z-index: 9999;
+    }
+    
+    /* If you want different colors for each banner: */
+    .free-two-months {
+      background-color: var(--primary-color); /* or #ffcc00, up to you */
+      color: #fbf7ef;
+    }
+    .free{
+      top:-20px;
+      right: 10px;
+    }
+    
+    .coming-soon {
+      background-color: #092534; /* for example pink, or any color */
+      color: #fff;               /* white text for contrast */
+    }
+    
+    /* (Optional) If plan3 is disabled, you can gray it out entirely: */
+    .plan-box[data-disabled="true"] {
+      opacity: 0.6;       /* visually indicate it's not available */
+      cursor: default;    /* no pointer hand */
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1.0); }
+      100% { transform: scale(1.2); }
+    }
+    
+    /* Plan Features List */
+    .plan-box ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
 
-.plan-box ul li {
-    font-size: clamp(12px, 1.5vw, 14px);
-    margin-bottom: clamp(5px, 1vh, 10px);
-    padding-bottom: clamp(5px, 1vh, 10px);
-    border-bottom: 1px solid #ccccccd9;
-}
+    .plan-box ul li {
+      font-size: clamp(12px, 1.5vw, 14px);
+      margin-bottom: clamp(5px, 1vh, 10px);
+      padding-bottom: clamp(5px, 1vh, 10px);
+      border-bottom: 1px solid #ccccccd9;
+    }
 
-.plan-box ul li:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-}
+    .plan-box ul li:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
 
-.step-navigation {
-  margin-top: 3%;
-  display: flex;
-  justify-content: center; /* This centers the button horizontally */
-  width: 100%;
-}
+    .step-navigation {
+      margin-top: 3%;
+      display: flex;
+      justify-content: center; /* This centers the button horizontally */
+      width: 100%;
+    }
 
-.btn-siguiente {
-  background-color: var(--primary-color);
-  color: white;
-  width: 140px;
-  padding: 12px 0;
-  font-size: 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  border: none;
-  /* Removed any margin that might affect centering */
-}
+    .btn-siguiente {
+      background-color: var(--primary-color);
+      color: white;
+      width: 140px;
+      padding: 12px 0;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+    }
 
-/* Plan Buttons */
-.plan-button {
-    margin-top: clamp(5px, 1vh, 10px);
-    padding: clamp(5px, 1vh, 10px) clamp(10px, 2vw, 20px);
-    border: none;
-    border-radius: 5px;
-    font-size: clamp(12px, 1.5vw, 14px);
-    cursor: pointer;
-    background-color: var(--primary-color);
-    color: #fff;
-    transition: background-color 0.3s ease;
-}
+    /* Plan Buttons */
+    .plan-button {
+      margin-top: clamp(5px, 1vh, 10px);
+      padding: clamp(5px, 1vh, 10px) clamp(10px, 2vw, 20px);
+      border: none;
+      border-radius: 5px;
+      font-size: clamp(12px, 1.5vw, 14px);
+      cursor: pointer;
+      background-color: var(--primary-color);
+      color: #fff;
+      transition: background-color 0.3s ease;
+    }
 
-.plan-box {
-    cursor: pointer;
-    transition: background-color 0.3s ease, border 0.3s ease;
-}
+    .plan-box {
+      cursor: pointer;
+      transition: background-color 0.3s ease, border 0.3s ease;
+    }
 
-.plan-box:hover {
-    background-color:#bffce6fc;
-}
+    .plan-box:hover {
+      background-color:#bffce6fc;
+    }
 
-
-.plan-box.selected {
-    border: 2px solid var(--primary-color);
-    Box-shadow: 0px 0px 2px var(--primary-color);
-} 
+    .plan-box.selected {
+      border: 2px solid var(--primary-color);
+      box-shadow: 0px 0px 2px var(--primary-color);
+    } 
 
     .choose-plan-heading {
       margin: 20px 0;
@@ -281,23 +270,47 @@
       border-radius: 4px;
     }
 
+    /* Loader styles */
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .btn-siguiente.loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
   </style>
 </head>
 <body>
   
   <nav class="navbar">
     <div class="logo">
-        <a href="https://www.papyrus-ai.com/" target="_blank">
-          <img src="assets/papyrus_app.png" alt="Papyrus Logo">
-        </a>
-      </div>
-   <button class="hamburger" onclick="toggleMenu()">☰</button> 
-   <ul class="menu">
-    <li><a href="https://papyrus-ai.com/">WEB</a></li>
-    <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li> <!--cambiar-->
-    <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
-    <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
-  </ul>
+      <a href="https://www.papyrus-ai.com/" target="_blank">
+        <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+      </a>
+    </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+      <li><a href="https://papyrus-ai.com/">WEB</a></li>
+      <li><a href="https://app.papyrus-ai.com/profile">PANEL DE CONTROL</a></li>
+      <li><a href="http://app.papyrus-ai.com/suscripcion.html">EDITAR SUSCRIPCIÓN</a></li>
+      <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+    </ul>
   </nav>
 
   <div class="container">
@@ -354,18 +367,17 @@
             <li>Integración personalizada</li>
           </ul>
         </div>
+        <!-- Plan 4 -->
         <div class="plan-box" data-value="plan4">
-           <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
+          <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
           <h3 style="color:var(--primary-color); font-weight: bolder;">Prueba</h3>
           <h2>Gratuito</h2>
           <p>Un mes</p>
           <ul>
             <li>Acceso completo a la plataforma de manera temporal</li>
-            
             <li>Sin tarjetas, sin compromisos</li>
-
           </ul>
-      </div>
+        </div>
       </div>
       <div class="step-navigation">
         <button id="nextBtn" class="btn-siguiente">Finalizar</button>
@@ -375,56 +387,95 @@
       <input type="hidden" id="selectedPlan" name="selectedPlan" value="">
     </div>
   </div>
-</body>
-<script>
+
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    // Toggle menu function for mobile
+    function toggleMenu() {
+      document.querySelector('.menu').classList.toggle('show');
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
-  // Global variable to control plan2 free status
-  let plan2isfree = true;
-  
-  // Set up plan selection functionality
-  const planBoxes = document.querySelectorAll('.plan-box');
-  const selectedPlanInput = document.getElementById('selectedPlan');
-  
-  // Add click handlers to each plan box
-  planBoxes.forEach(function(box) {
-    box.addEventListener('click', function() {
-      // Skip if plan is disabled
-      if (box.getAttribute('data-disabled') === 'true') {
-        return;
-      }
+      // Global variable to control plan2 free status
+      let plan2isfree = true;
       
-      // Remove selected class from all plans
-      planBoxes.forEach(function(plan) {
-        plan.classList.remove('selected');
+      // Check if we're in editing mode
+      const isEditing = sessionStorage.getItem('isEditingPlan') === 'true';
+      
+      // Set up plan selection functionality
+      const planBoxes = document.querySelectorAll('.plan-box');
+      const selectedPlanInput = document.getElementById('selectedPlan');
+      
+      // Add click handlers to each plan box
+      planBoxes.forEach(function(box) {
+        box.addEventListener('click', function() {
+          // Skip if plan is disabled
+          if (box.getAttribute('data-disabled') === 'true') {
+            return;
+          }
+          
+          // Remove selected class from all plans
+          planBoxes.forEach(function(plan) {
+            plan.classList.remove('selected');
+          });
+          
+          // Add selected class to clicked plan
+          box.classList.add('selected');
+          
+          // Store the selected plan value
+          selectedPlanInput.value = box.getAttribute('data-value');
+          console.log('Selected plan:', selectedPlanInput.value);
+        });
       });
       
-      // Add selected class to clicked plan
-      box.classList.add('selected');
+      // If editing, select the current user's plan
+      if (isEditing) {
+        const currentPlan = sessionStorage.getItem('subscription_plan') || 'plan1';
+        const planBox = Array.from(planBoxes).find(box => box.getAttribute('data-value') === currentPlan);
+        if (planBox && !planBox.getAttribute('data-disabled')) {
+          planBox.click();
+        } else {
+          // Fallback to plan4 if current plan is unavailable or disabled
+          const defaultBox = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
+          if (defaultBox) defaultBox.click();
+        }
+        
+        // Update title to indicate editing
+        const title = document.querySelector('h1');
+        if (title) {
+          title.textContent = 'Editar Suscripción';
+        }
+        
+        // Update button text
+        const submitBtn = document.getElementById('nextBtn');
+        if (submitBtn) {
+          submitBtn.textContent = 'Guardar Cambios';
+        }
+      } else {
+        // Select plan4 by default for new users
+        const plan4Box = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
+        if (plan4Box && !plan4Box.getAttribute('data-disabled')) {
+          plan4Box.click();
+        } else {
+          // Fallback to first non-disabled plan
+          const firstAvailable = Array.from(planBoxes).find(box => !box.getAttribute('data-disabled'));
+          if (firstAvailable) firstAvailable.click();
+        }
+      }
       
-      // Store the selected plan value
-      selectedPlanInput.value = box.getAttribute('data-value');
-      console.log('Selected plan:', selectedPlanInput.value);
-    });
-  });
-  
-  // Select plan4 by default
-  const plan4Box = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
-  if (plan4Box && !plan4Box.getAttribute('data-disabled')) {
-    plan4Box.click();
-  }
-  
-  // CRITICAL: Get userData from the original source in sessionStorage
-  const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
-  console.log('User data from step 1:', userData);
-  
-  // Get data from step 3
-  const industryTags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
-  const ramaJuridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
-  const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
-  const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
-  const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
-  // CRITICAL: Properly parse the feedback object with correct structure
-  let feedback;
+      // Get userData from the original source in sessionStorage
+      const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+      console.log('User data from step 1:', userData);
+      
+      // Get data from step 3
+      const industryTags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+      const ramaJuridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
+      const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
+      const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
+      const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
+      
+      // Properly parse the feedback object with correct structure
+      let feedback;
       try {
         feedback = JSON.parse(sessionStorage.getItem('feedback') || '{}');
         // Ensure feedback has all required fields
@@ -444,88 +495,93 @@
           rangos: ''
         };
       }
-  
-  // Add a single event handler for the submit button
-  const submitButton = document.getElementById('nextBtn');
-  submitButton.addEventListener('click', async function(e) {
-    e.preventDefault();
-    
-    // Get selected plan value
-    const planType = selectedPlanInput.value;
-    if (!planType) {
-      alert('Por favor, selecciona un plan');
-      return;
-    }
-    
-    // Show loading state
-   // Show loading state - replace text with loader and disable button
-   const originalButtonText = this.textContent.trim();
-      this.innerHTML = '<div class="loader"></div><span>Procesando...</span>';
-      this.classList.add('loading');
-      this.disabled = true;
-    // Create a complete payload with ALL user data
-    const payload = {
-      plan: planType,
-      industry_tags: industryTags,
-      rama_juridicas: ramaJuridicas,
-      sub_rama_map: subRamaMap,
-      rangos,
-      cobertura_legal: {
-        "fuentes-gobierno":  coberturaLegal["fuentes-gobierno"] || [], // || userData.fuentes || ,
-        "fuentes-reguladores": coberturaLegal["fuentes-reguladores"] || [] // || userData.reguladores, || 
-      },
-      feedback,
-      // CRITICAL: Get user profile data directly from userData object
-      name: userData.nombre || '',
-      web: userData.webEmpresa || '',
-      linkedin: userData.linkedin || '',
-      perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
-      company_name: userData.webEmpresa || '',
-      profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : ''),
-      especializacion: userData.especializacion,
-      otro_perfil: userData.otro_perfil
-
-    };
-    
-    console.log('Sending complete payload to server:', payload);
-    
-    try {
-      // Determine endpoint based on plan type
-      let endpoint = '/save-free-plan';
       
-      // For paid plans that aren't free trial
-      if (planType === 'plan3' || (planType === 'plan2' && !plan2isfree)) {
-        endpoint = '/create-checkout-session';
-      }
-      
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
+      // Add event handler for the submit button
+      const submitButton = document.getElementById('nextBtn');
+      submitButton.addEventListener('click', async function(e) {
+        e.preventDefault();
+        
+        // Get selected plan value
+        const planType = selectedPlanInput.value;
+        if (!planType) {
+          alert('Por favor, selecciona un plan');
+          return;
+        }
+        
+        // Show loading state - replace text with loader and disable button
+        const originalButtonText = this.textContent.trim();
+        this.innerHTML = '<div class="loader"></div><span>Procesando...</span>';
+        this.classList.add('loading');
+        this.disabled = true;
+        
+        // Create a complete payload with ALL user data
+        const payload = {
+          plan: planType,
+          industry_tags: industryTags,
+          rama_juridicas: ramaJuridicas,
+          sub_rama_map: subRamaMap,
+          rangos,
+          cobertura_legal: {
+            "fuentes-gobierno": coberturaLegal["fuentes-gobierno"] || [],
+            "fuentes-reguladores": coberturaLegal["fuentes-reguladores"] || []
+          },
+          feedback,
+          // Get user profile data directly from userData object
+          name: userData.nombre || '',
+          web: userData.webEmpresa || '',
+          linkedin: userData.linkedin || '',
+          perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
+          company_name: userData.webEmpresa || '',
+          profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : ''),
+          especializacion: userData.especializacion,
+          otro_perfil: userData.otro_perfil
+        };
+        
+        console.log('Sending complete payload to server:', payload);
+        
+        try {
+          // Determine endpoint based on plan type and editing status
+          let endpoint = isEditing ? '/update-subscription' : '/save-free-plan';
+          
+          // For paid plans that aren't free trial
+          if ((planType === 'plan3' || (planType === 'plan2' && !plan2isfree)) && !isEditing) {
+            endpoint = '/create-checkout-session';
+          } else if ((planType === 'plan3' || (planType === 'plan2' && !plan2isfree)) && isEditing) {
+            endpoint = '/update-subscription-checkout';
+          }
+          
+          const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+          });
+          
+          if (!resp.ok) throw new Error(`Failed to save plan data: ${resp.status}`);
+          
+          const result = await resp.json();
+          
+          if (endpoint === '/create-checkout-session' || endpoint === '/update-subscription-checkout') {
+            const { sessionId } = result;
+            const stripe = Stripe('pk_live_51QOlLCEpe9srfTKE4ymTYWhMSWs7qDvRQvmnzgoh0FmOWQ9cYTlOawWNiWQReOQeDx7Uslw7cbj9ClBGFas8heQq00wKegaiJg');
+            await stripe.redirectToCheckout({ sessionId });
+          } else if (result.redirectUrl) {
+            // Clean up sessionStorage 
+            if (isEditing) {
+              sessionStorage.removeItem('isEditing');
+              sessionStorage.removeItem('isEditingPlan');
+            }
+            window.location.href = result.redirectUrl;
+          }
+        } catch (error) {
+          console.error('Error saving data:', error);
+          // Restore button state on error
+          this.innerHTML = originalButtonText;
+          this.classList.remove('loading');
+          this.disabled = false;
+          alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
+        }
       });
-      
-      if (!resp.ok) throw new Error(`Failed to save plan data: ${resp.status}`);
-      
-      const result = await resp.json();
-      
-      if (endpoint === '/create-checkout-session') {
-        const { sessionId } = result;
-        const stripe = Stripe('pk_live_51QOlLCEpe9srfTKE4ymTYWhMSWs7qDvRQvmnzgoh0FmOWQ9cYTlOawWNiWQReOQeDx7Uslw7cbj9ClBGFas8heQq00wKegaiJg');
-        await stripe.redirectToCheckout({ sessionId });
-      } else if (result.redirectUrl) {
-        window.location.href = result.redirectUrl;
-      }
-    } catch (error) {
-      console.error('Error saving data:', error);
-      // Restore button state on error
-      this.innerHTML = originalButtonText;
-        this.classList.remove('loading');
-        this.disabled = false;
-      alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
-    }
-  });
-});
-
-</script>
-
+    });
+  </script>
+</body>
 </html>
