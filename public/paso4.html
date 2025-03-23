@@ -11,6 +11,29 @@
     /* Additional styles specific for paso4 */
  /* Step 3 Plans Container */
 
+ :root {
+  --primary-color: #04db8d;
+  --secondary-color: #455862;
+  --border-color: #e0e0e0;
+  --text-color: #0b2431;
+  --placeholder-color: #999;
+  --active-color: #04db8d;
+  --error-color: #d32f2f;
+  --background-color: #ffffff;
+  --primary-transparent:#bffce6fc;
+
+  /*tab background color: #f8f8f8*/
+}
+
+*{
+  font-family: 'Satoshi', sans-serif;
+}
+.body{
+  color: var(--text-color);
+
+}
+
+
 /* A small floating message to warn about plan1 limitations */
 .limited-plan-warning {
     position: fixed;            /* or absolute if you prefer to anchor inside .form-container */
@@ -124,7 +147,7 @@
   
   /* If you want different colors for each banner: */
   .free-two-months {
-    background-color: #83a300; /* or #ffcc00, up to you */
+    background-color: var(--primary-color); /* or #ffcc00, up to you */
     color: #fbf7ef;
   }
   .free{
@@ -200,7 +223,7 @@
     border-radius: 5px;
     font-size: clamp(12px, 1.5vw, 14px);
     cursor: pointer;
-    background-color: #83a300;
+    background-color: var(--primary-color);
     color: #fff;
     transition: background-color 0.3s ease;
 }
@@ -211,13 +234,13 @@
 }
 
 .plan-box:hover {
-    background-color: #e6f7e6;
+    background-color:#bffce6fc;
 }
 
 
 .plan-box.selected {
-    border: 2px solid #83a300;
-    Box-shadow: 0px 0px 2px #83a300;
+    border: 2px solid var(--primary-color);
+    Box-shadow: 0px 0px 2px var(--primary-color);
 } 
 
     .choose-plan-heading {
@@ -333,7 +356,7 @@
         </div>
         <div class="plan-box" data-value="plan4">
            <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
-          <h3 style="color:#83a300; font-weight: bolder;">Prueba</h3>
+          <h3 style="color:var(--primary-color); font-weight: bolder;">Prueba</h3>
           <h2>Gratuito</h2>
           <p>Un mes</p>
           <ul>

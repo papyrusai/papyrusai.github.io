@@ -26,14 +26,18 @@
       color: var(--primary-color);
       border-bottom: 3px solid var(--primary-color);
     }
-    .submenu-item.done::after {
-      content: "✓";
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      font-size: 14px;
-      color: var(--primary-color);
-    }
+      .submenu-item.done::after {
+    content: "";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 8px;
+    height: 14px;
+    border: solid var(--primary-color);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
     /* ----------------- Section Visibility ----------------- */
     .section-content {
       display: none;

@@ -1,4 +1,18 @@
 /* General styling for the filter section */
+
+:root {
+  --primary-color: #04db8d;
+  --secondary-color: #455862;
+  --border-color: #e0e0e0;
+  --text-color: #0b2431;
+  --placeholder-color: #999;
+  --active-color: #8ca428;
+  --error-color: #d32f2f;
+  --background-color: #ffffff;
+
+  /*tab background color: #f8f8f8*/
+}
+
 .filter-section {
     margin-top: 3%;
     margin-bottom: 3%;
@@ -39,8 +53,8 @@
   
   /* Style the checkbox when checked */
   .filter-option input[type="checkbox"]:checked {
-    background-color: #83a300;
-    border-color: #83a300;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
   }
   
     .filter-option input[type="checkbox"]:checked::after {
@@ -48,8 +62,8 @@
   }
 
   input[type="checkbox"]:checked {
-    background-color: #83a300;
-    border-color: #83a300;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
     /* Optional: Add a checkmark to the checkbox when checked */

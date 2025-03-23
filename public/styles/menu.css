@@ -13,7 +13,7 @@ body, html {
     align-items: center;
     padding: 0 20px;
     height: 60px; /* Adjust the height as needed */
-    border-bottom: 1px solid #83a300; /* rgba(251, 247, 239, 0.2);*/
+    border-bottom: 1px solid #0b2431; /* rgba(251, 247, 239, 0.2);*/
 }
 
 
@@ -46,7 +46,7 @@ body, html {
   }
   
   .menu li a:hover {
-    color: #83a300; /* Lighter color on hover */
+    color: #04db8d; /* Lighter color on hover */
   }
  
   

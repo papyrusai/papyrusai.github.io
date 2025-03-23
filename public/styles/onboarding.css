@@ -1,25 +1,29 @@
 :root {
-  --primary-color: #9EB92C;
-  --secondary-color: #f5f5f5;
+  --primary-color: #04db8d;
+  --secondary-color: #455862;
   --border-color: #e0e0e0;
-  --text-color: #333;
+  --text-color: #0b2431;
   --placeholder-color: #999;
-  --active-color: #8ca428;
+  --active-color: #04db8d;
   --error-color: #d32f2f;
-  --background-color: #f8f4e8;
+  --background-color: #ffffff;
+
+  /*tab background color: #f8f8f8*/
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Satoshi', sans-serif;
 }
 
 body {
   background-color: var(--background-color);
   color: var(--text-color);
   line-height: 1.6;
+  font-family: 'Satoshi', sans-serif;
+
 }
 
 .container {
@@ -76,7 +80,7 @@ body {
   border-bottom: 1px solid var(--border-color);
 }
 .section h3 {
-  color: var(--primary-color);
+  color: var(--text-color);
   font-size: 18px;
 }
 .subsection {
@@ -248,9 +252,9 @@ select {
 .dropdown-toggle {
   background-color: #fff;
   color: #333;
-  padding: 10px 35px 10px 15px;
-  border: 1px solid #caced1;
-  border-radius: 4px;
+  padding: 8px 35px 8px 15px;
+  border: 1px solid #0b2431;
+  border-radius: 20px;
   cursor: pointer;
   text-align: left;
   width: auto;
@@ -265,10 +269,10 @@ select {
   content: "";
   position: absolute;
   right: 15px;
-  top: 50%;
-  width: 8px;
-  height: 8px;
-  border: solid #555;
+  top: 45%;
+  width: 6px;
+  height: 6px;
+  border: solid var(--placeholder-color);
   border-width: 0 2px 2px 0;
   transform: translateY(-50%) rotate(45deg);
   transition: transform 0.2s ease;
@@ -278,6 +282,37 @@ select {
 .dropdown-toggle.active::after {
   transform: translateY(-50%) rotate(-135deg);
 }
+
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+
 
 /* Dropdown content */
 .dropdown-options {
