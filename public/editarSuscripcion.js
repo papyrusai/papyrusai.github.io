@@ -88,6 +88,8 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Redirect to step3
       document.body.removeChild(overlay);
+      window.location.href = '/paso3.html';
+
       
     } catch (error) {
       console.error('Error fetching user data:', error);
