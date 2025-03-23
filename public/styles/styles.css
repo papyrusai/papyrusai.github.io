@@ -86,7 +86,7 @@ body {
   text-decoration: none;;
 }
 .change-subscription:hover {
-  background-color: var(--active-color);
+  background-color: var(--primary-color);
 }
 
   /* Container for the filters */

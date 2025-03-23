@@ -164,13 +164,11 @@ font-size: 14px;
 .login-section input[type="email"] {
     
     display: inline-block;
-    text-align: center;
     width: 300px;
     padding: 10px;
     margin-bottom: 20px;
     border: 1px solid var(--placeholder-color);
     border-radius: 20px;
-    font-size: 16px;
 }
 
 input[type="email"], input[type="password"] {

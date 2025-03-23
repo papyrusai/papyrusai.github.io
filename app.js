@@ -1723,6 +1723,68 @@ app.get('/api/current-user', ensureAuthenticated, async (req, res) => {
   }
 });
 
+
+app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
+  const { 
+    plan, 
+    industry_tags, 
+    rama_juridicas, 
+    profile_type, 
+    sub_rama_map, 
+    cobertura_legal, 
+    company_name,
+    name,
+    web,
+    linkedin,
+    perfil_profesional,
+    especializacion,
+    otro_perfil,
+    rangos,
+    feedback
+  } = req.body;
+  
+  if (!req.user) {
+    return res.status(401).send('Unauthorized');
+  }
+
+  try {
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const db = client.db("papyrus");
+    const usersCollection = db.collection("users");
+
+    // Update the existing user
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      {
+        $set: {
+          industry_tags,
+          rama_juridicas,
+          subscription_plan: plan,
+          profile_type,
+          sub_rama_map,
+          cobertura_legal,
+          company_name,
+          name,
+          web,
+          linkedin,
+          perfil_profesional,
+          especializacion,
+          otro_perfil,
+          rangos,
+          feedback_login: feedback,
+          subscription_updated_at: new Date()
+        }
+      }
+    );
+    
+    await client.close();
+    res.json({ redirectUrl: '/profile', message: 'Subscription updated successfully' });
+  } catch (error) {
+    console.error('Error updating subscription:', error);
+    res.status(500).send('Error updating subscription');
+  }
+});
 /*old user details
 app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
   try {

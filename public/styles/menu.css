@@ -81,11 +81,11 @@ body, html {
   }
 
   .login-btn {
-      font-size: 14px; /* Adjust button font size */
-      padding: 4px; /* Adjust button padding */
-      display: inline-block;
-      margin-top:10px;
-
+    font-size: 16px;
+    padding: 4px;
+    display: inline-block;
+    margin-top: 10px;
+    color: var(--text-color);
   }
 }
 
