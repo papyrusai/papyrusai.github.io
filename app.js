@@ -768,11 +768,12 @@ app.get('/profile', async (req, res) => {
       userBoletines = ["BOE"];
     }
 
-    // NEW: Use default rangos if user doesn't have custom ones
-    const userRangos = [
-      "LEYES", "REGLAMENTOS", "DECISIONES INTERPRETATIVAS Y REGULADORES",
-      "JURISPRUDENCIA", "AYUDAS,SUBVENCIONES Y PREMIOS", "OTRAS"
-    ];
+          // NEW: Use user's custom rangos if available, otherwise use defaults
+      const userRangos = user.rangos || [
+        "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
+        "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
+      ];
+
 
     // Default date range for “profile”: from 1 month ago to now
     const now = new Date();

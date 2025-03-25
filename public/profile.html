@@ -397,9 +397,10 @@
         
         // NEW: parse userRangos
         const rangosScript = document.getElementById('userRangos');
+        console.log(rangosScript);
         if (rangosScript) {
           userRangos = JSON.parse(rangosScript.textContent) || [
-            "LEYES", "REGLAMENTOS", "DECISIONES INTERPRETATIVAS Y REGULADORES",
+            "Leyes", "REGLAMENTOS", "DECISIONES INTERPRETATIVAS Y REGULADORES",
             "JURISPRUDENCIA", "AYUDAS,SUBVENCIONES Y PREMIOS", "OTRAS"
           ];
         }

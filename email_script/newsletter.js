@@ -730,8 +730,23 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
 
     // 1) Cargamos todos los usuarios
     const allUsers = await usersCollection.find({}).toArray();
+        /**
+     * Filters an array of users ensuring that only one user per unique email (in lower case) is included.
+     */
+    function filterUniqueEmails(users) {
+      const seen = new Set();
+      return users.filter(user => {
+        const emailLower = user.email.toLowerCase();
+        if (seen.has(emailLower)) {
+          return false;
+        } else {
+          seen.add(emailLower);
+          return true;
+        }
+      });
+    }
 
-    const filteredUsers =  allUsers; //allUsers.filter(u => u.email === '6inimartin6@gmail.com'); //allUsers;
+    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email === '6inimartin6@gmail.com');
 
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
