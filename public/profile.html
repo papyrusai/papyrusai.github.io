@@ -152,6 +152,22 @@
     .menu.active {
       display: block;
     }
+    .filter-banner-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.beta-banner {
+  background-color: #455862;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
   </style>
 </head>
 <body>
@@ -203,6 +219,13 @@
         "Derecho Administrativo": ["genérico","urbanismo","contratación pública"]
       }
     </script>
+
+    <div class="filter-banner-container">
+      <div class="beta-banner">
+        Búsqueda anterior a 21/03/2025 en versión Beta
+      </div>
+    </div>
+    
 
     <!-- Filter Section -->
     <div id="Filtrar">
