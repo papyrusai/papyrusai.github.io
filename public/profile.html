@@ -586,6 +586,11 @@
     }
 
     // --------------------- DROPDOWN for BOLETINES  ---------------------
+
+    function toggleBoletinDropdown() {
+  document.getElementById('boletinDropdown').classList.toggle('show');
+}
+
     function populateBoletinDropdown() {
   const container = document.getElementById('boletinDropdown');
   if (!container) return;
@@ -773,7 +778,7 @@
         if (userPlan === 'plan1') {
           selectedBulletins = ["BOE"];
         } else {
-          selectedBulletins = userBulletins.slice();
+          selectedBulletins = userBoletines.slice();
         }
       }
 
@@ -923,6 +928,15 @@
       populateBoletinDropdown();
       populateRangoDropdown(); // Add this line
     });
+    document.addEventListener('click', function(e) {
+      const dropdowns = ['myDropdown', 'ramaDropdown', 'boletinDropdown', 'rangoDropdown'];
+      dropdowns.forEach(dropdownId => {
+        if (!e.target.closest(`#${dropdownId}`) && !e.target.closest(`[onclick*="${dropdownId}"]`)) {
+          document.getElementById(dropdownId).classList.remove('show');
+        }
+      });
+    });
+
   </script>
 </body>
 </html>

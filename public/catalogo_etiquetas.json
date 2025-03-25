@@ -1,5 +1,6 @@
 {
   "industrias": [
+    "General",
     "Agricultura, ganadería, caza y servicios relacionados",
     "Silvicultura y explotación forestal",
     "Pesca y acuicultura",
@@ -225,7 +226,6 @@
       "protección de datos (GDPR)",
       "ayudas de Estado",
       "derechos fundamentales de la UE",
-      "normativa comunitaria",
       "política agraria común",
       "libre circulación de bienes y personas"
     ],
@@ -283,15 +283,21 @@
       "legislación forestal"
     ]
   },
-  "rangos_normativos": [
-    "Leyes",
-    "Reglamentos",
-    "Jurisprudencia",
-    "Decisiones Interpretativas",
+  "rangos": [
+    "Legislativa",
+    "Normativa Reglamentaria",
+    "Doctrina Administrativa",
+    "Comunicados, Guías y Directivas de Reguladores",
+    "Decisiones Judiciales",
+    "Normativa Europea",
+    "Acuerdos Internacionales",
+    "Anuncios de Concentración de Empresas",
+    "Dictámenes y Opiniones",
     "Subvenciones",
-    "Convenios",
-    "Becas y Ayudas",
-    "Información",
-    "Anuncios"
+    "Evaluaciones e Informes de Impacto Ambiental",
+    "Corrección de Errores",
+    "Otras"
   ]
 }
+
+  
