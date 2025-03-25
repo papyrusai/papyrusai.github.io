@@ -753,6 +753,27 @@ app.get('/profile', async (req, res) => {
     // For bulletins (collections), or default to ['BOE']
     const collections = req.query.collections || ['BOE'];
 
+    // NEW: Extract bulletins from cobertura_legal
+    let userBoletines = [];
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    }
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    }
+    // Convert to uppercase for consistency
+    userBoletines = userBoletines.map(b => b.toUpperCase());
+    // If empty, default to BOE
+    if (userBoletines.length === 0) {
+      userBoletines = ["BOE"];
+    }
+
+    // NEW: Use default rangos if user doesn't have custom ones
+    const userRangos = [
+      "LEYES", "REGLAMENTOS", "DECISIONES INTERPRETATIVAS Y REGULADORES",
+      "JURISPRUDENCIA", "AYUDAS,SUBVENCIONES Y PREMIOS", "OTRAS"
+    ];
+
     // Default date range for “profile”: from 1 month ago to now
     const now = new Date();
     const startDate = new Date();
@@ -872,7 +893,10 @@ app.get('/profile', async (req, res) => {
       .replace('{{counts_json}}', JSON.stringify(counts))
       .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
       .replace('{{start_date}}', JSON.stringify(startDate))
-      .replace('{{end_date}}', JSON.stringify(endDate));
+      .replace('{{end_date}}', JSON.stringify(endDate)) 
+      // NEW: Add these two lines
+      .replace('{{user_boletines_json}}', JSON.stringify(userBoletines))
+      .replace('{{user_rangos_json}}', JSON.stringify(userRangos));;
 
     // Insert style + script for thumbs
     const feedbackScript = `

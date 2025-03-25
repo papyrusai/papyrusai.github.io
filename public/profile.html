@@ -311,6 +311,9 @@
   <script id="userPlan" type="application/json">{{subscription_plan}}</script>
   <script id="startDateInput" type="application/json">{{start_date}}</script>
   <script id="endDateInput" type="application/json">{{end_date}}</script>
+  <script id="userBoletines" type="application/json">{{user_boletines_json}}</script>
+  <script id="userRangos" type="application/json">{{user_rangos_json}}</script>
+
   <script src="editarSuscripcion.js"></script>
 
   <script>
@@ -367,12 +370,8 @@
     let userIndustries = [];
     let userRamas = [];
     let userSubRamaMap = {};
-    const allBulletins = ["BOE","BOCM","BOA","BOJA","BOPV","DOUE"];
-    // We also have a set of possible Rango values
-    const allRangos = [
-      "Leyes","Reglamentos","Decisiones interpretativas y Reguladores",
-      "Jurisprudencia","Ayudas,subvenciones y premios","Otras"
-    ];
+    let userBoletines = []; // Changed from const allBulletins
+    let userRangos = [];    // Changed from const allRangos
 
     (function initUserData(){
       // parse user industries
@@ -390,7 +389,20 @@
       if (subRamaScript) {
         userSubRamaMap = JSON.parse(subRamaScript.textContent) || {};
       }
-
+      // NEW: parse userBoletines
+      const boletinesScript = document.getElementById('userBoletines');
+        if (boletinesScript) {
+          userBoletines = JSON.parse(boletinesScript.textContent) || ["BOE"];
+        }
+        
+        // NEW: parse userRangos
+        const rangosScript = document.getElementById('userRangos');
+        if (rangosScript) {
+          userRangos = JSON.parse(rangosScript.textContent) || [
+            "LEYES", "REGLAMENTOS", "DECISIONES INTERPRETATIVAS Y REGULADORES",
+            "JURISPRUDENCIA", "AYUDAS,SUBVENCIONES Y PREMIOS", "OTRAS"
+          ];
+        }
       // Show user data in #etiquetasContainer / #ramasContainer
       const etcContainer = document.getElementById('etiquetasContainer');
       if (etcContainer) {
@@ -575,92 +587,102 @@
 
     // --------------------- DROPDOWN for BOLETINES  ---------------------
     function populateBoletinDropdown() {
-      const container = document.getElementById('boletinDropdown');
-      if (!container) return;
-      container.innerHTML = '';
+  const container = document.getElementById('boletinDropdown');
+  if (!container) return;
+  container.innerHTML = '';
 
-      const lblTodos = document.createElement('label');
-      lblTodos.innerHTML = `<input type="checkbox" id="chkAllBoletines" value="Todos" checked> Todos`;
-      container.appendChild(lblTodos);
+  const lblTodos = document.createElement('label');
+  lblTodos.innerHTML = `<input type="checkbox" id="chkAllBoletines" value="Todos" checked> Todos`;
+  container.appendChild(lblTodos);
 
-      allBulletins.forEach(bol => {
-        const lbl = document.createElement('label');
-        lbl.innerHTML = `<input type="checkbox" value="${bol}" checked> ${bol}`;
-        container.appendChild(lbl);
-      });
+  // Use userBoletines instead of allBulletins
+  userBoletines.forEach(bol => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${bol}" checked> ${bol}`;
+    container.appendChild(lbl);
+  });
 
-      // plan1 => disable everything except BOE
-      if (userPlan === 'plan1') {
-        container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-          if (cb.value !== 'Todos' && cb.value !== 'BOE') {
-            cb.disabled = true;
-            cb.parentElement.style.opacity = '0.5';
-          }
-        });
+  // plan1 => disable everything except BOE
+  if (userPlan === 'plan1') {
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      if (cb.value !== 'Todos' && cb.value !== 'BOE') {
+        cb.disabled = true;
+        cb.parentElement.style.opacity = '0.5';
       }
+    });
+  }
 
-      const chkAllBol = lblTodos.querySelector('#chkAllBoletines');
-      chkAllBol.addEventListener('change', () => {
-        const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
-        if (chkAllBol.checked) {
-          others.forEach(o => { 
-            if (!o.disabled) o.checked = true; 
-          });
-        } else {
-          others.forEach(o => { 
-            if (!o.disabled) o.checked = false; 
-          });
-        }
-        updateBoletinLabel();
+  const chkAllBol = lblTodos.querySelector('#chkAllBoletines');
+  chkAllBol.addEventListener('change', () => {
+    const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+    if (chkAllBol.checked) {
+      others.forEach(o => { 
+        if (!o.disabled) o.checked = true; 
       });
-      const otherBol = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
-      otherBol.forEach(box => {
-        box.addEventListener('change', () => {
-          const allChecked = [...otherBol].filter(x=>!x.disabled).every(b => b.checked);
-          chkAllBol.checked = allChecked;
-          updateBoletinLabel();
-        });
+    } else {
+      others.forEach(o => { 
+        if (!o.disabled) o.checked = false; 
       });
+    }
+    updateBoletinLabel();
+  });
+  const otherBol = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+  otherBol.forEach(box => {
+    box.addEventListener('change', () => {
+      const allChecked = [...otherBol].filter(x=>!x.disabled).every(b => b.checked);
+      chkAllBol.checked = allChecked;
+      updateBoletinLabel();
+    });
+  });
 
-      document.getElementById('selectedBoletines').textContent = 'Todas';
-    }
-    function toggleBoletinDropdown() {
-      document.getElementById('boletinDropdown').classList.toggle('show');
-    }
-    function updateBoletinLabel() {
-      const container = document.getElementById('boletinDropdown');
-      const chkAll = container.querySelector('#chkAllBoletines');
-      const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
-      const labelSpan = document.getElementById('selectedBoletines');
+  document.getElementById('selectedBoletines').textContent = 'Todas';
+}
 
-      if (chkAll.checked) {
-        labelSpan.textContent = 'Todas';
-        return;
-      }
-      let checkedCount = 0;
-      let singleValue = '';
-      others.forEach(b => {
-        if (b.checked && !b.disabled) {
-          checkedCount++;
-          singleValue = b.value;
-        }
-      });
-      if (checkedCount === 0) {
-        labelSpan.textContent = '-';
-      } else if (checkedCount === 1) {
-        labelSpan.textContent = singleValue;
-      } else if (checkedCount + container.querySelectorAll('input[disabled]').length === allBulletins.length) {
-        labelSpan.textContent = 'Todas';
-        chkAll.checked = true;
-      } else {
-        labelSpan.textContent = checkedCount + ' seleccionados';
-      }
-    }
 
     // --------------------- DROPDOWN for RANGO (server filtering) ---------------------
     function toggleRangoDropdown() {
       document.getElementById('rangoDropdown').classList.toggle('show');
     }
+    function populateRangoDropdown() {
+  const container = document.getElementById('rangoDropdown');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // "Todos" => checked
+  const lblTodos = document.createElement('label');
+  lblTodos.innerHTML = `<input type="checkbox" id="chkAllRango" value="Todos" checked> Todos`;
+  container.appendChild(lblTodos);
+
+  // Add each rango in uppercase
+  userRangos.forEach(rango => {
+    const upperRango = typeof rango === 'string' ? rango.toUpperCase() : rango;
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${upperRango}" checked> ${upperRango}`;
+    container.appendChild(lbl);
+  });
+
+  const chkAllRango = lblTodos.querySelector('#chkAllRango');
+  chkAllRango.addEventListener('change', () => {
+    const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+    if (chkAllRango.checked) {
+      others.forEach(o => o.checked = true);
+    } else {
+      others.forEach(o => o.checked = false);
+    }
+    updateRangoLabel();
+  });
+
+  const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+  otherBoxes.forEach(box => {
+    box.addEventListener('change', () => {
+      const allChecked = [...otherBoxes].every(b => b.checked);
+      chkAllRango.checked = allChecked;
+      updateRangoLabel();
+    });
+  });
+
+  document.getElementById('selectedRango').textContent = 'Todos';
+}
 
     // We'll gather these in handleBuscar to pass as "rango=r1||r2||..."
     function getSelectedRangos() {
@@ -751,7 +773,7 @@
         if (userPlan === 'plan1') {
           selectedBulletins = ["BOE"];
         } else {
-          selectedBulletins = allBulletins.slice();
+          selectedBulletins = userBulletins.slice();
         }
       }
 
@@ -899,31 +921,7 @@
       populateIndustryDropdown();
       populateRamaDropdown();
       populateBoletinDropdown();
-
-      // For Rango => check "Todos" by default => no param => no Rango filtering
-      // But we attach event listeners so the user can uncheck, etc.
-      const rangoDropdown = document.getElementById('rangoDropdown');
-      const chkAllRango = document.getElementById('chkAllRango');
-      const otherRangoBoxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
-
-      // Listen for changes
-      chkAllRango.addEventListener('change', () => {
-        if (chkAllRango.checked) {
-          otherRangoBoxes.forEach(o => o.checked = true);
-        } else {
-          otherRangoBoxes.forEach(o => o.checked = false);
-        }
-        updateRangoLabel();
-      });
-      otherRangoBoxes.forEach(box => {
-        box.addEventListener('change', () => {
-          const allChecked = [...otherRangoBoxes].every(x => x.checked);
-          chkAllRango.checked = allChecked;
-          updateRangoLabel();
-        });
-      });
-
-      updateRangoLabel();
+      populateRangoDropdown(); // Add this line
     });
   </script>
 </body>
