@@ -643,6 +643,36 @@
   document.getElementById('selectedBoletines').textContent = 'Todas';
 }
 
+function updateBoletinLabel() {
+  const chkAllBol = document.getElementById('chkAllBoletines');
+  const others = document.querySelectorAll('#boletinDropdown input[type="checkbox"]:not(#chkAllBoletines)');
+  let selectedCount = 0;
+  let singleVal = '';
+
+  others.forEach(cb => {
+    if (cb.checked && !cb.disabled) {  // Account for disabled checkboxes
+      selectedCount++;
+      singleVal = cb.value;
+    }
+  });
+
+  // Update "Todos" checkbox state
+  const activeCheckboxes = [...others].filter(cb => !cb.disabled);
+  const allActiveChecked = activeCheckboxes.every(cb => cb.checked);
+  chkAllBol.checked = allActiveChecked;
+
+  const boletinSpan = document.getElementById('selectedBoletines');
+  if (selectedCount === 0) {
+    boletinSpan.textContent = 'Ninguno';
+  } else if (allActiveChecked) {
+    boletinSpan.textContent = 'Todos';
+  } else if (selectedCount === 1) {
+    boletinSpan.textContent = singleVal;
+  } else {
+    boletinSpan.textContent = selectedCount + ' seleccionados';
+  }
+}
+
 
     // --------------------- DROPDOWN for RANGO (server filtering) ---------------------
     function toggleRangoDropdown() {
@@ -658,11 +688,10 @@
   lblTodos.innerHTML = `<input type="checkbox" id="chkAllRango" value="Todos" checked> Todos`;
   container.appendChild(lblTodos);
 
-  // Add each rango in uppercase
+  // Add each rango as stored (original case)
   userRangos.forEach(rango => {
-    const upperRango = typeof rango === 'string' ? rango.toUpperCase() : rango;
     const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" value="${upperRango}" checked> ${upperRango}`;
+    lbl.innerHTML = `<input type="checkbox" value="${rango}" checked> ${rango}`;
     container.appendChild(lbl);
   });
 
@@ -688,6 +717,7 @@
 
   document.getElementById('selectedRango').textContent = 'Todos';
 }
+
 
     // We'll gather these in handleBuscar to pass as "rango=r1||r2||..."
     function getSelectedRangos() {
