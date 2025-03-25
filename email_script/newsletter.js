@@ -24,7 +24,7 @@ const DB_NAME = 'papyrus';
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date() -1;
+const diaToday  = TODAY.date();
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -451,7 +451,7 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
  */
 function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   // [1] Filtrar docs BOE para que solo queden con doc.seccion === "Disposiciones Generales"
-  const boeGeneralDocs = boeDocs.filter(doc => doc.seccion === "Disposiciones Generales");
+  const boeGeneralDocs = boeDocs.filter(doc => doc.seccion === "Disposiciones generales");
 
   // [2] Si no hay ninguno => Cambiamos el texto del párrafo principal
   let introText = '';
@@ -746,7 +746,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       });
     }
 
-    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email === '6inimartin6@gmail.com');
+    const filteredUsers = filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email === 'info.wevelop@gmail.com'); 
 
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
