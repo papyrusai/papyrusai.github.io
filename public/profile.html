@@ -929,21 +929,7 @@
       populateRangoDropdown(); // Add this line
     });
 /*Hide dropdowns*/    
-      document.addEventListener('click', function(e) {
-    const dropdowns = ['myDropdown', 'ramaDropdown', 'boletinDropdown', 'rangoDropdown'];
-    dropdowns.forEach(dropdownId => {
-      const dropdown = document.getElementById(dropdownId);
-      const button = document.querySelector(`[onclick*="${dropdownId}"]`);
-      
-      if (button && button.contains(e.target)) {
-        // Toggle dropdown when its button is clicked
-        dropdown.classList.toggle('show');
-      } else if (!dropdown.contains(e.target)) {
-        // Close dropdown when clicking outside
-        dropdown.classList.remove('show');
-      }
-    });
-  });
+
 
 
   </script>
