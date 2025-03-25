@@ -24,7 +24,7 @@ const DB_NAME = 'papyrus';
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date();
+const diaToday  = TODAY.date() -1;
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -731,7 +731,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     // 1) Cargamos todos los usuarios
     const allUsers = await usersCollection.find({}).toArray();
 
-    const filteredUsers = allUsers; //allUsers.filter(u => u.email === '6inimartin6@gmail.com');
+    const filteredUsers =  allUsers; //allUsers.filter(u => u.email === '6inimartin6@gmail.com'); //allUsers;
 
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
