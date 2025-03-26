@@ -25,7 +25,7 @@ const DB_NAME = 'papyrus';
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date();
+const diaToday  = TODAY.date() -1;
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);

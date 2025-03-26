@@ -1128,7 +1128,7 @@ app.get('/data', async (req, res) => {
       let matchedIndustries = [];
       
       // If General is present, industry match is automatic
-      if (hasGeneral) {
+      if (hasGeneral && chosenRamas.length>0) {
         hasIndustryMatch = true;
         matchedIndustries.push("General");
       } else if (chosenIndustries.length > 0) {
