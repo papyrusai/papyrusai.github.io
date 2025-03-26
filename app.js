@@ -1019,6 +1019,10 @@ app.get('/data', async (req, res) => {
     }
 
     console.log('Final DB-level query =>', JSON.stringify(query, null, 2));
+     // CHANGE 2: Console log userSubRamaList
+     console.log(`Chosen ramas ${chosenRamas}:`, chosenRamas);
+     
+     console.log(`Chosen ramas ${chosenIndustries}:`, chosenIndustries);
 
     // 6) We also project "rango_titulo" for in-memory filtering
     const projection = {
