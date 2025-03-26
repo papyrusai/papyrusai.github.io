@@ -750,8 +750,13 @@ app.get('/profile', async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
 
-    // For bulletins (collections), or default to ['BOE']
-    const collections = req.query.collections || ['BOE'];
+    // NEW: Extract user's industries, ramas, and rangos
+    const userIndustries = user.industry_tags || [];
+    const userRamas = Object.keys(user.rama_juridicas || {});
+    const userRangos = user.rangos || [
+      "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
+      "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
+    ];
 
     // NEW: Extract bulletins from cobertura_legal
     let userBoletines = [];
@@ -761,27 +766,18 @@ app.get('/profile', async (req, res) => {
     if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
       userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
     }
-    // Convert to uppercase for consistency
     userBoletines = userBoletines.map(b => b.toUpperCase());
-    // If empty, default to BOE
     if (userBoletines.length === 0) {
       userBoletines = ["BOE"];
     }
 
-          // NEW: Use user's custom rangos if available, otherwise use defaults
-      const userRangos = user.rangos || [
-        "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
-        "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
-      ];
-
-
-    // Default date range for “profile”: from 1 month ago to now
+    // Default date range for "profile": from 1 month ago to now
     const now = new Date();
     const startDate = new Date();
     startDate.setMonth(now.getMonth() - 1);
     const endDate = now;
 
-    // We'll do a date-based query from the last month
+    // NEW: Modified query to match user's rango, boletines, and (ramas or industrias)
     const query = {
       $and: [
         { anio: { $gte: startDate.getFullYear() } },
@@ -793,11 +789,16 @@ app.get('/profile', async (req, res) => {
               dia: { $gte: startDate.getDate() }
             }
           ]
+        },
+        { rango_titulo: { $in: userRangos } },
+        { $or: [
+            { 'ramas_juridicas': { $in: userRamas } },
+            { 'divisiones_cnae': { $in: userIndustries } }
+          ]
         }
       ]
     };
 
-    // Now we also project the "rango_titulo"
     const projection = {
       short_name: 1,
       divisiones_cnae: 1,
@@ -807,13 +808,13 @@ app.get('/profile', async (req, res) => {
       anio: 1,
       url_pdf: 1,
       ramas_juridicas: 1,
-      rango_titulo: 1,    // <-- new field
+      rango_titulo: 1,
       _id: 1
     };
 
     let allDocuments = [];
     // For each chosen collection => gather docs
-    for (const collectionName of collections) {
+    for (const collectionName of userBoletines) {
       const coll = database.collection(collectionName);
       const docs = await coll.find(query).project(projection).toArray();
       docs.forEach(doc => {
@@ -829,13 +830,18 @@ app.get('/profile', async (req, res) => {
       return dateB - dateA;
     });
 
-    // Build HTML
+    // NEW: Modified HTML generation to include collection name, cnaes, rama, and subrama
     let documentsHtml;
     if (allDocuments.length === 0) {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
     } else {
       documentsHtml = allDocuments.map(doc => {
         const rangoToShow = doc.rango_titulo || "Indefinido";
+        const cnaesHtml = (doc.divisiones_cnae || []).map(div => `<span>${div}</span>`).join('');
+        const ramaHtml = Object.keys(doc.ramas_juridicas || {}).map(r => `<span class="rama-value">${r}</span>`).join('');
+        const subRamasHtml = Object.entries(doc.ramas_juridicas || {}).flatMap(([rama, subRamas]) => 
+          subRamas.map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
+        ).join(' ');
 
         return `
           <div class="data-item">
@@ -843,11 +849,12 @@ app.get('/profile', async (req, res) => {
               <div class="id-values">${doc.short_name}</div>
               <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
             </div>
-            <!-- Rango shown in gray, or 'Indefinido' if missing -->
             <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
-              ${rangoToShow}
+              ${rangoToShow} | ${doc.collectionName}
             </div>
-
+            <div class="etiquetas-values">${cnaesHtml}</div>
+            <div class="rama-juridica-values">${ramaHtml}</div>
+            <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
@@ -859,19 +866,15 @@ app.get('/profile', async (req, res) => {
             <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
               Leer más: ${doc._id}
             </a>
-            <!-- Thumbs up/down icons -->
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
-
-            <!-- Hidden fields for potential front-end filtering on seccion/rango -->
             <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
             <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
         `;
       }).join('');
     }
-
     // Build chart data (by year-month)
     const documentsByMonth = {};
     allDocuments.forEach(doc => {
