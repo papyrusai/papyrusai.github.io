@@ -814,137 +814,158 @@ function updateBoletinLabel() {
 
     // --------------------- handleBuscar => calls /data with query params ---------------------
     async function handleBuscar() {
-      // 1) Gather bulletins
-      const containerBol = document.getElementById('boletinDropdown');
-      const chkAllBol = containerBol.querySelector('#chkAllBoletines');
-      const othersBol = containerBol.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
-      let selectedBulletins = [];
-      if (!chkAllBol.checked) {
-        const checkedBols = [];
-        othersBol.forEach(cb => {
-          if (cb.checked && !cb.disabled) checkedBols.push(cb.value);
-        });
-        if (checkedBols.length > 0) {
-          selectedBulletins = checkedBols;
-        }
-      } else {
-        // "Todos"
-        if (userPlan === 'plan1') {
-          selectedBulletins = ["BOE"];
-        } else {
-          selectedBulletins = userBoletines.slice();
-        }
-      }
-
-      // 2) Industry
-      const containerInd = document.getElementById('myDropdown');
-      const chkAllIndustry = containerInd.querySelector('#chkAllIndustry');
-      const otherInds = containerInd.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
-      let selectedIndustries = [];
-      if (!chkAllIndustry.checked) {
-        const checkedInds = [];
-        otherInds.forEach(cb => {
-          if (cb.checked) checkedInds.push(cb.value);
-        });
-        if (checkedInds.length > 0) {
-          selectedIndustries = checkedInds;
-        }
-      }
-
-      // 3) Ramas
-      const containerRama = document.getElementById('ramaDropdown');
-      const chkAllRamas = containerRama.querySelector('#chkAllRamas');
-      const otherRamas = containerRama.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
-      let selectedRamas = [];
-      if (!chkAllRamas.checked) {
-        const checkedRamas = [];
-        otherRamas.forEach(cb => {
-          if (cb.checked) checkedRamas.push(cb.value);
-        });
-        if (checkedRamas.length > 0) {
-          selectedRamas = checkedRamas;
-        }
-      }
-      // subRamas if exactly one
-      let selectedSubRamas = [];
-      if (!chkAllRamas.checked && selectedRamas.length === 1) {
-        const subBoxes = document.querySelectorAll('#subRamasCheckboxContainer input[type="checkbox"]');
-        subBoxes.forEach(sb => {
-          if (sb.checked) selectedSubRamas.push(sb.value);
-        });
-      }
-
-      // 4) Rango
-      const chkAllRango = document.getElementById('chkAllRango');
-      const rangoBoxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkAllRango)');
-      let selectedRangos = [];
-      if (!chkAllRango.checked) {
-        rangoBoxes.forEach(cb => {
-          if (cb.checked) selectedRangos.push(cb.value);
-        });
-      }
-
-      // 5) date range
-      const desde = document.getElementById('startDate').value;
-      const hasta = document.getElementById('endDate').value;
-
-      // 6) Build query for /data
-      const parts = [];
-
-      // bulletins => collections[]=...
-      if (selectedBulletins.length > 0) {
-        selectedBulletins.forEach(b => {
-          parts.push(`collections[]=${encodeURIComponent(b)}`);
-        });
-      }
-      // if partial Industry => industry=val1||val2
-      if (selectedIndustries.length > 0) {
-        parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
-      }
-      // if partial Ramas => rama=val1||val2
-      if (selectedRamas.length > 0) {
-        parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
-      }
-      // subRamas => subRamas=val1,val2
-      if (selectedSubRamas.length > 0) {
-        parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
-      }
-      // if partial Rango => rango=val1||val2
-      if (selectedRangos.length > 0) {
-        parts.push(`rango=${encodeURIComponent(selectedRangos.join('||'))}`);
-      }
-      // date
-      if (desde) parts.push(`desde=${encodeURIComponent(desde)}`);
-      if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
-
-      const finalQuery = parts.join('&');
-      const url = `/data?${finalQuery}`;
-
-      // Show loaders
-      document.getElementById('chartContainer').style.display = 'none';
-      document.getElementById('loading-icon-chart').style.display = 'block';
-      document.getElementById('loading-icon').style.display = 'block';
-
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('Network error fetching data');
-        const data = await resp.json();
-        // Insert HTML
-        document.querySelector('.collectionDocs').innerHTML = data.documentsHtml || '';
-        // Chart
-        if (data.months && data.counts) {
-          loadChart(data.months, data.counts);
-        } else {
-          loadChart([], []);
-        }
-      } catch(err) {
-        console.error('Error searching data:', err);
-      } finally {
-        document.getElementById('loading-icon').style.display = 'none';
-        document.getElementById('loading-icon-chart').style.display = 'none';
-        document.getElementById('chartContainer').style.display = 'block';
-      }
+  // 1) Gather bulletins
+  const containerBol = document.getElementById('boletinDropdown');
+  const chkAllBol = containerBol.querySelector('#chkAllBoletines');
+  const othersBol = containerBol.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+  let selectedBulletins = [];
+  if (!chkAllBol.checked) {
+    const checkedBols = [];
+    othersBol.forEach(cb => {
+      if (cb.checked && !cb.disabled) checkedBols.push(cb.value);
+    });
+    if (checkedBols.length > 0) {
+      selectedBulletins = checkedBols;
     }
+  } else {
+    // "Todos" - include all available bulletins
+    if (userPlan === 'plan1') {
+      selectedBulletins = ["BOE"];
+    } else {
+      selectedBulletins = userBoletines.slice();
+    }
+  }
+
+  // 2) Industry
+  const containerInd = document.getElementById('myDropdown');
+  const chkAllIndustry = containerInd.querySelector('#chkAllIndustry');
+  const otherInds = containerInd.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+  let selectedIndustries = [];
+  if (!chkAllIndustry.checked) {
+    const checkedInds = [];
+    otherInds.forEach(cb => {
+      if (cb.checked) checkedInds.push(cb.value);
+    });
+    if (checkedInds.length > 0) {
+      selectedIndustries = checkedInds;
+    }
+  } else {
+    // "Todas" - include all user industries
+    selectedIndustries = userIndustries.slice();
+  }
+
+  // 3) Ramas
+  const containerRama = document.getElementById('ramaDropdown');
+  const chkAllRamas = containerRama.querySelector('#chkAllRamas');
+  const otherRamas = containerRama.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
+  let selectedRamas = [];
+  if (!chkAllRamas.checked) {
+    const checkedRamas = [];
+    otherRamas.forEach(cb => {
+      if (cb.checked) checkedRamas.push(cb.value);
+    });
+    if (checkedRamas.length > 0) {
+      selectedRamas = checkedRamas;
+    }
+  } else {
+    // "Todas" - include all user ramas
+    selectedRamas = userRamas.slice();
+  }
+  
+  // subRamas handling
+  let selectedSubRamas = [];
+  if (selectedRamas.length === 1) {
+    // If exactly one rama is selected, check its subramas
+    const subBoxes = document.querySelectorAll('#subRamasCheckboxContainer input[type="checkbox"]');
+    const allSubBoxes = Array.from(subBoxes);
+    const checkedSubBoxes = allSubBoxes.filter(sb => sb.checked);
+    
+    // If all subramas are checked or none are checked, include all subramas for this rama
+    if (checkedSubBoxes.length === 0 || checkedSubBoxes.length === allSubBoxes.length) {
+      // Include all subramas for this rama
+      selectedSubRamas = userSubRamaMap[selectedRamas[0]] || [];
+    } else {
+      // Include only selected subramas
+      checkedSubBoxes.forEach(sb => {
+        if (sb.checked) selectedSubRamas.push(sb.value);
+      });
+    }
+  }
+
+  // 4) Rango
+  const containerRango = document.getElementById('rangoDropdown');
+  const chkAllRango = containerRango.querySelector('#chkAllRango');
+  const rangoBoxes = containerRango.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+  let selectedRangos = [];
+  if (!chkAllRango.checked) {
+    rangoBoxes.forEach(cb => {
+      if (cb.checked) selectedRangos.push(cb.value);
+    });
+  } else {
+    // "Todos" - include all user rangos
+    selectedRangos = userRangos.slice();
+  }
+
+  // 5) date range
+  const desde = document.getElementById('startDate').value;
+  const hasta = document.getElementById('endDate').value;
+
+  // 6) Build query for /data
+  const parts = [];
+
+  // bulletins => collections[]=...
+  if (selectedBulletins.length > 0) {
+    selectedBulletins.forEach(b => {
+      parts.push(`collections[]=${encodeURIComponent(b)}`);
+    });
+  }
+  
+  // Industry - always include, even if "Todas" is selected
+  parts.push(`industry=${encodeURIComponent(selectedIndustries.join('||'))}`);
+  
+  // Ramas - always include, even if "Todas" is selected
+  parts.push(`rama=${encodeURIComponent(selectedRamas.join('||'))}`);
+  
+  // subRamas
+  if (selectedSubRamas.length > 0) {
+    parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
+  }
+  
+  // Rango - always include, even if "Todos" is selected
+  parts.push(`rango=${encodeURIComponent(selectedRangos.join('||'))}`);
+  
+  // date
+  if (desde) parts.push(`desde=${encodeURIComponent(desde)}`);
+  if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
+
+  const finalQuery = parts.join('&');
+  const url = `/data?${finalQuery}`;
+
+  // Show loaders
+  document.getElementById('chartContainer').style.display = 'none';
+  document.getElementById('loading-icon-chart').style.display = 'block';
+  document.getElementById('loading-icon').style.display = 'block';
+
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Network error fetching data');
+    const data = await resp.json();
+    // Insert HTML
+    document.querySelector('.collectionDocs').innerHTML = data.documentsHtml || '';
+    // Chart
+    if (data.months && data.counts) {
+      loadChart(data.months, data.counts);
+    } else {
+      loadChart([], []);
+    }
+  } catch(err) {
+    console.error('Error searching data:', err);
+  } finally {
+    document.getElementById('loading-icon').style.display = 'none';
+    document.getElementById('loading-icon-chart').style.display = 'none';
+    document.getElementById('chartContainer').style.display = 'block';
+  }
+}
 
     // --------------------- CHART LOAD ---------------------
     let myChart;
