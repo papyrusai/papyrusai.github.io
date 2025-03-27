@@ -60,14 +60,22 @@ function mapCollectionNameToDisplay(cName) {
  * Genera un snippet HTML para un único doc.
  */
 function buildDocumentHTML(doc, isLastDoc) {
-    let cnaes = doc.divisiones_cnae || [];
+    // Use matched_cnaes and matched_rama_juridica if available
+    let cnaes = doc.matched_cnaes || doc.divisiones_cnae || [];
     if (!Array.isArray(cnaes)) cnaes = [cnaes];
+  
+    let ramas = doc.matched_rama_juridica || [];
+    if (!Array.isArray(ramas)) ramas = [ramas];
   
     let subRamas = doc.sub_rama_juridica || [];
     if (!Array.isArray(subRamas)) subRamas = [subRamas];
   
     const cnaeHTML = cnaes.length
       ? cnaes.map(div => `<span class="etiqueta">${div}</span>`).join('')
+      : '';
+    
+    const ramaHTML = ramas.length
+      ? ramas.map(r => `<span class="etiqueta" style="background-color: #0c2532; color: white;">${r}</span>`).join('')
       : '';
   
     const subRamaHTML = subRamas.length
@@ -92,7 +100,7 @@ function buildDocumentHTML(doc, isLastDoc) {
     return `
       <div class="document">
         <h2>${doc.short_name}</h2>
-        <p>${cnaeHTML}</p>
+        <p>${cnaeHTML}${ramaHTML}</p>
         <p>${subRamaHTML}</p>
         <p>${doc.resumen}</p>
         <p>
@@ -117,6 +125,7 @@ function buildDocumentHTML(doc, isLastDoc) {
     `;
   }
   
+  
 /**
  * buildNewsletterHTML:
  * Construye el newsletter con matches para un usuario.
@@ -125,6 +134,8 @@ function buildDocumentHTML(doc, isLastDoc) {
  */
  function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
     // Create summary section by ranges instead of CNAE/juridical categories
+
+    console.log("Normal html is triggered");
     const rangoSummaryHTML = rangoGroups.map(rango => {
       const totalDocs = rango.collections.reduce((sum, coll) => sum + coll.docs.length, 0);
       return `<li>${totalDocs} Alertas de <span style="color:#4ce3a7;">${rango.rangoTitle}</span></li>`;
@@ -412,6 +423,9 @@ function buildDocumentHTML(doc, isLastDoc) {
 function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   // [1] Filtrar docs BOE para que solo queden con doc.seccion === "Disposiciones Generales"
   const boeGeneralDocs = boeDocs.filter(doc => doc.seccion === "Disposiciones generales");
+
+  
+  console.log("No matches is being triggered");
 
   // [2] Si no hay ninguno => Cambiamos el texto del párrafo principal
   let introText = '';
@@ -729,7 +743,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         });
       }
 
-    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'info.wevelop@gmail.com');
+    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'papyrus.ai.info@gmail.com');
 
 
 
@@ -744,25 +758,110 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       if (coverageCollections.length === 0) {
         coverageCollections = ["BOE"]; // fallback
       }
-
-      // 3) Recogemos docs de HOY de las colecciones
-      const queryToday = { anio: anioToday, mes: mesToday, dia: diaToday };
       const userMatchingDocs = [];
-      for (const collName of coverageCollections) {
-        // Si la coleccion no existe, skip / try-catch
+
+      // Get today's documents from each collection the user has subscribed to
+      for (const collectionName of coverageCollections) {
         try {
-          const coll = db.collection(collName);
-          const docs = await coll.find(queryToday).toArray();
-          docs.forEach(d => userMatchingDocs.push({ collectionName: collName, doc: d }));
+          const coll = db.collection(collectionName);
+          const query = {
+            anio: anioToday,
+            mes: mesToday,
+            dia: diaToday
+          };
+          
+          const docs = await coll.find(query).toArray();
+          
+          // Add each document with its collection name
+          docs.forEach(doc => {
+            userMatchingDocs.push({
+              collectionName: collectionName,
+              doc: doc
+            });
+          });
+          
+          console.log(`Retrieved ${docs.length} documents from ${collectionName}`);
         } catch (err) {
-          console.warn(`No existe la colección ${collName} o error =>`, err);
+          console.error(`Error retrieving documents from ${collectionName}:`, err);
         }
       }
-
-      // 4) Build rango & source grouping
+     // 3B) NEW: Filter documents by user's rangos, ramas, and industries
+const userRangos = user.rangos || [
+    "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
+    "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
+  ];
+  const userIndustries = user.industry_tags || [];
+  const userRamas = Object.keys(user.rama_juridicas || {});
+  
+  // Filter the matching docs
+  const filteredMatchingDocs = [];
+  for (const docObj of userMatchingDocs) {
+    const doc = docObj.doc;
+    const collectionName = docObj.collectionName;
+    
+    // FILTER 1: Check if the document's rango matches any of the user's rangos
+    const docRango = doc.rango_titulo || "Otras";
+    const rangoMatches = userRangos.includes(docRango);
+    if (!rangoMatches) continue;
+    
+    // FILTER 2: Check for rama juridica match
+    let hasRamaMatch = false;
+    let matchedRamas = [];
+    
+    if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
+      const docRamas = Object.keys(doc.ramas_juridicas);
+      for (const rama of userRamas) {
+        if (docRamas.includes(rama)) {
+          hasRamaMatch = true;
+          matchedRamas.push(rama);
+        }
+      }
+    }
+    
+    if (!hasRamaMatch) continue;
+    
+    // FILTER 3: Check for industry match (either matching specific industry or "General")
+    let hasIndustryMatch = false;
+    let matchedIndustries = [];
+    
+    let docIndustries = doc.divisiones_cnae || [];
+    if (!Array.isArray(docIndustries)) docIndustries = [docIndustries];
+    
+    // Special case: If document has "General" industry and matches rama, it's a match
+    if (docIndustries.includes("General")) {
+      hasIndustryMatch = true;
+      matchedIndustries.push("General");
+    } else {
+      // Check for specific industry matches
+      for (const industry of userIndustries) {
+        if (docIndustries.includes(industry)) {
+          hasIndustryMatch = true;
+          matchedIndustries.push(industry);
+        }
+      }
+    }
+    
+    // Document must match BOTH rama and industry criteria
+    if (hasRamaMatch && hasIndustryMatch) {
+      // Create enhanced version of the document with matched values
+      filteredMatchingDocs.push({
+        collectionName: collectionName,
+        doc: {
+          ...doc,
+          matched_cnaes: matchedIndustries,
+          matched_rama_juridica: matchedRamas
+        }
+      });
+    }
+  }
+  
+  // Replace the original collection with the filtered one
+  const userMatchingDocsFiltered = filteredMatchingDocs;
+  
+   // 4) Build rango & collection grouping
 const rangoGroups = {};
 
-userMatchingDocs.forEach(({ collectionName, doc }) => {
+userMatchingDocsFiltered.forEach(({ collectionName, doc }) => {
   // Get rango_titulo or assign a default
   const rango = doc.rango_titulo || "Otras";
   
@@ -828,43 +927,54 @@ finalGroups.sort((a, b) => {
 });
 
 
-      // 5) Build HTML
-      let htmlBody = '';
-      if (!finalGroups.length) {
-        // No matches => fallback con TODOS los documentos de todas las fuentes
-        const allDocs = userMatchingDocs.map(({ collectionName, doc }) => ({
-          ...doc,
-          collectionName
-        }));
-      
-        htmlBody = buildNewsletterHTMLNoMatches(
-          user.name,
-          user._id.toString(),
-          moment().format('YYYY-MM-DD'),
-          allDocs
-        );
-      }
-      
-      if (!finalGroups.length) {
-        // No matches => fallback noMatches con boeDocs
-        const boeDocs = userMatchingDocs
-          .filter(x => (x.collectionName || '').toLowerCase() === 'boe')
-          .map(x => x.doc);
 
-        htmlBody = buildNewsletterHTMLNoMatches(
-          user.name,
-          user._id.toString(),
-          moment().format('YYYY-MM-DD'),
-          boeDocs
-        );
-      } else {
-        htmlBody = buildNewsletterHTML(
-          user.name,
-          user._id.toString(),
-          moment().format('YYYY-MM-DD'),
-          finalGroups
-        );
-      }
+      // 5) Build HTML
+      // 5) Build HTML
+let htmlBody = '';
+if (!finalGroups.length) {
+  // No matches => get BOE documents with seccion = "Disposiciones generales"
+  const queryBoeGeneral = { 
+    anio: anioToday, 
+    mes: mesToday, 
+    dia: diaToday,
+    seccion: "Disposiciones generales"
+  };
+  
+  try {
+    const boeColl = db.collection("BOE");
+    const boeDocs = await boeColl.find(queryBoeGeneral).toArray();
+    
+    // Add collectionName to each doc
+    const boeDocsWithCollection = boeDocs.map(doc => ({
+      ...doc,
+      collectionName: "BOE"
+    }));
+    
+    htmlBody = buildNewsletterHTMLNoMatches(
+      user.name,
+      user._id.toString(),
+      moment().format('YYYY-MM-DD'),
+      boeDocsWithCollection
+    );
+  } catch (err) {
+    console.warn(`Error retrieving BOE general docs: ${err}`);
+    // If all else fails, show empty
+    htmlBody = buildNewsletterHTMLNoMatches(
+      user.name,
+      user._id.toString(),
+      moment().format('YYYY-MM-DD'),
+      []
+    );
+  }
+} else {
+  htmlBody = buildNewsletterHTML(
+    user.name,
+    user._id.toString(),
+    moment().format('YYYY-MM-DD'),
+    finalGroups
+  );
+}
+
 
       // 6) Send email
       const emailSize = Buffer.byteLength(htmlBody, 'utf8');

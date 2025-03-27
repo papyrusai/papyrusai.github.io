@@ -733,18 +733,26 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         /**
      * Filters an array of users ensuring that only one user per unique email (in lower case) is included.
      */
-    function filterUniqueEmails(users) {
-      const seen = new Set();
-      return users.filter(user => {
-        const emailLower = user.email.toLowerCase();
-        if (seen.has(emailLower)) {
-          return false;
-        } else {
-          seen.add(emailLower);
-          return true;
-        }
-      });
+/**
+ * Filters an array of users ensuring that only one user per unique email (in lower case) is included.
+ * Users without a valid email are skipped.
+ */
+function filterUniqueEmails(users) {
+  const seen = new Set();
+  return users.filter(user => {
+    if (!user.email || typeof user.email !== 'string') {
+      // Skip users without a valid email
+      return false;
     }
+    const emailLower = user.email.toLowerCase();
+    if (seen.has(emailLower)) {
+      return false;
+    } else {
+      seen.add(emailLower);
+      return true;
+    }
+  });
+}
 
     const filteredUsers = filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email === 'info.wevelop@gmail.com'); 
 
