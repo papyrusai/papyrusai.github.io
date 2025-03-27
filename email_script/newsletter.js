@@ -24,7 +24,7 @@ const DB_NAME = 'papyrus';
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date();
+const diaToday  = TODAY.date() -1;
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -68,7 +68,7 @@ function buildDocumentHTML(doc, isLastDoc) {
 
   const subRamaHTML = subRamas.length
     ? subRamas.map(sr =>
-        `<span style="padding:5px 0; color:#83a300; margin-left:10px;">
+        `<span style="padding:5px 0; color:#4ce3a7; margin-left:10px;">
           <i><b>#${sr}</b></i>
         </span>`
       ).join(' ')
@@ -99,7 +99,7 @@ function buildDocumentHTML(doc, isLastDoc) {
           Análisis impacto normativo
         </a>
 </div>
-        <a href="${doc.url_pdf}" target="_blank" style="color:#83a300;">
+        <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
           Leer más: ${doc._id}
         </a>
         <span class="less-opacity">
@@ -127,12 +127,12 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
   // Summaries
   const cnaeSummaryHTML = cnaeGroups.map(g => {
     const docCount = g.docs.length;
-    return `<li>${docCount} Alertas de <span style="color:#89A231;">${g.coincidentValue}</span></li>`;
+    return `<li>${docCount} Alertas de <span style="color:#4ce3a7;">${g.coincidentValue}</span></li>`;
   }).join('');
 
   const subRamaSummaryHTML = subRamaGroups.map(g => {
     const docCount = g.docs.length;
-    return `<li>${docCount} Alertas de <span style="color:#89A231;">${g.coincidentValue}</span></li>`;
+    return `<li>${docCount} Alertas de <span style="color:#4ce3a7;">${g.coincidentValue}</span></li>`;
   }).join('');
 
   let summarySection = '';
@@ -161,7 +161,7 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
   const detailBlocks = groupedData.map(group => {
     // Bloque separador para 'coincidentValue'
     const separatorBlock = `
-      <div style="background-color:#89A231; margin:5% 0; padding:5px 20px; border-radius:20px;">
+      <div style="background-color:#4ce3a7; margin:5% 0; padding:5px 20px; border-radius:20px;">
         <h2 style="margin:0; color:#FAF7F0; font-size:14px;">
           ${group.coincidentValue.toUpperCase()}
         </h2>
@@ -271,7 +271,7 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
     }
 
     .button-impacto:hover {
-      background-color: #83a300; /* Darker blue on hover */
+      background-color: #4ce3a7; /* Darker blue on hover */
     }
       
     .margin-impacto {
@@ -290,8 +290,8 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
       }
       .etiqueta {
         display: inline-block;
-        background-color: #FAF7F0;
-        color: #05141C;
+        background-color: #4ce3a7;
+        color: #0c2532;
         padding: 5px 10px;
         border-radius: 15px;
         margin: 2px;
@@ -352,7 +352,7 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
         <a href="https://papyrus-ai.com/"
            style="
              display:inline-block;
-             background-color:#83a300;
+             background-color:#4ce3a7;
              color:#fff;
              padding:8px 16px;
              border-radius:5px;
@@ -378,31 +378,31 @@ function buildNewsletterHTML(userName, userId, dateString, groupedData) {
         </p>
         <table align="center" style="border-spacing:10px;">
           <tr>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 1
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 2
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 3
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 4
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 5
@@ -505,7 +505,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   const detailBlocks = cnaeKeys.map(cnae => {
     const docs = cnaeMap[cnae];
     const heading = `
-      <div style="background-color:#89A231;  
+      <div style="background-color:#4ce3a7;  
                   margin:5% 0; 
                   padding:5px 20px; 
                   border-radius:20px;">
@@ -558,15 +558,35 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         margin-bottom: 20px;
         padding: 15px;
       }
-      .etiqueta {
+     .etiqueta {
         display: inline-block;
-        background-color: #FAF7F0;
-        color: #05141C;
+        background-color: #4ce3a7;
+        color: #0c2532;
         padding: 5px 10px;
         border-radius: 15px;
         margin: 2px;
         font-size: 0.9em;
       }
+
+             .button-impacto {
+      background-color: #092534;
+      color: white;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-bottom: 2%;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .button-impacto:hover {
+      background-color: #4ce3a7; /* Darker blue on hover */
+    }
+      
+    .margin-impacto {
+      margin-bottom: 3%;
+    }
       .less-opacity {
         opacity: 0.6;
         font-size: 0.9em;
@@ -622,7 +642,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         <a href="https://papyrus-ai.com" 
            style="
              display:inline-block;
-             background-color:#83a300;
+             background-color:#4ce3a7;
              color:#fff;
              padding:8px 16px;
              border-radius:5px;
@@ -650,31 +670,31 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         </p>
         <table align="center" style="border-spacing:10px;">
           <tr>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 1
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 2
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 3
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 4
               </a>
             </td>
-            <td style="background-color:#83a300; width:40px; height:40px; text-align:center; vertical-align:middle;">
+            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
               <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 5
@@ -754,7 +774,7 @@ function filterUniqueEmails(users) {
   });
 }
 
-    const filteredUsers = filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email === 'info.wevelop@gmail.com'); 
+    const filteredUsers = allUsers.filter(u => u.email === 'info.wevelop@gmail.com');  //filterUniqueEmails(allUsers);  
 
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
@@ -871,8 +891,8 @@ function filterUniqueEmails(users) {
         html: htmlBody,
         attachments: [
           {
-            filename: 'papyrus_alertas.png',
-            path: path.join(__dirname, 'assets', 'papyrus_alertas.png'),
+            filename: 'Intro_to_papyrus.jpeg',
+            path: path.join(__dirname, 'assets', 'Intro_to_papyrus.jpeg'),
             cid: 'papyrusLogo'
           }
         ]

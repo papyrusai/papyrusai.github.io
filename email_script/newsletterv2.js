@@ -753,7 +753,9 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       const coverageObj = user.cobertura_legal || {}; // ejemplo => {"Nacional y Europeo":["BOE"],"Autonomico":["BOA","BOJA"],"Reguladores":["CNMV"]}
       let coverageCollections = [];
       Object.values(coverageObj).forEach(arr => {
-        if (Array.isArray(arr)) coverageCollections.push(...arr);
+        if (Array.isArray(arr)) {
+            coverageCollections.push(...arr.map(col => col.toUpperCase()));
+          }
       });
       if (coverageCollections.length === 0) {
         coverageCollections = ["BOE"]; // fallback
@@ -802,6 +804,7 @@ const userRangos = user.rangos || [
     // FILTER 1: Check if the document's rango matches any of the user's rangos
     const docRango = doc.rango_titulo || "Otras";
     const rangoMatches = userRangos.includes(docRango);
+    console.log(rangoMatches);
     if (!rangoMatches) continue;
     
     // FILTER 2: Check for rama juridica match
