@@ -25,7 +25,7 @@ const DB_NAME = 'papyrus';
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date() -1;
+const diaToday  = TODAY.date();
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -125,7 +125,65 @@ function buildDocumentHTML(doc, isLastDoc) {
     `;
   }
   
+  // Replace or add this function to your code
+  function buildDocumentHTMLnoMatches(doc, isLastDoc) {
+    // Extract all document CNAEs
+    let cnaes = doc.divisiones_cnae || [];
+    if (!Array.isArray(cnaes)) cnaes = [cnaes];
   
+    // Extract all document ramas
+    let ramas = [];
+    if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
+      ramas = Object.keys(doc.ramas_juridicas);
+    }
+  
+    // Extract all subramas, ensuring "genérico" appears only once
+    let subRamas = new Set();
+    if (doc.ramas_juridicas) {
+      Object.values(doc.ramas_juridicas).forEach(subRamaArray => {
+        if (Array.isArray(subRamaArray)) {
+          subRamaArray.forEach(subRama => subRamas.add(subRama));
+        }
+      });
+    }
+  
+    // Generate HTML for each tag type
+    const cnaeHTML = cnaes.map(div => `<span class="etiqueta">${div}</span>`).join('');
+    const ramaHTML = ramas.map(r => `<span class="etiqueta" style="background-color: #092534; color: white;">${r}</span>`).join('');
+    const subRamaHTML = Array.from(subRamas).map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ');
+  
+    const hrOrNot = isLastDoc ? '' : `<hr style="border: none; border-top: 1px solid #ddd; width: 75%; margin: 10px auto;">`;
+  
+    return `
+      <div class="document">
+        <h2>${doc.short_name}</h2>
+        <p>${cnaeHTML} ${ramaHTML}</p>
+        <p>${subRamaHTML}</p>
+        <p>${doc.resumen}</p>
+        <p>
+          <div class="margin-impacto">
+            <a class="button-impacto"
+               href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+               style="margin-right: 10px;">
+              Análisis impacto normativo
+            </a>
+          </div>
+          <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
+            Leer más: ${doc._id}
+          </a>
+          <span class="less-opacity">
+            ${doc.num_paginas || 0} 
+            ${doc.num_paginas === 1 ? 'página' : 'páginas'}
+            - tiempo estimado de lectura: ${doc.tiempo_lectura || 1} minutos
+          </span>
+        </p>
+      </div>
+      ${hrOrNot}
+    `;
+  }
+  
+  
+
 /**
  * buildNewsletterHTML:
  * Construye el newsletter con matches para un usuario.
@@ -229,7 +287,7 @@ function buildDocumentHTML(doc, isLastDoc) {
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
-            .button-impacto {
+               .button-impacto {
       background-color: #0c2532;
       color: white;
       padding: 5px 10px;
@@ -248,6 +306,7 @@ function buildDocumentHTML(doc, isLastDoc) {
     .margin-impacto {
       margin-bottom: 3%;
     }
+ 
       h2 {
         color: #0c2532;
         margin-bottom: 10px;
@@ -421,128 +480,216 @@ function buildDocumentHTML(doc, isLastDoc) {
  * Si no hay ninguno => “No se han publicado disposiciones generales en el BOE hoy”.
  */
 function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
-  // [1] Filtrar docs BOE para que solo queden con doc.seccion === "Disposiciones Generales"
-  const boeGeneralDocs = boeDocs.filter(doc => doc.seccion === "Disposiciones generales");
-
+    // Filter for disposiciones generales
+    const boeGeneralDocs = boeDocs.filter(doc => doc.seccion === "Disposiciones generales");
+    
+    console.log("No matches is being triggered");
   
-  console.log("No matches is being triggered");
-
-  // [2] Si no hay ninguno => Cambiamos el texto del párrafo principal
-  let introText = '';
-  if (boeGeneralDocs.length === 0) {
-    introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
-  } else {
-    introText = `<p>A continuación, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy</p>`;
-  }
-
-  // Mapeo de CNAE
-  const cnaeMap = {};
-
-  // Igual que antes, generamos sub_rama_juridica y clasificamos en cnaeMap
-  boeGeneralDocs.forEach(doc => {
-    let cnaes = doc.divisiones_cnae || [];
-    if (!Array.isArray(cnaes)) cnaes = [cnaes];
-
-    // Normalizamos sub‐ramas
-    let subRamas = [];
-    if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
-      for (const arr of Object.values(doc.ramas_juridicas)) {
-        if (Array.isArray(arr)) {
-          subRamas.push(...arr);
-        }
-      }
-    }
-    doc.sub_rama_juridica = subRamas;
-
-    if (cnaes.length > 0) {
-      cnaes.forEach(c => {
-        if (!cnaeMap[c]) cnaeMap[c] = [];
-        cnaeMap[c].push(doc);
-      });
+    // Intro text based on document count
+    let introText = '';
+    if (boeGeneralDocs.length === 0) {
+      introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
     } else {
-      // Si no tiene cnaes => agruparlo como "Genérico"
-      const placeholder = 'Genérico';
-      if (!cnaeMap[placeholder]) cnaeMap[placeholder] = [];
-      cnaeMap[placeholder].push(doc);
+      introText = `<p>A continuación, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy</p>`;
     }
-  });
-
-  // Reordenar "Genérico" al final
-  const cnaeKeys = Object.keys(cnaeMap);
-  const genIndex = cnaeKeys.findIndex(k => k.toLowerCase().trim() === 'genérico');
-  if (genIndex >= 0) {
-    const [generic] = cnaeKeys.splice(genIndex, 1);
-    cnaeKeys.push(generic);
-  }
-
-  // Construimos detailBlocks
-  const detailBlocks = cnaeKeys.map(cnae => {
-    const docs = cnaeMap[cnae];
-    const heading = `
-      <div style="background-color:#4ce3a7;  
-                  margin:5% 0; 
-                  padding:5px 20px; 
-                  border-radius:20px;">
-        <h2 style="margin:0; color:#0c2532; font-size:14px;">
-          ${cnae.toUpperCase()}
-        </h2>
-      </div>
-    `;
-    const docsHTML = docs.map((doc, i) =>
-      buildDocumentHTML(doc, i === docs.length - 1)
-    ).join('');
-
-    return heading + docsHTML;
-  }).join('');
-
-  return `
-  <!DOCTYPE html>
-  <html lang="es">
-  <meta name="color-scheme" content="light">
-  <meta name="supported-color-schemes" content="light">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Newsletter - Sin coincidencias</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap');
-        body {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #ffffff;
-        color: #0c2532;
+  
+    // NEW: Group by rango first, then by collection
+    const rangoGroups = {};
+    
+    boeGeneralDocs.forEach(doc => {
+      // Get rango_titulo or default to "Otras"
+      const rango = doc.rango_titulo || "Otras";
+      
+      // Initialize the rango group if needed
+      if (!rangoGroups[rango]) {
+        rangoGroups[rango] = {};
       }
-      .container {
-        max-width: 800px;
-        margin: 20px auto;
-        padding: 20px;
-        background-color: #ffffff;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      
+      // Use the document's collection name (should be BOE for all)
+      const collectionName = doc.collectionName || "BOE";
+      
+      // Initialize the collection subgroup if needed
+      if (!rangoGroups[rango][collectionName]) {
+        rangoGroups[rango][collectionName] = [];
       }
-      h2 {
-        color: #0c2532; 
-        margin-bottom: 10px;
+      
+      // Add document to its group
+      rangoGroups[rango][collectionName].push(doc);
+    });
+    
+    // Convert to array structure like in buildNewsletterHTML
+    const finalGroups = [];
+    for (const [rango, collections] of Object.entries(rangoGroups)) {
+      const rangoGroup = {
+        rangoTitle: rango,
+        collections: []
+      };
+      
+      for (const [collName, docs] of Object.entries(collections)) {
+        rangoGroup.collections.push({
+          collectionName: collName,
+          displayName: mapCollectionNameToDisplay(collName),
+          docs: docs
+        });
       }
-      a:hover {
-        text-decoration: underline;
-      }
-      .document {
-        margin-bottom: 20px;
-        padding: 15px;
-      }
-      .etiqueta {
+      
+      finalGroups.push(rangoGroup);
+    }
+    
+    // Sort rango groups 
+    finalGroups.sort((a, b) => {
+      const order = [
+        "Legislación", 
+        "Normativa Reglamentaria", 
+        "Doctrina Administrativa",
+        "Comunicados, Guías y Directivas de Reguladores",
+        "Decisiones Judiciales",
+        "Normativa Europea",
+        "Acuerdos Internacionales",
+        "Anuncios de Concentración de Empresas",
+        "Dictámenes y Opiniones",
+        "Subvenciones",
+        "Declaraciones e Informes de Impacto Ambiental",
+        "Otras"
+      ];
+      return order.indexOf(a.rangoTitle) - order.indexOf(b.rangoTitle);
+    });
+    
+    // Build summary just like in the regular newsletter
+    const rangoSummaryHTML = finalGroups.map(rango => {
+      const totalDocs = rango.collections.reduce((sum, coll) => sum + coll.docs.length, 0);
+      return `<li>${totalDocs} Alertas de <span style="color:#4ce3a7;">${rango.rangoTitle}</span></li>`;
+    }).join('');
+    
+    let summarySection = '';
+    if (finalGroups.length > 0) {
+      summarySection = `
+        <h4 style="font-size:16px; margin-bottom:15px; color:#0c2532">
+          RESUMEN POR TIPO DE NORMATIVA
+        </h4>
+        <ul style="margin-bottom:15px;">
+          ${rangoSummaryHTML}
+        </ul>
+      `;
+    }
+    
+    // Build detail blocks exactly like in buildNewsletterHTML
+    const detailBlocks = finalGroups.map((rango, rangoIndex) => {
+      // Range header
+      const rangoHeading = `
+        <div style="background-color:#4ce3a7; margin:5% 0; padding:5px 20px; border-radius:20px;">
+          <h2 style="margin:0; color:#fefefe; font-size:14px;">
+            ${rangoIndex + 1}. ${rango.rangoTitle.toUpperCase()}
+          </h2>
+        </div>
+      `;
+    
+      // Collection blocks within this range
+      const collectionBlocks = rango.collections.map((collObj, collIndex) => {
+        const docsHTML = collObj.docs.map((doc, idx) => {
+          const isLastDoc = (idx === collObj.docs.length - 1);
+          return buildDocumentHTMLnoMatches(doc, isLastDoc);
+        }).join('');
+    
+        // Collection header with numbered sections
+        const collectionHeading = `
+          <h3 style="
+            color:#0c2532;
+            margin: 3% auto;
+            margin-top:5%;
+            text-align:center;
+            font-style:italic;
+          ">
+            ${rangoIndex + 1}.${collIndex + 1} ${collObj.displayName}
+          </h3>
+        `;
+    
+        const collectionSeparator = `
+          <hr style="
+            border: none;
+            border-top: 1px solid #0c2532;
+            width: 100%;
+            margin: 10px auto;
+          ">
+        `;
+    
+        return `
+          ${collectionSeparator}
+          ${collectionHeading}
+          ${docsHTML}
+        `;
+      }).join('');
+    
+      return rangoHeading + collectionBlocks;
+    }).join('');
+  
+    // The rest of the HTML remains the same
+    return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Newsletter - Sin coincidencias</title>
+      <style>
+          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap');
+          body {
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          margin: 0;
+          padding: 0;
+          background-color: #ffffff;
+          color: #0c2532;
+        }
+        .container {
+          max-width: 800px;
+          margin: 20px auto;
+          padding: 20px;
+          background-color: #ffffff;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+          color: #0c2532; 
+          margin-bottom: 10px;
+        }
+        a:hover {
+          text-decoration: underline;
+        }
+        .document {
+          margin-bottom: 20px;
+          padding: 15px;
+        }
+        .etiqueta {
         display: inline-block;
-        background-color: #fefefe;
+        background-color: #4ce3a7;
         color: #0c2532;
         padding: 5px 10px;
         border-radius: 15px;
         margin: 2px;
         font-size: 0.9em;
       }
-          .button-impacto {
-      background-color: #0c2532;
+     
+        .less-opacity {
+          opacity: 0.6;
+          font-size: 0.9em;
+          font-style: italic;
+        }
+        ul {
+          margin-left: 20px;
+        }
+        .online-link {
+          text-align: right;
+          font-size: 12px;
+          margin-bottom: 5px;
+        }
+        .online-link a {
+          color: #0c2532;
+          text-decoration: underline;
+        }
+    .button-impacto {
+      background-color: #092534;
       color: white;
       padding: 5px 10px;
       border: none;
@@ -556,157 +703,135 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     .button-impacto:hover {
       background-color: #4ce3a7; /* Darker blue on hover */
     }
-      .less-opacity {
-        opacity: 0.6;
-        font-size: 0.9em;
-        font-style: italic;
-      }
-      ul {
-        margin-left: 20px;
-      }
-      .online-link {
-        text-align: right;
-        font-size: 12px;
-        margin-bottom: 5px;
-      }
-      .online-link a {
-        color: #0c2532;
-        text-decoration: underline;
-      }
-      .logo-container {
-        margin-top: 10px;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-      @media (max-width: 600px) {
-        .container {
-          margin: 10px auto;  
-          padding: 15px;      
-          width: 95%;        
+      
+    .margin-impacto {
+      margin-bottom: 3%;
+    }
+        .logo-container {
+          margin-top: 10px;
+          margin-bottom: 20px;
+          text-align: center;
         }
-        .less-opacity {
-          display: block; 
-          margin-top: 5px; 
+        @media (max-width: 600px) {
+          .container {
+            margin: 10px auto;  
+            padding: 15px;      
+            width: 95%;        
+          }
+          .less-opacity {
+            display: block; 
+            margin-top: 5px; 
+          }
+          h2 {
+            font-size: 18px;
+          }
         }
-        h2 {
-          font-size: 18px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <!-- top-right "Ver online" link -->
-      <div class="online-link">
-        <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
-      </div>
-      <!-- Embedded logo -->
-      <div class="logo-container">
-        <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
-      </div>
-
-      <p>Hola ${userName}, <strong>no hay novedades regulatorias</strong> de tus alertas normativas el día <strong>${dateString}</strong>.</p>
-
-      <div style="text-align:center; margin:15px 0;">
-        <a href="https://papyrus-ai.com" 
-           style="
-             display:inline-block;
-             background-color:#4ce3a7;
-             color:#fff;
-             padding:8px 16px;
-             border-radius:5px;
-             text-decoration:none;
-             font-weight:bold;
-             margin-top:10px;
-           ">
-          Inicia sesión
-        </a>
-      </div>
-
-      <hr style="border:none; border-top:1px solid #ddd; margin:5% 0;">
-
-      <!-- [CAMBIO 1/2] => Si no hay docs boeGeneralDocs => "No se han publicado..." -->
-      ${introText}
-
-      ${detailBlocks}
-
-      <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
-
-      <!-- Bloque de 1-5 satisfecho (estrellas/cuadros) -->
-      <div style="text-align:center; margin: 20px 0;">
-        <p style="font-size:16px; color:#0c2532; font-weight:bold; margin-bottom:10px;">
-          ¿Qué te ha parecido este resumen normativo?
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="online-link">
+          <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
+        </div>
+        <div class="logo-container">
+          <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
+        </div>
+  
+        <p>Hola ${userName}, <strong>no hay novedades regulatorias</strong> de tus alertas normativas el día <strong>${dateString}</strong>.</p>
+  
+        <div style="text-align:center; margin:15px 0;">
+          <a href="https://papyrus-ai.com" 
+             style="
+               display:inline-block;
+               background-color:#4ce3a7;
+               color:#fff;
+               padding:8px 16px;
+               border-radius:5px;
+               text-decoration:none;
+               font-weight:bold;
+               margin-top:10px;
+             ">
+            Inicia sesión
+          </a>
+        </div>
+  
+        <hr style="border:none; border-top:1px solid #ddd; margin:5% 0;">
+        ${introText}
+        ${summarySection}
+        ${detailBlocks}
+  
+        <hr style="border:none; border-top:1px solid #ddd; margin:20px 0;">
+  
+        <div style="text-align:center; margin: 20px 0;">
+          <p style="font-size:16px; color:#0c2532; font-weight:bold; margin-bottom:10px;">
+            ¿Qué te ha parecido este resumen normativo?
+          </p>
+          <table align="center" style="border-spacing:10px;">
+            <tr>
+              <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
+                <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+                   style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                  1
+                </a>
+              </td>
+              <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
+                <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+                   style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                  2
+                </a>
+              </td>
+              <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
+                <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+                   style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                  3
+                </a>
+              </td>
+              <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
+                <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+                   style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                  4
+                </a>
+              </td>
+              <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
+                <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+                   style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
+                  5
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="text-align:center; font-size:12px; color:#0c2532;">
+                Poco<br>satisfecho
+              </td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td style="text-align:center; font-size:12px; color:#0c2532;">
+                Muy<br>satisfecho
+              </td>
+            </tr>
+          </table>
+        </div>
+  
+        <p style="font-size:0.9em; color:#0c2532; text-align:center;">
+          &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
         </p>
-        <table align="center" style="border-spacing:10px;">
-          <tr>
-            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
-                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
-                1
-              </a>
-            </td>
-            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
-                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
-                2
-              </a>
-            </td>
-            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
-                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
-                3
-              </a>
-            </td>
-            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
-                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
-                4
-              </a>
-            </td>
-            <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
-                 style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
-                5
-              </a>
-            </td>
-          </tr>
-          <tr>
-            <td style="text-align:center; font-size:12px; color:#0c2532;">
-              Poco<br>satisfecho
-            </td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td style="text-align:center; font-size:12px; color:#0c2532;">
-              Muy<br>satisfecho
-            </td>
-          </tr>
-        </table>
+        <div style="text-align:center; margin-top: 20px;">
+          <a href="https://papyrus-ai.com/suscripcion"
+             target="_blank"
+             style="color: #0c2532; text-decoration: underline; font-size: 12px;">
+            Cancelar Suscripción
+          </a>
+        </div>
       </div>
-
-      <p style="font-size:0.9em; color:#0c2532; text-align:center;">
-        &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
-      </p>
-
-      <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion"
-           target="_blank"
-           style="color: #0c2532; text-decoration: underline; font-size: 12px;">
-          Cancelar Suscripción
-        </a>
-      </div>
-
-    </div>
-  </body>
-  </html>
-  `;
-}
-
+    </body>
+    </html>
+    `;
+  }
+  
 
 // MAIN EXECUTION
-/**
- * MAIN EXECUTION
- */
+
 (async () => {
   let client;
   try {
@@ -743,7 +868,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         });
       }
 
-    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'papyrus.ai.info@gmail.com');
+    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'info.wevelop@gmail.com'); //filterUniqueEmails(allUsers);  
 
 
 
@@ -793,7 +918,10 @@ const userRangos = user.rangos || [
     "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
   ];
   const userIndustries = user.industry_tags || [];
-  const userRamas = Object.keys(user.rama_juridicas || {});
+  const userRamas = user.rama_juridicas || [];
+  console.log(userRamas);
+  console.log(userIndustries);
+  
   
   // Filter the matching docs
   const filteredMatchingDocs = [];
@@ -804,7 +932,7 @@ const userRangos = user.rangos || [
     // FILTER 1: Check if the document's rango matches any of the user's rangos
     const docRango = doc.rango_titulo || "Otras";
     const rangoMatches = userRangos.includes(docRango);
-    console.log(rangoMatches);
+    
     if (!rangoMatches) continue;
     
     // FILTER 2: Check for rama juridica match
@@ -860,7 +988,7 @@ const userRangos = user.rangos || [
   
   // Replace the original collection with the filtered one
   const userMatchingDocsFiltered = filteredMatchingDocs;
-  
+ 
    // 4) Build rango & collection grouping
 const rangoGroups = {};
 
@@ -931,7 +1059,6 @@ finalGroups.sort((a, b) => {
 
 
 
-      // 5) Build HTML
       // 5) Build HTML
 let htmlBody = '';
 if (!finalGroups.length) {
