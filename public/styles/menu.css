@@ -54,8 +54,15 @@ body, html {
     padding: 0 16px; /* Adjust spacing between menu items */
   }
   
-  .menu li a {
+  .menu.index li a {
     color: var(--background-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+   
+  .menu li a {
+    color: var(--text-color);
     text-decoration: none;
     transition: color 0.3s ease;
   }

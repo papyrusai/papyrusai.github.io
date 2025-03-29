@@ -774,7 +774,7 @@ app.get('/profile', async (req, res) => {
     // Default date range for "profile": from 1 month ago to now
     const now = new Date();
     const startDate = new Date();
-    startDate.setMonth(now.getMonth() - 1);
+    startDate.setMonth(now.getMonth());
     const endDate = now;
 
     // NEW: Modified query to match user's rango, boletines, and (ramas or industrias)
