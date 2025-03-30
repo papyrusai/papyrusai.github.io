@@ -892,6 +892,7 @@ app.get('/profile', async (req, res) => {
       .replace('{{industry_tags}}', user.industry_tags.join(', '))
       .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags))
       .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas || {}))
+      .replace('{{subrama_juridicas_json}}', JSON.stringify(user.sub_rama_map || {}))
       .replace('{{boeDocuments}}', documentsHtml)
       .replace('{{months_json}}', JSON.stringify(months))
       .replace('{{counts_json}}', JSON.stringify(counts))
