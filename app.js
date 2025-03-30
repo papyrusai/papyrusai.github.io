@@ -749,7 +749,7 @@ app.get('/profile', async (req, res) => {
     // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
-    
+
 
     // NEW: Extract user's industries, ramas, and rangos
     const userIndustries = user.industry_tags || [];
@@ -1061,11 +1061,23 @@ app.get('/data', async (req, res) => {
       return dateB - dateA;
     });
 
-    // 8) Also parse subRamas from subRamasStr => e.g. "genérico,arrendamientos"
-    let chosenSubRamas = [];
+    // 8) Parse subRamas from JSON string
+    let chosenSubRamasMap = {};
     if (subRamasStr.trim() !== '') {
-      chosenSubRamas = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
+      try {
+        chosenSubRamasMap = JSON.parse(subRamasStr);
+        console.log("Parsed subRamas:", chosenSubRamasMap);
+      } catch (e) {
+        console.error("Error parsing subRamas JSON:", e);
+        // Fallback to old comma-separated format if JSON parsing fails
+        const chosenSubRamas = subRamasStr.split(',').map(s => s.trim()).filter(Boolean);
+        chosenSubRamasMap = {};
+        chosenRamas.forEach(rama => {
+          chosenSubRamasMap[rama] = chosenSubRamas;
+        });
+      }
     }
+
 
     // 9) Final in-memory filter with new logic
     const filteredDocuments = [];
@@ -1120,13 +1132,43 @@ app.get('/data', async (req, res) => {
         }
       }
       
-      // Filter by chosen subramas if specified
-      if (chosenSubRamas.length > 0 && chosenRamas.length > 0) {
-        const hasSubRamaMatch = matchedSubRamas.some(sr => chosenSubRamas.includes(sr));
-        if (!hasSubRamaMatch) {
-          hasRamaMatch = false;
+     // Replace the existing subrama filtering code with this
+    // Filter by chosen subramas if specified
+    if (Object.keys(chosenSubRamasMap).length > 0) {
+      let hasSubRamaMatch = false;
+      
+      for (const rama of matchedRamas) {
+        const chosenSubRamasForRama = chosenSubRamasMap[rama] || [];
+        
+        if (chosenSubRamasForRama.length === 0) {
+          // If no subramas specified for this rama, it's a match
+          hasSubRamaMatch = true;
+          continue;
+        }
+        
+        const docSubRamas = Array.isArray(doc.ramas_juridicas[rama]) ? 
+          doc.ramas_juridicas[rama] : [];
+        
+        if (docSubRamas.length === 0 && chosenSubRamasForRama.includes("genérico")) {
+          // Document has no specific subramas but user selected "genérico"
+          matchedSubRamas.push("genérico");
+          hasSubRamaMatch = true;
+        } else {
+          // Check if any of the document's subramas match the chosen ones
+          const intersection = docSubRamas.filter(sr => chosenSubRamasForRama.includes(sr));
+          if (intersection.length > 0) {
+            matchedSubRamas = matchedSubRamas.concat(intersection);
+            hasSubRamaMatch = true;
+          }
         }
       }
+      
+      // If no subrama matches were found, the document doesn't match
+      if (!hasSubRamaMatch) {
+        hasRamaMatch = false;
+      }
+    }
+
       
       // Check industry match (divisiones_cnae)
       let hasIndustryMatch = chosenIndustries.length === 0; // Default true if no industries chosen
