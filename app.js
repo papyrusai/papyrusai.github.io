@@ -749,6 +749,7 @@ app.get('/profile', async (req, res) => {
     // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
+    
 
     // NEW: Extract user's industries, ramas, and rangos
     const userIndustries = user.industry_tags || [];
