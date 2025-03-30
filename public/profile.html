@@ -1123,7 +1123,31 @@ if (Object.keys(selectedSubRamas).length > 0) {
     document.getElementById('chartContainer').style.display = 'block';
   }
 }
-
+document.addEventListener('DOMContentLoaded', () => {
+       populateIndustryDropdown();
+       populateRamaDropdown();
+       document.addEventListener('click', function(e) {
+         if (e.target.closest('.subramas-dropdown') || e.target.classList.contains('subrama-checkbox')) {
+           e.stopPropagation();
+          }  
+       })
+        // Fix for dropdown positioning
+       const ramaDropdown = document.getElementById('ramaDropdown');
+       if (ramaDropdown) {
+         // Ensure parent containers don't clip the subramas dropdown
+         let parent = ramaDropdown.parentElement;
+         while (parent && parent !== document.body) {
+           if (getComputedStyle(parent).overflow === 'hidden' || 
+               getComputedStyle(parent).overflow === 'auto' || 
+               getComputedStyle(parent).overflow === 'scroll') {
+             parent.style.overflow = 'visible';
+           }
+           parent = parent.parentElement;
+         }
+       }
+       populateBoletinDropdown();
+       populateRangoDropdown(); // Add this line
+     });
     // --------------------- CHART LOAD ---------------------
     let myChart;
     function loadChart(months, counts) {
@@ -1154,28 +1178,27 @@ if (Object.keys(selectedSubRamas).length > 0) {
     }
 
     // --------------------- ON PAGE LOAD => fill dropdowns ---------------------
-    document.addEventListener('click', function(e) {
-      // Close subramas dropdowns when clicking outside
-      if (!e.target.closest('.rama-label-container') && 
-          !e.target.closest('.subramas-dropdown')) {
-        document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-          dropdown.classList.remove('active');
-        });
-      }
-      
-      // Close the main dropdowns when clicking outside
-      const isRamaButton = e.target.closest('#btnRamaJuridica');
-      const isRamaDropdown = e.target.closest('#ramaDropdown');
-      if (!isRamaButton && !isRamaDropdown) {
-        document.getElementById('ramaDropdown').classList.remove('show');
-  }
-      populateBoletinDropdown();
-      populateRangoDropdown(); // Add this line
-    });
-/*Hide dropdowns*/    
-
-
-
+    document.addEventListener('DOMContentLoaded', () => {
+       populateIndustryDropdown();
+       populateRamaDropdown();
+      document.addEventListener('click', function(e) {
+          // Close subramas dropdowns when clicking outside
+          if (!e.target.closest('.rama-label-container') && 
+              !e.target.closest('.subramas-dropdown')) {
+            document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+              dropdown.classList.remove('active');
+            });
+          }
+          
+          // Close the main dropdowns when clicking outside
+          const isRamaButton = e.target.closest('#btnRamaJuridica');
+          const isRamaDropdown = e.target.closest('#ramaDropdown');
+          if (!isRamaButton && !isRamaDropdown) {
+            document.getElementById('ramaDropdown').classList.remove('show');
+      } })
+       populateBoletinDropdown();
+       populateRangoDropdown(); // Add this line
+     });
   </script>
 </body>
 </html>
