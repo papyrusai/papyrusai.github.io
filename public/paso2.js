@@ -190,6 +190,10 @@ document.addEventListener('DOMContentLoaded', function() {
     - Ramas jurídicas: Máximo 5 de la lista proporcionada
     - Subramas: Máximo 8 por rama, solo de las listas proporcionadas para cada rama
     - Rangos normativos: Máximo 5 de la lista proporcionada
+   
+    OBSERVACIONES:
+    - Si el usuario es compliance officer o abogado en empresa, probablemente estará unicamente interesado en la industria correspondiente a su empresa, con un enfoque legal más transversal, incluyendo varias ramas jurídicas.
+    - Si el usuario es abogado en despacho, es posible que maneje múltiples industrias de sus clientes y que esté más especializado en una o pocas ramas jurídicas.    
     
     IMPORTANTE: Tu respuesta debe contener SOLO el objeto JSON, sin explicaciones adicionales.
   `;

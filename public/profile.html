@@ -580,8 +580,8 @@
     }
 
     // --------------------- DROPDOWN for Ramas ---------------------
-   // NEW: Replace the existing populateRamaDropdown function with this updated version
-   function populateRamaDropdown() {
+  // NEW: Replace the existing populateRamaDropdown function with this updated version
+function populateRamaDropdown() {
   const container = document.getElementById('ramaDropdown');
   if (!container) return;
   container.innerHTML = '';
@@ -610,59 +610,57 @@
     const lbl = document.createElement('label');
     lbl.innerHTML = `<input type="checkbox" value="${r}" checked> <span class="rama-text">${r}</span>`;
 
-    // Prevenir comportamiento predeterminado de la etiqueta
+    // Create the subramas dropdown
+    const subRamasDropdown = document.createElement('div');
+    subRamasDropdown.className = 'subramas-dropdown';
+    subRamasDropdown.setAttribute('data-rama', r);
+    
+    // NEW: Single event listener for label click that handles both checkbox and text
     lbl.addEventListener('click', function(e) {
-      // Solo permitir que el evento continúe si se hizo clic en el checkbox
-      if (e.target.type !== 'checkbox') {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Si no se hizo clic en el toggle, mostrar/ocultar el dropdown
-        if (!e.target.closest('.subramas-toggle')) {
-          subRamasDropdown.classList.toggle('active');
-          
-          // Cerrar otros dropdowns abiertos
-          document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-            if (dropdown !== subRamasDropdown) {
-              dropdown.classList.remove('active');
-            }
-          });
-        }
+      // If checkbox was clicked, let the default behavior happen
+      if (e.target.type === 'checkbox') {
+        return;
       }
+      
+      // If toggle button was clicked, let its own handler work
+      if (e.target.closest('.subramas-toggle')) {
+        return;
+      }
+      
+      // For any other part of the label (text), prevent default and toggle dropdown
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Close all other open subramas dropdowns
+      document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+        if (dropdown !== subRamasDropdown) {
+          dropdown.classList.remove('active');
+        }
+      });
+      
+      // Toggle this dropdown
+      subRamasDropdown.classList.toggle('active');
     });
+    
     // NEW: Add a toggle button for subramas that doesn't interfere with checkbox
     const toggleBtn = document.createElement('span');
     toggleBtn.className = 'subramas-toggle';
     toggleBtn.innerHTML = ' <i class="fa fa-caret-right"></i>';
     toggleBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    // Close all other open subramas dropdowns
-    document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-      if (dropdown !== subRamasDropdown) {
-        dropdown.classList.remove('active');
-      }
-    });
-    // Toggle this dropdown
-    subRamasDropdown.classList.toggle('active');
+      e.preventDefault();
+      e.stopPropagation();
+      // Close all other open subramas dropdowns
+      document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+        if (dropdown !== subRamasDropdown) {
+          dropdown.classList.remove('active');
+        }
+      });
+      // Toggle this dropdown
+      subRamasDropdown.classList.toggle('active');
     });
     
     lbl.appendChild(toggleBtn);
     ramaContainer.appendChild(lbl);
-    
-    // NEW: Make the label itself (except checkbox) toggle the dropdown
-    lbl.addEventListener('click', function(e) {
-      if (e.target.type !== 'checkbox' && !e.target.closest('.subramas-toggle')) {
-        e.preventDefault();
-        e.stopPropagation();
-        subRamasDropdown.classList.toggle('active');
-      }
-    });
-    
-    // Create the subramas dropdown
-    const subRamasDropdown = document.createElement('div');
-    subRamasDropdown.className = 'subramas-dropdown';
-    subRamasDropdown.setAttribute('data-rama', r);
     
     // Add subramas checkboxes if available for this rama
     if (userSubRamaMap[r] && userSubRamaMap[r].length > 0) {

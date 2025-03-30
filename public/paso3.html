@@ -170,7 +170,7 @@
       border-radius: 4px;
     }
     /* ------------Mobile Responsive CSS for Personalization Form -------------- */
-
+/* Mobile Responsive CSS for Personalization Form */
 @media (max-width: 768px) {
   /* General container adjustments */
   .container {
@@ -190,13 +190,16 @@
     padding: 8px 10px;
     font-size: 14px;
     white-space: nowrap;
+    position: relative; /* Ensure proper positioning of done icons */
   }
   
+  /* Fixed ticker positioning - smaller and more to the right */
   .submenu-item.done::after {
-    top: 3px;
-    right: 3px;
-    width: 6px;
-    height: 10px;
+    top: 2px;
+    right: 1px;
+    width: 5px;
+    height: 8px;
+    border-width: 0 1px 1px 0; /* Thinner checkmark */
   }
   
   /* Form adjustments */
@@ -293,6 +296,36 @@
   .step {
     padding: 3px;
   }
+  
+  /* Fix for hamburger menu */
+  .hamburger {
+    display: block;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    z-index: 1000;
+  }
+  
+  /* Fix menu visibility when active */
+  .menu.show {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 60px;
+    right: 0;
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 999;
+  }
+  
+  .menu.show li {
+    width: 100%;
+    padding: 15px;
+    text-align: center;
+    border-bottom: 1px solid #eee;
+  }
 }
 
 /* Extra small devices */
@@ -317,6 +350,15 @@
     flex: 0 0 auto;
   }
   
+  /* Even smaller tickers for extra small devices */
+  .submenu-item.done::after {
+    top: 1px;
+    right: 0;
+    width: 4px;
+    height: 7px;
+    border-width: 0 1px 1px 0;
+  }
+  
   h2 {
     font-size: 18px;
   }
@@ -339,6 +381,17 @@
   .subsection h4 {
     font-size: 14px;
     margin-bottom: 5px;
+  }
+  
+  /* Additional hamburger menu fixes for smallest screens */
+  .hamburger {
+    font-size: 20px; /* Slightly smaller hamburger icon */
+    padding: 8px; /* Better touch target */
+  }
+  
+  .menu.show li {
+    padding: 12px; /* Slightly smaller padding */
+    font-size: 14px; /* Smaller font size */
   }
 }
   </style>
