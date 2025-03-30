@@ -244,7 +244,7 @@ h3{
     padding: 7px;
     border: 1px solid #fbf7ef;
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 14px;
     white-space: nowrap;
     overflow: hidden; /* Prevent overflowing text */
     text-overflow: ellipsis; /* Add "..." for overflowing text */
@@ -258,7 +258,7 @@ h3{
     bottom: 0;
     left: 0;
     width: 100%;
-    font-size: 12px;
+    font-size: 14px;
     font-style: italic;
     color: #555;
     text-align: center;
@@ -310,7 +310,7 @@ h3{
     padding: 7px 7px;
     border: 1px solid #fbf7ef;
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 14px;
     white-space: nowrap; /* Prevent wrapping of text */
     overflow: hidden; /* Hide text overflow */
     text-overflow: ellipsis; /* Add "..." for overflowing text */
@@ -325,7 +325,7 @@ h3{
     padding: 10px 10px; /* Add padding to make room for the close button */
     border: 1px solid #fbf7ef; /* Match the green border */
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 14px;
     white-space: nowrap; 
 }
 #selectedRamaJuridicaList {
@@ -420,7 +420,7 @@ h3{
 
 .industry-item {
     padding: 7px;
-    font-size: 12px;
+    font-size: 14px;
     margin-bottom: 5px;
     margin-right: 5px;
     border-radius: 5px;
@@ -438,7 +438,7 @@ h3{
 }
 .rama-item {
     padding: 7px;
-    font-size: 12px;
+    font-size: 14px;
     margin-bottom: 5px;
     margin-right: 5px;
     border-radius: 5px;
@@ -701,7 +701,7 @@ h3{
 /* Responsive Design */
 @media (max-width: 800px) {
     
-    body{ font-size: 12px;}
+    body{ font-size: 14px;}
     
     
     /*Step1*/
@@ -710,9 +710,9 @@ h3{
     }
     .profile-option{
         padding:8px;
-        font-size: 12px;
+        font-size: 14px;
     }
-    .profile-text p {font-size: 12px;}
+    .profile-text p {font-size: 14px;}
     /*Step2*/
     .container {
         flex-direction: column;
@@ -727,11 +727,11 @@ h3{
     }
     .step-container{ padding:0px;}
     .industry-item{
-        font-size: 12px;
+        font-size: 14px;
         margin-bottom: 5px;;
     }
     .rama-item{
-        font-size: 12px;
+        font-size: 14px;
         margin-bottom: 5px;;
     }
     h3{

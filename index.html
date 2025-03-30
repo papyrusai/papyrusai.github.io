@@ -8,6 +8,18 @@
   <link rel="stylesheet" type="text/css" href="styles/login.css" />
   <link rel="stylesheet" type="text/css" href="styles/menu.css" />
   <style>
+
+     /* Prevent zoom on input focus */
+      input[type="text"],
+      input[type="email"],
+      input[type="url"],
+      input[type="search"],
+      input[type="password"],
+      textarea,
+      select {
+        font-size: 16px !important; /* Minimum font size to prevent zoom on iOS */
+      }
+
     .hidden { display: none; }
     .error-message { color: red; font-size: 0.9em; margin-top: 5px; }
     .toggle-link { cursor: pointer; color: blue; text-decoration: underline; }

@@ -2,7 +2,7 @@
 /* Responsive styles for screens with a max-width of 600px */
 @media (max-width: 600px) {
     body {
-        font-size: 12px; /* Reduce font size to 10px on smaller screens */
+        font-size: 14px; /* Reduce font size to 10px on smaller screens */
     }
 
     .data-item,

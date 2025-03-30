@@ -397,7 +397,7 @@ h3 {
     bottom: 0;
     left: 0;
     width: 100%;
-    font-size: 12px;
+    font-size: 14px;
     font-style: italic;
     color: #555;
     text-align: center;
@@ -477,7 +477,7 @@ h3 {
     padding: 10px 10px; 
     border: 1px solid #092534; 
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 14px;
     white-space: nowrap; 
 }
 
@@ -640,7 +640,7 @@ h3 {
 #prevSubRamasBtn,
 #nextSubRamasBtn {
   /* for smaller style: */
-  font-size: 12px;       /* or 11px, whichever you prefer */
+  font-size: 14px;       /* or 11px, whichever you prefer */
   padding: 1px 6px;      /* reduce padding so they're more compact */
   margin: 0 2px;         /* small margin */
   background-color: #83a300;
@@ -672,7 +672,7 @@ h3 {
     padding: 7px 10px;
     border: 1px solid #83a300;
     margin: 0;
-    font-size: 12px;
+    font-size: 14px;
     box-sizing: border-box;
   }
   
@@ -757,7 +757,7 @@ h3 {
     background: #ffffff99;
     border-radius: 50%;
     padding: 3px 3px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
   }
   
@@ -814,7 +814,7 @@ h3 {
     padding: 5px 10px;
     border-radius: 5px;
     font-weight: bold;
-    font-size: 12px; /* smaller text */
+    font-size: 14px; /* smaller text */
     z-index: 9999;
   }
   
@@ -952,7 +952,7 @@ h3 {
    
     /* Slightly reduce base font size */
     body {
-        font-size: 12px; 
+        font-size: 14px; 
     }
     /* Remove or reduce big margins/padding on the main container */
     .form-container {
@@ -974,14 +974,14 @@ h3 {
     }
     .profile-option {
         padding: 8px;
-        font-size: 12px;
+        font-size: 14px;
         margin-bottom: 8px;
     }
     .profile-image{
         display:none;
     }
     .profile-text p {
-        font-size: 12px;
+        font-size: 14px;
     }
     .industry-list {
         max-height: 20vh;
@@ -1073,6 +1073,6 @@ h3 {
   
     /* Optional small spacing between them if you like */
     .plan-box h2 {
-        font-size: 12px;
+        font-size: 14px;
     }
   }

@@ -77,7 +77,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
       color: var(--primary-color);
     }
     .toggle-detail:focus {
@@ -150,7 +150,7 @@
     .dropdown-item {
       padding: 8px 12px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
     }
     .dropdown-item:hover {
       background-color: var(--secondary-color);
@@ -172,6 +172,11 @@
     /* ------------Mobile Responsive CSS for Personalization Form -------------- */
 /* Mobile Responsive CSS for Personalization Form */
 @media (max-width: 768px) {
+ /* Hide step numbers in mobile view */
+ .step span.step-number {
+    display: none;
+  }
+
   /* General container adjustments */
   .container {
     width: 95%;
@@ -253,7 +258,7 @@
   
   .tag {
     padding: 1px 10px;
-    font-size: 12px;
+    font-size: 14px;
     margin-bottom: 5px;
   }
   
@@ -275,13 +280,13 @@
   
   /* Feedback messages */
   .feedback-msg {
-    font-size: 12px;
+    font-size: 14px;
     margin-top: 8px;
   }
   
   .feedback-msg + input {
     padding: 6px;
-    font-size: 12px;
+    font-size: 14px;
   }
   
   /* Progress bar */
@@ -290,7 +295,7 @@
   }
   
   .progress-steps {
-    font-size: 12px;
+    font-size: 14px;
   }
   
   .step {
@@ -331,7 +336,7 @@
 /* Extra small devices */
 @media (max-width: 480px) {
   .container {
-    width: 100%;
+    width: 95%;
     padding: 10px;
     margin: 5px auto;
     border-radius: 5px;
@@ -346,7 +351,7 @@
   
   .submenu-item {
     padding: 6px 8px;
-    font-size: 12px;
+    font-size: 14px;
     flex: 0 0 auto;
   }
   
@@ -364,7 +369,7 @@
   }
   
   p {
-    font-size: 12px;
+    font-size: 14px;
   }
   
   .dropdown-item {
@@ -373,7 +378,7 @@
   
   .btn-siguiente,
   .btn-anterior {
-    font-size: 12px;
+    font-size: 14px;
     padding: 8px 0;
   }
   
@@ -509,5 +514,20 @@
 
   </div>
   <script src="paso3.js"></script>
+  <script>
+    function toggleMenu() {
+        const menu = document.querySelector('.menu');
+        menu.classList.toggle('active');
+         }
+         // Close the menu if clicking outside of it
+document.addEventListener('click', function(event) {
+    const menu = document.querySelector('.menu');
+    const hamburger = document.querySelector('.hamburger');
+    
+    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+        menu.classList.remove('active');
+    }
+});
+</script>
 </body>
 </html>

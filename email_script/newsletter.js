@@ -337,7 +337,7 @@ function buildDocumentHTML(doc, isLastDoc) {
       }
       .online-link {
         text-align: right;
-        font-size: 12px;
+        font-size: 14px;
         margin-bottom: 5px;
       }
       .online-link a {
@@ -460,7 +460,7 @@ function buildDocumentHTML(doc, isLastDoc) {
       <div style="text-align:center; margin-top: 20px;">
         <a href="https://papyrus-ai.com/suscripcion.html"
            target="_blank"
-           style="color: #0c2532; text-decoration: underline; font-size: 12px;">
+           style="color: #0c2532; text-decoration: underline; font-size: 14px;">
           Cancelar Suscripción
         </a>
       </div>
@@ -681,7 +681,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         }
         .online-link {
           text-align: right;
-          font-size: 12px;
+          font-size: 14px;
           margin-bottom: 5px;
         }
         .online-link a {
@@ -819,7 +819,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         <div style="text-align:center; margin-top: 20px;">
           <a href="https://papyrus-ai.com/suscripcion"
              target="_blank"
-             style="color: #0c2532; text-decoration: underline; font-size: 12px;">
+             style="color: #0c2532; text-decoration: underline; font-size: 14px;">
             Cancelar Suscripción
           </a>
         </div>

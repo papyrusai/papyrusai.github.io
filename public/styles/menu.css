@@ -189,5 +189,8 @@ body, html {
   .temporal{
       font-size:12px;
   }
+  .menu.index li a {
+    color: var(--text-color);
 
+  }
 }
