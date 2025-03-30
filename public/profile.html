@@ -175,6 +175,12 @@
   display: block;
 }
 
+/* Add this to ensure the dropdown container has proper overflow handling */
+#ramaDropdown {
+  overflow: visible !important;
+}
+
+
 .subramas-dropdown {
   position: absolute;
   left: 100%;
@@ -189,7 +195,9 @@
   overflow-y: auto;
   display: none;
   z-index: 1100;
+  margin-left: 5px; /* Add a small gap between parent and child dropdown */
 }
+
 
 .rama-label-container:hover .subramas-dropdown {
   display: block;
@@ -263,7 +271,7 @@
     <!-- JSON data for industries, ramas, subramas, etc. -->
     <script id="industryTags" type="application/json">{{industry_tags_json}}</script>
     <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
-    <script id="userSubRamaMap" type="application/json">{subrama_juridicas_json}</script>
+    <script id="userSubRamaMap" type="application/json">{{subrama_juridicas_json}}</script>
 
     <div class="filter-banner-container">
       <div class="beta-banner">
@@ -567,6 +575,8 @@
   const container = document.getElementById('ramaDropdown');
   if (!container) return;
   container.innerHTML = '';
+    // Ensure the container has the right overflow setting
+    container.style.overflow = 'visible';
 
   // "Todos" => checked
   const lblTodos = document.createElement('label');
@@ -1116,11 +1126,20 @@ function updateBoletinLabel() {
     document.addEventListener('DOMContentLoaded', () => {
       populateIndustryDropdown();
       populateRamaDropdown();
-      document.addEventListener('click', function(e) {
-        if (e.target.closest('.subramas-dropdown') || e.target.classList.contains('subrama-checkbox')) {
-          e.stopPropagation();
-         }  
-      })
+       // Fix for dropdown positioning
+      const ramaDropdown = document.getElementById('ramaDropdown');
+      if (ramaDropdown) {
+        // Ensure parent containers don't clip the subramas dropdown
+        let parent = ramaDropdown.parentElement;
+        while (parent && parent !== document.body) {
+          if (getComputedStyle(parent).overflow === 'hidden' || 
+              getComputedStyle(parent).overflow === 'auto' || 
+              getComputedStyle(parent).overflow === 'scroll') {
+            parent.style.overflow = 'visible';
+          }
+          parent = parent.parentElement;
+        }
+      }
       populateBoletinDropdown();
       populateRangoDropdown(); // Add this line
     });
