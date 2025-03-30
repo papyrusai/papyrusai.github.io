@@ -287,6 +287,109 @@
       align-items: center;
       gap: 8px;
     }
+
+    /* Mobile-First Approach - Default styles for smaller screens (up to 600px) */
+@media (max-width: 600px) {
+  /* General adjustments */
+  .container {
+    width: 95%; /* Use more of the screen width */
+    padding: 10px; /* Reduce padding for smaller screens */
+  }
+
+  /* Navbar adjustments */
+  .navbar {
+    padding: 10px; /* Reduce padding */
+    height: auto; /* Allow height to adjust to content */
+  }
+
+  .logo img {
+    max-height: 40px; /* Adjust logo size */
+  }
+
+  .menu {
+    display: none; /* Hide the menu by default on small screens */
+    flex-direction: column; /* Stack menu items vertically */
+    position: absolute;
+    top: 60px; /* Below the navbar */
+    left: 0;
+    width: 100%;
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000; /* Ensure it's on top */
+  }
+
+  .menu.show {
+    display: flex; /* Show the menu when the class 'show' is added (e.g., by a click) */
+  }
+
+  .menu li {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .hamburger {
+    display: block; /* Show the hamburger icon */
+  }
+
+  /* Progress bar adjustments */
+  .progress-steps {
+    font-size: 0.8em; /* Reduce font size */
+  }
+
+  /* Form adjustments */
+  .formulario h1 {
+    font-size: 1.5em; /* Reduce heading size */
+  }
+
+  .subheading {
+    font-size: 0.9em;
+  }
+
+  /* Plan container adjustments */
+  .plans-container {
+    flex-direction: column; /* Stack plans vertically */
+  }
+
+  .plan-box {
+    width: 100%; /* Take full width */
+    margin-bottom: 15px; /* Add spacing between plans */
+  }
+
+  .plan-box h3 {
+    font-size: 1.2em;
+  }
+
+  .plan-box h2 {
+    font-size: 1.5em;
+  }
+
+  .plan-box p, .plan-box ul li {
+    font-size: 1em;
+  }
+
+  .btn-siguiente {
+    width: 100%; /* Full width for the button */
+    font-size: 1em;
+  }
+}
+
+/* Larger mobile screens and tablets (601px to 1024px) - Adjust as needed */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .container {
+    width: 90%;
+  }
+
+  .plans-container {
+    flex-direction: column; /* Stack plans vertically */
+  }
+
+  .plan-box {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -325,6 +428,17 @@
       <div class="choose-plan-heading">Elige tu plan</div>
       
       <div class="plans-container">
+        <!-- Plan 4 -->
+        <div class="plan-box" data-value="plan4">
+          <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
+          <h3 style="color:var(--primary-color); font-weight: bolder;">Prueba</h3>
+          <h2>Gratuito</h2>
+          <p>Un mes</p>
+          <ul>
+            <li>Acceso completo a la plataforma de manera temporal</li>
+            <li>Sin tarjetas, sin compromisos</li>
+          </ul>
+        </div>
         <!-- Plan 1 -->
         <div class="plan-box" data-value="plan1">
           <h3>Básico</h3>
@@ -360,17 +474,7 @@
             <li>Integración personalizada</li>
           </ul>
         </div>
-        <!-- Plan 4 -->
-        <div class="plan-box" data-value="plan4">
-          <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
-          <h3 style="color:var(--primary-color); font-weight: bolder;">Prueba</h3>
-          <h2>Gratuito</h2>
-          <p>Un mes</p>
-          <ul>
-            <li>Acceso completo a la plataforma de manera temporal</li>
-            <li>Sin tarjetas, sin compromisos</li>
-          </ul>
-        </div>
+        
       </div>
       <div class="step-navigation">
         <button id="nextBtn" class="btn-siguiente">Finalizar</button>

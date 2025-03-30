@@ -607,33 +607,41 @@
     const ramaContainer = document.createElement('div');
     ramaContainer.className = 'rama-label-container';
     
-    // NEW: Create the rama label with checkbox, but prevent label from toggling checkbox
     const lbl = document.createElement('label');
     lbl.innerHTML = `<input type="checkbox" value="${r}" checked> ${r}`;
-    
-    // NEW: Prevent default label behavior (clicking label toggles checkbox)
+
+    // Prevent default label behavior (clicking label toggles checkbox)
     lbl.addEventListener('click', function(e) {
-      // Only allow the event to continue if the checkbox itself was clicked
       if (e.target.type !== 'checkbox') {
         e.preventDefault();
+        e.stopPropagation();
+        // Toggle the subrama dropdown when clicking on the label (not the checkbox)
+        subRamasDropdown.classList.toggle('active');
+        
+        // Close other open dropdowns
+        document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+          if (dropdown !== subRamasDropdown) {
+            dropdown.classList.remove('active');
+          }
+        });
       }
     });
-    
     // NEW: Add a toggle button for subramas that doesn't interfere with checkbox
     const toggleBtn = document.createElement('span');
     toggleBtn.className = 'subramas-toggle';
     toggleBtn.innerHTML = ' <i class="fa fa-caret-right"></i>';
-    toggleBtn.onclick = function(e) {
-      e.stopPropagation();
-      // Close all other open subramas dropdowns
-      document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-        if (dropdown !== subRamasDropdown) {
-          dropdown.classList.remove('active');
-        }
-      });
-      // Toggle this dropdown
-      subRamasDropdown.classList.toggle('active');
-    };
+    toggleBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    // Close all other open subramas dropdowns
+    document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+      if (dropdown !== subRamasDropdown) {
+        dropdown.classList.remove('active');
+      }
+    });
+    // Toggle this dropdown
+    subRamasDropdown.classList.toggle('active');
+    });
     
     lbl.appendChild(toggleBtn);
     ramaContainer.appendChild(lbl);
@@ -1154,24 +1162,27 @@ document.addEventListener('DOMContentLoaded', () => {
        populateIndustryDropdown();
        populateRamaDropdown();
        document.addEventListener('click', function(e) {
-         if (e.target.closest('.subramas-dropdown') || e.target.classList.contains('subrama-checkbox')) {
-           e.stopPropagation();
-          }  
-       })
-        // Fix for dropdown positioning
-       const ramaDropdown = document.getElementById('ramaDropdown');
-       if (ramaDropdown) {
-         // Ensure parent containers don't clip the subramas dropdown
-         let parent = ramaDropdown.parentElement;
-         while (parent && parent !== document.body) {
-           if (getComputedStyle(parent).overflow === 'hidden' || 
-               getComputedStyle(parent).overflow === 'auto' || 
-               getComputedStyle(parent).overflow === 'scroll') {
-             parent.style.overflow = 'visible';
-           }
-           parent = parent.parentElement;
-         }
-       }
+        // Close subramas dropdowns when clicking outside or on another rama
+        if (!e.target.closest('.subramas-dropdown') && 
+            !e.target.classList.contains('subramas-toggle') && 
+            !e.target.closest('.subramas-toggle')) {
+          document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+            dropdown.classList.remove('active');
+          });
+        }
+        
+        // Prevent event propagation when clicking on subramas
+        if (e.target.closest('.subramas-dropdown') || 
+            e.target.classList.contains('subrama-checkbox')) {
+          e.stopPropagation();
+        }
+        
+        // Close the main dropdowns when clicking outside
+        const isRamaButton = e.target.closest('#btnRamaJuridica');
+        const isRamaDropdown = e.target.closest('#ramaDropdown');
+        if (!isRamaButton && !isRamaDropdown) {
+          document.getElementById('ramaDropdown').classList.remove('show');
+        } });
        populateBoletinDropdown();
        populateRangoDropdown(); // Add this line
      });
