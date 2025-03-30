@@ -37,6 +37,14 @@ body {
     font-size: 16px !important; /* Minimum font size to prevent zoom on iOS */
   }
 
+  @media (max-width: 768px) {
+    /* Hide step numbers in mobile view */
+    .step span.step-number {
+       display: none;
+     }
+    }
+
+
 .container {
   max-width: 800px;
   margin: 20px auto;
