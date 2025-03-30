@@ -1072,7 +1072,7 @@ if (selectedRamas.length > 0) {
   selectedRamas.forEach(rama => {
     const subBoxes = document.querySelectorAll(`.subrama-checkbox[data-rama="${rama}"]`);
     const checkedSubBoxes = Array.from(subBoxes).filter(sb => sb.checked);
-    
+    console.log(checkedSubBoxes);
     // If there are checked subramas for this rama
     if (checkedSubBoxes.length > 0) {
       // Add them to the selectedSubRamas object
@@ -1086,6 +1086,7 @@ if (selectedRamas.length > 0) {
 
 // Modify the query building part for subramas
 if (Object.keys(selectedSubRamas).length > 0) {
+  console.log(selectedSubRamas);
   parts.push(`subRamas=${encodeURIComponent(JSON.stringify(selectedSubRamas))}`);
 }
 
@@ -1135,6 +1136,7 @@ if (Object.keys(selectedSubRamas).length > 0) {
   if (hasta) parts.push(`hasta=${encodeURIComponent(hasta)}`);
 
   const finalQuery = parts.join('&');
+  console.log(finalQuery);
   const url = `/data?${finalQuery}`;
 
   // Show loaders
