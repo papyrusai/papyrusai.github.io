@@ -608,22 +608,26 @@
     ramaContainer.className = 'rama-label-container';
     
     const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" value="${r}" checked> ${r}`;
+    lbl.innerHTML = `<input type="checkbox" value="${r}" checked> <span class="rama-text">${r}</span>`;
 
-    // Prevent default label behavior (clicking label toggles checkbox)
+    // Prevenir comportamiento predeterminado de la etiqueta
     lbl.addEventListener('click', function(e) {
+      // Solo permitir que el evento continúe si se hizo clic en el checkbox
       if (e.target.type !== 'checkbox') {
         e.preventDefault();
         e.stopPropagation();
-        // Toggle the subrama dropdown when clicking on the label (not the checkbox)
-        subRamasDropdown.classList.toggle('active');
         
-        // Close other open dropdowns
-        document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-          if (dropdown !== subRamasDropdown) {
-            dropdown.classList.remove('active');
-          }
-        });
+        // Si no se hizo clic en el toggle, mostrar/ocultar el dropdown
+        if (!e.target.closest('.subramas-toggle')) {
+          subRamasDropdown.classList.toggle('active');
+          
+          // Cerrar otros dropdowns abiertos
+          document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+            if (dropdown !== subRamasDropdown) {
+              dropdown.classList.remove('active');
+            }
+          });
+        }
       }
     });
     // NEW: Add a toggle button for subramas that doesn't interfere with checkbox
@@ -1002,7 +1006,8 @@ function updateBoletinLabel() {
 
     // --------------------- handleBuscar => calls /data with query params ---------------------
     async function handleBuscar() {
-  // 1) Gather bulletins
+  const parts = [];
+      // 1) Gather bulletins
   const containerBol = document.getElementById('boletinDropdown');
   const chkAllBol = containerBol.querySelector('#chkAllBoletines');
   const othersBol = containerBol.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
@@ -1103,7 +1108,6 @@ if (Object.keys(selectedSubRamas).length > 0) {
   const hasta = document.getElementById('endDate').value;
 
   // 6) Build query for /data
-  const parts = [];
 
   // bulletins => collections[]=...
   if (selectedBulletins.length > 0) {
