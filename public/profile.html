@@ -169,6 +169,55 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* Subramas dropdown styling */
+.rama-label-container {
+  position: relative;
+  display: block;
+}
+
+.subramas-dropdown {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 5px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  min-width: 150px;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
+  z-index: 1100;
+}
+
+.rama-label-container:hover .subramas-dropdown {
+  display: block;
+}
+
+.subramas-dropdown label {
+  display: block;
+  padding: 4px 2px;
+  margin: 0;
+  cursor: pointer;
+  font-size: 0.85em;
+  border-bottom: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.subramas-dropdown label:last-child {
+  border-bottom: none;
+}
+
+.subramas-dropdown input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  transform: scale(0.9);
+  accent-color: #04db8d;
+  margin-right: 6px;
+}
+
+
   </style>
 </head>
 <body>
@@ -520,43 +569,114 @@
 
     // --------------------- DROPDOWN for Ramas ---------------------
     function populateRamaDropdown() {
-      const container = document.getElementById('ramaDropdown');
-      if (!container) return;
-      container.innerHTML = '';
+  const container = document.getElementById('ramaDropdown');
+  if (!container) return;
+  container.innerHTML = '';
 
-      // "Todos" => checked
-      const lblTodos = document.createElement('label');
-      lblTodos.innerHTML = `<input type="checkbox" id="chkAllRamas" value="Todos" checked> Todos`;
-      container.appendChild(lblTodos);
+  // "Todos" => checked
+  const lblTodos = document.createElement('label');
+  lblTodos.innerHTML = `<input type="checkbox" id="chkAllRamas" value="Todos" checked> Todos`;
+  container.appendChild(lblTodos);
 
-      userRamas.forEach(r => {
-        const lbl = document.createElement('label');
-        lbl.innerHTML = `<input type="checkbox" value="${r}" checked> ${r}`;
-        container.appendChild(lbl);
+  userRamas.forEach(r => {
+    // Create a container for the rama label and its subramas dropdown
+    const ramaContainer = document.createElement('div');
+    ramaContainer.className = 'rama-label-container';
+    
+    // Create the rama label with checkbox
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${r}" checked> ${r}`;
+    ramaContainer.appendChild(lbl);
+    
+    // Create the subramas dropdown
+    const subRamasDropdown = document.createElement('div');
+    subRamasDropdown.className = 'subramas-dropdown';
+    subRamasDropdown.setAttribute('data-rama', r);
+    
+    // Add subramas checkboxes if available for this rama
+    if (userSubRamaMap[r] && userSubRamaMap[r].length > 0) {
+      userSubRamaMap[r].forEach(sub => {
+        const subLabel = document.createElement('label');
+        subLabel.innerHTML = `<input type="checkbox" class="subrama-checkbox" data-rama="${r}" data-subrama="${sub}" checked> ${sub}`;
+        subRamasDropdown.appendChild(subLabel);
       });
-
-      const chkAllRamas = lblTodos.querySelector('#chkAllRamas');
-      chkAllRamas.addEventListener('change', () => {
-        const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
-        if (chkAllRamas.checked) {
-          others.forEach(o => o.checked = true);
-        } else {
-          others.forEach(o => o.checked = false);
-        }
-        updateRamaLabel();
-      });
-      const otherRamas = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas)');
-      otherRamas.forEach(box => {
-        box.addEventListener('change', () => {
-          const allChecked = [...otherRamas].every(b => b.checked);
-          chkAllRamas.checked = allChecked;
-          updateRamaLabel();
-        });
-      });
-
-      document.getElementById('selectedRama').textContent = 'Todas';
-      document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+    } else {
+      const noSubLabel = document.createElement('div');
+      noSubLabel.textContent = "No hay subramas";
+      noSubLabel.style.padding = "5px";
+      noSubLabel.style.fontStyle = "italic";
+      noSubLabel.style.color = "#666";
+      subRamasDropdown.appendChild(noSubLabel);
     }
+    
+    ramaContainer.appendChild(subRamasDropdown);
+    container.appendChild(ramaContainer);
+  });
+
+  const chkAllRamas = lblTodos.querySelector('#chkAllRamas');
+  chkAllRamas.addEventListener('change', () => {
+    const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas):not(.subrama-checkbox)');
+    if (chkAllRamas.checked) {
+      others.forEach(o => o.checked = true);
+      // Also check all subramas
+      container.querySelectorAll('.subrama-checkbox').forEach(s => s.checked = true);
+    } else {
+      others.forEach(o => o.checked = false);
+      // Also uncheck all subramas
+      container.querySelectorAll('.subrama-checkbox').forEach(s => s.checked = false);
+    }
+    updateRamaLabel();
+  });
+  
+  const otherRamas = container.querySelectorAll('input[type="checkbox"]:not(#chkAllRamas):not(.subrama-checkbox)');
+  otherRamas.forEach(box => {
+    box.addEventListener('change', () => {
+      const allChecked = [...otherRamas].every(b => b.checked);
+      chkAllRamas.checked = allChecked;
+      
+      // When a rama is unchecked, uncheck all its subramas
+      const rama = box.value;
+      if (!box.checked) {
+        container.querySelectorAll(`.subrama-checkbox[data-rama="${rama}"]`).forEach(s => s.checked = false);
+      } else {
+        // When a rama is checked, check all its subramas
+        container.querySelectorAll(`.subrama-checkbox[data-rama="${rama}"]`).forEach(s => s.checked = true);
+      }
+      
+      updateRamaLabel();
+    });
+  });
+  
+  // Add event listeners for subrama checkboxes
+  const subRamaCheckboxes = container.querySelectorAll('.subrama-checkbox');
+  subRamaCheckboxes.forEach(subBox => {
+    subBox.addEventListener('change', (e) => {
+      e.stopPropagation(); // Prevent event bubbling
+      const rama = subBox.getAttribute('data-rama');
+      
+      // Check if all subramas for this rama are checked
+      const ramaSubramas = container.querySelectorAll(`.subrama-checkbox[data-rama="${rama}"]`);
+      const allSubramasChecked = [...ramaSubramas].every(s => s.checked);
+      
+      // Update the rama checkbox accordingly
+      const ramaCheckbox = container.querySelector(`input[type="checkbox"][value="${rama}"]:not(.subrama-checkbox)`);
+      if (ramaCheckbox) {
+        ramaCheckbox.checked = allSubramasChecked;
+      }
+      
+      // Update the "Todos" checkbox
+      const allRamasChecked = [...otherRamas].every(r => r.checked);
+      chkAllRamas.checked = allRamasChecked;
+      
+      updateRamaLabel();
+    });
+  });
+
+  document.getElementById('selectedRama').textContent = 'Todas';
+  document.getElementById('subRamasCheckboxContainer').style.display = 'none';
+}
+
+
     function toggleRamaDropdown() {
       document.getElementById('ramaDropdown').classList.toggle('show');
     }
@@ -1001,6 +1121,11 @@ function updateBoletinLabel() {
     document.addEventListener('DOMContentLoaded', () => {
       populateIndustryDropdown();
       populateRamaDropdown();
+      document.addEventListener('click', function(e) {
+        if (e.target.closest('.subramas-dropdown') || e.target.classList.contains('subrama-checkbox')) {
+          e.stopPropagation();
+         }  
+      })
       populateBoletinDropdown();
       populateRangoDropdown(); // Add this line
     });
