@@ -1,13 +1,13 @@
 :root {
-  --primary-color: #6d28d9;
-  --primary-light: #8b5cf6;
-  --secondary-color: #475569;
-  --border-color: #e2e8f0;
-  --text-color: #1e293b;
-  --placeholder-color: #94a3b8;
-  --active-color: #7c3aed;
-  --error-color: #ef4444;
+  --primary-color: #0b2431;
+  --secondary-color: #04db8d;
+  --border-color: #455862;
+  --text-color: #0b2431;
+  --placeholder-color: #999;
+  --active-color: #04db8d;
+  --error-color: #d32f2f;
   --background-color: #ffffff;
+  /*tab background color: #f8f8f8*/
 }
 
 body, html {
@@ -32,7 +32,7 @@ body, html {
 }
 
 .navbar.login {
-  background-color: #1e1b4b;
+  background-color: var(--primary-color);
   border-bottom: none;
 }
 
@@ -84,12 +84,12 @@ body, html {
   height: 2px;
   bottom: 0;
   left: 0;
-  background-color: var(--primary-color);
+  background-color: var(--secondary-color);
   transition: width 0.3s ease;
 }
 
 .menu li a:hover {
-  color: var(--primary-color);
+  color: var(--secondary-color);
 }
 
 .menu li a:hover::after {
@@ -111,7 +111,7 @@ body, html {
 }
 
 .hamburger:hover {
-  color: var(--primary-color);
+  color: var(--secondary-color);
 }
 
 .hamburger.login {
@@ -154,7 +154,7 @@ body, html {
   
   .menu li a:hover {
     background-color: #f1f5f9;
-    border-left-color: var(--primary-color);
+    border-left-color: var(--secondary-color);
   }
   
   .menu li a::after {

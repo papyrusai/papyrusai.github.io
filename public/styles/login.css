@@ -1,16 +1,15 @@
 :root {
-    --primary-color: #6d28d9;
-    --primary-light: #8b5cf6;
-    --secondary-color: #475569;
-    --border-color: #e2e8f0;
-    --text-color: #1e293b;
-    --placeholder-color: #94a3b8;
-    --active-color: #7c3aed;
-    --error-color: #ef4444;
+    --primary-color: #0b2431;
+    --secondary-color: #04db8d;
+    --border-color: #455862;
+    --text-color: #0b2431;
+    --placeholder-color: #999;
+    --active-color: #04db8d;
+    --error-color: #d32f2f;
     --background-color: #ffffff;
     --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-    --gradient-start: #4338ca;
-    --gradient-end: #6d28d9;
+    --gradient-start: #092534;
+    --gradient-end: #455862;
   }
   
   body {
@@ -74,7 +73,7 @@
     font-size: 26px;
     font-weight: 700;
     margin-bottom: 24px;
-    color: var(--primary-color);
+    color: var(--secondary-color);
     letter-spacing: -0.5px;
   }
   
@@ -102,8 +101,8 @@
   input[type="email"]:focus, 
   input[type="password"]:focus {
     outline: none;
-    border-color: var(--primary-light);
-    box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.1);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(4, 219, 141, 0.1);
   }
   
   input::placeholder {
@@ -115,7 +114,7 @@
     margin-top: 8px;
     margin-bottom: 16px;
     padding: 12px;
-    background-color: var(--primary-color);
+    background-color: var(--secondary-color);
     color: white;
     border: none;
     border-radius: 8px;
@@ -126,7 +125,7 @@
   }
   
   .login-section button:hover {
-    background-color: var(--primary-light);
+    background-color: var(--active-color);
     transform: translateY(-1px);
   }
   
@@ -191,20 +190,20 @@
   .divider span {
     padding: 0 16px;
     font-size: 14px;
-    color: var(--secondary-color);
+    color: var(--border-color);
   }
   
   /* Toggle Link */
   .toggle-link {
     cursor: pointer;
-    color: var(--primary-color);
+    color: var(--secondary-color);
     font-weight: 500;
     text-decoration: none;
     transition: color 0.2s ease;
   }
   
   .toggle-link:hover {
-    color: var(--primary-light);
+    color: var(--active-color);
     text-decoration: underline;
   }
   
@@ -222,7 +221,7 @@
   /* Loading Animation */
   .loader {
     border: 3px solid #f3f3f3;
-    border-top: 3px solid var(--primary-color);
+    border-top: 3px solid var(--secondary-color);
     border-radius: 50%;
     width: 20px;
     height: 20px;
@@ -258,7 +257,7 @@
   .info-section {
     padding: 40px;
     width: 50%;
-    background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--border-color) 100%);
     color: white;
     display: flex;
     flex-direction: column;
@@ -297,7 +296,7 @@
   
   .info-section strong {
     font-weight: 600;
-    color: #c4b5fd;
+    color: var(--secondary-color);
   }
   
   /* Responsive Design */
