@@ -2,52 +2,22 @@
 <html>
 <head>
   <title>Papyrus App</title>
-  <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
-  <meta name="viewport" content="width=device-width">
+  <link rel="icon" href="assets/papyrus_logo.png" type="image/png"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap">
   <link rel="stylesheet" type="text/css" href="styles/login.css" />
-  <link rel="stylesheet" type="text/css" href="styles/menu.css" />
+  <link rel="stylesheet" type="text/css" href="styles/menu-index.css" />
   <style>
-
-     /* Prevent zoom on input focus */
-      input[type="text"],
-      input[type="email"],
-      input[type="url"],
-      input[type="search"],
-      input[type="password"],
-      textarea,
-      select {
-        font-size: 16px !important; /* Minimum font size to prevent zoom on iOS */
-      }
-
-    .hidden { display: none; }
-    .error-message { color: red; font-size: 0.9em; margin-top: 5px; }
-    .toggle-link { cursor: pointer; color: blue; text-decoration: underline; }
-    /* Ensure email and password inputs have the same fixed width */
-    input[type="email"], input[type="password"] {
-      width: 300px;
-      padding: 8px;
-      margin-bottom: 10px;
+    /* Prevent zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="search"],
+    input[type="password"],
+    textarea,
+    select {
+      font-size: 16px !important; /* Minimum font size to prevent zoom on iOS */
     }
-    button {
-      /*width: 300px;*/
-      padding: 10px;
-    }
-    .loader {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #555;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
   </style>
 </head>
 <body>
@@ -71,26 +41,23 @@
       <div class="login-section">
         <div class="logo">
           <a href="https://www.papyrus-ai.com/" target="_blank">
-            <img class="login-image" style="margin:0" src="assets/papyrus_app.png" alt="Papyrus Logo">
+            <img class="login-image" src="assets/papyrus_app.png" alt="Papyrus Logo">
           </a>
         </div>
         <h1 id="form-title">Inicia Sesión</h1>
 
-        <!-- Google Login (unchanged) -->
-        <div>
-          <a id="google-login-btn" class="login-btn google-login" href="/auth/google" onclick="showLoading()">
-            <div id="google-login">
-              <img src="assets/google_trans-removebg-preview.png" alt="Google Logo">
-              Google
-            </div>
-            <span id="loading-icon" style="display: none;">
-              <div class="loader-google"></div>
-            </span>
-          </a>
-        </div>
+        <!-- Google Login -->
+        <a id="google-login-btn" class="google-login" href="/auth/google" onclick="showLoading()">
+          <div id="google-login">
+            <img src="assets/google_trans-removebg-preview.png" alt="Google Logo">
+            <span>Continuar con Google</span>
+          </div>
+          <span id="loading-icon" style="display: none;">
+            <div class="loader-google"></div>
+          </span>
+        </a>
 
         <!-- Login Form -->
-         
         <div id="login-form">
           <div class="divider">
             <span>O con email y contraseña</span>
@@ -98,31 +65,27 @@
           <form id="loginForm">
             <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="password" placeholder="Contraseña" required>
-            <button type="submit" id="loginSubmitBtn">Login</button>
+            <button type="submit" id="loginSubmitBtn">Iniciar Sesión</button>
           </form>          
           <div id="loginError" class="error-message"></div>
           <p>¿No tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Regístrate</span></p>
         </div>
         
-
         <!-- Registration Form -->
-        
         <div id="register-form" class="hidden">
           <div class="divider">
             <span>Regístrate con email y contraseña</span>
           </div>
           <form id="registrationForm">
-            <input type="email" name="email" placeholder="Email Address" required>
-            <input type="password" id="regPassword" name="password" placeholder="Password" required>
-            <input type="password" id="regConfirm" name="confirmPassword" placeholder="Confirm Password" required>
-            <button type="submit" id="registerSubmitBtn">Regístrate</button>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" id="regPassword" name="password" placeholder="Contraseña" required>
+            <input type="password" id="regConfirm" name="confirmPassword" placeholder="Confirmar Contraseña" required>
+            <button type="submit" id="registerSubmitBtn">Registrarse</button>
           </form>
           
           <div id="registrationError" class="error-message"></div>
           <p>¿Ya tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Inicia Sesión</span></p>
         </div>
-        
-
       </div>
 
       <div class="info-section">
@@ -139,6 +102,7 @@
       const loginForm = document.getElementById('login-form');
       const registerForm = document.getElementById('register-form');
       const formTitle = document.getElementById('form-title');
+      
       if (loginForm.classList.contains('hidden')) {
         loginForm.classList.remove('hidden');
         registerForm.classList.add('hidden');
@@ -148,6 +112,7 @@
         registerForm.classList.remove('hidden');
         formTitle.textContent = "Regístrate";
       }
+      
       // Clear error messages when toggling
       document.getElementById('loginError').textContent = "";
       document.getElementById('registrationError').textContent = "";
@@ -167,177 +132,184 @@
         errorDiv.textContent = "Las contraseñas no coinciden.";
         return false;
       }
+      
       // Check length (more than 6 characters)
       if (password.length < 7) {
         errorDiv.textContent = "La contraseña debe tener al menos 7 caracteres.";
         return false;
       }
+      
       // Check for at least one special character
       const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
       if (!specialCharRegex.test(password)) {
         errorDiv.textContent = "La contraseña debe contener al menos un carácter especial.";
         return false;
       }
+      
       return true;
     }
 
-    // Handle registration form submission via AJAX
-
-// Agrega esta variable global al principio de tu script
-let isSubmitting = false;
-    async function handleRegistrationSubmit(event) {
-  event.preventDefault();
-  
-  // Evitar múltiples envíos
-  if (isSubmitting) return false;
-  isSubmitting = true;
-  
-  const errorDiv = document.getElementById('registrationError');
-  errorDiv.textContent = "";
-  
-  if (!validateRegistration()) {
-    isSubmitting = false;
-    return false;
-  }
-
-  const form = document.getElementById('registrationForm');
-  const formData = new FormData(form);
-  const data = {};
-  formData.forEach((value, key) => data[key] = value);
-  
-  // Show loader in the registration button:
-  const registerSubmitBtn = document.getElementById('registerSubmitBtn');
-  const originalText = registerSubmitBtn.innerHTML;
-  registerSubmitBtn.disabled = true;
-  registerSubmitBtn.innerHTML = '<div class="loader"></div>';
-  
-  try {
-    const response = await fetch('/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
+    // Global variable to prevent multiple submissions
+    let isSubmitting = false;
     
-    if (!response.ok) {
-      const errorResponse = await response.json();
-      errorDiv.textContent = errorResponse.error || "Error en el registro. Inténtalo de nuevo.";
-      registerSubmitBtn.disabled = false;
-      registerSubmitBtn.innerHTML = originalText;
-      return false;
-    } else {
-      const result = await response.json();
-      window.location.href = result.redirectUrl;
-    }
-  } catch (err) {
-    errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
-    console.error(err);
-    registerSubmitBtn.disabled = false;
-    registerSubmitBtn.innerHTML = originalText;
-  }
-  return false;
-}
+    // Handle registration form submission via AJAX
+    async function handleRegistrationSubmit(event) {
+      event.preventDefault();
+      
+      // Prevent multiple submissions
+      if (isSubmitting) return false;
+      isSubmitting = true;
+      
+      const errorDiv = document.getElementById('registrationError');
+      errorDiv.textContent = "";
+      
+      if (!validateRegistration()) {
+        isSubmitting = false;
+        return false;
+      }
 
+      const form = document.getElementById('registrationForm');
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+      
+      // Show loader in the registration button
+      const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+      const originalText = registerSubmitBtn.innerHTML;
+      registerSubmitBtn.disabled = true;
+      registerSubmitBtn.innerHTML = '<div class="loader"></div>';
+      
+      try {
+        const response = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          const errorResponse = await response.json();
+          errorDiv.textContent = errorResponse.error || "Error en el registro. Inténtalo de nuevo.";
+          registerSubmitBtn.disabled = false;
+          registerSubmitBtn.innerHTML = originalText;
+          isSubmitting = false;
+          return false;
+        } else {
+          const result = await response.json();
+          window.location.href = result.redirectUrl;
+        }
+      } catch (err) {
+        errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
+        console.error(err);
+        registerSubmitBtn.disabled = false;
+        registerSubmitBtn.innerHTML = originalText;
+        isSubmitting = false;
+      }
+      
+      return false;
+    }
 
     // Handle login form submission via AJAX
     async function handleLoginSubmit(event) {
-  event.preventDefault();
-  const errorDiv = document.getElementById('loginError');
-  errorDiv.textContent = "";
-  
-  const form = document.getElementById('loginForm');
-  const formData = new FormData(form);
-  const data = {};
-  formData.forEach((value, key) => data[key] = value);
+      event.preventDefault();
+      
+      const errorDiv = document.getElementById('loginError');
+      errorDiv.textContent = "";
+      
+      const form = document.getElementById('loginForm');
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
 
-  // Show loader in the button:
-  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-  const originalText = loginSubmitBtn.innerHTML;
-  loginSubmitBtn.disabled = true;
-  loginSubmitBtn.innerHTML = '<div class="loader"></div>';
+      // Show loader in the button
+      const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+      const originalText = loginSubmitBtn.innerHTML;
+      loginSubmitBtn.disabled = true;
+      loginSubmitBtn.innerHTML = '<div class="loader"></div>';
 
-  try {
-    const response = await fetch('/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      window.location.href = result.redirectUrl;
-    } else {
-      const errorData = await response.json();
-      errorDiv.textContent = errorData.error || "No existe un usuario con ese correo, por favor registrate";
-      loginSubmitBtn.disabled = false;
-      loginSubmitBtn.innerHTML = originalText;
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          window.location.href = result.redirectUrl;
+        } else {
+          const errorData = await response.json();
+          errorDiv.textContent = errorData.error || "No existe un usuario con ese correo, por favor regístrate";
+          loginSubmitBtn.disabled = false;
+          loginSubmitBtn.innerHTML = originalText;
+        }
+      } catch (err) {
+        errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
+        console.error(err);
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.innerHTML = originalText;
+      }
+      
+      return false;
     }
-  } catch (err) {
-    errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
-    console.error(err);
-    loginSubmitBtn.disabled = false;
-    loginSubmitBtn.innerHTML = originalText;
-  }
-  return false;
-}
 
     // Attach event listeners to the forms
     document.getElementById('registrationForm').addEventListener('submit', handleRegistrationSubmit);
     document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
 
-    // Existing functions for Google login and menu toggling
+    // Functions for Google login and loading indicator
     function resetLoginButton() {
-      const loginButton = document.getElementById('google-login-btn');
       const googleLoginText = document.getElementById('google-login');
       const loadingIcon = document.getElementById('loading-icon');
+      const loginButton = document.getElementById('google-login-btn');
 
       if (googleLoginText) {
-        googleLoginText.style = '';
-        googleLoginText.offsetHeight;
-        googleLoginText.classList.remove('hidden');
-        googleLoginText.classList.add('visible');
+        googleLoginText.style.display = '';
       }
+      
       if (loadingIcon) {
-        loadingIcon.offsetHeight;
-        loadingIcon.classList.remove('visible');
-        loadingIcon.classList.add('hidden');
+        loadingIcon.style.display = 'none';
       }
+      
       if (loginButton) {
-        loginButton.classList.remove('disabled');
         loginButton.style.pointerEvents = 'auto';
       }
-      console.log('Reset login button styles applied.');
     }
 
     function showLoading() {
       const googleLoginText = document.getElementById('google-login');
       const loadingIcon = document.getElementById('loading-icon');
+      
       if (googleLoginText) {
-        googleLoginText.classList.remove('visible');
-        googleLoginText.classList.add('hidden');
+        googleLoginText.style.display = 'none';
       }
+      
       if (loadingIcon) {
-        loadingIcon.classList.remove('hidden'); 
-        loadingIcon.classList.add('visible'); 
         loadingIcon.style.display = 'inline-block';
       }
+      
       const loginButton = document.getElementById('google-login-btn');
       if (loginButton) {
         loginButton.style.pointerEvents = 'none';
       }
     }
 
+    // Reset button state when page is shown
     window.addEventListener('pageshow', () => {
       resetLoginButton();
     });
 
+    // Toggle menu for mobile view
     function toggleMenu() {
       const menu = document.querySelector('.menu');
       menu.classList.toggle('active');
     }
+    
+    // Close menu when clicking outside
     document.addEventListener('click', function(event) {
       const menu = document.querySelector('.menu');
       const hamburger = document.querySelector('.hamburger');
-      if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+      
+      if (menu && hamburger && !menu.contains(event.target) && !hamburger.contains(event.target)) {
         menu.classList.remove('active');
       }
     });
