@@ -347,6 +347,15 @@
     #loginForm, #registrationForm {
       max-width: 100%;
     }
+    .google-login{
+        width: auto;
+    }
+    input[type="email"], input[type="password"] {
+        width: auto;
+      }
+      #loginSubmitBtn{
+        width: 80%;
+      }
   }
   
 
