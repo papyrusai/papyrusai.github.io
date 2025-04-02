@@ -859,6 +859,12 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
             return false;
           }
           const emailLower = user.email.toLowerCase();
+          
+          // Exclude emails that end with "@cuatrecasas.com"
+          if (emailLower.endsWith('@cuatrecasas.com')) {
+            return false;
+          }
+          
           if (seen.has(emailLower)) {
             return false;
           } else {
@@ -867,6 +873,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
           }
         });
       }
+  
 
     const filteredUsers = filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email && u.email.toLowerCase() === 'info.wevelop@gmail.com'); 
 

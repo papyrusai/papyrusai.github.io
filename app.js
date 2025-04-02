@@ -11,7 +11,7 @@ const { spawn } = require('child_process'); // Import the spawn function
 const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
 
-const SPECIAL_DOMAIN = "@papyrus-ai.com";
+const SPECIAL_DOMAIN = "@cuatrecasas.com";
 const SPECIAL_ADDRESS = "xx";
 
 //to avoid deprecation error
