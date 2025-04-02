@@ -174,6 +174,10 @@
                   <label for="doue">Diario Oficial de la Unión Europea (DOUE)</label>
                 </div>
                 <div class="checkbox-item">
+                  <input type="checkbox" id="bocg" name="fuentes[]" value="bocg" checked onchange="updateSelected('cobertura')">
+                  <label for="bocg">Boletín Oficial de las Cortes Generales (BOCG)</label>
+                </div>
+                <div class="checkbox-item">
                   <input type="checkbox" id="boa" name="fuentes[]" value="boa" onchange="updateSelected('cobertura')">
                   <label for="boa">Boletín Oficial de Aragón (BOA)</label>
                 </div>
@@ -184,6 +188,10 @@
                 <div class="checkbox-item">
                   <input type="checkbox" id="bocm" name="fuentes[]" value="bocm" onchange="updateSelected('cobertura')">
                   <label for="bocm">Boletín Oficial de la Comunidad de Madrid (BOCM)</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="dogc" name="fuentes[]" value="dogc" onchange="updateSelected('cobertura')">
+                  <label for="docg">Diario Oficial de la Generalitat Catalana (DOGC)</label>
                 </div>
                 <div class="checkbox-item">
                   <input type="checkbox" id="dog" name="fuentes[]" value="dog" onchange="updateSelected('cobertura')">
@@ -207,11 +215,15 @@
             <div class="dropdown-group">
                 <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-reguladores')">Selecciona reguladores</button>
                 <div id="cobertura-dropdown-reguladores" class="dropdown-options">
-            <div class="checkbox-item">
-                  <input type="checkbox" id="cnmv" name="reguladores[]" value="cnmv" onchange="updateSelected('cobertura')">
-                  <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
-                </div>
-              </div>
+                   <div class="checkbox-item">
+                    <input type="checkbox" id="cnmv" name="reguladores[]" value="cnmv" onchange="updateSelected('cobertura')">
+                    <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
+                   </div>
+                   <div class="checkbox-item">
+                    <input type="checkbox" id="aepd" name="reguladores[]" value="aepd" onchange="updateSelected('cobertura')">
+                    <label for="aepd">Agencia Española de Protección de Datos (AEPD)</label>
+                   </div>
+                 </div>
             </div>
           </div>
         
