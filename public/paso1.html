@@ -36,7 +36,47 @@
       position: relative;
       margin-top: 5px;
     }
-   
+
+    
+    .time-saving-promo {
+  background: linear-gradient(135deg, #f8f8f8 0%, #ffffff 100%);
+  border-left: 4px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 20px 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.time-saving-promo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+}
+
+.time-saving-promo span {
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.time-saving-promo .highlight {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+.time-saving-promo .description {
+  color: var(--secondary-color);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .time-saving-promo {
+    padding: 14px;
+  }
+}
+
     .dropdown-options {
       display: none;
       position: absolute;
@@ -105,16 +145,7 @@
             <label for="nombre">Nombre</label>
             <input type="text" id="nombre" name="nombre" placeholder="Introduce tu nombre" required>
           </div>
-          <div class="form-group">
-            <label for="linkedin">LinkedIn</label>
-            <input type="url" id="linkedin" name="linkedin" placeholder="URL de tu perfil de LinkedIn">
-            <small>Para mejorar la personalización de tu perfil</small>
-          </div>
-          <div class="form-group">
-            <label for="webEmpresa">Web de la Empresa</label>
-            <input type="url" id="webEmpresa" name="webEmpresa" placeholder="URL de la web de la empresa" required>
-          </div>
-          
+           
           <!-- Perfiles profesionales dropdown -->
           <div class="form-group">
             <label>Perfil profesional</label>
@@ -153,6 +184,21 @@
               <input type="text" id="otro_perfil" name="otro_perfil" placeholder="Especifica tu perfil si no encaja en las opciones anteriores" class="conditional-input">
             </div>
           </div>
+
+          <div class="time-saving-promo">
+            <span>¿Quieres comenzar <span class="highlight">ahorrándote tiempo?</span></span>
+            <div class="description">Proporciónanos tu linkedin y/o web y de manera automática crearemos tu avatar jurídico personalizado</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="linkedin">LinkedIn</label>
+            <input type="url" id="linkedin" name="linkedin" placeholder="URL de tu perfil de LinkedIn">
+          </div>
+          <div class="form-group">
+            <label for="webEmpresa">Web de la Empresa</label>
+            <input type="url" id="webEmpresa" name="webEmpresa" placeholder="URL de la web de la empresa">
+          </div>
+         
         </div>
         
         <!-- Cobertura Legal Section -->

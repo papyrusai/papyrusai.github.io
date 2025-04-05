@@ -435,81 +435,85 @@
       <h2>Avatar Jurídico Personalizado</h2>
       <p>Hemos seleccionado este avatar jurídico en base a tu perfil. Confirma cada sección para continuar.</p>
       <!-- Top Submenu -->
-      <div class="submenu">
-        <div class="submenu-item active" data-step="0">Industrias</div>
-        <div class="submenu-item" data-step="1">Ramas Jurídicas</div>
-        <div class="submenu-item" data-step="2">Fuentes Oficiales</div>
-        <div class="submenu-item" data-step="3">Rangos</div>
-      </div>
-      <!-- Section Containers -->
-      <div id="section-industrias" class="section-content active">
-        <div id="industrias-container" class="tags-container">
-          <!-- Selected industries loaded dynamically -->
-        </div>
-        <div class="add-tag">
-          <input type="text" id="filtro-industrias" placeholder="Añadir otras industrias" oninput="filtrarIndustrias()">
-          <div id="dropdown-industrias" class="dropdown-container"></div>
-          <!-- Feedback element -->
-          <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-          <input type="text" id="feedback-industria" placeholder="Escribe aquí...">
-        </div>
-      </div>
-      <div id="section-ramas" class="section-content">
-        <div id="ramas-container" class="tags-container">
-          <!-- Ramas loaded dynamically -->
-        </div>
-        <div class="add-tag">
-          <input type="text" id="filtro-ramas" placeholder="Añadir otras ramas jurídicas" oninput="filtrarRamas()">
-          <div id="dropdown-ramas" class="dropdown-container"></div>
-          <!-- Feedback element -->
-          <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-          <input type="text" id="feedback-ramas" placeholder="Escribe aquí...">
-        </div>
-      </div>
-      <div id="section-fuentes" class="section-content">
-        <div class="subsection">
-          <h4>Regulación de la UE, Estatal y Autonómica</h4>
-          <div id="fuentes-gobierno-container" class="tags-container">
-            <!-- Selected fuentes loaded dynamically -->
-          </div>
-          <div class="add-tag">
-            <input type="text" id="filtro-fuentes-gobierno" placeholder="Añadir otras fuentes (BOE, DOUE, BOCM, BOJA, BOA, BOCYL)..." oninput="filtrarFuentesGobierno()">
-            <div id="dropdown-fuentes-gobierno" class="dropdown-container"></div>
-          </div>
-        </div>
-        <div class="subsection">
-          <h4>Reguladores</h4>
-          <div id="fuentes-reguladores-container" class="tags-container">
-            <!-- Selected reguladores loaded dynamically -->
-          </div>
-          <div class="add-tag">
-            <input type="text" id="filtro-fuentes-reguladores" placeholder="Añadir otros reguladores (CNMV)..." oninput="filtrarFuentesReguladores()">
-            <div id="dropdown-fuentes-reguladores" class="dropdown-container"></div>
-            <!-- Feedback element -->
-            <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-            <input type="text" id="feedback-fuentes-reguladores" placeholder="Escribe aquí...">
-          </div>
-        </div>
-      </div>
-      <div id="section-rangos" class="section-content">
-        <div id="rangos-container" class="tags-container">
-          <!-- Selected rangos loaded dynamically -->
-        </div>
-        <!-- Add a filtering input for rangos on a separate line -->
-        <div class="add-tag">
-          <input type="text" id="filtro-rangos" placeholder="Añadir otros rangos (CNMV, DGT...)" oninput="filtrarRangos()">
-          <div id="dropdown-rangos" class="dropdown-container"></div>
-          <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-          <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
-        </div>
-      </div>
-      <!-- Bottom Buttons -->
-      <div class="button-container">
-        <button type="button" class="btn-anterior" id="anterior-btn" onclick="anteriorSeccion()" style="display: none;">Anterior</button>
-        <button type="button" class="btn-siguiente" id="confirmar-btn" onclick="confirmarSeccion()">Confirmar</button>
-      </div>
+<div class="submenu">
+  <div class="submenu-item active" data-step="0">Fuentes Oficiales</div>
+  <div class="submenu-item" data-step="1">Rangos</div>
+  <div class="submenu-item" data-step="2">Industrias</div>
+  <div class="submenu-item" data-step="3">Ramas Jurídicas</div>
+</div>
+
+<!-- Section Containers -->
+<div id="section-fuentes" class="section-content active">
+  <div class="subsection">
+    <h4>Regulación de la UE, Estatal y Autonómica</h4>
+    <div id="fuentes-gobierno-container" class="tags-container">
+      <!-- Selected fuentes loaded dynamically -->
     </div>
-            <!-- Hidden inputs to store data for paso4 -->
+    <div class="add-tag">
+      <input type="text" id="filtro-fuentes-gobierno" placeholder="Añadir otras fuentes (BOE, DOUE, BOCM, BOJA, BOA, BOCYL)..." oninput="filtrarFuentesGobierno()">
+      <div id="dropdown-fuentes-gobierno" class="dropdown-container"></div>
+    </div>
+  </div>
+  <div class="subsection">
+    <h4>Reguladores</h4>
+    <div id="fuentes-reguladores-container" class="tags-container">
+      <!-- Selected reguladores loaded dynamically -->
+    </div>
+    <div class="add-tag">
+      <input type="text" id="filtro-fuentes-reguladores" placeholder="Añadir otros reguladores (CNMV)..." oninput="filtrarFuentesReguladores()">
+      <div id="dropdown-fuentes-reguladores" class="dropdown-container"></div>
+      <!-- Feedback element -->
+      <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+      <input type="text" id="feedback-fuentes-reguladores" placeholder="Escribe aquí...">
+    </div>
+  </div>
+</div>
+
+<div id="section-rangos" class="section-content">
+  <div id="rangos-container" class="tags-container">
+    <!-- Selected rangos loaded dynamically -->
+  </div>
+  <!-- Add a filtering input for rangos on a separate line -->
+  <div class="add-tag">
+    <input type="text" id="filtro-rangos" placeholder="Añadir otros rangos (CNMV, DGT...)" oninput="filtrarRangos()">
+    <div id="dropdown-rangos" class="dropdown-container"></div>
+    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+    <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
+  </div>
+</div>
+
+<div id="section-industrias" class="section-content">
+  <div id="industrias-container" class="tags-container">
+    <!-- Selected industries loaded dynamically -->
+  </div>
+  <div class="add-tag">
+    <input type="text" id="filtro-industrias" placeholder="Añadir otras industrias" oninput="filtrarIndustrias()">
+    <div id="dropdown-industrias" class="dropdown-container"></div>
+    <!-- Feedback element -->
+    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+    <input type="text" id="feedback-industria" placeholder="Escribe aquí...">
+  </div>
+</div>
+
+<div id="section-ramas" class="section-content">
+  <div id="ramas-container" class="tags-container">
+    <!-- Ramas loaded dynamically -->
+  </div>
+  <div class="add-tag">
+    <input type="text" id="filtro-ramas" placeholder="Añadir otras ramas jurídicas" oninput="filtrarRamas()">
+    <div id="dropdown-ramas" class="dropdown-container"></div>
+    <!-- Feedback element -->
+    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+    <input type="text" id="feedback-ramas" placeholder="Escribe aquí...">
+  </div>
+</div>
+
+<!-- Bottom Buttons -->
+<div class="button-container">
+  <button type="button" class="btn-anterior" id="anterior-btn" onclick="anteriorSeccion()" style="display: none;">Anterior</button>
+  <button type="button" class="btn-siguiente" id="confirmar-btn" onclick="confirmarSeccion()">Confirmar</button>
+</div>
+      <!-- Hidden inputs to store data for paso4 -->
         <input type="hidden" id="fuentesGobiernoInput" value="[]">
         <input type="hidden" id="fuentesReguladoresInput" value="[]">
 
