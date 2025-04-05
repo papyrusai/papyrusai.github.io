@@ -749,6 +749,7 @@ app.get('/profile', async (req, res) => {
     // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
+    const userSubIndustriaMap = user.sub_industria_map || {};
 
 
     // NEW: Extract user's industries, ramas, and rangos
@@ -779,26 +780,38 @@ app.get('/profile', async (req, res) => {
     const endDate = now;
 
     // NEW: Modified query to match user's rango, boletines, and (ramas or industrias)
-    const query = {
-      $and: [
-        { anio: { $gte: startDate.getFullYear() } },
-        {
-          $or: [
-            { mes: { $gt: startDate.getMonth() + 1 } },
-            {
-              mes: startDate.getMonth() + 1,
-              dia: { $gte: startDate.getDate() }
-            }
-          ]
-        },
-        { rango_titulo: { $in: userRangos } },
-        { $or: [
-            { 'ramas_juridicas': { $in: userRamas } },
-            { 'divisiones_cnae': { $in: userIndustries } }
-          ]
-        }
-      ]
-    };
+    // Reemplazar el bloque de consulta (líneas 43-62):
+      const query = {
+        $and: [
+          { anio: { $gte: startDate.getFullYear() } },
+          {
+            $or: [
+              { mes: { $gt: startDate.getMonth() + 1 } },
+              {
+                mes: startDate.getMonth() + 1,
+                dia: { $gte: startDate.getDate() }
+              }
+            ]
+          },
+          { rango_titulo: { $in: userRangos } },
+          { 
+            $or: [
+              // Filtro por ramas jurídicas
+              { 'ramas_juridicas': { $in: userRamas } },
+              
+              // Filtro por subindustrias
+              {
+                $or: Object.entries(userSubIndustriaMap).flatMap(([industria, subIndustrias]) => 
+                  subIndustrias.map(subIndustria => ({
+                    [`divisiones_cnae.${industria}`]: subIndustria
+                  }))
+                )
+              }
+            ]
+          }
+        ]
+      };
+
 
     const projection = {
       short_name: 1,
@@ -838,7 +851,30 @@ app.get('/profile', async (req, res) => {
     } else {
       documentsHtml = allDocuments.map(doc => {
         const rangoToShow = doc.rango_titulo || "Indefinido";
-        const cnaesHtml = (doc.divisiones_cnae || []).map(div => `<span>${div}</span>`).join('');
+        
+      // Reemplazar las líneas 102-103:
+      let cnaesHtml = '';
+      if (doc.divisiones_cnae) {
+        if (Array.isArray(doc.divisiones_cnae)) {
+          // Si es un array (formato antiguo)
+          cnaesHtml = doc.divisiones_cnae.map(div => `<span>${div}</span>`).join('');
+        } else {
+          // Si es un objeto (nuevo formato)
+          cnaesHtml = Object.keys(doc.divisiones_cnae).map(industria => 
+            `<span class="industria-value">${industria}</span>`
+          ).join('');
+        }
+      }
+
+      // Añadir este código para generar el HTML de subindustrias
+      let subIndustriasHtml = '';
+      if (doc.divisiones_cnae && typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+        subIndustriasHtml = Object.entries(doc.divisiones_cnae).flatMap(([industria, subIndustrias]) => 
+          Array.isArray(subIndustrias) ? subIndustrias.map(si => 
+            `<span class="sub-industria-value"><i><b>#${si}</b></i></span>`
+          ) : []
+        ).join(' ');
+      }
         const ramaHtml = Object.keys(doc.ramas_juridicas || {}).map(r => `<span class="rama-value">${r}</span>`).join('');
         const subRamasHtml = Object.entries(doc.ramas_juridicas || {}).flatMap(([rama, subRamas]) => 
           subRamas.map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
@@ -854,6 +890,7 @@ app.get('/profile', async (req, res) => {
               ${rangoToShow} | ${doc.collectionName}
             </div>
             <div class="etiquetas-values">${cnaesHtml}</div>
+            <div class="sub-industria-values">${subIndustriasHtml}</div>
             <div class="rama-juridica-values">${ramaHtml}</div>
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
             <div class="resumen-label">Resumen</div>
@@ -890,7 +927,8 @@ app.get('/profile', async (req, res) => {
     profileHtml = profileHtml
       .replace('{{name}}', user.name)
       .replace('{{email}}', user.email)
-      .replace('{{industry_tags}}', user.industry_tags.join(', '))
+      // Añadir en la sección de reemplazos (líneas 150-166):
+      .replace('{{subindustria_map_json}}', JSON.stringify(user.sub_industria_map || {}))
       .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags))
       .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas || {}))
       .replace('{{subrama_juridicas_json}}', JSON.stringify(user.sub_rama_map || {}))

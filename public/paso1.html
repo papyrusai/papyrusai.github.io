@@ -256,17 +256,17 @@
           </div>
           <div class="form-group">
             <label>Reguladores</label>
-            <!-- Selected sources will appear here -->
-            <div id="fuentes-selected" class="selected-tags"></div>
+            <!-- Selected reguladores will appear here -->
+            <div id="reguladores-selected" class="selected-tags"></div>
             <div class="dropdown-group">
                 <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-reguladores')">Selecciona reguladores</button>
                 <div id="cobertura-dropdown-reguladores" class="dropdown-options">
                    <div class="checkbox-item">
-                    <input type="checkbox" id="cnmv" name="reguladores[]" value="cnmv" onchange="updateSelected('cobertura')">
+                    <input type="checkbox" id="cnmv" name="reguladores[]" value="cnmv" onchange="updateSelected('reguladores')">
                     <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
                    </div>
                    <div class="checkbox-item">
-                    <input type="checkbox" id="aepd" name="reguladores[]" value="aepd" onchange="updateSelected('cobertura')">
+                    <input type="checkbox" id="aepd" name="reguladores[]" value="aepd" onchange="updateSelected('reguladores')">
                     <label for="aepd">Agencia Española de Protección de Datos (AEPD)</label>
                    </div>
                  </div>
@@ -312,6 +312,9 @@
       } else if (section === 'cobertura') {
         containerId = 'fuentes-selected';
         inputName = 'fuentes[]';
+      } else if (section === 'reguladores') {
+        containerId = 'reguladores-selected';
+        inputName = 'reguladores[]';
       }
       const container = document.getElementById(containerId);
       container.innerHTML = "";
