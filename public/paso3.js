@@ -334,8 +334,8 @@ function cargarIndustrias(industrias) {
     detailDiv.className = 'rama-detail';
     
     // Añadir las subindustrias si existen
-    const subIndustrias = subIndustrias[industria] || [];
-      subIndustrias[industria].forEach(subindustria => {
+    const subIndustriasloop = subIndustrias[industria] || [];
+      subIndustriasloop[industria].forEach(subindustria => {
         const subramaElement = document.createElement('div');
         subramaElement.className = 'tag subrama-tag';
         subramaElement.innerHTML = `
