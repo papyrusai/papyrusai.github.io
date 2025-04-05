@@ -330,9 +330,9 @@ function cargarIndustrias(industrias) {
     ramaBox.appendChild(ramaHeader);
     
     // Crear el contenedor de detalle para las subindustrias
-    const detalleDiv = document.createElement('div');
-    detalleDiv.className = 'rama-detail';
-    detalleDiv.style.display = 'none';
+    const detailDiv = document.createElement('div');
+    detailDiv.className = 'rama-detail';
+    detaileDiv.style.display = 'none';
     
     // Añadir las subindustrias si existen
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
@@ -346,7 +346,7 @@ function cargarIndustrias(industrias) {
         subindustriasContainer.appendChild(subramaTag);
       });
       
-      detalleDiv.appendChild(subindustriasContainer);
+      detailDiv.appendChild(subindustriasContainer);
     }
     
     // Añadir selector para agregar nuevas subindustrias

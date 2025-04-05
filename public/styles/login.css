@@ -36,6 +36,7 @@
   .container {
     display: flex;
     width: 80%;
+    margin-bottom: 10%;
     max-width: 1000px;
     background-color: white;
     box-shadow: var(--card-shadow);
@@ -363,6 +364,7 @@
   .container {
     width: 100%;
     border-radius: 10px;
+    margin-bottom: 25%;
   }
   
   .login-form {
