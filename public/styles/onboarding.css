@@ -358,6 +358,9 @@ input[type="checkbox"]:checked::after {
   cursor: pointer;
 }
 
+.dropdown-options label:hover {
+  background-color: #f8f9fa;
+}
 .selected-tags {
   display: flex;
   flex-wrap: wrap;

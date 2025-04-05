@@ -332,7 +332,7 @@ function cargarIndustrias(industrias) {
     // Crear el contenedor de detalle para las subindustrias
     const detailDiv = document.createElement('div');
     detailDiv.className = 'rama-detail';
-    detailDiv.style.display = 'none';
+   // detailDiv.style.display = 'none';
     
     // Añadir las subindustrias si existen
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
