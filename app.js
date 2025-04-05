@@ -789,7 +789,7 @@ app.get('/profile', async (req, res) => {
               { mes: { $gt: startDate.getMonth() + 1 } },
               {
                 mes: startDate.getMonth() + 1,
-                dia: { $gte: startDate.getDate() }
+                dia: { $gte: startDate.getDate() -4}
               }
             ]
           },

@@ -469,7 +469,14 @@
 
     // --------------------- LOAD USER DATA ---------------------
     let userIndustries = [];
-    let userRamas = [];
+    // Añadir después de la declaración de userSubRamaMap
+    let userSubIndustriaMap = {};
+    const subIndustriaMapScript = document.getElementById('subindustria_map_json');
+    if (subIndustriaMapScript) {
+      userSubIndustriaMap = JSON.parse(subIndustriaMapScript.textContent) || {};
+    }
+
+        let userRamas = [];
     let userSubRamaMap = {};
     let userBoletines = []; // Changed from const allBulletins
     let userRangos = [];    // Changed from const allRangos
@@ -525,75 +532,54 @@
     })();
 
     // --------------------- DROPDOWN for Sector Económico ---------------------
-    function populateIndustryDropdown() {
-      const container = document.getElementById('myDropdown');
-      if (!container) return;
-      container.innerHTML = '';
+    // Reemplaza la función populateIndustryDropdown() actual (líneas 527-563) con esta versión:
+function populateIndustryDropdown() {
+  const container = document.getElementById('myDropdown');
+  if (!container) return;
+  container.innerHTML = '';
 
-      // "Todos" => checked
-      const lblTodos = document.createElement('label');
-      lblTodos.innerHTML = `<input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos`;
-      container.appendChild(lblTodos);
+  // "Todos" => checked
+  const lblTodos = document.createElement('label');
+  lblTodos.innerHTML = `<input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos`;
+  container.appendChild(lblTodos);
 
-      userIndustries.forEach(ind => {
-        const lbl = document.createElement('label');
-        lbl.innerHTML = `<input type="checkbox" value="${ind}" checked> ${ind}`;
-        container.appendChild(lbl);
-      });
+  // Obtener las industrias de sub_industria_map
+  const userIndustriesArray = Object.keys(userSubIndustriaMap || {});
+  
+  // Si no hay industrias en sub_industria_map, intentar usar industry_tags si existe
+  if (userIndustriesArray.length === 0 && Array.isArray(userIndustries)) {
+    userIndustriesArray.push(...userIndustries);
+  }
 
-      const chkAllIndustry = lblTodos.querySelector('#chkAllIndustry');
-      chkAllIndustry.addEventListener('change', () => {
-        const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
-        if (chkAllIndustry.checked) {
-          others.forEach(o => o.checked = true);
-        } else {
-          others.forEach(o => o.checked = false);
-        }
-        updateIndustryLabel();
-      });
-      const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
-      otherBoxes.forEach(box => {
-        box.addEventListener('change', () => {
-          const allChecked = [...otherBoxes].every(b => b.checked);
-          chkAllIndustry.checked = allChecked;
-          updateIndustryLabel();
-        });
-      });
+  // Crear checkboxes para cada industria
+  userIndustriesArray.forEach(ind => {
+    const lbl = document.createElement('label');
+    lbl.innerHTML = `<input type="checkbox" value="${ind}" checked> ${ind}`;
+    container.appendChild(lbl);
+  });
 
-      document.getElementById('selectedIndustry').textContent = 'Todas';
+  const chkAllIndustry = lblTodos.querySelector('#chkAllIndustry');
+  chkAllIndustry.addEventListener('change', () => {
+    const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+    if (chkAllIndustry.checked) {
+      others.forEach(o => o.checked = true);
+    } else {
+      others.forEach(o => o.checked = false);
     }
-    function toggleIndustryDropdown() {
-      document.getElementById('myDropdown').classList.toggle('show');
-    }
-    function updateIndustryLabel() {
-      const container = document.getElementById('myDropdown');
-      const chkAllIndustry = container.querySelector('#chkAllIndustry');
-      const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
-      const labelSpan = document.getElementById('selectedIndustry');
+    updateIndustryLabel();
+  });
+  const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+  otherBoxes.forEach(box => {
+    box.addEventListener('change', () => {
+      const allChecked = [...otherBoxes].every(b => b.checked);
+      chkAllIndustry.checked = allChecked;
+      updateIndustryLabel();
+    });
+  });
 
-      if (chkAllIndustry.checked) {
-        labelSpan.textContent = 'Todas';
-        return;
-      }
-      let checkedCount = 0;
-      let singleValue = '';
-      otherBoxes.forEach(b => {
-        if (b.checked) {
-          checkedCount++;
-          singleValue = b.value;
-        }
-      });
-      if (checkedCount === 0) {
-        labelSpan.textContent = '-';
-      } else if (checkedCount === 1) {
-        labelSpan.textContent = singleValue;
-      } else if (checkedCount === otherBoxes.length) {
-        labelSpan.textContent = 'Todas';
-        chkAllIndustry.checked = true;
-      } else {
-        labelSpan.textContent = checkedCount + ' seleccionados';
-      }
-    }
+  document.getElementById('selectedIndustry').textContent = 'Todas';
+}
+
 
     // --------------------- DROPDOWN for Ramas ---------------------
   // NEW: Replace the existing populateRamaDropdown function with this updated version
