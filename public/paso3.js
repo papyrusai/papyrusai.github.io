@@ -303,15 +303,17 @@ function anteriorSeccion() {
 }
 
 /* ------------------ Section "Industrias" ------------------ */
-function cargarIndustrias(industrias, subIndustrias) {
+function cargarIndustrias(industrias) {
   const container = document.getElementById('industrias-container');
   container.innerHTML = '';
   
-  // Ya no necesitamos obtener las subindustrias del sessionStorage
-  // porque ahora las recibimos como parámetro
+  // Obtener las subindustrias del sessionStorage
+  const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas'));
+  const subIndustrias = etiquetas.sub_industrias || {};
   
   industrias.forEach(industria => {
     const ramaBox = document.createElement('div');
+    // Force each industria box to be full width (one per line)
     ramaBox.className = 'rama-box collapsed';
     ramaBox.style.width = "100%";
     
@@ -327,17 +329,25 @@ function cargarIndustrias(industrias, subIndustrias) {
     
     ramaBox.appendChild(ramaHeader);
     
+    // Crear el contenedor de detalle para las subindustrias
     const detailDiv = document.createElement('div');
     detailDiv.className = 'rama-detail';
+   // detailDiv.style.display = 'none';
     
     // Añadir las subindustrias si existen
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
+   //   console.log(subIndustrias)
+     // const subindustriasContainer = document.createElement('div');
+      //subindustriasContainer.className = 'subramas-container';
+      
       subIndustrias[industria].forEach(subindustria => {
         const subramaTag = document.createElement('div');
         subramaTag.className = 'tag subrama-tag';
-        subramaTag.innerHTML = `${subindustria} <span class="tag-remove" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
+        subramaTag.innerHTML = `${subindustria} <span class="eliminar" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
         detailDiv.appendChild(subramaTag);
       });
+      
+    //  detailDiv.appendChild(subindustriasContainer);
     }
     
     // Añadir selector para agregar nuevas subindustrias
@@ -612,10 +622,13 @@ function filtrarFuentesGobierno() {
 }
 
 function seleccionarFuenteGobierno(value) {
+  const normalizedValue = value.toUpperCase();
   const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
   if (!userData.fuentes) userData.fuentes = [];
-  if (!userData.fuentes.includes(value)) {
-    userData.fuentes.push(value);
+  // Convert all stored values to uppercase for comparison
+  const normalizedFuentes = userData.fuentes.map(f => f.toUpperCase());
+  if (!normalizedFuentes.includes(normalizedValue)) {
+    userData.fuentes.push(normalizedValue);
     sessionStorage.setItem('userData', JSON.stringify(userData));
     cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
   }
@@ -623,22 +636,22 @@ function seleccionarFuenteGobierno(value) {
   document.getElementById('dropdown-fuentes-gobierno').innerHTML = "";
 }
 
-function filtrarFuentesReguladores() {
-  const filtro = document.getElementById('filtro-fuentes-reguladores').value.toUpperCase();
-  const dropdown = document.getElementById('dropdown-fuentes-reguladores');
-  dropdown.innerHTML = "";
-  const fuentesStatic = ["CNMV"];
-  const matches = fuentesStatic.filter(f => f.includes(filtro));
-  matches.forEach(match => {
-    const option = document.createElement('div');
-    option.className = "dropdown-item";
-    option.textContent = match;
-    option.onclick = function() {
-      seleccionarFuenteReguladores(match);
-    };
-    dropdown.appendChild(option);
-  });
+
+function seleccionarFuenteReguladores(value) {
+  const normalizedValue = value.toUpperCase();
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  if (!userData.reguladores) userData.reguladores = [];
+  // Normalize stored values for duplicate checking
+  const normalizedReguladores = userData.reguladores.map(r => r.toUpperCase());
+  if (!normalizedReguladores.includes(normalizedValue)) {
+    userData.reguladores.push(normalizedValue);
+    sessionStorage.setItem('userData', JSON.stringify(userData));
+    cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
+  }
+  document.getElementById('filtro-fuentes-reguladores').value = "";
+  document.getElementById('dropdown-fuentes-reguladores').innerHTML = "";
 }
+
 
 function seleccionarFuenteReguladores(value) {
   const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
