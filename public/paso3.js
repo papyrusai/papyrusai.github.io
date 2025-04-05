@@ -330,20 +330,24 @@ function cargarIndustrias(industrias) {
     ramaBox.appendChild(ramaHeader);
     
     // Crear el contenedor de detalle para las subindustrias
-    const detailDiv = document.createElement('div');
-    detailDiv.className = 'rama-detail';
+    const detalleDiv = document.createElement('div');
+    detalleDiv.className = 'rama-detail';
+    detalleDiv.style.display = 'none';
     
     // Añadir las subindustrias si existen
-    const subIndustriasloop = subIndustrias[industria] || [];
-      subIndustriasloop[industria].forEach(subindustria => {
-        const subramaElement = document.createElement('div');
-        subramaElement.className = 'tag subrama-tag';
-        subramaElement.innerHTML = `
-          ${subindustria}
-          <span class="tag-remove" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>
-        `;
-        detailDiv.appendChild(subramaElement);
-      })
+    if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
+      const subindustriasContainer = document.createElement('div');
+      subindustriasContainer.className = 'subramas-container';
+      
+      subIndustrias[industria].forEach(subindustria => {
+        const subramaTag = document.createElement('div');
+        subramaTag.className = 'tag subrama-tag';
+        subramaTag.innerHTML = `${subindustria} <span class="eliminar" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
+        subindustriasContainer.appendChild(subramaTag);
+      });
+      
+      detalleDiv.appendChild(subindustriasContainer);
+    }
     
     // Añadir selector para agregar nuevas subindustrias
     if (catalogoEtiquetas && catalogoEtiquetas.sub_industrias && catalogoEtiquetas.sub_industrias[industria]) {
