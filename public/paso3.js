@@ -336,17 +336,18 @@ function cargarIndustrias(industrias) {
     
     // Añadir las subindustrias si existen
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
-      const subindustriasContainer = document.createElement('div');
-      subindustriasContainer.className = 'subramas-container';
+   //   console.log(subIndustrias)
+     // const subindustriasContainer = document.createElement('div');
+      //subindustriasContainer.className = 'subramas-container';
       
       subIndustrias[industria].forEach(subindustria => {
         const subramaTag = document.createElement('div');
         subramaTag.className = 'tag subrama-tag';
         subramaTag.innerHTML = `${subindustria} <span class="eliminar" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
-        subindustriasContainer.appendChild(subramaTag);
+        detailDiv.appendChild(subramaTag);
       });
       
-      detailDiv.appendChild(subindustriasContainer);
+    //  detailDiv.appendChild(subindustriasContainer);
     }
     
     // Añadir selector para agregar nuevas subindustrias
