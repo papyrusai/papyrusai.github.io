@@ -235,7 +235,7 @@ async function cargarCatalogoEtiquetas() {
 }
 
 function cargarSecciones(etiquetas) {
-  cargarIndustrias(etiquetas.industrias || []);
+  cargarIndustrias(etiquetas.industrias || etiquetas.sub_industrias || {});
   cargarRamasJuridicas(etiquetas.ramas_juridicas || [], etiquetas.subramas_juridicas || {});
   cargarFuentesOficiales(etiquetas);
   cargarRangosPredefinidos();
@@ -303,17 +303,15 @@ function anteriorSeccion() {
 }
 
 /* ------------------ Section "Industrias" ------------------ */
-function cargarIndustrias(industrias) {
+function cargarIndustrias(industrias, subIndustrias) {
   const container = document.getElementById('industrias-container');
   container.innerHTML = '';
   
-  // Obtener las subindustrias del sessionStorage
-  const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas'));
-  const subIndustrias = etiquetas.sub_industrias || {};
+  // Ya no necesitamos obtener las subindustrias del sessionStorage
+  // porque ahora las recibimos como parámetro
   
   industrias.forEach(industria => {
     const ramaBox = document.createElement('div');
-    // Force each industria box to be full width (one per line)
     ramaBox.className = 'rama-box collapsed';
     ramaBox.style.width = "100%";
     
@@ -329,25 +327,17 @@ function cargarIndustrias(industrias) {
     
     ramaBox.appendChild(ramaHeader);
     
-    // Crear el contenedor de detalle para las subindustrias
     const detailDiv = document.createElement('div');
     detailDiv.className = 'rama-detail';
-   // detailDiv.style.display = 'none';
     
     // Añadir las subindustrias si existen
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
-   //   console.log(subIndustrias)
-     // const subindustriasContainer = document.createElement('div');
-      //subindustriasContainer.className = 'subramas-container';
-      
       subIndustrias[industria].forEach(subindustria => {
         const subramaTag = document.createElement('div');
         subramaTag.className = 'tag subrama-tag';
-        subramaTag.innerHTML = `${subindustria} <span class="eliminar" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
+        subramaTag.innerHTML = `${subindustria} <span class="tag-remove" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
         detailDiv.appendChild(subramaTag);
       });
-      
-    //  detailDiv.appendChild(subindustriasContainer);
     }
     
     // Añadir selector para agregar nuevas subindustrias
