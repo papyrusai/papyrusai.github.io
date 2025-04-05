@@ -319,68 +319,81 @@ function cargarIndustrias(industrias) {
     
     const ramaHeader = document.createElement('div');
     ramaHeader.className = 'rama-header';
+    
+    // Cambio aquí: usar la misma estructura que en ramas jurídicas
     ramaHeader.innerHTML = `
-      <div class="rama-title">${industria}</div>
-      <div class="rama-actions">
-        <button class="btn-detalle" onclick="toggleDetalleRama(this)">Ver detalle ▼</button>
-        <button class="btn-eliminar" onclick="eliminarIndustria('${industria}')">×</button>
+      <h4>${industria}</h4>
+      <div>
+        <button class="toggle-detail" onclick="toggleDetalleRama(this)">Ver detalle ▼</button>
+        <span class="tag-remove" onclick="eliminarIndustria('${industria}')">×</span>
       </div>
     `;
     
     ramaBox.appendChild(ramaHeader);
     
     // Crear el contenedor de detalle para las subindustrias
-    const detalleDiv = document.createElement('div');
-    detalleDiv.className = 'rama-detail';
-    detalleDiv.style.display = 'none';
+    const detailDiv = document.createElement('div');
+    detailDiv.className = 'rama-detail';
     
     // Añadir las subindustrias si existen
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
-      const subindustriasContainer = document.createElement('div');
-      subindustriasContainer.className = 'subramas-container';
-      
       subIndustrias[industria].forEach(subindustria => {
-        const subramaTag = document.createElement('div');
-        subramaTag.className = 'tag';
-        subramaTag.innerHTML = `${subindustria} <span class="eliminar" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
-        subindustriasContainer.appendChild(subramaTag);
+        const subramaElement = document.createElement('div');
+        subramaElement.className = 'tag subrama-tag';
+        subramaElement.innerHTML = `
+          ${subindustria}
+          <span class="tag-remove" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>
+        `;
+        detailDiv.appendChild(subramaElement);
       });
-      
-      detalleDiv.appendChild(subindustriasContainer);
     }
     
-    // Añadir campo para agregar nuevas subindustrias
-    const nuevaSubindustriaDiv = document.createElement('div');
-    nuevaSubindustriaDiv.className = 'nueva-subrama-container';
-    nuevaSubindustriaDiv.innerHTML = `
-      <input type="text" placeholder="Añadir subindustria..." id="nueva-subindustria-${industria.replace(/\s+/g, '-')}">
-      <button onclick="agregarSubindustria('${industria}', document.getElementById('nueva-subindustria-${industria.replace(/\s+/g, '-')}').value)">+</button>
-    `;
+    // Añadir selector para agregar nuevas subindustrias
+    if (catalogoEtiquetas && catalogoEtiquetas.sub_industrias && catalogoEtiquetas.sub_industrias[industria]) {
+      const selectorSubindustria = document.createElement('select');
+      selectorSubindustria.className = 'selector-subramas';
+      
+      // Crear las opciones del selector
+      let optionsHTML = '<option value="">-- Seleccionar subindustria --</option>';
+      const existingSubindustrias = subIndustrias[industria] || [];
+      
+      catalogoEtiquetas.sub_industrias[industria].forEach(sub => {
+        const isDisabled = existingSubindustrias.includes(sub) ? 'disabled' : '';
+        optionsHTML += `<option value="${sub}" ${isDisabled}>${sub}</option>`;
+      });
+      
+      selectorSubindustria.innerHTML = optionsHTML;
+      
+      selectorSubindustria.onchange = function() {
+        if (this.value) {
+          agregarSubindustria(industria, this.value);
+          this.value = "";
+        }
+      };
+      
+      const selectorContainer = document.createElement('div');
+      selectorContainer.className = 'selector-container';
+      selectorContainer.appendChild(selectorSubindustria);
+      detailDiv.appendChild(selectorContainer);
+    }
     
-    detalleDiv.appendChild(nuevaSubindustriaDiv);
-    ramaBox.appendChild(detalleDiv);
+    ramaBox.appendChild(detailDiv);
     container.appendChild(ramaBox);
   });
   
   // Añadir campo para agregar nuevas industrias
-  const nuevaIndustriaDiv = document.createElement('div');
-  nuevaIndustriaDiv.className = 'nueva-rama-container';
-  nuevaIndustriaDiv.innerHTML = `
-    <input type="text" id="nueva-industria" placeholder="Añadir industria...">
-    <button onclick="agregarIndustria()">+</button>
+  const filtroDiv = document.createElement('div');
+  filtroDiv.className = 'add-tag';
+  filtroDiv.innerHTML = `
+    <input type="text" id="filtro-industrias" placeholder="Añadir otras industrias" oninput="filtrarIndustrias()">
+    <div id="dropdown-industrias" class="dropdown-container"></div>
+    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+    <input type="text" id="feedback-industria" placeholder="Escribe aquí...">
   `;
   
-  container.appendChild(nuevaIndustriaDiv);
-  
-  // Añadir campo para feedback
-  const feedbackDiv = document.createElement('div');
-  feedbackDiv.className = 'feedback-container';
-  feedbackDiv.innerHTML = `
-    <textarea id="feedback-industria" placeholder="Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto"></textarea>
-  `;
-  
-  container.appendChild(feedbackDiv);
+  container.appendChild(filtroDiv);
 }
+
 
 function filtrarIndustrias() {
   const filtro = document.getElementById('filtro-industrias').value.toLowerCase();

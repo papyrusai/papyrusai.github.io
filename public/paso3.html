@@ -48,7 +48,7 @@
     }
     /* ----------------- Ramas Jurídicas Specific ----------------- */
     /* Force each rama box to be full-width and on its own line */
-    #ramas-container .rama-box {
+    #industrias-container .rama-box, #ramas-container .rama-box {
       width: 100%;
       display: block;
       border: 1px solid #e0e0e0;
@@ -59,17 +59,18 @@
       margin-bottom: 10px;
     }
     /* When collapsed, show only header */
-    #ramas-container .rama-box.collapsed {
+    #industrias-container .rama-box, #ramas-container .rama-box.collapsed {
       height: 50px;
     }
-    #ramas-container .rama-header {
+    #industrias-container .rama-header, #ramas-container .rama-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 8px 12px;
       cursor: pointer;
     }
-    #ramas-container .rama-header h4 {
+  
+    #industrias-container .rama-header h4,  #ramas-container .rama-header h4 {
       margin: 0;
       color: var(--text-color);
     }
@@ -83,7 +84,7 @@
     .toggle-detail:focus {
       outline: none;
     }
-    #ramas-container .rama-detail {
+    #industrias-container .rama-detail,#ramas-container .rama-detail {
       padding: 8px 12px;
       display: none;
     }
