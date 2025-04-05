@@ -334,7 +334,7 @@ function cargarIndustrias(industrias) {
     detailDiv.className = 'rama-detail';
     
     // Añadir las subindustrias si existen
-    if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
+    const subIndustrias = subIndustrias[industria] || [];
       subIndustrias[industria].forEach(subindustria => {
         const subramaElement = document.createElement('div');
         subramaElement.className = 'tag subrama-tag';
@@ -343,8 +343,7 @@ function cargarIndustrias(industrias) {
           <span class="tag-remove" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>
         `;
         detailDiv.appendChild(subramaElement);
-      });
-    }
+      })
     
     // Añadir selector para agregar nuevas subindustrias
     if (catalogoEtiquetas && catalogoEtiquetas.sub_industrias && catalogoEtiquetas.sub_industrias[industria]) {
