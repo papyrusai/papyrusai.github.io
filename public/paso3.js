@@ -306,15 +306,80 @@ function anteriorSeccion() {
 function cargarIndustrias(industrias) {
   const container = document.getElementById('industrias-container');
   container.innerHTML = '';
+  
+  // Obtener las subindustrias del sessionStorage
+  const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas'));
+  const subIndustrias = etiquetas.sub_industrias || {};
+  
   industrias.forEach(industria => {
-    const tagElement = document.createElement('div');
-    tagElement.className = 'tag';
-    tagElement.innerHTML = `
-      ${industria}
-      <span class="tag-remove" onclick="eliminarEtiqueta('industrias', '${industria}')">×</span>
+    const ramaBox = document.createElement('div');
+    // Force each industria box to be full width (one per line)
+    ramaBox.className = 'rama-box collapsed';
+    ramaBox.style.width = "100%";
+    
+    const ramaHeader = document.createElement('div');
+    ramaHeader.className = 'rama-header';
+    ramaHeader.innerHTML = `
+      <div class="rama-title">${industria}</div>
+      <div class="rama-actions">
+        <button class="btn-detalle" onclick="toggleDetalleRama(this)">Ver detalle ▼</button>
+        <button class="btn-eliminar" onclick="eliminarIndustria('${industria}')">×</button>
+      </div>
     `;
-    container.appendChild(tagElement);
+    
+    ramaBox.appendChild(ramaHeader);
+    
+    // Crear el contenedor de detalle para las subindustrias
+    const detalleDiv = document.createElement('div');
+    detalleDiv.className = 'rama-detail';
+    detalleDiv.style.display = 'none';
+    
+    // Añadir las subindustrias si existen
+    if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
+      const subindustriasContainer = document.createElement('div');
+      subindustriasContainer.className = 'subramas-container';
+      
+      subIndustrias[industria].forEach(subindustria => {
+        const subramaTag = document.createElement('div');
+        subramaTag.className = 'tag';
+        subramaTag.innerHTML = `${subindustria} <span class="eliminar" onclick="eliminarSubindustria('${industria}', '${subindustria}')">×</span>`;
+        subindustriasContainer.appendChild(subramaTag);
+      });
+      
+      detalleDiv.appendChild(subindustriasContainer);
+    }
+    
+    // Añadir campo para agregar nuevas subindustrias
+    const nuevaSubindustriaDiv = document.createElement('div');
+    nuevaSubindustriaDiv.className = 'nueva-subrama-container';
+    nuevaSubindustriaDiv.innerHTML = `
+      <input type="text" placeholder="Añadir subindustria..." id="nueva-subindustria-${industria.replace(/\s+/g, '-')}">
+      <button onclick="agregarSubindustria('${industria}', document.getElementById('nueva-subindustria-${industria.replace(/\s+/g, '-')}').value)">+</button>
+    `;
+    
+    detalleDiv.appendChild(nuevaSubindustriaDiv);
+    ramaBox.appendChild(detalleDiv);
+    container.appendChild(ramaBox);
   });
+  
+  // Añadir campo para agregar nuevas industrias
+  const nuevaIndustriaDiv = document.createElement('div');
+  nuevaIndustriaDiv.className = 'nueva-rama-container';
+  nuevaIndustriaDiv.innerHTML = `
+    <input type="text" id="nueva-industria" placeholder="Añadir industria...">
+    <button onclick="agregarIndustria()">+</button>
+  `;
+  
+  container.appendChild(nuevaIndustriaDiv);
+  
+  // Añadir campo para feedback
+  const feedbackDiv = document.createElement('div');
+  feedbackDiv.className = 'feedback-container';
+  feedbackDiv.innerHTML = `
+    <textarea id="feedback-industria" placeholder="Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto"></textarea>
+  `;
+  
+  container.appendChild(feedbackDiv);
 }
 
 function filtrarIndustrias() {
@@ -333,18 +398,83 @@ function filtrarIndustrias() {
     dropdown.appendChild(option);
   });
 }
+function eliminarIndustria(industria) {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  etiquetas.industrias = etiquetas.industrias.filter(i => i !== industria);
+  if (etiquetas.sub_industrias && etiquetas.sub_industrias[industria]) {
+    delete etiquetas.sub_industrias[industria];
+  }
+  sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+  cargarSecciones(etiquetas);
+}
 
+function eliminarSubindustria(industria, subindustria) {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  if (etiquetas.sub_industrias && etiquetas.sub_industrias[industria]) {
+    etiquetas.sub_industrias[industria] = etiquetas.sub_industrias[industria].filter(s => s !== subindustria);
+  }
+  sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+  cargarSecciones(etiquetas);
+}
+
+function agregarIndustria() {
+  const input = document.getElementById("nueva-industria");
+  const nuevaIndustria = input.value.trim();
+  if (nuevaIndustria) {
+    const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+    if (!etiquetas.industrias) {
+      etiquetas.industrias = [];
+    }
+    if (!etiquetas.industrias.includes(nuevaIndustria)) {
+      etiquetas.industrias.push(nuevaIndustria);
+      if (!etiquetas.sub_industrias) {
+        etiquetas.sub_industrias = {};
+      }
+      etiquetas.sub_industrias[nuevaIndustria] = [];
+      sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+      cargarSecciones(etiquetas);
+      input.value = "";
+    }
+  }
+}
+
+function agregarSubindustria(industria, subindustria) {
+  subindustria = subindustria.trim();
+  if (subindustria) {
+    const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+    if (!etiquetas.sub_industrias) {
+      etiquetas.sub_industrias = {};
+    }
+    if (!etiquetas.sub_industrias[industria]) {
+      etiquetas.sub_industrias[industria] = [];
+    }
+    if (!etiquetas.sub_industrias[industria].includes(subindustria)) {
+      etiquetas.sub_industrias[industria].push(subindustria);
+      sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+      cargarSecciones(etiquetas);
+    }
+  }
+}
 function seleccionarIndustria(value) {
   const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas'));
   if (!etiquetas.industrias) etiquetas.industrias = [];
+  if (!etiquetas.sub_industrias) etiquetas.sub_industrias = {};
+  
   if (!etiquetas.industrias.includes(value)) {
     etiquetas.industrias.push(value);
+    // Inicializar el array de subindustrias para esta industria
+    if (!etiquetas.sub_industrias[value]) {
+      etiquetas.sub_industrias[value] = [];
+    }
+    
     sessionStorage.setItem('etiquetasRecomendadas', JSON.stringify(etiquetas));
     cargarIndustrias(etiquetas.industrias);
   }
+  
   document.getElementById('filtro-industrias').value = "";
   document.getElementById('dropdown-industrias').innerHTML = "";
 }
+
 
 /* ------------------ Section "Ramas Jurídicas" ------------------ */
 function cargarRamasJuridicas(ramas, subramas) {
@@ -734,7 +864,6 @@ function agregarSubrama(rama, subrama) {
 
 
 /* ------------------ Finalize Onboarding ------------------ */
-/* ------------------ Finalize Onboarding ------------------ */
 function finalizarOnboarding() {
   const etiquetasFinales = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
   
@@ -744,6 +873,16 @@ function finalizarOnboarding() {
     for (const rama in etiquetasFinales.subramas_juridicas) {
       if (etiquetasFinales.subramas_juridicas[rama].length > 0) {
         sub_rama_map[rama] = etiquetasFinales.subramas_juridicas[rama];
+      }
+    }
+  }
+  
+  // Store the sub_industria_map in the format needed for the next step
+  const sub_industria_map = {};
+  if (etiquetasFinales.sub_industrias) {
+    for (const industria in etiquetasFinales.sub_industrias) {
+      if (etiquetasFinales.sub_industrias[industria].length > 0) {
+        sub_industria_map[industria] = etiquetasFinales.sub_industrias[industria];
       }
     }
   }
@@ -767,6 +906,7 @@ function finalizarOnboarding() {
   
   // Store these in sessionStorage for paso4
   sessionStorage.setItem('industry_tags', JSON.stringify(etiquetasFinales.industrias || []));
+  sessionStorage.setItem('sub_industria_map', JSON.stringify(sub_industria_map));
   sessionStorage.setItem('rama_juridicas', JSON.stringify(etiquetasFinales.ramas_juridicas || []));
   sessionStorage.setItem('sub_rama_map', JSON.stringify(sub_rama_map));
   sessionStorage.setItem('rangos', JSON.stringify(etiquetasFinales.rangos_normativos || []));
@@ -781,10 +921,10 @@ function finalizarOnboarding() {
   if (sessionStorage.getItem('isEditing') === 'true') {
     sessionStorage.setItem('isEditingPlan', 'true');
   }
-
-
+  
   console.log("Redirecting to paso4.html with data:", {
     industry_tags: etiquetasFinales.industrias,
+    sub_industria_map: sub_industria_map,
     rama_juridicas: etiquetasFinales.ramas_juridicas,
     sub_rama_map: sub_rama_map,
     rangos: etiquetasFinales.rangos_normativos,
@@ -822,3 +962,9 @@ window.eliminarRango = eliminarRango;
 window.eliminarEtiqueta = eliminarEtiqueta;
 window.eliminarRamaJuridica = eliminarRamaJuridica;
 window.eliminarSubrama = eliminarSubrama;
+// Expose functions to global scope
+window.eliminarIndustria = eliminarIndustria;
+window.eliminarSubindustria = eliminarSubindustria;
+window.agregarIndustria = agregarIndustria;
+window.agregarSubindustria = agregarSubindustria;
+

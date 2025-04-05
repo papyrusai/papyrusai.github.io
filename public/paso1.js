@@ -162,9 +162,10 @@ async function procesarDatosUsuario(userData) {
       
       Basándote en esta información, selecciona las etiquetas más relevantes para este usuario de las siguientes categorías:
       1. Industrias relevantes
-      2. Ramas jurídicas principales
-      3. Subramas jurídicas específicas
-      4. Rangos normativos de interés
+      2. Sub industrias específicas
+      3. Ramas jurídicas principales
+      4. Subramas jurídicas específicas
+      5. Rangos normativos de interés
       
       Proporciona solo las etiquetas más relevantes, máximo 5 por categoría.
     `;

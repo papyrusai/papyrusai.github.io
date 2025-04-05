@@ -1695,6 +1695,7 @@ app.post('/save-free-plan', async (req, res) => {
   const { 
     plan, 
     industry_tags, 
+    sub_industria_map, // Añadido: mapa de subindustrias
     rama_juridicas, 
     profile_type, 
     sub_rama_map, 
@@ -1730,6 +1731,7 @@ app.post('/save-free-plan', async (req, res) => {
       {
         $set: {
           industry_tags,
+          sub_industria_map, // Añadido: guardamos el mapa de subindustrias
           rama_juridicas,
           subscription_plan: plan,
           profile_type,
@@ -1756,6 +1758,7 @@ app.post('/save-free-plan', async (req, res) => {
     res.status(500).send('Error saving user data');
   }
 });
+
 
 
 

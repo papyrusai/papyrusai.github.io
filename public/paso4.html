@@ -566,6 +566,7 @@
       
       // Get data from step 3
       const industryTags = JSON.parse(sessionStorage.getItem('industry_tags') || '[]');
+      const subIndustriaMap = JSON.parse(sessionStorage.getItem('sub_industria_map') || '{}');
       const ramaJuridicas = JSON.parse(sessionStorage.getItem('rama_juridicas') || '[]');
       const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
       const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
@@ -615,6 +616,7 @@
         const payload = {
           plan: planType,
           industry_tags: industryTags,
+          sub_industria_map: subIndustriaMap, // Añadido: mapa de subindustrias
           rama_juridicas: ramaJuridicas,
           sub_rama_map: subRamaMap,
           rangos,
