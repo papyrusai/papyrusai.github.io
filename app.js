@@ -254,7 +254,7 @@ app.post('/login', (req, res, next) => {
     }
     if (!user) {
       return res.status(400).json({
-        error: "Correo o contraseña equivocada, por favor, intente de nuevo"
+        error: "Correo o contraseña equivocada, por favor, intente de nuevo o regístrese"
       });
     }
 

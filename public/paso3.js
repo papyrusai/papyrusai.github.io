@@ -182,7 +182,7 @@ function showAllRamasOptions() {
 function showAllFuentesGobiernoOptions() {
   const dropdown = document.getElementById('dropdown-fuentes-gobierno');
   dropdown.innerHTML = "";
-  const fuentesStatic = ["BOE", "DOUE", "BOCM", "BOJA", "BOA", "BOCYL"];
+  const fuentesStatic = ["BOE", "DOUE", "BOCG", "BOA","BOCM", "BOCYL","BOJA","BOPV","DOG","DOGC" ];
   fuentesStatic.forEach(match => {
     const option = document.createElement('div');
     option.className = "dropdown-item";
@@ -197,7 +197,7 @@ function showAllFuentesGobiernoOptions() {
 function showAllFuentesReguladoresOptions() {
   const dropdown = document.getElementById('dropdown-fuentes-reguladores');
   dropdown.innerHTML = "";
-  const fuentesStatic = ["CNMV"];
+  const fuentesStatic = ["CNMV","AEPD"];
   fuentesStatic.forEach(match => {
     const option = document.createElement('div');
     option.className = "dropdown-item";
@@ -319,8 +319,6 @@ function cargarIndustrias(industrias) {
     
     const ramaHeader = document.createElement('div');
     ramaHeader.className = 'rama-header';
-    
-    // Cambio aquí: usar la misma estructura que en ramas jurídicas
     ramaHeader.innerHTML = `
       <h4>${industria}</h4>
       <div>
@@ -380,18 +378,6 @@ function cargarIndustrias(industrias) {
     ramaBox.appendChild(detailDiv);
     container.appendChild(ramaBox);
   });
-  
-  // Añadir campo para agregar nuevas industrias
-  const filtroDiv = document.createElement('div');
-  filtroDiv.className = 'add-tag';
-  filtroDiv.innerHTML = `
-    <input type="text" id="filtro-industrias" placeholder="Añadir otras industrias" oninput="filtrarIndustrias()">
-    <div id="dropdown-industrias" class="dropdown-container"></div>
-    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-    <input type="text" id="feedback-industria" placeholder="Escribe aquí...">
-  `;
-  
-  container.appendChild(filtroDiv);
 }
 
 
