@@ -852,34 +852,84 @@ app.get('/profile', async (req, res) => {
       documentsHtml = allDocuments.map(doc => {
         const rangoToShow = doc.rango_titulo || "Indefinido";
         
-      // Reemplazar las líneas 102-103:
-      let cnaesHtml = '';
-      if (doc.divisiones_cnae) {
-        if (Array.isArray(doc.divisiones_cnae)) {
-          // Si es un array (formato antiguo)
-          cnaesHtml = doc.divisiones_cnae.map(div => `<span>${div}</span>`).join('');
-        } else {
-          // Si es un objeto (nuevo formato)
-          cnaesHtml = Object.keys(doc.divisiones_cnae).map(industria => 
-            `<span class="industria-value">${industria}</span>`
-          ).join('');
+        // Filtrar industrias para mostrar solo las que coinciden con las del usuario
+        let cnaesHtml = '';
+        if (doc.divisiones_cnae) {
+          if (Array.isArray(doc.divisiones_cnae)) {
+            // Si es un array (formato antiguo), filtrar por userIndustries
+            const matchingIndustries = doc.divisiones_cnae.filter(ind => 
+              userIndustries.includes(ind)
+            );
+            cnaesHtml = matchingIndustries.map(div => `<span>${div}</span>`).join('');
+          } else {
+            // Si es un objeto (nuevo formato), filtrar por las claves en userSubIndustriaMap
+            const matchingIndustries = Object.keys(doc.divisiones_cnae).filter(industria => 
+              Object.keys(userSubIndustriaMap).includes(industria)
+            );
+            cnaesHtml = matchingIndustries.map(industria => 
+              `<span class="industria-value">${industria}</span>`
+            ).join('');
+          }
         }
-      }
-
-      // Añadir este código para generar el HTML de subindustrias
-      let subIndustriasHtml = '';
-      if (doc.divisiones_cnae && typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
-        subIndustriasHtml = Object.entries(doc.divisiones_cnae).flatMap(([industria, subIndustrias]) => 
-          Array.isArray(subIndustrias) ? subIndustrias.map(si => 
-            `<span class="sub-industria-value"><i><b>#${si}</b></i></span>`
-          ) : []
-        ).join(' ');
-      }
-        const ramaHtml = Object.keys(doc.ramas_juridicas || {}).map(r => `<span class="rama-value">${r}</span>`).join('');
-        const subRamasHtml = Object.entries(doc.ramas_juridicas || {}).flatMap(([rama, subRamas]) => 
-          subRamas.map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
-        ).join(' ');
-
+      
+        // Filtrar subindustrias para mostrar solo las que coinciden con las del usuario
+        let subIndustriasHtml = '';
+        if (doc.divisiones_cnae && typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+          // Iterar sobre cada industria en el documento
+          subIndustriasHtml = Object.entries(doc.divisiones_cnae)
+            // Filtrar solo las industrias que están en userSubIndustriaMap
+            .filter(([industria, _]) => Object.keys(userSubIndustriaMap).includes(industria))
+            // Para cada industria coincidente, filtrar sus subindustrias
+            .flatMap(([industria, subIndustrias]) => {
+              if (!Array.isArray(subIndustrias)) return [];
+              
+              // Filtrar subindustrias que coinciden con las del usuario
+              const matchingSubIndustrias = subIndustrias.filter(subInd => 
+                userSubIndustriaMap[industria] && userSubIndustriaMap[industria].includes(subInd)
+              );
+              
+              // Generar HTML solo para las subindustrias coincidentes
+              return matchingSubIndustrias.map(si => 
+                `<span class="sub-industria-value"><i><b>#${si}</b></i></span>`
+              );
+            })
+            .join(' ');
+        }
+      
+        // Filtrar ramas jurídicas para mostrar solo las que coinciden con las del usuario
+        const matchingRamas = Object.keys(doc.ramas_juridicas || {}).filter(rama => 
+          userRamas.includes(rama)
+        );
+        const ramaHtml = matchingRamas.map(r => 
+          `<span class="rama-value">${r}</span>`
+        ).join('');
+      
+        // Filtrar subramas jurídicas para mostrar solo las que coinciden con las del usuario
+        const subRamasHtml = Object.entries(doc.ramas_juridicas || {})
+          // Filtrar solo las ramas que están en userSubRamaMap
+          .filter(([rama, _]) => Object.keys(userSubRamaMap).includes(rama))
+          // Para cada rama coincidente, filtrar sus subramas
+          .flatMap(([rama, subRamas]) => {
+            if (!Array.isArray(subRamas)) return [];
+            
+            // Filtrar subramas que coinciden con las del usuario
+            const matchingSubRamas = subRamas.filter(subRama => 
+              userSubRamaMap[rama] && userSubRamaMap[rama].includes(subRama)
+            );
+            
+            // Generar HTML solo para las subramas coincidentes
+            return matchingSubRamas.map(sr => 
+              `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`
+            );
+          })
+          .join(' ');
+      
+        // Determinar si se debe mostrar alguna sección de etiquetas
+        const hasIndustrias = cnaesHtml.trim() !== '';
+        const hasSubIndustrias = subIndustriasHtml.trim() !== '';
+        const hasRamas = ramaHtml.trim() !== '';
+        const hasSubRamas = subRamasHtml.trim() !== '';
+      
         return `
           <div class="data-item">
             <div class="header-row">
@@ -889,10 +939,10 @@ app.get('/profile', async (req, res) => {
             <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
               ${rangoToShow} | ${doc.collectionName}
             </div>
-            <div class="etiquetas-values">${cnaesHtml}</div>
-            <div class="sub-industria-values">${subIndustriasHtml}</div>
-            <div class="rama-juridica-values">${ramaHtml}</div>
-            <div class="sub-rama-juridica-values">${subRamasHtml}</div>
+            ${hasIndustrias ? `<div class="etiquetas-values">${cnaesHtml}</div>` : ''}
+            ${hasSubIndustrias ? `<div class="sub-industria-values">${subIndustriasHtml}</div>` : ''}
+            ${hasRamas ? `<div class="rama-juridica-values">${ramaHtml}</div>` : ''}
+            ${hasSubRamas ? `<div class="sub-rama-juridica-values">${subRamasHtml}</div>` : ''}
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
@@ -912,6 +962,7 @@ app.get('/profile', async (req, res) => {
           </div>
         `;
       }).join('');
+      
     }
     // Build chart data (by year-month)
     const documentsByMonth = {};
