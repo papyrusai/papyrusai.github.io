@@ -72,7 +72,7 @@
       width: 16px;
       height: 16px;
       transform: scale(0.9);
-      accent-color: #83a300; /* Modern browsers */
+      accent-color: #04db8d; /* Modern browsers */
     }
   </style>
 </head>
@@ -171,13 +171,18 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="tipoDropdown" class="dropdown-content">
-            <a href="#" onclick="selectTipo('Todos')">Todos</a>
-            <a href="#" onclick="selectTipo('Disposiciones generales')">Disposiciones generales</a>
-            <a href="#" onclick="selectTipo('Otras disposiciones')">Otras disposiciones</a>
+            <!-- "Todos" is a special checkbox that toggles all -->
+            <label class="todos-label">
+              <input type="checkbox" value="Todos" id="chkTodosTipo" onclick="toggleAllTipos()">
+              Todos
+            </label>
+            <label><input type="checkbox" value="Disposiciones generales" onclick="updateSelectedTipos()">Disposiciones generales</label>
+            <label><input type="checkbox" value="Otras disposiciones" onclick="updateSelectedTipos()">Otras disposiciones</label>
             <div class="dropdown-bottom" onclick="toggleTipoDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
           </div>
+          
         </div>
       </div>
 
@@ -190,31 +195,31 @@
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="rangoDropdown" class="dropdown-content">
-            <a href="#" onclick="selectRango('Todos')">Todos</a>
-            <a href="#" onclick="selectRango('Legislativas')">Legislativas</a>
-            <a href="#" onclick="selectRango('Reglamentos')">Normativa Reglamentaria</a>
-            <a href="#" onclick="selectRango('Doctrina Administrativa')">
-              Doctrina Administrativa
-            </a>
-            <a href="#" onclick="selectRango('Comunicados, Guías y Directivas de Reguladores')">Comunicados, Guías y Directivas de Reguladores</a>
-            <a href="#" onclick="selectRango('Decisiones Judiciales')">Decisiones Judiciales</a>
-            <a href="#" onclick="selectRango('Normativa Europea')">Normativa Europea</a>
-            <a href="#" onclick="selectRango('Acuerdos Internacionales')">Acuerdos Internacionales</a>
-            <a href="#" onclick="selectRango('Anuncios de Concentración de Empresas')">Anuncios de Concentración de Empresas</a>
-            <a href="#" onclick="selectRango('Dictámenes y Opiniones')">Dictámenes y Opiniones</a>
-            <a href="#" onclick="selectRango('Subvenciones')">Subvenciones</a>
-            <a href="#" onclick="selectRango('Declaraciones e Informes de Impacto Ambiental')">Declaraciones e Informes de Impacto Ambiental</a>
-            <a href="#" onclick="selectRango('Consultas públicas: iniciativas de consulta o audiencias públicas sobre proyectos normativos')">Consultas públicas</a>
-            <a href="#" onclick="selectRango('Borradores Legislativos: borradores normativos y proyectos de norma en trámite que aun no tienen fuerza de ley')">Borradores Legislativos</a>
-            <a href="#" onclick="selectRango('Corrección de errores')">Corrección de errores</a>
-            <a href="#" onclick="selectRango('Otras')">Otras</a>
-          
-          
-          
+            <!-- "Todos" is a special checkbox that toggles all -->
+            <label class="todos-label">
+              <input type="checkbox" value="Todos" id="chkTodosRango" onclick="toggleAllRangos()">
+              Todos
+            </label>
+            <label><input type="checkbox" value="Legislativas" onclick="updateSelectedRangos()">Legislativas</label>
+            <label><input type="checkbox" value="Reglamentos" onclick="updateSelectedRangos()">Normativa Reglamentaria</label>
+            <label><input type="checkbox" value="Doctrina Administrativa" onclick="updateSelectedRangos()">Doctrina Administrativa</label>
+            <label><input type="checkbox" value="Comunicados, Guías y Directivas de Reguladores" onclick="updateSelectedRangos()">Comunicados, Guías y Directivas de Reguladores</label>
+            <label><input type="checkbox" value="Decisiones Judiciales" onclick="updateSelectedRangos()">Decisiones Judiciales</label>
+            <label><input type="checkbox" value="Normativa Europea" onclick="updateSelectedRangos()">Normativa Europea</label>
+            <label><input type="checkbox" value="Acuerdos Internacionales" onclick="updateSelectedRangos()">Acuerdos Internacionales</label>
+            <label><input type="checkbox" value="Anuncios de Concentración de Empresas" onclick="updateSelectedRangos()">Anuncios de Concentración de Empresas</label>
+            <label><input type="checkbox" value="Dictámenes y Opiniones" onclick="updateSelectedRangos()">Dictámenes y Opiniones</label>
+            <label><input type="checkbox" value="Subvenciones" onclick="updateSelectedRangos()">Subvenciones</label>
+            <label><input type="checkbox" value="Declaraciones e Informes de Impacto Ambiental" onclick="updateSelectedRangos()">Declaraciones e Informes de Impacto Ambiental</label>
+            <label><input type="checkbox" value="Consultas públicas" onclick="updateSelectedRangos()">Consultas públicas</label>
+            <label><input type="checkbox" value="Borradores Legislativos" onclick="updateSelectedRangos()">Borradores Legislativos</label>
+            <label><input type="checkbox" value="Corrección de errores" onclick="updateSelectedRangos()">Corrección de errores</label>
+            <label><input type="checkbox" value="Otras" onclick="updateSelectedRangos()">Otras</label>
             <div class="dropdown-bottom" onclick="toggleRangoDropdown()">
               <i class="fa fa-caret-down"></i>
             </div>
           </div>
+          
         </div>
       </div>
 
@@ -364,64 +369,193 @@
       }
     }
 
-    // -------------- Filtering Logic --------------
-    function selectTipo(tipo) {
-      document.getElementById('selectedTipo').textContent = tipo;
-      document.getElementById('tipoDropdown').classList.remove('show');
-    }
-    function selectRango(rango) {
-      document.getElementById('selectedRango').textContent = rango;
-      document.getElementById('rangoDropdown').classList.remove('show');
-    }
-
-    function handleBuscar_cuatrecasas() {
-      // 1) Gather the selected services
-      const checkboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
-      let selectedServicios = [];
-      checkboxes.forEach(cb => {
-        if (cb.checked) {
-          selectedServicios.push(cb.value);
-        }
-      });
-
-      const tipo = document.getElementById('selectedTipo').textContent.trim();
-      const rango = document.getElementById('selectedRango').textContent.trim();
-
-      // All documents
-      const docs = document.querySelectorAll('.collectionDocs .data-item');
-      docs.forEach(doc => {
-        const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
-        const seccionText = doc.querySelector('.doc-seccion')
-                          ? doc.querySelector('.doc-seccion').innerText
-                          : "";
-        const rangoText = doc.querySelector('.doc-rango')
-                          ? doc.querySelector('.doc-rango').innerText
-                          : "";
-
-        // If 0 selected => show none
-        let matchServicio = false;
-        if (selectedServicios.length === 0) {
-          matchServicio = false;
+    // -------------- Multi-Select Logic for "Tipos" --------------
+      function toggleAllTipos() {
+        const chkTodosTipo = document.getElementById('chkTodosTipo');
+        const checkboxes = document.querySelectorAll('#tipoDropdown input[type="checkbox"]:not(#chkTodosTipo)');
+        if (chkTodosTipo.checked) {
+          // Check everything
+          checkboxes.forEach(cb => (cb.checked = true));
         } else {
-          // Document matches if "etiquetas-values" includes ANY selected service
-          for (let s of selectedServicios) {
-            if (etiquetasText.includes(s)) {
-              matchServicio = true;
-              break;
-            }
+          // Uncheck everything
+          checkboxes.forEach(cb => (cb.checked = false));
+        }
+        // Then update label
+        updateSelectedTipos();
+      }
+
+      function updateSelectedTipos() {
+        const checkboxes = document.querySelectorAll('#tipoDropdown input[type="checkbox"]:not(#chkTodosTipo)');
+        const chkTodosTipo = document.getElementById('chkTodosTipo');
+        let selectedCount = 0;
+        let totalCount = 0;
+        let singleSelectedValue = "";
+
+        checkboxes.forEach(cb => {
+          totalCount++;
+          if (cb.checked) {
+            selectedCount++;
+            singleSelectedValue = cb.value;
           }
-        }
+        });
 
-        let matchTipo = (tipo === 'Todos') || seccionText.includes(tipo);
-        let matchRango = (rango === 'Todos') || rangoText.includes(rango);
-
-        if (matchServicio && matchTipo && matchRango) {
-          doc.style.display = '';
+        // If user selected all => set chkTodos
+        if (selectedCount === totalCount) {
+          chkTodosTipo.checked = true;
         } else {
-          doc.style.display = 'none';
+          chkTodosTipo.checked = false;
         }
-      });
+
+        // Update the button label
+        const buttonLabel = document.getElementById('selectedTipo');
+        if (selectedCount === 0) {
+          buttonLabel.textContent = "Ninguno";
+        } else if (selectedCount === totalCount) {
+          buttonLabel.textContent = "Todos";
+        } else if (selectedCount === 1) {
+          buttonLabel.textContent = singleSelectedValue;
+        } else {
+          buttonLabel.textContent = selectedCount + " seleccionados";
+        }
+      }
+
+      // -------------- Multi-Select Logic for "Rangos" --------------
+      function toggleAllRangos() {
+        const chkTodosRango = document.getElementById('chkTodosRango');
+        const checkboxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkTodosRango)');
+        if (chkTodosRango.checked) {
+          // Check everything
+          checkboxes.forEach(cb => (cb.checked = true));
+        } else {
+          // Uncheck everything
+          checkboxes.forEach(cb => (cb.checked = false));
+        }
+        // Then update label
+        updateSelectedRangos();
+      }
+
+      function updateSelectedRangos() {
+        const checkboxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkTodosRango)');
+        const chkTodosRango = document.getElementById('chkTodosRango');
+        let selectedCount = 0;
+        let totalCount = 0;
+        let singleSelectedValue = "";
+
+        checkboxes.forEach(cb => {
+          totalCount++;
+          if (cb.checked) {
+            selectedCount++;
+            singleSelectedValue = cb.value;
+          }
+        });
+
+        // If user selected all => set chkTodos
+        if (selectedCount === totalCount) {
+          chkTodosRango.checked = true;
+        } else {
+          chkTodosRango.checked = false;
+        }
+
+        // Update the button label
+        const buttonLabel = document.getElementById('selectedRango');
+        if (selectedCount === 0) {
+          buttonLabel.textContent = "Ninguno";
+        } else if (selectedCount === totalCount) {
+          buttonLabel.textContent = "Todos";
+        } else if (selectedCount === 1) {
+          buttonLabel.textContent = singleSelectedValue;
+        } else {
+          buttonLabel.textContent = selectedCount + " seleccionados";
+        }
+      }
+      function handleBuscar_cuatrecasas() {
+  // 1) Gather the selected services
+  const serviceCheckboxes = document.querySelectorAll('#serviciosDropdown input[type="checkbox"]:not(#chkTodos)');
+  let selectedServicios = [];
+  serviceCheckboxes.forEach(cb => {
+    if (cb.checked) {
+      selectedServicios.push(cb.value);
     }
+  });
+
+  // 2) Gather the selected tipos
+  const tipoCheckboxes = document.querySelectorAll('#tipoDropdown input[type="checkbox"]:not(#chkTodosTipo)');
+  let selectedTipos = [];
+  tipoCheckboxes.forEach(cb => {
+    if (cb.checked) {
+      selectedTipos.push(cb.value);
+    }
+  });
+
+  // 3) Gather the selected rangos
+  const rangoCheckboxes = document.querySelectorAll('#rangoDropdown input[type="checkbox"]:not(#chkTodosRango)');
+  let selectedRangos = [];
+  rangoCheckboxes.forEach(cb => {
+    if (cb.checked) {
+      selectedRangos.push(cb.value);
+    }
+  });
+
+  // All documents
+  const docs = document.querySelectorAll('.collectionDocs .data-item');
+  docs.forEach(doc => {
+    const etiquetasText = doc.querySelector('.etiquetas-values').innerText;
+    const seccionText = doc.querySelector('.doc-seccion')
+                      ? doc.querySelector('.doc-seccion').innerText
+                      : "";
+    const rangoText = doc.querySelector('.doc-rango')
+                      ? doc.querySelector('.doc-rango').innerText
+                      : "";
+
+    // If 0 selected => show none
+    let matchServicio = false;
+    if (selectedServicios.length === 0) {
+      matchServicio = false;
+    } else {
+      // Document matches if "etiquetas-values" includes ANY selected service
+      for (let s of selectedServicios) {
+        if (etiquetasText.includes(s)) {
+          matchServicio = true;
+          break;
+        }
+      }
+    }
+
+    // Check if document matches any selected tipo
+    let matchTipo = false;
+    if (selectedTipos.length === 0) {
+      matchTipo = false;
+    } else {
+      for (let t of selectedTipos) {
+        if (seccionText.includes(t)) {
+          matchTipo = true;
+          break;
+        }
+      }
+    }
+
+    // Check if document matches any selected rango
+    let matchRango = false;
+    if (selectedRangos.length === 0) {
+      matchRango = false;
+    } else {
+      for (let r of selectedRangos) {
+        if (rangoText.includes(r)) {
+          matchRango = true;
+          break;
+        }
+      }
+    }
+
+    if (matchServicio && matchTipo && matchRango) {
+      doc.style.display = '';
+    } else {
+      doc.style.display = 'none';
+    }
+  });
+}
+
+
   </script>
 </body>
 </html>

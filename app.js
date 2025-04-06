@@ -1396,29 +1396,72 @@ app.get('/data', async (req, res) => {
             .join(' ');
         }
         
-            // Crear un mapa de ramas a subramas coincidentes para facilitar la verificación
-      const ramaToMatchedSubRamas = {};
-      (doc.matched_sub_rama_juridica || []).forEach(subRama => {
-        // Para cada subrama coincidente, necesitamos encontrar a qué rama pertenece
-        for (const [rama, subramas] of Object.entries(doc.ramas_juridicas || {})) {
-          if (Array.isArray(subramas) && subramas.includes(subRama) || 
-              (subramas.length === 0 && subRama === "genérico")) {
-            // Si encontramos la rama a la que pertenece esta subrama
-            ramaToMatchedSubRamas[rama] = ramaToMatchedSubRamas[rama] || [];
-            ramaToMatchedSubRamas[rama].push(subRama);
+          // Crear variables para el HTML de ramas y subramas
+        let ramaHtml = '';
+        let subRamasHtml = '';
+
+        // Procesar cada rama coincidente individualmente
+        const ramasToShow = [];
+        const uniqueSubRamas = new Set(); // Conjunto para evitar duplicados en subramas
+
+        (doc.matched_rama_juridica || []).forEach(rama => {
+          // Verificar si el usuario ha seleccionado subramas específicas para esta rama
+          const userHasSelectedSubRamasForThisRama = 
+            userSubRamaMap && 
+            userSubRamaMap[rama] && 
+            Array.isArray(userSubRamaMap[rama]) && 
+            userSubRamaMap[rama].length > 0;
+          
+          // Si el usuario no ha seleccionado subramas para esta rama, mostrarla
+          if (!userHasSelectedSubRamasForThisRama) {
+            ramasToShow.push(rama);
+          } 
+          // Si el usuario ha seleccionado subramas para esta rama, verificar coincidencias
+          else {
+            // Verificar si hay subramas coincidentes para esta rama
+            const docSubRamas = doc.ramas_juridicas && doc.ramas_juridicas[rama] ? doc.ramas_juridicas[rama] : [];
+            const matchedSubRamas = doc.matched_sub_rama_juridica || [];
+            
+            // Verificar si alguna de las subramas del documento para esta rama está en las subramas coincidentes
+            let hasMatchingSubRama = false;
+            let matchingSubRamasForThisRama = [];
+            
+            // Caso especial: si el documento no tiene subramas para esta rama y "genérico" está en las coincidencias
+            if (docSubRamas.length === 0 && matchedSubRamas.includes("genérico")) {
+              hasMatchingSubRama = true;
+              matchingSubRamasForThisRama.push("genérico");
+            } 
+            // Caso normal: verificar intersección entre subramas del documento y subramas coincidentes
+            else {
+              for (const subRama of docSubRamas) {
+                if (matchedSubRamas.includes(subRama)) {
+                  hasMatchingSubRama = true;
+                  matchingSubRamasForThisRama.push(subRama);
+                }
+              }
+            }
+            
+            // Solo mostrar la rama si tiene subramas coincidentes
+            if (hasMatchingSubRama) {
+              ramasToShow.push(rama);
+              
+              // Añadir las subramas coincidentes al conjunto de subramas únicas
+              matchingSubRamasForThisRama.forEach(sr => uniqueSubRamas.add(sr));
+            }
           }
-        }
-      });
+        });
 
-      // Solo mostrar las ramas que tienen subramas coincidentes
-      const ramaHtml = Object.keys(ramaToMatchedSubRamas)
-        .map(r => `<span class="rama-value">${r}</span>`)
-        .join('');
+        // Generar el HTML para las ramas que deben mostrarse
+        ramaHtml = ramasToShow
+          .map(r => `<span class="rama-value">${r}</span>`)
+          .join('');
 
-      // Mostrar todas las subramas coincidentes
-      const subRamasHtml = (doc.matched_sub_rama_juridica || [])
-        .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
-        .join(' ');
+        // Mostrar solo las subramas únicas coincidentes
+        subRamasHtml = Array.from(uniqueSubRamas)
+          .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
+          .join(' ');
+
+
 
       const rangoToShow = doc.rango_titulo || "Indefinido";
 
