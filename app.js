@@ -2155,6 +2155,7 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
   const { 
     plan, 
     industry_tags, 
+    sub_industria_map,
     rama_juridicas, 
     profile_type, 
     sub_rama_map, 
@@ -2189,6 +2190,7 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
           rama_juridicas,
           subscription_plan: plan,
           profile_type,
+          sub_industria_map,
           sub_rama_map,
           cobertura_legal,
           company_name,
@@ -2262,6 +2264,7 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
       profile_type: user.profile_type || 'individual',
       company_name: user.company_name || '',
       industry_tags: user.industry_tags || [],
+      sub_industria_map: user.sub_industria_map || [],
       rama_juridicas: user.rama_juridicas || [],
       sub_rama_map: user.sub_rama_map || {},
       rangos: user.rangos || [],

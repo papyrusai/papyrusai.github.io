@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Store etiquetas for step3
       sessionStorage.setItem('etiquetasRecomendadas', JSON.stringify({
+        sub_industrias: userData.sub_industria_map || [],
         industrias: userData.industry_tags || [],
         ramas_juridicas: userData.rama_juridicas || [],
         subramas_juridicas: userData.sub_rama_map || {},
