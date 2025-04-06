@@ -25,7 +25,7 @@ const DB_NAME = 'papyrus';
 const TODAY = moment().utc();
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
-const diaToday  = TODAY.date();
+const diaToday  = TODAY.date()-2;
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -60,32 +60,65 @@ function mapCollectionNameToDisplay(cName) {
  * Genera un snippet HTML para un único doc.
  */
 function buildDocumentHTML(doc, isLastDoc) {
-    // Use matched_cnaes and matched_rama_juridica if available
-    let cnaes = doc.matched_cnaes || doc.divisiones_cnae || [];
-    if (!Array.isArray(cnaes)) cnaes = [cnaes];
+  // Manejar industrias (matched_cnaes o divisiones_cnae)
+  let industriasHTML = '';
+  let subIndustriasHTML = '';
   
-    let ramas = doc.matched_rama_juridica || [];
-    if (!Array.isArray(ramas)) ramas = [ramas];
-  
-    let subRamas = doc.sub_rama_juridica || [];
-    if (!Array.isArray(subRamas)) subRamas = [subRamas];
-  
-    const cnaeHTML = cnaes.length
-      ? cnaes.map(div => `<span class="etiqueta">${div}</span>`).join('')
-      : '';
-    
-    const ramaHTML = ramas.length
-      ? ramas.map(r => `<span class="etiqueta" style="background-color: #0c2532; color: white;">${r}</span>`).join('')
-      : '';
-  
-    const subRamaHTML = subRamas.length
-      ? subRamas.map(sr =>
-          `<span style="padding:5px 0; color:#4ce3a7; margin-left:10px;">
-            <i><b>#${sr}</b></i>
-          </span>`
-        ).join(' ')
-      : '';
-  
+  // Usar matched_cnaes si está disponible, de lo contrario usar divisiones_cnae
+  if (doc.matched_cnaes && doc.matched_cnaes.length) {
+      industriasHTML = doc.matched_cnaes.map(div => `<span class="etiqueta">${div}</span>`).join('');
+  } else if (doc.divisiones_cnae) {
+      // Si divisiones_cnae es un objeto (nueva estructura)
+      if (typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+          industriasHTML = Object.keys(doc.divisiones_cnae)
+              .map(industria => `<span class="etiqueta">${industria}</span>`)
+              .join('');
+              
+          // Generar HTML para subindustrias
+          const subIndustrias = [];
+          Object.entries(doc.divisiones_cnae).forEach(([industria, subs]) => {
+              if (Array.isArray(subs)) {
+                  subs.forEach(sub => subIndustrias.push(sub));
+              }
+          });
+          
+          if (subIndustrias.length) {
+              subIndustriasHTML = subIndustrias.map(si => 
+                  `<span style="padding:5px 0; color:#4ce3a7; margin-left:10px;">
+                      <i><b>#${si}</b></i>
+                  </span>`
+              ).join(' ');
+          }
+      } 
+      // Si divisiones_cnae es un array (estructura antigua)
+      else if (Array.isArray(doc.divisiones_cnae)) {
+          industriasHTML = doc.divisiones_cnae.map(div => `<span class="etiqueta">${div}</span>`).join('');
+      }
+      // Si divisiones_cnae es un string
+      else {
+          industriasHTML = `<span class="etiqueta">${doc.divisiones_cnae}</span>`;
+      }
+  }
+
+  // Manejar ramas jurídicas
+  let ramas = doc.matched_rama_juridica || [];
+  if (!Array.isArray(ramas)) ramas = [ramas];
+
+  let subRamas = doc.sub_rama_juridica || [];
+  if (!Array.isArray(subRamas)) subRamas = [subRamas];
+
+  const ramaHTML = ramas.length
+    ? ramas.map(r => `<span class="etiqueta" style="background-color: #0c2532; color: white;">${r}</span>`).join('')
+    : '';
+
+  const subRamaHTML = subRamas.length
+    ? subRamas.map(sr =>
+        `<span style="padding:5px 0; color:#4ce3a7; margin-left:10px;">
+          <i><b>#${sr}</b></i>
+        </span>`
+      ).join(' ')
+    : '';
+
     const hrOrNot = isLastDoc
       ? ''
       : `
@@ -100,14 +133,14 @@ function buildDocumentHTML(doc, isLastDoc) {
     return `
       <div class="document">
         <h2>${doc.short_name}</h2>
-        <p>${cnaeHTML}${ramaHTML}</p>
-        <p>${subRamaHTML}</p>
+        <p>${industriasHTML}${ramaHTML}</p>
+        <p>${subIndustriasHTML}${subRamaHTML}</p>
         <p>${doc.resumen}</p>
         <p>
           <div class="margin-impacto">
             <a class="button-impacto"
-               href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
-               style="margin-right: 10px;">
+              href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+              style="margin-right: 10px;">
               Análisis impacto normativo
             </a>
           </div>
@@ -123,21 +156,44 @@ function buildDocumentHTML(doc, isLastDoc) {
       </div>
       ${hrOrNot}
     `;
+
   }
   
   // Replace or add this function to your code
   function buildDocumentHTMLnoMatches(doc, isLastDoc) {
-    // Extract all document CNAEs
-    let cnaes = doc.divisiones_cnae || [];
-    if (!Array.isArray(cnaes)) cnaes = [cnaes];
+    // Extraer todas las industrias y subindustrias del documento
+    let industrias = [];
+    let subIndustrias = new Set();
+    
+    if (doc.divisiones_cnae) {
+      // Si divisiones_cnae es un objeto (nueva estructura)
+      if (typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+        industrias = Object.keys(doc.divisiones_cnae);
+        
+        // Extraer todas las subindustrias
+        Object.values(doc.divisiones_cnae).forEach(subIndustriaArray => {
+          if (Array.isArray(subIndustriaArray)) {
+            subIndustriaArray.forEach(subIndustria => subIndustrias.add(subIndustria));
+          }
+        });
+      } 
+      // Si divisiones_cnae es un array (estructura antigua)
+      else if (Array.isArray(doc.divisiones_cnae)) {
+        industrias = doc.divisiones_cnae;
+      }
+      // Si divisiones_cnae es un string
+      else {
+        industrias = [doc.divisiones_cnae];
+      }
+    }
   
-    // Extract all document ramas
+    // Extraer todas las ramas jurídicas
     let ramas = [];
     if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
       ramas = Object.keys(doc.ramas_juridicas);
     }
   
-    // Extract all subramas, ensuring "genérico" appears only once
+    // Extraer todas las subramas jurídicas
     let subRamas = new Set();
     if (doc.ramas_juridicas) {
       Object.values(doc.ramas_juridicas).forEach(subRamaArray => {
@@ -147,39 +203,44 @@ function buildDocumentHTML(doc, isLastDoc) {
       });
     }
   
-    // Generate HTML for each tag type
-    const cnaeHTML = cnaes.map(div => `<span class="etiqueta">${div}</span>`).join('');
+    // Generar HTML para cada tipo de etiqueta
+    const industriasHTML = industrias.map(ind => `<span class="etiqueta">${ind}</span>`).join('');
+    const subIndustriasHTML = Array.from(subIndustrias).map(si => 
+      `<span style="padding:5px 0; color:#4ce3a7; margin-left:10px;">
+        <i><b>#${si}</b></i>
+      </span>`
+    ).join(' ');
     const ramaHTML = ramas.map(r => `<span class="etiqueta" style="background-color: #092534; color: white;">${r}</span>`).join('');
     const subRamaHTML = Array.from(subRamas).map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ');
   
     const hrOrNot = isLastDoc ? '' : `<hr style="border: none; border-top: 1px solid #ddd; width: 75%; margin: 10px auto;">`;
   
     return `
-      <div class="document">
-        <h2>${doc.short_name}</h2>
-        <p>${cnaeHTML} ${ramaHTML}</p>
-        <p>${subRamaHTML}</p>
-        <p>${doc.resumen}</p>
-        <p>
-          <div class="margin-impacto">
-            <a class="button-impacto"
-               href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
-               style="margin-right: 10px;">
-              Análisis impacto normativo
-            </a>
-          </div>
-          <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
-            Leer más: ${doc._id}
+    <div class="document">
+      <h2>${doc.short_name}</h2>
+      <p>${industriasHTML} ${ramaHTML}</p>
+      <p>${subIndustriasHTML} ${subRamaHTML}</p>
+      <p>${doc.resumen}</p>
+      <p>
+        <div class="margin-impacto">
+          <a class="button-impacto"
+             href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+             style="margin-right: 10px;">
+            Análisis impacto normativo
           </a>
-          <span class="less-opacity">
-            ${doc.num_paginas || 0} 
-            ${doc.num_paginas === 1 ? 'página' : 'páginas'}
-            - tiempo estimado de lectura: ${doc.tiempo_lectura || 1} minutos
-          </span>
-        </p>
-      </div>
-      ${hrOrNot}
-    `;
+        </div>
+        <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
+          Leer más: ${doc._id}
+        </a>
+        <span class="less-opacity">
+          ${doc.num_paginas || 0} 
+          ${doc.num_paginas === 1 ? 'página' : 'páginas'}
+          - tiempo estimado de lectura: ${doc.tiempo_lectura || 1} minutos
+        </span>
+      </p>
+    </div>
+    ${hrOrNot}
+  `;  
   }
   
   
@@ -875,7 +936,8 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       }
   
 
-    const filteredUsers = filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email && u.email.toLowerCase() === 'info.wevelop@gmail.com'); 
+    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'inigo.martin.llorente@gmail.com'); 
+    //filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email && u.email.toLowerCase() === 'info.wevelop@gmail.com'); 
 
 
 
@@ -926,6 +988,7 @@ const userRangos = user.rangos || [
   ];
   const userIndustries = user.industry_tags || [];
   const userRamas = user.rama_juridicas || [];
+  const userSubIndustriaMap = user.sub_industria_map || {};
   console.log(userRamas);
   console.log(userIndustries);
   
@@ -958,38 +1021,96 @@ const userRangos = user.rangos || [
     
     if (!hasRamaMatch) continue;
     
-    // FILTER 3: Check for industry match (either matching specific industry or "General")
+    // FILTER 3: Check for industry match using sub_industria_map
     let hasIndustryMatch = false;
     let matchedIndustries = [];
-    
-    let docIndustries = doc.divisiones_cnae || [];
-    if (!Array.isArray(docIndustries)) docIndustries = [docIndustries];
-    
-    // Special case: If document has "General" industry and matches rama, it's a match
-    if (docIndustries.includes("General")) {
-      hasIndustryMatch = true;
-      matchedIndustries.push("General");
-    } else {
-      // Check for specific industry matches
-      for (const industry of userIndustries) {
-        if (docIndustries.includes(industry)) {
+    let matchedSubIndustrias = [];
+
+    // Obtener sub_industria_map del usuario
+    const userSubIndustriaMap = user.sub_industria_map || {};
+
+    // Verificar si el documento tiene divisiones_cnae
+    if (doc.divisiones_cnae) {
+      // Si divisiones_cnae es un objeto (nueva estructura)
+      if (typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+        const docIndustrias = Object.keys(doc.divisiones_cnae);
+        
+        // Caso especial: Si el documento tiene la industria "General", es una coincidencia
+        if (docIndustrias.includes("General")) {
           hasIndustryMatch = true;
-          matchedIndustries.push(industry);
+          matchedIndustries.push("General");
+        } else {
+          // Verificar coincidencias de subindustrias
+          for (const [userIndustria, userSubIndustrias] of Object.entries(userSubIndustriaMap)) {
+            // Si la industria del usuario está en el documento
+            if (docIndustrias.includes(userIndustria)) {
+              const docSubIndustrias = doc.divisiones_cnae[userIndustria] || [];
+              
+              // Si no hay subindustrias específicas seleccionadas por el usuario para esta industria,
+              // o si hay al menos una subindustria coincidente, es una coincidencia
+              if (userSubIndustrias.length === 0) {
+                hasIndustryMatch = true;
+                matchedIndustries.push(userIndustria);
+              } else {
+                // Verificar si hay subindustrias coincidentes
+                for (const userSubIndustria of userSubIndustrias) {
+                  if (docSubIndustrias.includes(userSubIndustria)) {
+                    hasIndustryMatch = true;
+                    matchedIndustries.push(userIndustria);
+                    matchedSubIndustrias.push(userSubIndustria);
+                    break; // Una coincidencia es suficiente para esta industria
+                  }
+                }
+              }
+            }
+          }
+          
+          // Si no hay coincidencias de subindustrias, verificar coincidencias de industrias
+          if (!hasIndustryMatch && userIndustries.length > 0) {
+            for (const industry of userIndustries) {
+              if (docIndustrias.includes(industry)) {
+                hasIndustryMatch = true;
+                matchedIndustries.push(industry);
+              }
+            }
+          }
+        }
+      } 
+      // Si divisiones_cnae es un array (estructura antigua)
+      else {
+        let docIndustrias = Array.isArray(doc.divisiones_cnae) ? doc.divisiones_cnae : [doc.divisiones_cnae];
+        
+        // Caso especial: Si el documento tiene la industria "General", es una coincidencia
+        if (docIndustrias.includes("General")) {
+          hasIndustryMatch = true;
+          matchedIndustries.push("General");
+        } else {
+          // Verificar coincidencias de industrias
+          for (const industry of userIndustries) {
+            if (docIndustrias.includes(industry)) {
+              hasIndustryMatch = true;
+              matchedIndustries.push(industry);
+            }
+          }
         }
       }
     }
+
     
     // Document must match BOTH rama and industry criteria
     if (hasRamaMatch && hasIndustryMatch) {
       // Create enhanced version of the document with matched values
+    // Create enhanced version of the document with matched values
       filteredMatchingDocs.push({
         collectionName: collectionName,
         doc: {
           ...doc,
           matched_cnaes: matchedIndustries,
-          matched_rama_juridica: matchedRamas
+          matched_rama_juridica: matchedRamas,
+          matched_sub_industrias: matchedSubIndustrias
         }
       });
+
     }
   }
   

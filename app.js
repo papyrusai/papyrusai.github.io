@@ -1188,7 +1188,6 @@ app.get('/data', async (req, res) => {
       // Extract document data
       let cnaes = doc.divisiones_cnae || [];
       if (!Array.isArray(cnaes)) cnaes = [cnaes];
-      const hasGeneral = cnaes.includes("General");
       
       // Rango filter (must match user rangos if specified)
       const docRango = doc.rango_titulo || "Indefinido";
@@ -1277,6 +1276,16 @@ app.get('/data', async (req, res) => {
       let hasIndustryMatch = chosenIndustries.length === 0; // Default true if no industries chosen
       let matchedIndustries = [];
       let matchedSubIndustrias = [];
+            // Verificar si el documento tiene la industria "General"
+      let hasGeneral = false;
+
+      // Para la nueva estructura (objeto)
+      if (typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+        // Verificar si "General" es una clave en el objeto
+        if ("General" in doc.divisiones_cnae) {
+          hasGeneral = true;
+        }
+      }    
 
       // If General is present, industry match is automatic
       if (hasGeneral && chosenRamas.length > 0) {
