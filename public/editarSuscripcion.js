@@ -8,6 +8,16 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const editSubscriptionBtn = document.getElementById('editSuscription2');
+    if (editSubscriptionBtn) {
+      editSubscriptionBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        redirectToEditOnboarding();
+      });
+    }
+  });
   
   async function redirectToEditOnboarding() {
     // Create overlay with loader

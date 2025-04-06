@@ -794,24 +794,35 @@ app.get('/profile', async (req, res) => {
             ]
           },
           { rango_titulo: { $in: userRangos } },
-          { 
+          {
             $or: [
-              // Filtro por ramas jurídicas
-              { 'ramas_juridicas': { $in: userRamas } },
-              
-              // Filtro por subindustrias
+              // Documentos que cumplen AMBOS filtros: ramas jurídicas Y subindustrias
               {
-                $or: Object.entries(userSubIndustriaMap).flatMap(([industria, subIndustrias]) => 
-                  subIndustrias.map(subIndustria => ({
-                    [`divisiones_cnae.${industria}`]: subIndustria
-                  }))
-                )
+                $and: [
+                  // Filtro por ramas jurídicas
+                  { 'ramas_juridicas': { $in: userRamas } },
+                  
+                  // Filtro por subindustrias
+                  {
+                    $or: Object.entries(userSubIndustriaMap).flatMap(([industria, subIndustrias]) => 
+                      subIndustrias.map(subIndustria => ({
+                        [`divisiones_cnae.${industria}`]: subIndustria
+                      }))
+                    )
+                  }
+                ]
+              },
+              
+              // Documentos que tienen "General" en cualquier subindustria
+              {
+                $or: Object.keys(userSubIndustriaMap).map(industria => ({
+                  [`divisiones_cnae.${industria}`]: "General"
+                }))
               }
             ]
-          }
+          }          
         ]
       };
-
 
     const projection = {
       short_name: 1,
