@@ -426,6 +426,7 @@ function buildDocumentHTML(doc, isLastDoc) {
       }
     </style>
   </head>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300&display=swap" rel="stylesheet">
   <body>
     <div class="container">
       <div class="online-link">
@@ -936,8 +937,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       }
   
 
-    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'inigo.martin.llorente@gmail.com'); 
-    //filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email && u.email.toLowerCase() === 'info.wevelop@gmail.com'); 
+    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'inigo.martin.llorente@gmail.com'); //filterUniqueEmails(allUsers);  //
 
 
 

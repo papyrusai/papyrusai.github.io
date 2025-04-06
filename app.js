@@ -896,13 +896,33 @@ app.get('/profile', async (req, res) => {
             .join(' ');
         }
       
-        // Filtrar ramas jurídicas para mostrar solo las que coinciden con las del usuario
-        const matchingRamas = Object.keys(doc.ramas_juridicas || {}).filter(rama => 
-          userRamas.includes(rama)
-        );
-        const ramaHtml = matchingRamas.map(r => 
-          `<span class="rama-value">${r}</span>`
-        ).join('');
+       // Filtrar ramas jurídicas para mostrar según las condiciones específicas
+          let ramaHtml = '';
+          if (doc.ramas_juridicas) {
+            const matchingRamas = Object.keys(doc.ramas_juridicas).filter(rama => {
+              // Verificar si la rama está en las ramas del usuario
+              if (userRamas.includes(rama)) {
+                // Si el usuario no tiene subramas seleccionadas para esta rama específica,
+                // mostrar la rama siempre
+                if (!userSubRamaMap[rama] || userSubRamaMap[rama].length === 0) {
+                  return true;
+                }
+                // Si el usuario tiene subramas seleccionadas para esta rama,
+                // verificar si hay coincidencia de subramas
+                else if (Array.isArray(doc.ramas_juridicas[rama])) {
+                  return doc.ramas_juridicas[rama].some(subRama => 
+                    userSubRamaMap[rama].includes(subRama)
+                  );
+                }
+              }
+              return false;
+            });
+            
+            ramaHtml = matchingRamas.map(r => 
+              `<span class="rama-value">${r}</span>`
+            ).join('');
+          }
+
       
         // Filtrar subramas jurídicas para mostrar solo las que coinciden con las del usuario
         const subRamasHtml = Object.entries(doc.ramas_juridicas || {})
