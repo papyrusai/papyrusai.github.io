@@ -534,159 +534,191 @@
 
     // --------------------- DROPDOWN for Sector Económico ---------------------
     function populateIndustryDropdown() {
-  const container = document.getElementById('myDropdown');
-  if (!container) return;
-  container.innerHTML = '';
-  
-  // Ensure the container has the right overflow setting
-  container.style.overflow = 'visible';
-  
-  // "Todos" => checked
-  const lblTodos = document.createElement('label');
-  lblTodos.innerHTML = `<input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos`;
-  
-  // Prevent default label behavior for "Todos"
-  lblTodos.addEventListener('click', function(e) {
-    if (e.target.type !== 'checkbox') {
-      e.preventDefault();
-    }
-  });
-  
-  container.appendChild(lblTodos);
+          const container = document.getElementById('myDropdown');
+          if (!container) return;
+          container.innerHTML = '';
+          
+          // Ensure the container has the right overflow setting
+          container.style.overflow = 'visible';
+          
+          // "Todos" => checked
+          const lblTodos = document.createElement('label');
+          lblTodos.innerHTML = `<input type="checkbox" id="chkAllIndustry" value="Todos" checked> Todos`;
+          
+          // Prevent default label behavior for "Todos"
+          lblTodos.addEventListener('click', function(e) {
+            if (e.target.type !== 'checkbox') {
+              e.preventDefault();
+            }
+          });
+          
+          container.appendChild(lblTodos);
 
-  userIndustries.forEach(ind => {
-    // Create a container for the industry label and its subindustrias dropdown
-    const industriaContainer = document.createElement('div');
-    industriaContainer.className = 'rama-label-container';
-    
-    const lbl = document.createElement('label');
-    lbl.innerHTML = `<input type="checkbox" value="${ind}" checked> <span class="industria-text">${ind}</span>`;
+          userIndustries.forEach(ind => {
+            // Create a container for the industry label and its subindustrias dropdown
+            const industriaContainer = document.createElement('div');
+            industriaContainer.className = 'rama-label-container';
+            
+            const lbl = document.createElement('label');
+            lbl.innerHTML = `<input type="checkbox" value="${ind}" checked> <span class="industria-text">${ind}</span>`;
 
-    // Create the subindustrias dropdown
-    const subIndustriasDropdown = document.createElement('div');
-    subIndustriasDropdown.className = 'subramas-dropdown';
-    subIndustriasDropdown.setAttribute('data-industria', ind);
-    
-    // Single event listener for label click that handles both checkbox and text
-    lbl.addEventListener('click', function(e) {
-      // If checkbox was clicked, let the default behavior happen
-      if (e.target.type === 'checkbox') {
-        return;
-      }
-      
-      // If toggle button was clicked, let its own handler work
-      if (e.target.closest('.subramas-toggle')) {
-        return;
-      }
-      
-      // For any other part of the label (text), prevent default and toggle dropdown
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Close all other open subindustrias dropdowns
-      document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-        if (dropdown !== subIndustriasDropdown) {
-          dropdown.classList.remove('active');
-        }
-      });
-      
-      // Toggle this dropdown
-      subIndustriasDropdown.classList.toggle('active');
-    });
-    
-    // Add a toggle button for subindustrias that doesn't interfere with checkbox
-    const toggleBtn = document.createElement('span');
-    toggleBtn.className = 'subramas-toggle';
-    toggleBtn.innerHTML = ' <i class="fa fa-caret-right"></i>';
-    toggleBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      // Close all other open subindustrias dropdowns
-      document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
-        if (dropdown !== subIndustriasDropdown) {
-          dropdown.classList.remove('active');
-        }
-      });
-      // Toggle this dropdown
-      subIndustriasDropdown.classList.toggle('active');
-    });
-    
-    lbl.appendChild(toggleBtn);
-    industriaContainer.appendChild(lbl);
-    
-    // Add subindustrias checkboxes if available for this industria
-    if (userSubIndustriaMap[ind] && userSubIndustriaMap[ind].length > 0) {
-      userSubIndustriaMap[ind].forEach(sub => {
-        const subLabel = document.createElement('label');
-        subLabel.innerHTML = `<input type="checkbox" class="subindustria-checkbox" data-industria="${ind}" data-subindustria="${sub}" checked> ${sub}`;
-        subIndustriasDropdown.appendChild(subLabel);
-      });
-    } else {
-      const noSubLabel = document.createElement('div');
-      noSubLabel.textContent = "No hay subindustrias";
-      noSubLabel.style.padding = "5px";
-      noSubLabel.style.fontStyle = "italic";
-      noSubLabel.style.color = "#666";
-      subIndustriasDropdown.appendChild(noSubLabel);
-    }
-    
-    industriaContainer.appendChild(subIndustriasDropdown);
-    container.appendChild(industriaContainer);
-  });
+            // Create the subindustrias dropdown
+            const subIndustriasDropdown = document.createElement('div');
+            subIndustriasDropdown.className = 'subramas-dropdown';
+            subIndustriasDropdown.setAttribute('data-industria', ind);
+            
+            // Single event listener for label click that handles both checkbox and text
+            lbl.addEventListener('click', function(e) {
+              // If checkbox was clicked, let the default behavior happen
+              if (e.target.type === 'checkbox') {
+                return;
+              }
+              
+              // If toggle button was clicked, let its own handler work
+              if (e.target.closest('.subramas-toggle')) {
+                return;
+              }
+              
+              // For any other part of the label (text), prevent default and toggle dropdown
+              e.preventDefault();
+              e.stopPropagation();
+              
+              // Close all other open subindustrias dropdowns
+              document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+                if (dropdown !== subIndustriasDropdown) {
+                  dropdown.classList.remove('active');
+                }
+              });
+              
+              // Toggle this dropdown
+              subIndustriasDropdown.classList.toggle('active');
+            });
+            
+            // Add a toggle button for subindustrias that doesn't interfere with checkbox
+            const toggleBtn = document.createElement('span');
+            toggleBtn.className = 'subramas-toggle';
+            toggleBtn.innerHTML = ' <i class="fa fa-caret-right"></i>';
+            toggleBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              // Close all other open subindustrias dropdowns
+              document.querySelectorAll('.subramas-dropdown.active').forEach(dropdown => {
+                if (dropdown !== subIndustriasDropdown) {
+                  dropdown.classList.remove('active');
+                }
+              });
+              // Toggle this dropdown
+              subIndustriasDropdown.classList.toggle('active');
+            });
+            
+            lbl.appendChild(toggleBtn);
+            industriaContainer.appendChild(lbl);
+            
+            // Add subindustrias checkboxes if available for this industria
+            if (userSubIndustriaMap[ind] && userSubIndustriaMap[ind].length > 0) {
+              userSubIndustriaMap[ind].forEach(sub => {
+                const subLabel = document.createElement('label');
+                subLabel.innerHTML = `<input type="checkbox" class="subindustria-checkbox" data-industria="${ind}" data-subindustria="${sub}" checked> ${sub}`;
+                subIndustriasDropdown.appendChild(subLabel);
+              });
+            } else {
+              const noSubLabel = document.createElement('div');
+              noSubLabel.textContent = "No hay subindustrias";
+              noSubLabel.style.padding = "5px";
+              noSubLabel.style.fontStyle = "italic";
+              noSubLabel.style.color = "#666";
+              subIndustriasDropdown.appendChild(noSubLabel);
+            }
+            
+            industriaContainer.appendChild(subIndustriasDropdown);
+            container.appendChild(industriaContainer);
+          });
 
-  const chkAllIndustry = lblTodos.querySelector('#chkAllIndustry');
-  chkAllIndustry.addEventListener('change', () => {
-    const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry):not(.subindustria-checkbox)');
-    if (chkAllIndustry.checked) {
-      others.forEach(o => o.checked = true);
-      // Also check all subindustrias
-      container.querySelectorAll('.subindustria-checkbox').forEach(s => s.checked = true);
-    } else {
-      others.forEach(o => o.checked = false);
-      // Also uncheck all subindustrias
-      container.querySelectorAll('.subindustria-checkbox').forEach(s => s.checked = false);
-    }
-    updateIndustryLabel();
-  });
-  
-  const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry):not(.subindustria-checkbox)');
-  otherBoxes.forEach(box => {
-    box.addEventListener('change', () => {
-      const allChecked = [...otherBoxes].every(b => b.checked);
-      chkAllIndustry.checked = allChecked;
-      
-      // Toggle all subindustrias for this industry
-      const industria = box.value;
-      const subBoxes = container.querySelectorAll(`.subindustria-checkbox[data-industria="${industria}"]`);
-      subBoxes.forEach(sb => sb.checked = box.checked);
-      
-      updateIndustryLabel();
-    });
-  });
-  
-  // Add event listeners for subindustria checkboxes
-  const subIndustriaBoxes = container.querySelectorAll('.subindustria-checkbox');
-  subIndustriaBoxes.forEach(box => {
-    box.addEventListener('change', () => {
-      const industria = box.getAttribute('data-industria');
-      const industriaBox = container.querySelector(`input[type="checkbox"][value="${industria}"]`);
-      
-      // If any subindustria is checked, the parent industria should be checked
-      const subBoxes = container.querySelectorAll(`.subindustria-checkbox[data-industria="${industria}"]`);
-      const anySubChecked = [...subBoxes].some(sb => sb.checked);
-      industriaBox.checked = anySubChecked;
-      
-      // Update the "Todos" checkbox
-      const allIndustriasChecked = [...otherBoxes].every(b => b.checked);
-      chkAllIndustry.checked = allIndustriasChecked;
-      
-      updateIndustryLabel();
-    });
-  });
+          const chkAllIndustry = lblTodos.querySelector('#chkAllIndustry');
+          chkAllIndustry.addEventListener('change', () => {
+            const others = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry):not(.subindustria-checkbox)');
+            if (chkAllIndustry.checked) {
+              others.forEach(o => o.checked = true);
+              // Also check all subindustrias
+              container.querySelectorAll('.subindustria-checkbox').forEach(s => s.checked = true);
+            } else {
+              others.forEach(o => o.checked = false);
+              // Also uncheck all subindustrias
+              container.querySelectorAll('.subindustria-checkbox').forEach(s => s.checked = false);
+            }
+            updateIndustryLabel();
+          });
+          
+          const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry):not(.subindustria-checkbox)');
+          otherBoxes.forEach(box => {
+            box.addEventListener('change', () => {
+              const allChecked = [...otherBoxes].every(b => b.checked);
+              chkAllIndustry.checked = allChecked;
+              
+              // Toggle all subindustrias for this industry
+              const industria = box.value;
+              const subBoxes = container.querySelectorAll(`.subindustria-checkbox[data-industria="${industria}"]`);
+              subBoxes.forEach(sb => sb.checked = box.checked);
+              
+              updateIndustryLabel();
+            });
+          });
+          
+          // Add event listeners for subindustria checkboxes
+          const subIndustriaBoxes = container.querySelectorAll('.subindustria-checkbox');
+          subIndustriaBoxes.forEach(box => {
+            box.addEventListener('change', () => {
+              const industria = box.getAttribute('data-industria');
+              const industriaBox = container.querySelector(`input[type="checkbox"][value="${industria}"]`);
+              
+              // If any subindustria is checked, the parent industria should be checked
+              const subBoxes = container.querySelectorAll(`.subindustria-checkbox[data-industria="${industria}"]`);
+              const anySubChecked = [...subBoxes].some(sb => sb.checked);
+              industriaBox.checked = anySubChecked;
+              
+              // Update the "Todos" checkbox
+              const allIndustriasChecked = [...otherBoxes].every(b => b.checked);
+              chkAllIndustry.checked = allIndustriasChecked;
+              
+              updateIndustryLabel();
+            });
+          });
 
-  document.getElementById('selectedIndustry').textContent = 'Todas';
+          document.getElementById('selectedIndustry').textContent = 'Todas';
 }
 
+function toggleIndustryDropdown() {
+      document.getElementById('myDropdown').classList.toggle('show');
+    }
+    function updateIndustryLabel() {
+      const container = document.getElementById('myDropdown');
+      const chkAllIndustry = container.querySelector('#chkAllIndustry');
+      const otherBoxes = container.querySelectorAll('input[type="checkbox"]:not(#chkAllIndustry)');
+      const labelSpan = document.getElementById('selectedIndustry');
+
+      if (chkAllIndustry.checked) {
+        labelSpan.textContent = 'Todas';
+        return;
+      }
+      let checkedCount = 0;
+      let singleValue = '';
+      otherBoxes.forEach(b => {
+        if (b.checked) {
+          checkedCount++;
+          singleValue = b.value;
+        }
+      });
+      if (checkedCount === 0) {
+        labelSpan.textContent = '-';
+      } else if (checkedCount === 1) {
+        labelSpan.textContent = singleValue;
+      } else if (checkedCount === otherBoxes.length) {
+        labelSpan.textContent = 'Todas';
+        chkAllIndustry.checked = true;
+      } else {
+        labelSpan.textContent = checkedCount + ' seleccionados';
+      }
+    }
     // --------------------- DROPDOWN for Ramas ---------------------
   // NEW: Replace the existing populateRamaDropdown function with this updated version
 function populateRamaDropdown() {

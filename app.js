@@ -1396,13 +1396,32 @@ app.get('/data', async (req, res) => {
             .join(' ');
         }
         
-        const ramaHtml = (doc.matched_rama_juridica || [])
-          .map(r => `<span class="rama-value">${r}</span>`).join('');
-        const subRamasHtml = (doc.matched_sub_rama_juridica || [])
-          .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ');
-      
-        const rangoToShow = doc.rango_titulo || "Indefinido";
-        
+            // Crear un mapa de ramas a subramas coincidentes para facilitar la verificación
+      const ramaToMatchedSubRamas = {};
+      (doc.matched_sub_rama_juridica || []).forEach(subRama => {
+        // Para cada subrama coincidente, necesitamos encontrar a qué rama pertenece
+        for (const [rama, subramas] of Object.entries(doc.ramas_juridicas || {})) {
+          if (Array.isArray(subramas) && subramas.includes(subRama) || 
+              (subramas.length === 0 && subRama === "genérico")) {
+            // Si encontramos la rama a la que pertenece esta subrama
+            ramaToMatchedSubRamas[rama] = ramaToMatchedSubRamas[rama] || [];
+            ramaToMatchedSubRamas[rama].push(subRama);
+          }
+        }
+      });
+
+      // Solo mostrar las ramas que tienen subramas coincidentes
+      const ramaHtml = Object.keys(ramaToMatchedSubRamas)
+        .map(r => `<span class="rama-value">${r}</span>`)
+        .join('');
+
+      // Mostrar todas las subramas coincidentes
+      const subRamasHtml = (doc.matched_sub_rama_juridica || [])
+        .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
+        .join(' ');
+
+      const rangoToShow = doc.rango_titulo || "Indefinido";
+
         return `
           <div class="data-item">
             <div class="header-row">
