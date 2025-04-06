@@ -1056,6 +1056,8 @@ app.get('/data', async (req, res) => {
       return res.status(400).json({ error: 'No industry tags selected' });
     }
     const userSubRamaMap = user.sub_rama_map || {};
+    const userSubIndustriaMap = user.sub_industria_map || {};
+
 
     // 1) Collect query parameters from the front-end
     const collections = req.query.collections || ['BOE']; // bulletins
@@ -1166,6 +1168,18 @@ app.get('/data', async (req, res) => {
         });
       }
     }
+      // Parse subIndustrias from JSON string
+      let chosenSubIndustriasMap = {};
+      const subIndustriasStr = req.query.subIndustrias || '';
+      if (subIndustriasStr.trim() !== '') {
+        try {
+          chosenSubIndustriasMap = JSON.parse(subIndustriasStr);
+          console.log("Parsed subIndustrias:", chosenSubIndustriasMap);
+        } catch (e) {
+          console.error("Error parsing subIndustrias JSON:", e);
+          chosenSubIndustriasMap = {};
+        }
+      }
 
 
     // 9) Final in-memory filter with new logic
@@ -1259,19 +1273,59 @@ app.get('/data', async (req, res) => {
     }
 
       
-      // Check industry match (divisiones_cnae)
+      // Check industry match (divisiones_cnae) --> subindustrias logic
       let hasIndustryMatch = chosenIndustries.length === 0; // Default true if no industries chosen
       let matchedIndustries = [];
-      
+      let matchedSubIndustrias = [];
+
       // If General is present, industry match is automatic
-      if (hasGeneral && chosenRamas.length>0) {
+      if (hasGeneral && chosenRamas.length > 0) {
         hasIndustryMatch = true;
         matchedIndustries.push("General");
-      } else if (chosenIndustries.length > 0) {
-        // Check against chosen industries
-        matchedIndustries = cnaes.filter(cnae => chosenIndustries.includes(cnae));
-        hasIndustryMatch = matchedIndustries.length > 0;
+      } else {
+        // Check for subindustrias matches
+        if (Object.keys(chosenSubIndustriasMap).length > 0) {
+          let hasSubIndustriaMatch = false;
+          
+          // Check each industry in the document
+          if (doc.divisiones_cnae && typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+            for (const [industria, subIndustrias] of Object.entries(doc.divisiones_cnae)) {
+              // Check if this industry is in the chosen subindustrias map
+              if (chosenSubIndustriasMap[industria]) {
+                const chosenSubIndustrias = chosenSubIndustriasMap[industria];
+                
+                if (chosenSubIndustrias.length === 0) {
+                  // If no specific subindustrias chosen for this industry, it's a match
+                  hasSubIndustriaMatch = true;
+                  matchedIndustries.push(industria);
+                  continue;
+                }
+                
+                // Check if any of the document's subindustrias match the chosen ones
+                if (Array.isArray(subIndustrias)) {
+                  const intersection = subIndustrias.filter(si => chosenSubIndustrias.includes(si));
+                  if (intersection.length > 0) {
+                    hasSubIndustriaMatch = true;
+                    matchedIndustries.push(industria);
+                    matchedSubIndustrias = matchedSubIndustrias.concat(intersection);
+                  }
+                }
+              }
+            }
+          }
+          
+          hasIndustryMatch = hasSubIndustriaMatch;
+        } else if (chosenIndustries.length > 0) {
+          // Fall back to old industry matching if no subindustrias specified
+          if (Array.isArray(doc.divisiones_cnae)) {
+            matchedIndustries = doc.divisiones_cnae.filter(cnae => chosenIndustries.includes(cnae));
+          } else if (typeof doc.divisiones_cnae === 'object') {
+            matchedIndustries = Object.keys(doc.divisiones_cnae).filter(cnae => chosenIndustries.includes(cnae));
+          }
+          hasIndustryMatch = matchedIndustries.length > 0;
+        }
       }
+
       
       // CHANGE 3: Updated matching criteria based on chosen values
       let documentMatches = false;
@@ -1297,6 +1351,7 @@ app.get('/data', async (req, res) => {
         doc.matched_cnaes = matchedIndustries.length > 0 ? matchedIndustries : cnaes;
         doc.matched_rama_juridica = [...new Set(matchedRamas)];
         doc.matched_sub_rama_juridica = [...new Set(matchedSubRamas)];
+        doc.matched_sub_industrias = [...new Set(matchedSubIndustrias)];
         filteredDocuments.push(doc);
       }
     }
@@ -1307,13 +1362,45 @@ app.get('/data', async (req, res) => {
       documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
     } else {
       documentsHtml = filteredDocuments.map(doc => {
-        const cnaesHtml = (doc.matched_cnaes || [])
-          .map(div => `<span>${div}</span>`).join('');
+        // Generate HTML for industries
+        let cnaesHtml = '';
+        if (doc.matched_cnaes && doc.matched_cnaes.length > 0) {
+          cnaesHtml = doc.matched_cnaes.map(div => `<span>${div}</span>`).join('');
+        }
+        
+        // Generate HTML for subindustrias
+        let subIndustriasHtml = '';
+        if (doc.divisiones_cnae && typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
+          // Filter industries to only include matched ones
+          const matchedIndustrias = doc.matched_cnaes || [];
+          
+          subIndustriasHtml = Object.entries(doc.divisiones_cnae)
+            // Filter to only include matched industries
+            .filter(([industria, _]) => matchedIndustrias.includes(industria))
+            // For each matched industry, filter its subindustrias
+            .flatMap(([industria, subIndustrias]) => {
+              if (!Array.isArray(subIndustrias)) return [];
+              
+              // If we have specific subindustrias in chosenSubIndustriasMap, filter by them
+              if (chosenSubIndustriasMap[industria] && chosenSubIndustriasMap[industria].length > 0) {
+                return subIndustrias
+                  .filter(si => chosenSubIndustriasMap[industria].includes(si))
+                  .map(si => `<span class="sub-industria-value"><i><b>#${si}</b></i></span>`);
+              }
+              
+              // Otherwise, show all subindustrias for this industry
+              return subIndustrias.map(si => 
+                `<span class="sub-industria-value"><i><b>#${si}</b></i></span>`
+              );
+            })
+            .join(' ');
+        }
+        
         const ramaHtml = (doc.matched_rama_juridica || [])
           .map(r => `<span class="rama-value">${r}</span>`).join('');
         const subRamasHtml = (doc.matched_sub_rama_juridica || [])
           .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`).join(' ');
-
+      
         const rangoToShow = doc.rango_titulo || "Indefinido";
         
         return `
@@ -1326,11 +1413,12 @@ app.get('/data', async (req, res) => {
             <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
               ${rangoToShow} | ${doc.collectionName}
             </div>
-
+      
             <div class="etiquetas-values">${cnaesHtml}</div>
+            <div class="sub-industria-values">${subIndustriasHtml}</div>
             <div class="rama-juridica-values">${ramaHtml}</div>
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
-
+      
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
@@ -1342,17 +1430,17 @@ app.get('/data', async (req, res) => {
             <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
               Leer más: ${doc._id}
             </a>
-
+      
             <!-- Optional feedback icons -->
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
-
+      
             <!-- Hidden fields for doc-rango or doc-seccion, if needed -->
             <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
         `;
-      }).join('');
+      }).join('');      
     }
 
     // 11) Chart data
