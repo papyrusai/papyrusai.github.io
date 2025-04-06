@@ -897,17 +897,23 @@ app.get('/profile', async (req, res) => {
         }
       
        // Filtrar ramas jurídicas para mostrar según las condiciones específicas
+          // Filtrar ramas jurídicas para mostrar según las condiciones específicas
           let ramaHtml = '';
           if (doc.ramas_juridicas) {
             const matchingRamas = Object.keys(doc.ramas_juridicas).filter(rama => {
               // Verificar si la rama está en las ramas del usuario
               if (userRamas.includes(rama)) {
-                // Si el usuario no tiene subramas seleccionadas para esta rama específica,
+                // Caso 1: Si el usuario no tiene subramas seleccionadas para esta rama específica,
                 // mostrar la rama siempre
                 if (!userSubRamaMap[rama] || userSubRamaMap[rama].length === 0) {
                   return true;
                 }
-                // Si el usuario tiene subramas seleccionadas para esta rama,
+                // Caso 2: Si el documento tiene la rama pero no tiene subramas asociadas,
+                // mostrar la rama siempre
+                else if (!Array.isArray(doc.ramas_juridicas[rama]) || doc.ramas_juridicas[rama].length === 0) {
+                  return true;
+                }
+                // Caso 3: Si el usuario tiene subramas seleccionadas para esta rama y el documento tiene subramas,
                 // verificar si hay coincidencia de subramas
                 else if (Array.isArray(doc.ramas_juridicas[rama])) {
                   return doc.ramas_juridicas[rama].some(subRama => 
@@ -921,6 +927,7 @@ app.get('/profile', async (req, res) => {
             ramaHtml = matchingRamas.map(r => 
               `<span class="rama-value">${r}</span>`
             ).join('');
+            console.log(matchingRamas);
           }
 
       
