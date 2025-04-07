@@ -565,7 +565,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     if (boeGeneralDocs.length === 0) {
       introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
     } else {
-      introText = `<p>A continuación, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy</p>`;
+      introText = `<p>Auqnue no hay novedades normativas que te afecten directamente hoy, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy, para que puedes leer en 5 minutos los principales cambios normativos publicados en España hoy</p>`;
     }
   
     // NEW: Group by rango first, then by collection

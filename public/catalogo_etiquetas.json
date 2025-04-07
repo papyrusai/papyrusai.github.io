@@ -134,7 +134,7 @@
     ],
     "Derecho Digital y Proteccion de Datos": [
       "Proteccion de datos personales",
-      "Servicios digitales y comercio electrónico",
+      "Servicios digitales y comercio electronico",
       "Blockchain y criptoactivos",
       "Inteligencia Artificial",
       "Ciberseguridad"
@@ -153,16 +153,16 @@
     ]
   },
   "rangos_normativos": [
-    "Legislativa",
+    "Legislacion",
     "Normativa Reglamentaria",
     "Doctrina Administrativa",
-    "Comunicados, Guías y Directivas de Reguladores",
+    "Comunicados, Guias y Directivas de Reguladores",
     "Decisiones Judiciales",
     "Normativa Europea",
     "Acuerdos Internacionales",
     "Anuncios de Concentración de Empresas",
-    "Dictámenes y Opiniones Consultivas",
-    "Consultas Públicas",
+    "Dictamenes y Opiniones Consultivas",
+    "Consultas Publicas",
     "Propuestas Legislativas",
     "Otras"
   ]
