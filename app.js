@@ -751,6 +751,8 @@ app.get('/profile', async (req, res) => {
     const userSubRamaMap = user.sub_rama_map || {};
     const userSubIndustriaMap = user.sub_industria_map || {};
 
+    console.log(`User subindustrias: ${userSubIndustriaMap}:`, userSubIndustriaMap);
+
     // Verificar si userSubIndustriaMap está vacío, undefined o no tiene entradas válidas
     if (!userSubIndustriaMap || typeof userSubIndustriaMap !== 'object' || Object.keys(userSubIndustriaMap).length === 0) {
       // Preparar HTML con mensaje de error
@@ -1297,7 +1299,6 @@ app.get('/data', async (req, res) => {
         }
       }
       
-     // Replace the existing subrama filtering code with this
     // Filter by chosen subramas if specified
     if (Object.keys(chosenSubRamasMap).length > 0) {
       let hasSubRamaMatch = false;
