@@ -751,6 +751,31 @@ app.get('/profile', async (req, res) => {
     const userSubRamaMap = user.sub_rama_map || {};
     const userSubIndustriaMap = user.sub_industria_map || {};
 
+    // Verificar si userSubIndustriaMap está vacío, undefined o no tiene entradas válidas
+    if (!userSubIndustriaMap || typeof userSubIndustriaMap !== 'object' || Object.keys(userSubIndustriaMap).length === 0) {
+      // Preparar HTML con mensaje de error
+      let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
+      profileHtml = profileHtml
+        .replace('{{name}}', user.name || '')
+        .replace('{{email}}', user.email || '')
+        .replace('{{subindustria_map_json}}', JSON.stringify({}))
+        .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags || []))
+        .replace('{{rama_juridicas_json}}', JSON.stringify(user.rama_juridicas || {}))
+        .replace('{{subrama_juridicas_json}}', JSON.stringify(user.sub_rama_map || {}))
+        .replace('{{boeDocuments}}', `<div class="no-results" style="color: red; font-weight: bold; padding: 20px; text-align: center; font-size: 16px;">El avatar Juridico de tu usuario está incompleto: por favor edita tu suscripción para seleccionar tus filtros de nuevo. ¡Gracias!</div>`)
+        .replace('{{months_json}}', JSON.stringify([]))
+        .replace('{{counts_json}}', JSON.stringify([]))
+        .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
+        .replace('{{start_date}}', JSON.stringify(new Date()))
+        .replace('{{end_date}}', JSON.stringify(new Date()))
+        .replace('{{user_boletines_json}}', JSON.stringify(userBoletines || []))
+        .replace('{{user_rangos_json}}', JSON.stringify(userRangos || []));
+      
+      // Enviar respuesta y terminar la ejecución
+      return res.send(profileHtml);
+    }
+
+
 
     // NEW: Extract user's industries, ramas, and rangos
     const userIndustries = user.industry_tags || [];
