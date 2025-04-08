@@ -556,7 +556,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     if (boeGeneralDocs.length === 0) {
       introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
     } else {
-      introText = `<p>Auqnue no hay novedades normativas que te afecten directamente hoy, te compartimos un resumen inteligente de las disposiciones generales del BOE de hoy, para que puedes leer en 5 minutos los principales cambios normativos publicados en España hoy</p>`;
+      introText = `<p>Hoy no hay nada que te afecte direcatemente, pero por si te pica la curiosidad, aquí tienes un resumen de 5 minutos de las disposiciones geenrales del BOE</p>`;
     }
   
     // NEW: Group by rango first, then by collection
@@ -941,7 +941,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       }
   
 
-    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'inigo.martin.llorente@gmail.com'); //filterUniqueEmails(allUsers);  //
+    const filteredUsers =  filterUniqueEmails(allUsers);  //allUsers.filter(u => u.email && u.email.toLowerCase() === 'inigo.martin.llorente@gmail.com');
 
 
 
