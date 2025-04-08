@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmación de Suscripción a Papyrus</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+      color: #0b2431;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header {
+      background-color: #0b2431;
+      padding: 24px;
+      text-align: center;
+    }
+    
+    .header img {
+      height: 48px;
+    }
+    
+    .content {
+      padding: 32px;
+      font-family: Georgia, serif;
+    }
+    
+    h1 {
+      color: #04db8d;
+      font-size: 24px;
+      margin-bottom: 16px;
+      font-family: Georgia, serif;
+    }
+    
+    p {
+      line-height: 1.6;
+      margin-bottom: 16px;
+      color: #0b2431;
+    }
+    
+    .subscription-details {
+      background-color: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .subscription-details h2 {
+      font-size: 20px;
+      color: #455862;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+      font-family: Georgia, serif;
+    }
+    
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    @media (min-width: 500px) {
+      .details-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    .details-label {
+      font-size: 14px;
+      color: #455862;
+      margin-bottom: 4px;
+    }
+    
+    .details-value {
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: #0b2431;
+    }
+    
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: #04db8d;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: 500;
+      text-align: center;
+      transition: background-color 0.3s;
+    }
+    
+    .btn:hover {
+      background-color: #03c57f;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      font-size: 14px;
+      color: #455862;
+    }
+    
+    .footer a {
+      color: #04db8d;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://pub-fe3d137fb0d341499d19acfda6f6fb59.r2.dev/papyrus-logo.png" alt="Papyrus Logo">
+    </div>
+    
+    <div class="content">
+      <h1>Confirmación de Suscripción</h1>
+      
+      <p id="greeting">Estimado/a {{nombre}},</p>
+      
+      <p>
+        En el tablero implacable del mundo jurídico, donde cada movimiento cuenta y cada pieza tiene su valor, 
+        usted ha tomado una decisión tan acertada como inevitable: suscribirse a los servicios de Papyrus. 
+        Como esos viejos capitanes que, entre la niebla del mar, saben reconocer el único faro que les llevará a puerto seguro.
+      </p>
+      
+      <p>
+        No se trata simplemente de un servicio. Se trata de un escudo, forjado durante años en el fuego de la experiencia y el 
+        conocimiento, que ahora le protegerá en las batallas legales que el destino, siempre astuto, le tenga reservadas.
+      </p>
+      
+      <div class="subscription-details">
+        <h2>Detalles de su suscripción</h2>
+        
+        <div class="details-grid">
+          <div>
+            <p class="details-label">Nombre del Plan</p>
+            <p class="details-value" id="plan-name">{{planName}}</p>
+            
+            <p class="details-label">Precio</p>
+            <p class="details-value" id="plan-price">{{precio}}</p>
+            
+            <p class="details-label">Cobertura Legal</p>
+            <p class="details-value" id="cobertura-legal">{{coberturaLegal}}</p>
+            
+            <p class="details-label">Industrias Suscritas</p>
+            <ul class="details-value" id="industrias-list">
+              {{#each industriasSuscritas}}
+                <li>{{this}}</li>
+              {{/each}}
+            </ul>
+          </div>
+          
+          <div>
+            <p class="details-label">Ramas Jurídicas Suscritas</p>
+            <ul class="details-value" id="ramas-list">
+              {{#each ramasJuridicasSuscritas}}
+                <li>{{this}}</li>
+              {{/each}}
+            </ul>
+            
+            <p class="details-label">Rangos</p>
+            <ul class="details-value" id="rangos-list">
+              {{#each rangos}}
+                <li>{{this}}</li>
+              {{/each}}
+            </ul>
+            
+            <p class="details-label">Análisis de Impacto</p>
+            <p class="details-value" id="analisis-impacto">{{analisisImpacto}}</p>
+          </div>
+        </div>
+      </div>
+      
+      <p>
+        Como bien sabría decir un viejo jurista, en el complejo tablero de la ley, quien domina la información, 
+        domina el juego. Y ahora usted, con Papyrus como su fiel escudero, tiene las mejores cartas en la mano.
+      </p>
+      
+      <p>
+        Le recordamos que puede acceder a su cuenta en cualquier momento a través de nuestra plataforma. 
+        Allí encontrará, como un cartógrafo meticuloso, todos los mapas legales que necesita para navegar con precisión.
+      </p>
+      
+      <div class="text-center" style="margin-bottom: 24px;">
+        <a href="https://papyrus-legal.com" class="btn">Acceder a mi cuenta</a>
+      </div>
+      
+      <p>
+        Atentamente,
+      </p>
+      
+      <p style="font-weight: 500;">
+        El equipo de Papyrus
+      </p>
+      
+      <div class="footer">
+        <p style="margin-bottom: 8px;">© Papyrus Legal, {{year}}. Todos los derechos reservados.</p>
+        <p>
+          Si tiene alguna pregunta, puede contactarnos en
+          <a href="mailto:info@papyrus-ai.com">info@papyrus-ai.com</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

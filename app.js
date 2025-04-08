@@ -750,6 +750,26 @@ app.get('/profile', async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const userSubRamaMap = user.sub_rama_map || {};
     const userSubIndustriaMap = user.sub_industria_map || {};
+    // NEW: Extract user's industries, ramas, and rangos
+    const userIndustries = user.industry_tags || [];
+    const userRamas = Object.keys(user.rama_juridicas || {});
+    const userRangos = user.rangos || [
+      "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
+      "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
+    ];
+
+    // NEW: Extract bulletins from cobertura_legal
+    let userBoletines = [];
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    }
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    }
+    userBoletines = userBoletines.map(b => b.toUpperCase());
+    if (userBoletines.length === 0) {
+      userBoletines = ["BOE"];
+    }
 
     console.log(`User subindustrias: ${userSubIndustriaMap}:`, userSubIndustriaMap);
 
@@ -775,29 +795,6 @@ app.get('/profile', async (req, res) => {
       
       // Enviar respuesta y terminar la ejecución
       return res.send(profileHtml);
-    }
-
-
-
-    // NEW: Extract user's industries, ramas, and rangos
-    const userIndustries = user.industry_tags || [];
-    const userRamas = Object.keys(user.rama_juridicas || {});
-    const userRangos = user.rangos || [
-      "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
-      "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
-    ];
-
-    // NEW: Extract bulletins from cobertura_legal
-    let userBoletines = [];
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
-    }
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
-    }
-    userBoletines = userBoletines.map(b => b.toUpperCase());
-    if (userBoletines.length === 0) {
-      userBoletines = ["BOE"];
     }
 
     // Default date range for "profile": from 1 month ago to now
