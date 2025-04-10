@@ -556,7 +556,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     if (boeGeneralDocs.length === 0) {
       introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
     } else {
-      introText = `<p>Hoy no hay nada que te afecte direcatemente, pero por si te pica la curiosidad, aquí tienes un resumen de 5 minutos de las disposiciones generales del BOE</p>`;
+      introText = `<p>Hoy no hay nada que te afecte directamente, pero por si te pica la curiosidad, aquí tienes un resumen de 5 minutos de las disposiciones generales del BOE</p>`;
     }
   
     // NEW: Group by rango first, then by collection
