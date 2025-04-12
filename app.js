@@ -866,13 +866,14 @@ if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
       ? user.etiquetas_personalizadas 
       : selectedEtiquetas.filter(etiqueta => user.etiquetas_personalizadas.includes(etiqueta));
     
+      console.log(validEtiquetas);
     if (validEtiquetas.length > 0) {
       // MODIFICACIÓN: Usar $in para encontrar al menos una coincidencia en el array
       const etiquetasCondition = {};
       etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
         $in: validEtiquetas 
       };
-      
+      console.log(etiquetasCondition);
       // Añadir la condición a la consulta
       query.$and.push(etiquetasCondition);
     }
@@ -889,7 +890,8 @@ if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
       url_pdf: 1,
       ramas_juridicas: 1,
       rango_titulo: 1,
-      _id: 1
+      _id: 1,
+      etiquetas_personalizadas: 1,
     };
 
     let allDocuments = [];
