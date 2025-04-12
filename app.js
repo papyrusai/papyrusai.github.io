@@ -1471,7 +1471,7 @@ app.get('/data', async (req, res) => {
       }
 
       // Verificar coincidencia de etiquetas personalizadas
-      let hasEtiquetasMatch = chosenEtiquetas.length === 0 || chosenEtiquetas.includes('Todas'); // Por defecto true si no hay etiquetas elegidas o se eligió "Todas"
+      let hasEtiquetasMatch = chosenEtiquetas.includes('Todas'); // Por defecto true si no hay etiquetas elegidas o se eligió "Todas"
       let matchedEtiquetas = [];
       
       // Solo verificar etiquetas si se han elegido específicas
