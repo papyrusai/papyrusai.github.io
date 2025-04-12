@@ -1195,6 +1195,8 @@ app.get('/data', async (req, res) => {
     }
     const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || [];
     const userId = user._id.toString();
+    console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
+    console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
 
     // 2) Parse multiple Ramas
     let chosenRamas = [];
@@ -1503,19 +1505,19 @@ app.get('/data', async (req, res) => {
       
      
       // Si se han elegido etiquetas, ramas e industrias, requiere todas las coincidencias
-      if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && chosenRamas.length > 0 && chosenIndustries.length > 0) {
+      if (chosenEtiquetas.length > 0 && chosenRamas.length > 0 && chosenIndustries.length > 0) {
         documentMatches = hasRamaMatch && hasIndustryMatch && hasEtiquetasMatch;
       }
       // Si se han elegido etiquetas y ramas, requiere ambas coincidencias
-      else if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && chosenRamas.length > 0) {
+      else if (chosenEtiquetas.length > 0 && chosenRamas.length > 0) {
         documentMatches = hasRamaMatch && hasEtiquetasMatch;
       }
       // Si se han elegido etiquetas e industrias, requiere ambas coincidencias
-      else if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && chosenIndustries.length > 0) {
+      else if (chosenEtiquetas.length > 0 && chosenIndustries.length > 0) {
         documentMatches = hasIndustryMatch && hasEtiquetasMatch;
       }
       // Si solo se han elegido etiquetas, solo requiere coincidencia de etiquetas
-      else if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas')) {
+      else if (chosenEtiquetas.length > 0 ) {
         documentMatches = hasEtiquetasMatch;
       }
       // Para los demás casos, mantener la lógica existente
