@@ -500,7 +500,7 @@ let selectedEtiquetas = [];
 function initEtiquetasPersonalizadas() {
     // Obtener las etiquetas personalizadas del usuario
     const etiquetasScript = document.getElementById('userEtiquetasPersonalizadas');
-    console.log(etiquetasScript);
+    console.log(etiquetasScript.textContent);
     if (etiquetasScript) {
       userEtiquetasPersonalizadas = JSON.parse(etiquetasScript.textContent) || [];
     }
