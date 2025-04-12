@@ -1468,9 +1468,10 @@ app.get('/data', async (req, res) => {
       // Verificar coincidencia de etiquetas personalizadas
       let hasEtiquetasMatch = chosenEtiquetas.length === 0 || chosenEtiquetas.includes('Todas'); // Por defecto true si no hay etiquetas elegidas o se eligió "Todas"
       let matchedEtiquetas = [];
-      
+      console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
+      console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
       // Solo verificar etiquetas si se han elegido específicas y el usuario tiene etiquetas
-      if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && userEtiquetasPersonalizadas.length > 0) {
+      if (chosenEtiquetas.length > 0 && userEtiquetasPersonalizadas.length > 0) {
         // Verificar si el documento tiene etiquetas personalizadas
         console.log(`Etiquetas personalizadas usuario:`, chosenEtiquetas);
         if (doc.etiquetas_personalizadas && typeof doc.etiquetas_personalizadas === 'object') {
