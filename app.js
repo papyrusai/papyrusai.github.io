@@ -1016,20 +1016,21 @@ if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
           })
           .join(' ');
 
-          const etiquetasPersonalizadasHtml = (() => {
-            // Si el documento no tiene etiquetas personalizadas, no mostrar nada
+          const etiquetasPersonalizadasHtml = (() => { 
+            // If the document does not have personalized etiquetas, return an empty string.
             if (!doc.etiquetas_personalizadas) return '';
             
-            // Obtener todas las etiquetas de todos los usuarios
-            const allEtiquetas = Object.entries(doc.etiquetas_personalizadas)
-              .flatMap(([userId, etiquetas]) => {
-                // Verificar que etiquetas es un array
-                return Array.isArray(etiquetas) ? etiquetas : [];
-              })
-              .filter(etiqueta => etiqueta); // Filtrar valores vacíos
+            // Collect all etiquetas from every user.
+            const etiquetasArray = Object.entries(doc.etiquetas_personalizadas)
+              .flatMap(([userId, etiquetas]) => Array.isArray(etiquetas) ? etiquetas : [])
+              .filter(etiqueta => etiqueta); // Remove any empty values
             
-            // Si no hay etiquetas, no mostrar nada
-            if (allEtiquetas.length === 0) return '';
+            // If there are no etiquetas, return an empty string.
+            if (etiquetasArray.length === 0) return '';
+            
+            // Use a Set to remove duplicates and convert it back to an array.
+            const allEtiquetas = [...new Set(etiquetasArray)];
+            
             
             // Generar HTML para las etiquetas
             return `
@@ -1646,13 +1647,18 @@ app.get('/data', async (req, res) => {
         // Generar HTML para etiquetas personalizadas
         let etiquetasPersonalizadasHtml = '';
         if (doc.etiquetas_personalizadas) {
-          // Obtener todas las etiquetas de todos los usuarios
-          const allEtiquetas = Object.entries(doc.etiquetas_personalizadas)
-            .flatMap(([userId, etiquetas]) => {
-              // Verificar que etiquetas es un array
-              return Array.isArray(etiquetas) ? etiquetas : [];
-            })
-            .filter(etiqueta => etiqueta); // Filtrar valores vacíos
+          // Obtener todas las etiquetas de todos los usuario
+            
+            // Collect all etiquetas from every user.
+            const etiquetasArray = Object.entries(doc.etiquetas_personalizadas)
+              .flatMap(([userId, etiquetas]) => Array.isArray(etiquetas) ? etiquetas : [])
+              .filter(etiqueta => etiqueta); // Remove any empty values
+            
+            // If there are no etiquetas, return an empty string.
+            if (etiquetasArray.length === 0) return '';
+            
+            // Use a Set to remove duplicates and convert it back to an array.
+            const allEtiquetas = [...new Set(etiquetasArray)];
           
           // Si hay etiquetas, generar el HTML
           if (allEtiquetas.length > 0) {
