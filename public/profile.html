@@ -298,6 +298,7 @@
     <script id="userSubIndustriaMap" type="application/json">{{subindustria_map_json}}</script>
     <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
     <script id="userSubRamaMap" type="application/json">{{subrama_juridicas_json}}</script>
+    <script id="userEtiquetasPersonalizadas" type="application/json">{{etiquetas_personalizadas_json}}</script>
 
     <div class="filter-banner-container">
       <div class="beta-banner">
@@ -351,6 +352,21 @@
           </div>
         </div>
       </div>
+
+            <!-- Etiquetas Personalizadas multi-check -->
+      <div class="filter-item" id="etiquetasPersonalizadasContainer" style="display: none;">
+        <div class="etiquetas-label">Etiquetas Personalizadas</div>
+        <div class="dropdown">
+          <button class="dropbtn" id="btnEtiquetasPersonalizadas" onclick="toggleEtiquetasDropdown()">
+            <span id="selectedEtiquetas">Todas</span>
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="etiquetasDropdown" class="dropdown-content">
+            <!-- Se poblará dinámicamente con las etiquetas del usuario -->
+          </div>
+        </div>
+      </div>
+
 
       <!-- RANGO multi-check -->
       <div class="filter-item">
@@ -475,6 +491,140 @@
     let userSubIndustriaMap = {};
     let userBoletines = []; // Changed from const allBulletins
     let userRangos = [];    // Changed from const allRangos
+
+    // Variables globales
+let userEtiquetasPersonalizadas = [];
+let selectedEtiquetas = [];
+
+   // --------------------- LOAD ETIQUETAS PERSONALIZADAS ---------------------
+function initEtiquetasPersonalizadas() {
+    // Obtener las etiquetas personalizadas del usuario
+    const etiquetasScript = document.getElementById('userEtiquetasPersonalizadas');
+    if (etiquetasScript) {
+      userEtiquetasPersonalizadas = JSON.parse(etiquetasScript.textContent) || [];
+    }
+
+    // Verificar si el usuario tiene etiquetas personalizadas
+    const etiquetasContainer = document.getElementById('etiquetasPersonalizadasContainer');
+    if (userEtiquetasPersonalizadas && userEtiquetasPersonalizadas.length > 0) {
+      // Mostrar el contenedor de etiquetas
+      etiquetasContainer.style.display = 'block';
+      
+      // Poblar el dropdown con las etiquetas
+      const etiquetasDropdown = document.getElementById('etiquetasDropdown');
+      
+      // Añadir opción "Todas"
+      const allLabel = document.createElement('label');
+      allLabel.innerHTML = '<input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todas';
+      etiquetasDropdown.appendChild(allLabel);
+      
+      // Añadir cada etiqueta personalizada
+      userEtiquetasPersonalizadas.forEach(etiqueta => {
+        const label = document.createElement('label');
+        label.innerHTML = `<input type="checkbox" value="${etiqueta}" checked> ${etiqueta}`;
+        etiquetasDropdown.appendChild(label);
+      });
+      
+      // Inicializar eventos
+      initEtiquetasEvents();
+    }
+  }
+
+  // Función para inicializar eventos de etiquetas
+  function initEtiquetasEvents() {
+    // Manejar el checkbox "Todas"
+    const chkAllEtiquetas = document.getElementById('chkAllEtiquetas');
+    chkAllEtiquetas.addEventListener('change', function() {
+      const etiquetasCheckboxes = document.querySelectorAll('#etiquetasDropdown input[type="checkbox"]:not(#chkAllEtiquetas)');
+      etiquetasCheckboxes.forEach(checkbox => {
+        checkbox.checked = this.checked;
+      });
+      updateSelectedEtiquetas();
+    });
+    
+    // Manejar los checkboxes individuales
+    const etiquetasCheckboxes = document.querySelectorAll('#etiquetasDropdown input[type="checkbox"]:not(#chkAllEtiquetas)');
+    etiquetasCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        // Verificar si todos están seleccionados
+        const allChecked = Array.from(etiquetasCheckboxes).every(cb => cb.checked);
+        const anyChecked = Array.from(etiquetasCheckboxes).some(cb => cb.checked);
+        
+        // Actualizar el checkbox "Todas"
+        chkAllEtiquetas.checked = allChecked;
+        
+        // Si ninguno está seleccionado, seleccionar "Todas"
+        if (!anyChecked) {
+          chkAllEtiquetas.checked = true;
+          etiquetasCheckboxes.forEach(cb => {
+            cb.checked = true;
+          });
+        }
+        
+        updateSelectedEtiquetas();
+      });
+    });
+  }
+
+  // Función para actualizar las etiquetas seleccionadas
+  function updateSelectedEtiquetas() {
+    const etiquetasCheckboxes = document.querySelectorAll('#etiquetasDropdown input[type="checkbox"]:not(#chkAllEtiquetas)');
+    const chkAllEtiquetas = document.getElementById('chkAllEtiquetas');
+    
+    // Si "Todas" está seleccionado, mostrar "Todas"
+    if (chkAllEtiquetas.checked) {
+      document.getElementById('selectedEtiquetas').textContent = 'Todas';
+      selectedEtiquetas = [];
+    } else {
+      // Obtener las etiquetas seleccionadas
+      selectedEtiquetas = Array.from(etiquetasCheckboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+      
+      // Actualizar el texto del botón
+      if (selectedEtiquetas.length > 0) {
+        document.getElementById('selectedEtiquetas').textContent = 
+          selectedEtiquetas.length > 1 
+            ? `${selectedEtiquetas.length} seleccionadas` 
+            : selectedEtiquetas[0];
+      } else {
+        document.getElementById('selectedEtiquetas').textContent = 'Ninguna';
+      }
+    }
+  }
+
+  // Función para mostrar/ocultar el dropdown de etiquetas
+  function toggleEtiquetasDropdown() {
+    document.getElementById('etiquetasDropdown').classList.toggle('show');
+    
+    // Cerrar otros dropdowns
+    document.getElementById('myDropdown').classList.remove('show');
+    document.getElementById('ramaDropdown').classList.remove('show');
+    document.getElementById('boletinDropdown').classList.remove('show');
+    document.getElementById('rangoDropdown').classList.remove('show');
+  }
+
+  // Añadir a los event listeners existentes
+  document.addEventListener("DOMContentLoaded", function() {
+    // Código existente...
+    
+    // Inicializar etiquetas personalizadas
+    initEtiquetasPersonalizadas();
+    
+    // Cerrar dropdowns al hacer clic fuera
+    window.addEventListener('click', function(event) {
+      if (!event.target.matches('.dropbtn') && !event.target.matches('.fa-caret-down')) {
+        const dropdowns = document.getElementsByClassName('dropdown-content');
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    });
+  });
+
 
     (function initUserData(){
       // parse user industries

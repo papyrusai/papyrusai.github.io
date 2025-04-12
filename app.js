@@ -757,7 +757,7 @@ app.get('/profile', async (req, res) => {
       "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
       "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
     ];
-
+    const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || [];
     // NEW: Extract bulletins from cobertura_legal
     let userBoletines = [];
     if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
@@ -791,7 +791,9 @@ app.get('/profile', async (req, res) => {
         .replace('{{start_date}}', JSON.stringify(new Date()))
         .replace('{{end_date}}', JSON.stringify(new Date()))
         .replace('{{user_boletines_json}}', JSON.stringify(userBoletines || []))
-        .replace('{{user_rangos_json}}', JSON.stringify(userRangos || []));
+        .replace('{{user_rangos_json}}', JSON.stringify(userRangos || []))
+        .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas))
+;
       
       // Enviar respuesta y terminar la ejecución
       return res.send(profileHtml);
