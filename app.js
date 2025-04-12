@@ -758,6 +758,7 @@ app.get('/profile', async (req, res) => {
       "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
     ];
     const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || [];
+    console.log(userEtiquetasPersonalizadas);
     // NEW: Extract bulletins from cobertura_legal
     let userBoletines = [];
     if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
