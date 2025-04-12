@@ -1353,7 +1353,7 @@ app.get('/data', async (req, res) => {
             const userSubRamaList = userSubRamaMap[rama] || [];
             
             // CHANGE 2: Console log userSubRamaList
-            console.log(`UserSubRamaList for ${rama}:`, userSubRamaList);
+            //console.log(`UserSubRamaList for ${rama}:`, userSubRamaList);
             
             if (docSubRamas.length === 0 && userSubRamaList.includes("genérico")) {
               matchedSubRamas.push("genérico");
@@ -1472,10 +1472,12 @@ app.get('/data', async (req, res) => {
       // Solo verificar etiquetas si se han elegido específicas y el usuario tiene etiquetas
       if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && userEtiquetasPersonalizadas.length > 0) {
         // Verificar si el documento tiene etiquetas personalizadas
+        console.log(`Etiquetas personalizadas usuario:`, chosenEtiquetas);
         if (doc.etiquetas_personalizadas && typeof doc.etiquetas_personalizadas === 'object') {
           // Verificar si el documento tiene etiquetas para este usuario
           const docEtiquetasUsuario = doc.etiquetas_personalizadas[userId] || [];
-          
+          console.log(`Etiquetas personalizadas doc:`, docEtiquetasUsuario);
+
           // Verificar si alguna de las etiquetas elegidas coincide con las del documento
           const etiquetasCoincidentes = docEtiquetasUsuario.filter(etiqueta => 
             chosenEtiquetas.includes(etiqueta)
