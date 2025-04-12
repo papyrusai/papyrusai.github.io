@@ -1111,7 +1111,8 @@ if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
       .replace('{{end_date}}', JSON.stringify(endDate)) 
       // NEW: Add these two lines
       .replace('{{user_boletines_json}}', JSON.stringify(userBoletines))
-      .replace('{{user_rangos_json}}', JSON.stringify(userRangos));;
+      .replace('{{user_rangos_json}}', JSON.stringify(userRangos))
+      .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas));
 
     // Insert style + script for thumbs
     const feedbackScript = `
