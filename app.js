@@ -1474,8 +1474,8 @@ app.get('/data', async (req, res) => {
       // Solo verificar etiquetas si se han elegido específicas y el usuario tiene etiquetas
       if (chosenEtiquetas.length > 0 && userEtiquetasPersonalizadas.length > 0) {
         // Verificar si el documento tiene etiquetas personalizadas
-        console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
-        console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
+        //console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
+        //console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
         if (doc.etiquetas_personalizadas) { // && typeof doc.etiquetas_personalizadas === 'object'
           // Verificar si el documento tiene etiquetas para este usuario
           const docEtiquetasUsuario = doc.etiquetas_personalizadas[userId] || [];
