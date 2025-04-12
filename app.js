@@ -1195,8 +1195,8 @@ app.get('/data', async (req, res) => {
     }
     const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || [];
     const userId = user._id.toString();
-    console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
-    console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
+  //  console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
+   // console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
 
     // 2) Parse multiple Ramas
     let chosenRamas = [];
@@ -1470,13 +1470,13 @@ app.get('/data', async (req, res) => {
       // Verificar coincidencia de etiquetas personalizadas
       let hasEtiquetasMatch = chosenEtiquetas.length === 0 || chosenEtiquetas.includes('Todas'); // Por defecto true si no hay etiquetas elegidas o se eligió "Todas"
       let matchedEtiquetas = [];
-      console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
-      console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
+      
       // Solo verificar etiquetas si se han elegido específicas y el usuario tiene etiquetas
       if (chosenEtiquetas.length > 0 && userEtiquetasPersonalizadas.length > 0) {
         // Verificar si el documento tiene etiquetas personalizadas
-        console.log(`Etiquetas personalizadas usuario:`, chosenEtiquetas);
-        if (doc.etiquetas_personalizadas && typeof doc.etiquetas_personalizadas === 'object') {
+        console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
+        console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
+        if (doc.etiquetas_personalizadas) { // && typeof doc.etiquetas_personalizadas === 'object'
           // Verificar si el documento tiene etiquetas para este usuario
           const docEtiquetasUsuario = doc.etiquetas_personalizadas[userId] || [];
           console.log(`Etiquetas personalizadas doc:`, docEtiquetasUsuario);
@@ -1485,7 +1485,7 @@ app.get('/data', async (req, res) => {
           const etiquetasCoincidentes = docEtiquetasUsuario.filter(etiqueta => 
             chosenEtiquetas.includes(etiqueta)
           );
-          
+          console.log(`Etiquetas personalizadas coincidentes:`,etiquetasCoincidentes);
           // Si hay al menos una coincidencia, el documento pasa el filtro
           if (etiquetasCoincidentes.length > 0) {
             hasEtiquetasMatch = true;
@@ -1505,19 +1505,7 @@ app.get('/data', async (req, res) => {
       
      
       // Si se han elegido etiquetas, ramas e industrias, requiere todas las coincidencias
-      if (chosenEtiquetas.length > 0 && chosenRamas.length > 0 && chosenIndustries.length > 0) {
-        documentMatches = hasRamaMatch && hasIndustryMatch && hasEtiquetasMatch;
-      }
-      // Si se han elegido etiquetas y ramas, requiere ambas coincidencias
-      else if (chosenEtiquetas.length > 0 && chosenRamas.length > 0) {
-        documentMatches = hasRamaMatch && hasEtiquetasMatch;
-      }
-      // Si se han elegido etiquetas e industrias, requiere ambas coincidencias
-      else if (chosenEtiquetas.length > 0 && chosenIndustries.length > 0) {
-        documentMatches = hasIndustryMatch && hasEtiquetasMatch;
-      }
-      // Si solo se han elegido etiquetas, solo requiere coincidencia de etiquetas
-      else if (chosenEtiquetas.length > 0 ) {
+      if (chosenEtiquetas.length > 0 ) {
         documentMatches = hasEtiquetasMatch;
       }
       // Para los demás casos, mantener la lógica existente
