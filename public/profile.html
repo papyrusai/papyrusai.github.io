@@ -624,6 +624,26 @@ function initEtiquetasPersonalizadas() {
       }
     });
   });
+// Función para obtener las etiquetas personalizadas seleccionadas
+function getSelectedEtiquetas() {
+  // Si el contenedor de etiquetas no está visible, no hay etiquetas seleccionadas
+  if (document.getElementById('etiquetasPersonalizadasContainer').style.display === 'none') {
+    return [];
+  }
+  
+  // Verificar si "Todas" está seleccionado
+  const chkAllEtiquetas = document.getElementById('chkAllEtiquetas');
+  if (chkAllEtiquetas && chkAllEtiquetas.checked) {
+    // MODIFICACIÓN: Devolver 'Todas' incluso cuando está seleccionada
+    return ['Todas'];
+  }
+  
+  // Obtener las etiquetas seleccionadas
+  const etiquetasCheckboxes = document.querySelectorAll('#etiquetasDropdown input[type="checkbox"]:not(#chkAllEtiquetas)');
+  return Array.from(etiquetasCheckboxes)
+    .filter(cb => cb.checked)
+    .map(cb => cb.value);
+}
 
 
     (function initUserData(){
@@ -1299,6 +1319,7 @@ function updateBoletinLabel() {
   const containerBol = document.getElementById('boletinDropdown');
   const chkAllBol = containerBol.querySelector('#chkAllBoletines');
   const othersBol = containerBol.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletines)');
+
   let selectedBulletins = [];
   if (!chkAllBol.checked) {
     const checkedBols = [];
@@ -1403,6 +1424,9 @@ if (Object.keys(selectedSubIndustrias).length > 0) {
 }
 
 
+  // Extra) Gather selected tags
+  const etiquetasSeleccionadas = getSelectedEtiquetas();
+
   // 4) Rango
   const containerRango = document.getElementById('rangoDropdown');
   const chkAllRango = containerRango.querySelector('#chkAllRango');
@@ -1440,6 +1464,12 @@ if (Object.keys(selectedSubIndustrias).length > 0) {
   if (selectedSubRamas.length > 0) {
     parts.push(`subRamas=${encodeURIComponent(selectedSubRamas.join(','))}`);
   }
+
+  //etiquetas personalizadas
+  if (etiquetasSeleccionadas.length > 0) {
+    parts.push(`etiqeutas=${encodeURIComponent(etiquetasSeleccionadas.join(','))}`);
+  }
+  
   
   // Rango - always include, even if "Todos" is selected
   parts.push(`rango=${encodeURIComponent(selectedRangos.join('||'))}`);
