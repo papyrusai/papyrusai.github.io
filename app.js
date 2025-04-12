@@ -1244,6 +1244,8 @@ app.get('/data', async (req, res) => {
       }
     }
 
+    console.log(`Start date ${startDate}:`, startDate);
+    console.log(`End date ${endDate}:`, endDate);
     console.log('Final DB-level query =>', JSON.stringify(query, null, 2));
      // CHANGE 2: Console log userSubRamaList
      console.log(`Chosen ramas ${chosenRamas}:`, chosenRamas);
@@ -1472,7 +1474,7 @@ app.get('/data', async (req, res) => {
       let matchedEtiquetas = [];
       
       // Solo verificar etiquetas si se han elegido específicas y el usuario tiene etiquetas
-      if (chosenEtiquetas.length > 0 && userEtiquetasPersonalizadas.length > 0) {
+      if (chosenEtiquetas.length > 0) {
         // Verificar si el documento tiene etiquetas personalizadas
         //console.log(`Etiquetas personalizadas usuario chosen:`, chosenEtiquetas);
         //console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
@@ -1504,8 +1506,8 @@ app.get('/data', async (req, res) => {
       let documentMatches = false;
       
      
-      // Si se han elegido etiquetas, ramas e industrias, requiere todas las coincidencias
-      if (chosenEtiquetas.length > 0 ) {
+      // Si se hya match etiquetas, show doc
+      if (hasEtiquetasMatch) {
         documentMatches = hasEtiquetasMatch;
       }
       // Para los demás casos, mantener la lógica existente
