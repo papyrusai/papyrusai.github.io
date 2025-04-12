@@ -1476,12 +1476,16 @@ app.get('/data', async (req, res) => {
       // Solo verificar etiquetas si se han elegido específicas
       if (chosenEtiquetas.length > 0) {
         // Verificar si el documento tiene etiquetas personalizadas
-        console.log(`EChosen etiquetas:`, chosenEtiquetas);
+        
+        if (chosenEtiquetas = "Todas"){
+          chosenEtiquetas = userEtiquetasPersonalizadas;
+        }
+        console.log(`Chosen etiquetas:`, chosenEtiquetas);
         //console.log(`Etiquetas personalizadas usuario mongo:`, userEtiquetasPersonalizadas);
         if (doc.etiquetas_personalizadas) { // && typeof doc.etiquetas_personalizadas === 'object'
           // Verificar si el documento tiene etiquetas para este usuario
           const docEtiquetasUsuario = doc.etiquetas_personalizadas[userId] || [];
-          console.log(`Docetiqeutasusuario:`, docEtiquetasUsuario);
+          console.log(`Docetiquetasusuario:`, docEtiquetasUsuario);
 
           // Verificar si alguna de las etiquetas elegidas coincide con las del documento
           const etiquetasCoincidentes = docEtiquetasUsuario.filter(etiqueta => 
