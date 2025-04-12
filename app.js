@@ -850,6 +850,34 @@ app.get('/profile', async (req, res) => {
         ]
       };
 
+// MODIFICACIÓN: Añadir el filtro de etiquetas personalizadas
+if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
+  const userId = user._id.toString();
+  
+  // Si hay etiquetas en la consulta (incluso si "Todas" está seleccionada)
+  if (req.query.etiquetas) {
+    const selectedEtiquetas = Array.isArray(req.query.etiquetas) 
+      ? req.query.etiquetas 
+      : [req.query.etiquetas];
+    
+    // Filtrar solo las etiquetas que el usuario tiene
+    const validEtiquetas = selectedEtiquetas.includes('Todas') 
+      ? user.etiquetas_personalizadas 
+      : selectedEtiquetas.filter(etiqueta => user.etiquetas_personalizadas.includes(etiqueta));
+    
+    if (validEtiquetas.length > 0) {
+      // MODIFICACIÓN: Usar $in para encontrar al menos una coincidencia en el array
+      const etiquetasCondition = {};
+      etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
+        $in: validEtiquetas 
+      };
+      
+      // Añadir la condición a la consulta
+      query.$and.push(etiquetasCondition);
+    }
+  }
+} 
+
     const projection = {
       short_name: 1,
       divisiones_cnae: 1,
@@ -987,6 +1015,31 @@ app.get('/profile', async (req, res) => {
             );
           })
           .join(' ');
+
+          const etiquetasPersonalizadasHtml = (() => {
+            // Si el documento no tiene etiquetas personalizadas, no mostrar nada
+            if (!doc.etiquetas_personalizadas) return '';
+            
+            // Obtener todas las etiquetas de todos los usuarios
+            const allEtiquetas = Object.entries(doc.etiquetas_personalizadas)
+              .flatMap(([userId, etiquetas]) => {
+                // Verificar que etiquetas es un array
+                return Array.isArray(etiquetas) ? etiquetas : [];
+              })
+              .filter(etiqueta => etiqueta); // Filtrar valores vacíos
+            
+            // Si no hay etiquetas, no mostrar nada
+            if (allEtiquetas.length === 0) return '';
+            
+            // Generar HTML para las etiquetas
+            return `
+              <div class="etiquetas-personalizadas-values">
+                ${allEtiquetas.map(etiqueta => 
+                  `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
+                ).join(' ')}
+              </div>
+            `;
+          })();
       
         // Determinar si se debe mostrar alguna sección de etiquetas
         const hasIndustrias = cnaesHtml.trim() !== '';
@@ -1007,6 +1060,7 @@ app.get('/profile', async (req, res) => {
             ${hasSubIndustrias ? `<div class="sub-industria-values">${subIndustriasHtml}</div>` : ''}
             ${hasRamas ? `<div class="rama-juridica-values">${ramaHtml}</div>` : ''}
             ${hasSubRamas ? `<div class="sub-rama-juridica-values">${subRamasHtml}</div>` : ''}
+            ${etiquetasPersonalizadasHtml}
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
             <div class="margin-impacto">
@@ -1131,6 +1185,16 @@ app.get('/data', async (req, res) => {
     const rangoStr = req.query.rango || '';              // e.g. "Leyes||Reglamentos"
     const startDate = req.query.desde;
     const endDate = req.query.hasta;
+    // Extraer las etiquetas personalizadas del usuario
+
+    // Después de recoger los otros parámetros de consulta
+    const etiquetasStr = req.query.etiquetas || '';
+    let chosenEtiquetas = [];
+    if (etiquetasStr.trim() !== '') {
+      chosenEtiquetas = etiquetasStr.split('||').map(s => s.trim()).filter(Boolean);
+    }
+    const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || [];
+    const userId = user._id.toString();
 
     // 2) Parse multiple Ramas
     let chosenRamas = [];
@@ -1185,6 +1249,7 @@ app.get('/data', async (req, res) => {
      console.log(`Chosen ramas ${chosenIndustries}:`, chosenIndustries);
 
     // 6) We also project "rango_titulo" for in-memory filtering
+   // Modificar la proyección para incluir etiquetas_personalizadas
     const projection = {
       short_name: 1,
       divisiones_cnae: 1,
@@ -1195,8 +1260,10 @@ app.get('/data', async (req, res) => {
       url_pdf: 1,
       ramas_juridicas: 1,
       rango_titulo: 1,
+      etiquetas_personalizadas: 1, // Añadir esta línea
       _id: 1
     };
+
 
     // 7) Collect documents from each chosen bulletin
     let allDocuments = [];
@@ -1398,23 +1465,66 @@ app.get('/data', async (req, res) => {
         }
       }
 
+      // Verificar coincidencia de etiquetas personalizadas
+      let hasEtiquetasMatch = chosenEtiquetas.length === 0 || chosenEtiquetas.includes('Todas'); // Por defecto true si no hay etiquetas elegidas o se eligió "Todas"
+      let matchedEtiquetas = [];
+      
+      // Solo verificar etiquetas si se han elegido específicas y el usuario tiene etiquetas
+      if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && userEtiquetasPersonalizadas.length > 0) {
+        // Verificar si el documento tiene etiquetas personalizadas
+        if (doc.etiquetas_personalizadas && typeof doc.etiquetas_personalizadas === 'object') {
+          // Verificar si el documento tiene etiquetas para este usuario
+          const docEtiquetasUsuario = doc.etiquetas_personalizadas[userId] || [];
+          
+          // Verificar si alguna de las etiquetas elegidas coincide con las del documento
+          const etiquetasCoincidentes = docEtiquetasUsuario.filter(etiqueta => 
+            chosenEtiquetas.includes(etiqueta)
+          );
+          
+          // Si hay al menos una coincidencia, el documento pasa el filtro
+          if (etiquetasCoincidentes.length > 0) {
+            hasEtiquetasMatch = true;
+            matchedEtiquetas = etiquetasCoincidentes;
+          } else {
+            hasEtiquetasMatch = false;
+          }
+        } else {
+          // Si el documento no tiene etiquetas personalizadas, no pasa el filtro
+          hasEtiquetasMatch = false;
+        }
+      }
+
       
       // CHANGE 3: Updated matching criteria based on chosen values
       let documentMatches = false;
       
-      // If both categories have chosen values, require both matches
-      if (chosenRamas.length > 0 && chosenIndustries.length > 0) {
+     
+      // Si se han elegido etiquetas, ramas e industrias, requiere todas las coincidencias
+      if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && chosenRamas.length > 0 && chosenIndustries.length > 0) {
+        documentMatches = hasRamaMatch && hasIndustryMatch && hasEtiquetasMatch;
+      }
+      // Si se han elegido etiquetas y ramas, requiere ambas coincidencias
+      else if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && chosenRamas.length > 0) {
+        documentMatches = hasRamaMatch && hasEtiquetasMatch;
+      }
+      // Si se han elegido etiquetas e industrias, requiere ambas coincidencias
+      else if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas') && chosenIndustries.length > 0) {
+        documentMatches = hasIndustryMatch && hasEtiquetasMatch;
+      }
+      // Si solo se han elegido etiquetas, solo requiere coincidencia de etiquetas
+      else if (chosenEtiquetas.length > 0 && !chosenEtiquetas.includes('Todas')) {
+        documentMatches = hasEtiquetasMatch;
+      }
+      // Para los demás casos, mantener la lógica existente
+      else if (chosenRamas.length > 0 && chosenIndustries.length > 0) {
         documentMatches = hasRamaMatch && hasIndustryMatch;
-      } 
-      // If only ramas have chosen values, only require rama match
+      }
       else if (chosenRamas.length > 0) {
         documentMatches = hasRamaMatch;
-      } 
-      // If only industries have chosen values, only require industry match
+      }
       else if (chosenIndustries.length > 0) {
         documentMatches = hasIndustryMatch;
-      } 
-      // If neither has chosen values, document passes
+      }
       else {
         documentMatches = true;
       }
@@ -1424,6 +1534,7 @@ app.get('/data', async (req, res) => {
         doc.matched_rama_juridica = [...new Set(matchedRamas)];
         doc.matched_sub_rama_juridica = [...new Set(matchedSubRamas)];
         doc.matched_sub_industrias = [...new Set(matchedSubIndustrias)];
+        doc.matched_etiquetas = [...new Set(matchedEtiquetas)]; // Añadir esta línea
         filteredDocuments.push(doc);
       }
     }
@@ -1533,7 +1644,28 @@ app.get('/data', async (req, res) => {
           .map(sr => `<span class="sub-rama-value"><i><b>#${sr}</b></i></span>`)
           .join(' ');
 
-
+        // Generar HTML para etiquetas personalizadas
+        let etiquetasPersonalizadasHtml = '';
+        if (doc.etiquetas_personalizadas) {
+          // Obtener todas las etiquetas de todos los usuarios
+          const allEtiquetas = Object.entries(doc.etiquetas_personalizadas)
+            .flatMap(([userId, etiquetas]) => {
+              // Verificar que etiquetas es un array
+              return Array.isArray(etiquetas) ? etiquetas : [];
+            })
+            .filter(etiqueta => etiqueta); // Filtrar valores vacíos
+          
+          // Si hay etiquetas, generar el HTML
+          if (allEtiquetas.length > 0) {
+            etiquetasPersonalizadasHtml = `
+              <div class="etiquetas-personalizadas-values">
+                ${allEtiquetas.map(etiqueta => 
+                  `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
+                ).join(' ')}
+              </div>
+            `;
+          }
+        }
 
       const rangoToShow = doc.rango_titulo || "Indefinido";
 
@@ -1552,6 +1684,9 @@ app.get('/data', async (req, res) => {
             <div class="sub-industria-values">${subIndustriasHtml}</div>
             <div class="rama-juridica-values">${ramaHtml}</div>
             <div class="sub-rama-juridica-values">${subRamasHtml}</div>
+
+              <!-- Añadir etiquetas personalizadas -->
+            ${etiquetasPersonalizadasHtml}
       
             <div class="resumen-label">Resumen</div>
             <div class="resumen-content">${doc.resumen}</div>
