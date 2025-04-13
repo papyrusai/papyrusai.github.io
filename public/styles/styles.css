@@ -113,16 +113,18 @@ body {
   padding: 5px 0px;
 }
 
-/* Tag styling using the provided color palette */
+/* Tag styling with consistent properties across all types */
 .etiquetas-personalizadas-values,
 .etiquetas-values span,
 .rama-value {
-  font-size: 16px;
-  border-radius: 18px;
-  padding: 6px 12px;
-  margin-right: 8px;
-  margin-bottom: 8px;
-  display: inline-block;
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px; /* Full rounded corners */
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
   font-weight: 500;
   transition: all 0.2s ease;
 }
@@ -142,16 +144,16 @@ body {
 
 /* Style for etiquetas-values span */
 .etiquetas-values span {
-  background-color: var(--secondary-color);
-  color: white;
-  border: 1px solid var(--secondary-color);
+  background-color: rgba(4, 219, 141, 0.1); /* #04db8d1a */
+  --tw-text-opacity: 1;
+  color: rgb(4 219 141 / var(--tw-text-opacity));
 }
 
 /* Style for rama-value */
 .rama-value {
-  background-color: white;
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
+  background-color: rgba(4, 219, 141, 0.1); /* #04db8d1a */
+  --tw-text-opacity: 1;
+  color: rgb(4 219 141 / var(--tw-text-opacity));
 }
 
 /* Optional: Add a close or remove button style if needed */
