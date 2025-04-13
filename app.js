@@ -809,48 +809,51 @@ app.get('/profile', async (req, res) => {
 
     // NEW: Modified query to match user's rango, boletines, and (ramas or industrias)
     // Reemplazar el bloque de consulta (líneas 43-62):
-      const query = {
-        $and: [
-          { anio: { $gte: startDate.getFullYear() } },
-          {
-            $or: [
-              { mes: { $gt: startDate.getMonth() + 1 } },
-              {
-                mes: startDate.getMonth() + 1,
-                dia: { $gte: startDate.getDate()}
-              }
-            ]
-          },
-          { rango_titulo: { $in: userRangos } },
-          {
-            $or: [
-              // Documentos que cumplen AMBOS filtros: ramas jurídicas Y subindustrias
-              {
-                $and: [
-                  // Filtro por ramas jurídicas
-                  { 'ramas_juridicas': { $in: userRamas } },
-                  
-                  // Filtro por subindustrias
-                  {
-                    $or: Object.entries(userSubIndustriaMap).flatMap(([industria, subIndustrias]) => 
-                      subIndustrias.map(subIndustria => ({
-                        [`divisiones_cnae.${industria}`]: subIndustria
-                      }))
-                    )
-                  }
-                ]
-              },
-              
-              // Documentos que tienen "General" en cualquier subindustria
-              {
-                $or: Object.keys(userSubIndustriaMap).map(industria => ({
-                  [`divisiones_cnae.${industria}`]: "General"
-                }))
-              }
-            ]
-          }          
-        ]
-      };
+    const query = {
+      $and: [
+        // Condiciones de fecha y rango (siempre requeridas)
+        { anio: { $gte: startDate.getFullYear() } },
+        {
+          $or: [
+            { mes: { $gt: startDate.getMonth() + 1 } },
+            {
+              mes: startDate.getMonth() + 1,
+              dia: { $gte: startDate.getDate() }
+            }
+          ]
+        },
+        { rango_titulo: { $in: userRangos } },
+        
+        // Condición OR que incluye las opciones existentes y la nueva condición de etiquetas
+        {
+          $or: [
+            // Opción 1: Documentos que cumplen con ramas jurídicas Y subindustrias
+            {
+              $and: [
+                // Filtro por ramas jurídicas
+                { 'ramas_juridicas': { $in: userRamas } },
+                
+                // Filtro por subindustrias
+                {
+                  $or: Object.entries(userSubIndustriaMap).flatMap(([industria, subIndustrias]) => 
+                    subIndustrias.map(subIndustria => ({
+                      [`divisiones_cnae.${industria}`]: subIndustria
+                    }))
+                  )
+                }
+              ]
+            },
+            
+            // Opción 2: Documentos que tienen "General" en cualquier subindustria
+            {
+              $or: Object.keys(userSubIndustriaMap).map(industria => ({
+                [`divisiones_cnae.${industria}`]: "General"
+              }))
+            }
+          ]
+        }
+      ]
+    };
 
 // MODIFICACIÓN: Añadir el filtro de etiquetas personalizadas
 console.log("=== DEBUG ETIQUETAS PERSONALIZADAS ===");
@@ -860,28 +863,24 @@ console.log("User etiquetas personalizadas length:", userEtiquetasPersonalizadas
 
 
 if (userEtiquetasPersonalizadas.length > 0) {
-      const userId = user._id.toString();
-      const orCondition = query.$and.find(condition => condition.$or);
+  const userId = user._id.toString();
   
-      const etiquetasCondition = {};
-      etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
-        $in: userEtiquetasPersonalizadas 
-      };
-      console.log("User ID 2:", user._id.toString());
-      console.log("User etiquetas personalizadas (array) 2:", userEtiquetasPersonalizadas);
-      console.log(`Etiquetas condition:`, etiquetasCondition);
-      // Añadir la condición a la consulta
-      // Añadir la condición a la lista de condiciones OR
-      if (orCondition && orCondition.$or) {
-        orCondition.$or.push(etiquetasCondition);
-      } else {
-        // Si no hay una condición OR existente, crear una nueva
-        query.$and.push({
-          $or: [etiquetasCondition]
-        });
-      }
-
-} 
+  // Crear la condición para etiquetas personalizadas
+  const etiquetasCondition = {};
+  etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
+    $in: userEtiquetasPersonalizadas 
+  };
+  
+  console.log("User ID 2:", userId);
+  console.log("User etiquetas personalizadas (array) 2:", userEtiquetasPersonalizadas);
+  console.log("Etiquetas condition:", etiquetasCondition);
+  
+  // Añadir la condición de etiquetas personalizadas como una opción más en el $or
+  // Esto asegura que los documentos se recuperen si coinciden con las etiquetas
+  // incluso si no coinciden con las ramas/industrias
+  const orCondition = newQuery.$and[3].$or;
+  orCondition.push(etiquetasCondition);
+}
 console.log(`Query:`, query);
 
     const projection = {
