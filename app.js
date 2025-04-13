@@ -882,6 +882,7 @@ if (userEtiquetasPersonalizadas.length > 0) {
       }
 
 } 
+console.log(`Query:`, query);
 
     const projection = {
       short_name: 1,
