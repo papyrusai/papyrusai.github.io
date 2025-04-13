@@ -519,7 +519,7 @@ function initEtiquetasPersonalizadas() {
       
       // Poblar el dropdown con las etiquetas
       const etiquetasDropdown = document.getElementById('etiquetasDropdown');
-      etiquetasDropdown.style.display = 'none';
+      etiquetasDropdown.classList.remove('show');
       // Añadir opción "Todas"
       const allLabel = document.createElement('label');
       allLabel.innerHTML = '<input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todas';

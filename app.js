@@ -870,7 +870,15 @@ if (userEtiquetasPersonalizadas.length > 0) {
       console.log("User etiquetas personalizadas (array) 2:", userEtiquetasPersonalizadas);
       console.log(`Etiquetas condition:`, etiquetasCondition);
       // Añadir la condición a la consulta
-      query.$and.push(etiquetasCondition);
+      // Añadir la condición a la lista de condiciones OR
+      if (orCondition && orCondition.$or) {
+        orCondition.$or.push(etiquetasCondition);
+      } else {
+        // Si no hay una condición OR existente, crear una nueva
+        query.$and.push({
+          $or: [etiquetasCondition]
+        });
+      }
 
 } 
 
