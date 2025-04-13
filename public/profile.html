@@ -604,13 +604,16 @@ function initEtiquetasPersonalizadas() {
     document.getElementById('etiquetasDropdown').classList.toggle('show');
     
     // Cerrar otros dropdowns
-    document.getElementById('myDropdown').classList.remove('show');
+   /* document.getElementById('myDropdown').classList.remove('show');
     document.getElementById('ramaDropdown').classList.remove('show');
     document.getElementById('boletinDropdown').classList.remove('show');
     document.getElementById('rangoDropdown').classList.remove('show');
+    */
   }
 
-  // Añadir a los event listeners existentes
+  // Añadir a los event listeners existentes -removed
+ 
+  /*
   document.addEventListener("DOMContentLoaded", function() {
     // Código existente...
     
@@ -630,6 +633,8 @@ function initEtiquetasPersonalizadas() {
       }
     });
   });
+
+  */
 // Función para obtener las etiquetas personalizadas seleccionadas
 function getSelectedEtiquetas() {
   // Si el contenedor de etiquetas no está visible, no hay etiquetas seleccionadas
@@ -1514,6 +1519,7 @@ if (Object.keys(selectedSubIndustrias).length > 0) {
   }
 }
 document.addEventListener('DOMContentLoaded', () => {
+       initEtiquetasPersonalizadas();
        populateIndustryDropdown();
        populateRamaDropdown();
        document.addEventListener('click', function(e) {

@@ -122,9 +122,9 @@ body {
   display: inline-flex;
   align-items: center;
   border-radius: 9999px; /* Full rounded corners */
-  padding: 0.125rem 0.625rem;
-  font-size: 0.75rem;
-  line-height: 1rem;
+  padding: 0.25rem 0.75rem; /* Slightly larger padding */
+  font-size: 0.875rem; /* Bigger font size from 0.75rem */
+  line-height: 1.25rem; /* Adjusted line height */
   font-weight: 500;
   transition: all 0.2s ease;
 }
@@ -144,9 +144,9 @@ body {
 
 /* Style for etiquetas-values span */
 .etiquetas-values span {
-  background-color: rgba(4, 219, 141, 0.1); /* #04db8d1a */
+  background-color: rgba(69, 88, 98, 0.1); /* Secondary color with transparency */
   --tw-text-opacity: 1;
-  color: rgb(4 219 141 / var(--tw-text-opacity));
+  color: rgb(69 88 98 / var(--tw-text-opacity)); /* Secondary color text */
 }
 
 /* Style for rama-value */
