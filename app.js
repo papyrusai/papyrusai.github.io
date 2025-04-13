@@ -878,7 +878,7 @@ if (userEtiquetasPersonalizadas.length > 0) {
   // Añadir la condición de etiquetas personalizadas como una opción más en el $or
   // Esto asegura que los documentos se recuperen si coinciden con las etiquetas
   // incluso si no coinciden con las ramas/industrias
-  const orCondition = newQuery.$and[3].$or;
+  const orCondition = query.$and[3].$or;
   orCondition.push(etiquetasCondition);
 }
 console.log(`Query:`, query);
