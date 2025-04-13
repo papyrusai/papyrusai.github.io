@@ -853,33 +853,25 @@ app.get('/profile', async (req, res) => {
       };
 
 // MODIFICACIÓN: Añadir el filtro de etiquetas personalizadas
-if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
-  const userId = user._id.toString();
+console.log("=== DEBUG ETIQUETAS PERSONALIZADAS ===");
+console.log("User ID:", user._id.toString());
+console.log("User etiquetas personalizadas (array):", userEtiquetasPersonalizadas);
+console.log("User etiquetas personalizadas length:", userEtiquetasPersonalizadas.length);
+
+
+if (userEtiquetasPersonalizadas.length > 0) {
+      const userId = user._id.toString();
   
-  // Si hay etiquetas en la consulta (incluso si "Todas" está seleccionada)
-  if (req.query.etiquetas) {
-    const selectedEtiquetas = Array.isArray(req.query.etiquetas) 
-      ? req.query.etiquetas 
-      : [req.query.etiquetas];
-    
-    // Filtrar solo las etiquetas que el usuario tiene
-    const validEtiquetas = selectedEtiquetas.includes('Todas') 
-      ? user.etiquetas_personalizadas 
-      : selectedEtiquetas.filter(etiqueta => user.etiquetas_personalizadas.includes(etiqueta));
-    
-     
-      console.log(`Valid etiquetas:`, validEtiquetas);
-    if (validEtiquetas.length > 0) {
-      // MODIFICACIÓN: Usar $in para encontrar al menos una coincidencia en el array
       const etiquetasCondition = {};
       etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
-        $in: validEtiquetas 
+        $in: userEtiquetasPersonalizadas 
       };
-      console.log(`Valid etiquetas:`, etiquetasCondition);
+      console.log("User ID 2:", user._id.toString());
+      console.log("User etiquetas personalizadas (array) 2:", userEtiquetasPersonalizadas);
+      console.log(`Etiquetas condition:`, etiquetasCondition);
       // Añadir la condición a la consulta
       query.$and.push(etiquetasCondition);
-    }
-  }
+
 } 
 
     const projection = {

@@ -512,13 +512,14 @@ function initEtiquetasPersonalizadas() {
 
     // Verificar si el usuario tiene etiquetas personalizadas
     const etiquetasContainer = document.getElementById('etiquetasPersonalizadasContainer');
+
     if (userEtiquetasPersonalizadas && userEtiquetasPersonalizadas.length > 0) {
       // Mostrar el contenedor de etiquetas
       etiquetasContainer.style.display = 'block';
       
       // Poblar el dropdown con las etiquetas
       const etiquetasDropdown = document.getElementById('etiquetasDropdown');
-      
+      etiquetasDropdown.style.display = 'none';
       // Añadir opción "Todas"
       const allLabel = document.createElement('label');
       allLabel.innerHTML = '<input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todas';
@@ -603,38 +604,11 @@ function initEtiquetasPersonalizadas() {
   function toggleEtiquetasDropdown() {
     document.getElementById('etiquetasDropdown').classList.toggle('show');
     
-    // Cerrar otros dropdowns
-   /* document.getElementById('myDropdown').classList.remove('show');
-    document.getElementById('ramaDropdown').classList.remove('show');
-    document.getElementById('boletinDropdown').classList.remove('show');
-    document.getElementById('rangoDropdown').classList.remove('show');
-    */
   }
 
   // Añadir a los event listeners existentes -removed
  
-  /*
-  document.addEventListener("DOMContentLoaded", function() {
-    // Código existente...
-    
-    // Inicializar etiquetas personalizadas
-    initEtiquetasPersonalizadas();
-    
-    // Cerrar dropdowns al hacer clic fuera
-    window.addEventListener('click', function(event) {
-      if (!event.target.matches('.dropbtn') && !event.target.matches('.fa-caret-down')) {
-        const dropdowns = document.getElementsByClassName('dropdown-content');
-        for (let i = 0; i < dropdowns.length; i++) {
-          const openDropdown = dropdowns[i];
-          if (openDropdown.classList.contains('show')) {
-            openDropdown.classList.remove('show');
-          }
-        }
-      }
-    });
-  });
 
-  */
 // Función para obtener las etiquetas personalizadas seleccionadas
 function getSelectedEtiquetas() {
   // Si el contenedor de etiquetas no está visible, no hay etiquetas seleccionadas
@@ -1308,6 +1282,13 @@ function updateBoletinLabel() {
       const isRangoDropdown = e.target.closest('#rangoDropdown');
       if (!isRangoButton && !isRangoDropdown) {
         document.getElementById('rangoDropdown').classList.remove('show');
+      }
+    });
+    document.addEventListener('click', function(e) {
+      const isRangoButton = e.target.closest('#btnEtiquetasPersonalizadas');
+      const isRangoDropdown = e.target.closest('#etiquetasDropdown');
+      if (!isRangoButton && !isRangoDropdown) {
+        document.getElementById('etiquetasDropdown').classList.remove('show');
       }
     });
 
