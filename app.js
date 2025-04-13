@@ -861,6 +861,7 @@ console.log("User etiquetas personalizadas length:", userEtiquetasPersonalizadas
 
 if (userEtiquetasPersonalizadas.length > 0) {
       const userId = user._id.toString();
+      const orCondition = query.$and.find(condition => condition.$or);
   
       const etiquetasCondition = {};
       etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
