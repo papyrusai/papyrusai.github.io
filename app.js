@@ -804,6 +804,7 @@ app.get('/profile', async (req, res) => {
     const now = new Date();
     const startDate = new Date();
     startDate.setMonth(now.getMonth());
+    startDate.setDate(now.getDate()-1);
     const endDate = now;
 
     // NEW: Modified query to match user's rango, boletines, and (ramas or industrias)
@@ -816,7 +817,7 @@ app.get('/profile', async (req, res) => {
               { mes: { $gt: startDate.getMonth() + 1 } },
               {
                 mes: startDate.getMonth() + 1,
-                dia: { $gte: startDate.getDate()-1}
+                dia: { $gte: startDate.getDate()}
               }
             ]
           },
