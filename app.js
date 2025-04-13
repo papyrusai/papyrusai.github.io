@@ -867,14 +867,15 @@ if (user.etiquetas_personalizadas && user.etiquetas_personalizadas.length > 0) {
       ? user.etiquetas_personalizadas 
       : selectedEtiquetas.filter(etiqueta => user.etiquetas_personalizadas.includes(etiqueta));
     
-      console.log(validEtiquetas);
+     
+      console.log(`Valid etiquetas:`, validEtiquetas);
     if (validEtiquetas.length > 0) {
       // MODIFICACIÓN: Usar $in para encontrar al menos una coincidencia en el array
       const etiquetasCondition = {};
       etiquetasCondition[`etiquetas_personalizadas.${userId}`] = { 
         $in: validEtiquetas 
       };
-      console.log(etiquetasCondition);
+      console.log(`Valid etiquetas:`, etiquetasCondition);
       // Añadir la condición a la consulta
       query.$and.push(etiquetasCondition);
     }
