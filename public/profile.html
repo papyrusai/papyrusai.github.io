@@ -359,8 +359,8 @@
       </div>
 
             <!-- Etiquetas Personalizadas multi-check -->
-      <div class="filter-item" id="etiquetasPersonalizadasContainer">
-        <div class="etiquetas-label" id="etiquetas-label" style="display: none;">Etiquetas Personalizadas</div>
+      <div class="filter-item" id="etiquetasPersonalizadasContainer" style="display: none;">
+        <div class="etiquetas-label" id="etiquetas-label">Etiquetas Personalizadas</div>
         <div class="dropdown">
           <button class="dropbtn" id="btnEtiquetasPersonalizadas" onclick="toggleEtiquetasDropdown()">
             <span id="selectedEtiquetas">Todas</span>
@@ -511,7 +511,7 @@ function initEtiquetasPersonalizadas() {
     }
 
     // Verificar si el usuario tiene etiquetas personalizadas
-    const etiquetasContainer = document.getElementById('etiquetas-label');
+    const etiquetasContainer = document.getElementById('etiquetasPersonalizadasContainer');
 
     if (userEtiquetasPersonalizadas && userEtiquetasPersonalizadas.length > 0) {
       // Mostrar el contenedor de etiquetas
