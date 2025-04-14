@@ -32,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1); // IMPORTANT when behind a proxy (Render)
 
 // Then your session:
+/*
 app.use(session({
   secret: process.env.SESSION_SECRET || 'default_session_secret',
   resave: false,
@@ -42,6 +43,18 @@ app.use(session({
     httpOnly: true
   }
 }));
+*/
+app.use(session({ 
+  secret: process.env.SESSION_SECRET || 'default_session_secret', 
+  resave: false, 
+  saveUninitialized: false, 
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // Only use secure in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    httpOnly: true 
+  } 
+}));
+
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -278,6 +291,7 @@ app.post('/login', (req, res, next) => {
       // Otherwise normal flow
       if (user.subscription_plan) {
         return res.status(200).json({ redirectUrl: '/profile' });
+        //return res.redirect('/profile');
       } else {
         return res.status(200).json({ redirectUrl: '/paso1.html' });
       }
