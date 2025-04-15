@@ -1213,7 +1213,7 @@ function finalizarOnboarding() {
   sessionStorage.setItem('rangos', JSON.stringify(etiquetasFinales.rangos_normativos || []));
   sessionStorage.setItem('cobertura_legal', JSON.stringify(cobertura_legal));
   sessionStorage.setItem('feedback', JSON.stringify(feedback));
-  sessionStorage.setItem('etiquetas_personalizadas', JSON.stringify(feedback));
+  sessionStorage.setItem('etiquetas_personalizadas', JSON.stringify(etiquetasFinales.etiquetas_personalizadas));
   
   // Store in hidden inputs for easier access in paso4
   document.getElementById('fuentesGobiernoInput').value = JSON.stringify(userData.fuentes || []);
