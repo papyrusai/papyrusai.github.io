@@ -201,9 +201,9 @@ select {
 }
 .tag-remove {
   display: inline-block;
-    width: 13px;
-    height: 13px;
-    line-height: 14px;
+    width: 15px;
+    height: 15px;
+    line-height: 15px;
     margin-left: 5px;
     text-align: center;
     border-radius: 50%;
@@ -358,7 +358,7 @@ input[type="checkbox"]:checked::after {
   cursor: pointer;
 }
 
-.dropdown-options label:hover {
+.checkbox-item:hover {
   background-color: #f8f9fa;
 }
 .selected-tags {

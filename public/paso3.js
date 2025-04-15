@@ -4,6 +4,15 @@ let currentStep = 0; // 0: Industrias, 1: Ramas, 2: Fuentes, 3: Rangos
 
 document.addEventListener('DOMContentLoaded', async function() {
   
+  const skeletonLoader = document.getElementById('skeleton-loader');
+  const formContent = document.getElementById('form-content');
+  
+  // Mostrar el skeleton loader y ocultar el contenido real
+  if (skeletonLoader && formContent) {
+    skeletonLoader.style.display = 'block';
+    formContent.style.display = 'none';
+  }
+  
   // Check if we're in editing mode
   const isEditing = sessionStorage.getItem('isEditing') === 'true';
   await cargarCatalogoEtiquetas();
@@ -19,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   updateButtonLayout();
   // Add this line to setup the new click handlers
   setupFilterClickHandlers();
+  actualizarContadorEtiquetas();
 
    // Add title to indicate editing mode if needed
    if (isEditing) {
@@ -31,6 +41,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       subtitle.textContent = 'Actualiza tus preferencias y filtros según sea necesario.';
     }
   }
+
+  // Ocultar el skeleton loader y mostrar el contenido real cuando todo esté cargado
+  setTimeout(function() {
+    if (skeletonLoader && formContent) {
+      skeletonLoader.style.display = 'none';
+      formContent.style.display = 'block';
+    }
+  }, 800);
   
   // The existing code for hiding dropdowns when clicking outside remains the same
   document.addEventListener('click', function(e) {
@@ -86,6 +104,17 @@ function setupFilterClickHandlers() {
       showAllIndustriesOptions();
     });
   }
+   // Etiquetas personalizadas filter
+   /*
+   const filtroEtiquetas = document.getElementById('filtro-etiquetas');
+   if (filtroEtiquetas) {
+     filtroEtiquetas.addEventListener('click', function(e) {
+       e.stopPropagation();
+       hideAllDropdownsExcept('dropdown-etiquetas');
+       showAllEtiquetasOptions();
+     });
+   }
+     */
 
   // Ramas filter
   const filtroRamas = document.getElementById('filtro-ramas');
@@ -128,10 +157,30 @@ function setupFilterClickHandlers() {
   }
 }
 
+/*function showAllEtiquetasOptions() {
+  const dropdown = document.getElementById('dropdown-etiquetas');
+  dropdown.innerHTML = "";
+  
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  if (!etiquetas || !etiquetas.etiquetas_personalizadas) return;
+  
+  Object.keys(etiquetas.etiquetas_personalizadas).forEach(etiqueta => {
+    const option = document.createElement('div');
+    option.className = "dropdown-item";
+    option.textContent = etiqueta;
+    option.onclick = function() {
+      document.getElementById('filtro-etiquetas').value = etiqueta;
+      dropdown.innerHTML = "";
+    };
+    dropdown.appendChild(option);
+  });
+}
+  */
+
 // Helper function to hide all dropdowns except the specified one
 function hideAllDropdownsExcept(exceptId) {
   const allDropdowns = [
-    'dropdown-industrias',
+    'dropdown-etiquetas',
     'dropdown-ramas',
     'dropdown-fuentes-gobierno',
     'dropdown-fuentes-reguladores',
@@ -235,10 +284,185 @@ async function cargarCatalogoEtiquetas() {
 }
 
 function cargarSecciones(etiquetas) {
-  cargarIndustrias(etiquetas.industrias || etiquetas.sub_industrias || {});
-  cargarRamasJuridicas(etiquetas.ramas_juridicas || [], etiquetas.subramas_juridicas || {});
+  cargarEtiquetasPersonalizadas(etiquetas.etiquetas_personalizadas || {});
   cargarFuentesOficiales(etiquetas);
   cargarRangosPredefinidos();
+}
+
+
+/*------------------- Etiquetas Personalizadas ------------*/
+
+function cargarEtiquetasPersonalizadas(etiquetas) {
+  // Cargar etiquetas como tags
+  const tagsContainer = document.querySelector('.etiquetas-tags-scroll');
+  tagsContainer.innerHTML = '';
+  
+  // Cargar etiquetas con definiciones
+  const container = document.getElementById('etiquetas-personalizadas-container');
+  container.innerHTML = '';
+  
+  Object.keys(etiquetas).forEach(etiqueta => {
+    // Crear tag para la vista de tags
+    const etiquetaTag = document.createElement('div');
+    etiquetaTag.className = 'etiqueta-tag';
+    etiquetaTag.innerHTML = `
+      <span>${etiqueta}</span>
+      <span class="tag-remove" onclick="eliminarEtiquetaPersonalizada('${etiqueta}')">×</span>
+    `;
+    tagsContainer.appendChild(etiquetaTag);
+    
+    // Crear caja para la vista detallada
+    const ramaBox = document.createElement('div');
+    ramaBox.className = 'rama-box';
+    ramaBox.style.width = "100%";
+    ramaBox.setAttribute('data-etiqueta', etiqueta);
+    
+    const ramaHeader = document.createElement('div');
+    ramaHeader.className = 'rama-header';
+    ramaHeader.innerHTML = `
+      <h4>${etiqueta}</h4>
+      <div>
+        <button class="edit-button" onclick="habilitarEdicionEtiqueta('${etiqueta}')">
+              <span class="edit-text">Editar</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </button>
+        <span class="tag-remove" onclick="eliminarEtiquetaPersonalizada('${etiqueta}') ">×</span>
+      </div>
+    `;
+    
+    ramaBox.appendChild(ramaHeader);
+    
+    // Crear el contenedor para la descripción (visible por defecto)
+    const detailDiv = document.createElement('div');
+    detailDiv.className = 'rama-detail';
+    detailDiv.style.display = 'block'; // Visible por defecto
+    
+    // Añadir la descripción de la etiqueta
+    const descripcion = document.createElement('p');
+    descripcion.className = 'etiqueta-descripcion';
+    descripcion.textContent = etiquetas[etiqueta];
+    detailDiv.appendChild(descripcion);
+    
+    ramaBox.appendChild(detailDiv);
+    container.appendChild(ramaBox);
+     
+  // Actualizar el contador
+  actualizarContadorEtiquetas();
+  });
+}
+
+// Función para habilitar la edición de una etiqueta
+function habilitarEdicionEtiqueta(etiqueta) {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  if (!etiquetas || !etiquetas.etiquetas_personalizadas || !etiquetas.etiquetas_personalizadas[etiqueta]) return;
+  
+  const descripcion = etiquetas.etiquetas_personalizadas[etiqueta];
+  const ramaBox = document.querySelector(`.rama-box[data-etiqueta="${etiqueta}"]`);
+  if (!ramaBox) return;
+  
+  // Obtener elementos
+  const ramaHeader = ramaBox.querySelector('.rama-header');
+  const ramaDetail = ramaBox.querySelector('.rama-detail');
+  
+  // Guardar el contenido original
+  const originalHeader = ramaHeader.innerHTML;
+  const originalDetail = ramaDetail.innerHTML;
+  
+  // Reemplazar con formulario de edición
+  ramaHeader.innerHTML = `
+    <input type="text" class="edit-etiqueta-nombre" value="${etiqueta}" placeholder="Nombre de la etiqueta">
+    <button class="save-button" onclick="guardarEdicionEtiqueta('${etiqueta}')">Guardar</button>
+  `;
+  
+  ramaDetail.innerHTML = `
+    <textarea class="edit-etiqueta-descripcion" placeholder="Descripción de la etiqueta">${descripcion}</textarea>
+  `;
+  
+  // Añadir botón para cancelar edición
+  const cancelButton = document.createElement('button');
+  cancelButton.className = 'cancel-button';
+  cancelButton.textContent = 'Cancelar';
+  cancelButton.onclick = function() {
+    ramaHeader.innerHTML = originalHeader;
+    ramaDetail.innerHTML = originalDetail;
+  };
+  
+  ramaHeader.appendChild(cancelButton);
+}
+
+// Función para guardar la edición de una etiqueta
+function guardarEdicionEtiqueta(etiquetaOriginal) {
+  const ramaBox = document.querySelector(`.rama-box[data-etiqueta="${etiquetaOriginal}"]`);
+  if (!ramaBox) return;
+  
+  const nuevoNombre = ramaBox.querySelector('.edit-etiqueta-nombre').value.trim();
+  const nuevaDescripcion = ramaBox.querySelector('.edit-etiqueta-descripcion').value.trim();
+  
+  if (!nuevoNombre || !nuevaDescripcion) {
+    alert('Por favor, completa tanto el nombre como la descripción de la etiqueta.');
+    return;
+  }
+  
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  
+  // Si el nombre ha cambiado y ya existe una etiqueta con ese nombre
+  if (nuevoNombre !== etiquetaOriginal && etiquetas.etiquetas_personalizadas[nuevoNombre]) {
+    if (!confirm('Ya existe una etiqueta con ese nombre. ¿Deseas sobrescribirla?')) {
+      return;
+    }
+  }
+  
+  // Crear un objeto temporal para mantener el orden
+  const etiquetasOrdenadas = {};
+  
+  // Recorrer las etiquetas actuales y construir el nuevo objeto
+  Object.keys(etiquetas.etiquetas_personalizadas).forEach(key => {
+    if (key === etiquetaOriginal) {
+      // Reemplazar la etiqueta original con la nueva
+      etiquetasOrdenadas[nuevoNombre] = nuevaDescripcion;
+    } else if (key !== nuevoNombre) { // Evitar duplicados si el nombre nuevo ya existía
+      etiquetasOrdenadas[key] = etiquetas.etiquetas_personalizadas[key];
+    }
+  });
+  
+  // Actualizar el objeto de etiquetas
+  etiquetas.etiquetas_personalizadas = etiquetasOrdenadas;
+  
+  // Guardar en sessionStorage
+  sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+  
+  // Actualizar la interfaz
+  actualizarContadorEtiquetas();
+  
+  // Recargar las etiquetas manteniendo el orden
+  cargarEtiquetasPersonalizadas(etiquetas.etiquetas_personalizadas);
+}
+
+
+// Añadir función para eliminar etiqueta personalizada:
+function eliminarEtiquetaPersonalizada(etiqueta) {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  if (etiquetas.etiquetas_personalizadas && etiquetas.etiquetas_personalizadas[etiqueta]) {
+    delete etiquetas.etiquetas_personalizadas[etiqueta];
+  }
+  sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+   
+  // Actualizar el contador
+  actualizarContadorEtiquetas();
+  cargarSecciones(etiquetas);
+}
+// Función para actualizar el contador de etiquetas
+function actualizarContadorEtiquetas() {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  const contador = document.getElementById('contador-etiquetas');
+  
+  if (contador && etiquetas && etiquetas.etiquetas_personalizadas) {
+    const numEtiquetas = Object.keys(etiquetas.etiquetas_personalizadas).length;
+    contador.textContent = numEtiquetas;
+  }
 }
 
 /* ------------------ Submenu Navigation ------------------ */
@@ -322,7 +546,7 @@ function cargarIndustrias(industrias) {
     ramaHeader.innerHTML = `
       <h4>${industria}</h4>
       <div>
-        <button class="toggle-detail" onclick="toggleDetalleRama(this)">Ver detalle ▼</button>
+        <button class="toggle-detail" onclick="toggleDetalleRama(this)">Ver definición ▼</button>
         <span class="tag-remove" onclick="eliminarIndustria('${industria}')">×</span>
       </div>
     `;
@@ -493,7 +717,7 @@ function cargarRamasJuridicas(ramas, subramas) {
     ramaHeader.innerHTML = `
       <h4>${rama}</h4>
       <div>
-        <button class="toggle-detail" onclick="toggleDetalleRama(this)">Ver detalle ▼</button>
+        <button class="toggle-detail" onclick="toggleDetalleRama(this)">Ver definición ▼</button>
         <span class="tag-remove" onclick="eliminarRamaJuridica('${rama}')">×</span>
       </div>
     `;
@@ -868,6 +1092,76 @@ function agregarSubrama(rama, subrama) {
   }
 }
 
+/*----------Añadir etiquetas personalziadas extras-----------*/ 
+// Función para agregar una nueva etiqueta personalizada
+function agregarEtiquetaPersonalizada() {
+  const nombreEtiqueta = document.getElementById('nueva-etiqueta').value.trim();
+  const descripcionEtiqueta = document.getElementById('nueva-descripcion').value.trim();
+  
+  if (!nombreEtiqueta || !descripcionEtiqueta) {
+    alert('Por favor, completa tanto el nombre como la descripción de la etiqueta.');
+    return;
+  }
+  
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  
+  if (!etiquetas.etiquetas_personalizadas) {
+    etiquetas.etiquetas_personalizadas = {};
+  }
+  
+  // Verificar si la etiqueta ya existe
+  if (etiquetas.etiquetas_personalizadas[nombreEtiqueta]) {
+    if (!confirm('Esta etiqueta ya existe. ¿Deseas sobrescribirla?')) {
+      return;
+    }
+  }
+  
+  // Crear un objeto temporal para añadir la nueva etiqueta al principio
+  const etiquetasOrdenadas = {};
+  
+  // Añadir la nueva etiqueta primero
+  etiquetasOrdenadas[nombreEtiqueta] = descripcionEtiqueta;
+  
+  // Añadir el resto de etiquetas
+  Object.keys(etiquetas.etiquetas_personalizadas).forEach(key => {
+    if (key !== nombreEtiqueta) { // Evitar duplicados
+      etiquetasOrdenadas[key] = etiquetas.etiquetas_personalizadas[key];
+    }
+  });
+  
+  // Actualizar el objeto de etiquetas
+  etiquetas.etiquetas_personalizadas = etiquetasOrdenadas;
+  
+  // Guardar en sessionStorage
+  sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
+  
+  // Limpiar el formulario
+  document.getElementById('nueva-etiqueta').value = '';
+  document.getElementById('nueva-descripcion').value = '';
+  
+  // Actualizar el contador
+  actualizarContadorEtiquetas();
+  
+  // Recargar las etiquetas
+  cargarEtiquetasPersonalizadas(etiquetas.etiquetas_personalizadas);
+}
+
+// Añadir esta función para manejar el toggle de los detalles de la etiqueta
+function toggleDetalleRama(button) {
+  const ramaBox = button.closest('.rama-box');
+  const ramaDetail = ramaBox.querySelector('.rama-detail');
+  
+  if (ramaBox.classList.contains('collapsed')) {
+    ramaBox.classList.remove('collapsed');
+    ramaDetail.style.display = 'block';
+    button.textContent = button.textContent.replace('▼', '▲');
+  } else {
+    ramaBox.classList.add('collapsed');
+    ramaDetail.style.display = 'none';
+    button.textContent = button.textContent.replace('▲', '▼');
+  }
+}
+
 
 /* ------------------ Finalize Onboarding ------------------ */
 function finalizarOnboarding() {
@@ -910,6 +1204,7 @@ function finalizarOnboarding() {
     "fuentes-reguladores": userData.reguladores || []
   };
   
+  /*
   // Store these in sessionStorage for paso4
   sessionStorage.setItem('industry_tags', JSON.stringify(etiquetasFinales.industrias || []));
   sessionStorage.setItem('sub_industria_map', JSON.stringify(sub_industria_map));
@@ -922,7 +1217,21 @@ function finalizarOnboarding() {
   // Store in hidden inputs for easier access in paso4
   document.getElementById('fuentesGobiernoInput').value = JSON.stringify(userData.fuentes || []);
   document.getElementById('fuentesReguladoresInput').value = JSON.stringify(userData.reguladores || []);
+  */
+
+   // Crear objeto con la selección final
+   const seleccionFinal = {
+    etiquetas_personalizadas: etiquetasFinales.etiquetas_personalizadas || {},
+    fuentes:cobertura_legal,
+    rangos_normativos: etiquetasFinales.rangos_normativos || []
+  };
   
+  // Guardar la selección final
+  sessionStorage.setItem("seleccionFinal", JSON.stringify(seleccionFinal));
+  
+  // Redirigir a paso4.html
+  window.location.href = 'paso4.html';
+
   // If we're in edit mode, set a flag for paso4
   if (sessionStorage.getItem('isEditing') === 'true') {
     sessionStorage.setItem('isEditingPlan', 'true');
@@ -938,8 +1247,6 @@ function finalizarOnboarding() {
     feedback: feedback
   });
   
-  // Redirect to paso4 instead of showing alert
-  window.location.href = 'paso4.html';
 }
 
 
@@ -958,9 +1265,31 @@ function toggleDetalleRama(button) {
     detailDiv.style.display = 'none';
     ramaBox.classList.remove('expanded');
     ramaBox.classList.add('collapsed');
-    button.textContent = 'Ver detalle ▼';
+    button.textContent = 'Ver definición ▼';
   }
 }
+
+
+  /*-----Skeleton loader--------*/
+
+// Función para ocultar el skeleton loader cuando la página esté completamente cargada
+document.addEventListener('DOMContentLoaded', function() {
+  // Mostrar el skeleton loader
+  const skeletonLoader = document.getElementById('skeleton-loader');
+  if (skeletonLoader) {
+    skeletonLoader.classList.remove('hidden');
+  }
+  
+  // Ocultar el skeleton loader después de que todo el contenido esté cargado
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (skeletonLoader) {
+        skeletonLoader.classList.add('hidden');
+      }
+    }, 500); // Pequeño retraso para asegurar que todo esté renderizado
+  });
+});
+
 
 /* --- Expose deletion functions to global scope --- */
 window.eliminarFuente = eliminarFuente;

@@ -38,45 +38,46 @@
     }
 
     
-    .time-saving-promo {
-  background: linear-gradient(135deg, #f8f8f8 0%, #ffffff 100%);
-  border-left: 4px solid var(--primary-color);
+    .form-group {
+  /*background: linear-gradient(135deg, #f8f8f8 0%, #ffffff 100%);*/
+  /*border-left: 4px solid var(--primary-color);*/
   border-radius: 8px;
   padding: 16px 20px;
   margin: 20px 0;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  /*box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);*/
   transition: all 0.3s ease;
 }
 
-.time-saving-promo:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+.form-group:hover {
+ /* transform: translateY(-2px);*/
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); 
+  /*border-left: 4px solid var(--primary-color);*/
 }
 
-.time-saving-promo span {
+.form-group span {
   color: var(--text-color);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
   margin-bottom: 6px;
 }
 
-.time-saving-promo .highlight {
+.form-group .highlight {
   color: var(--primary-color);
   font-weight: 700;
 }
 
-.time-saving-promo .description {
+.form-group .description {
   color: var(--secondary-color);
   font-size: 14px;
   line-height: 1.5;
 }
 
-@media (max-width: 768px) {
-  .time-saving-promo {
-    padding: 14px;
-  }
-}
-
+.area-interes{
+          width: 700px;
+    height: 114px;
+    border-radius: 15px;
+    padding: 7px 15px;
+    }
     .dropdown-options {
       display: none;
       position: absolute;
@@ -88,8 +89,27 @@
       border-radius: 4px;
       max-height: 150px;
       overflow-y: auto;
+      min-width: 200px; /* Ancho mínimo para el dropdown */
+      width: 450px;
       z-index: 100;
+      background-color: white !important; /* Forzar color de fondo */
+      z-index: 1050 !important; /* Valor alto para asegurar que esté por encima de otros elementos */
+      opacity: 1 !important; /* Forzar opacidad completa */
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important; /* Sombra más pronunciada */
     }
+
+    .dropdown-options label {
+      white-space: nowrap; /* Evitar que el texto se rompa en múltiples líneas */
+      overflow: hidden;
+      text-overflow: ellipsis; /* Añadir puntos suspensivos si el texto es demasiado largo */
+    }
+
+    /* Mantener el tamaño del botón */
+    .dropdown-toggle {
+      width: auto !important; /* Mantener el ancho original */
+      min-width: 200px; /* Establecer un ancho mínimo */
+    }
+
     .dropdown-options .checkbox-item {
       padding: 5px 10px;
       border-bottom: solid 1px #ccc;
@@ -103,6 +123,116 @@
     .selected-tags .tag {
       margin: 0;
     }
+ 
+    /*--------Skeloton loader--------------*/
+    /* Estilos mejorados para el skeleton loader */
+/* Estilos mejorados para el skeleton loader */
+.skeleton-container {
+  width: 100%;
+  padding: 10px 0;
+}
+
+.skeleton-section {
+  margin-bottom: 20px;
+}
+
+.skeleton-item {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.skeleton-item.title {
+  width: 70%;
+  height: 30px;
+  margin-bottom: 10px;
+}
+
+.skeleton-item.subtitle {
+  width: 90%;
+  height: 20px;
+  margin-bottom: 20px;
+}
+
+.skeleton-item.section-title {
+  width: 50%;
+  height: 20px;
+  margin-bottom: 15px;
+}
+
+.skeleton-checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skeleton-item.checkbox {
+  width: 100%;
+  height: 40px;
+  border-radius: 6px;
+}
+
+.skeleton-item.input-field {
+  width: 100%;
+  height: 45px;
+  border-radius: 6px;
+}
+
+.skeleton-item.button {
+  width: 140px;
+  height: 45px;
+  border-radius: 20px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+    @keyframes shimmer {
+      0% {
+        background-position: -200% 0;
+      }
+      100% {
+        background-position: 200% 0;
+      }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+
+    @media (max-width: 600px) {
+  .area-interes {
+    height: 243px;
+    width: 276px;
+  }
+
+  .dropdown-options {
+    width: 276px;
+  }
+}
   </style>
 </head>
 <body>
@@ -135,10 +265,12 @@
     </div>
 
     <div class="formulario">
+         
       <h2>Información de Usuario</h2>
       <form id="onboardingForm">
         <!-- Perfil Section -->
         <div class="section">
+          
           <h3>Perfil</h3>
           <div class="form-group">
             <label for="nombre">Nombre</label>
@@ -154,20 +286,20 @@
               <button type="button" class="dropdown-toggle" onclick="toggleDropdown('perfil-dropdown')">Selecciona perfil profesional </button>
               <div id="perfil-dropdown" class="dropdown-options">
                 <div class="checkbox-item">
-                  <input type="checkbox" id="perfil_abogado_empresa" name="perfil[]" value="abogado_empresa" onchange="updateSelected('perfil')">
-                  <label for="perfil_abogado_empresa">Abogado en Empresa</label>
+                  <input type="checkbox" id="perfil_regulatorio" name="perfil[]" value="abogado_empresa" onchange="updateSelected('perfil')">
+                  <label for="perfil_regfinanciero">Regulatorio-financiero</label>
                 </div>
                 <div class="checkbox-item">
-                    <input type="checkbox" id="perfil_abogado_empresa" name="perfil[]" value="conocimiento_legal" onchange="updateSelected('perfil')">
-                    <label for="perfil_abogado_empresa">Departamento del conocimiento legal</label>
-                  </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="perfil_compliance" name="perfil[]" value="compliance_officer" onchange="updateSelected('perfil')">
-                  <label for="perfil_compliance">Compliance Officer</label>
+                  <input type="checkbox" id="perfil_empresas_reguladas" name="perfil[]" value="compliance_officer" onchange="updateSelected('perfil')">
+                  <label for="perfil_compliance">Otras empresas reguladas</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" id="perfil_especializado" name="perfil[]" value="abogado_especializado" onchange="updateSelected('perfil')">
-                  <label for="perfil_especializado">Abogado en Despacho</label>
+                  <input type="checkbox" id="perfil_abogado_empresa" name="perfil[]" value="conocimiento_legal" onchange="updateSelected('perfil')">
+                  <label for="perfil_abogado_empresa">Departamento del conocimiento legal</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="perfil_abogado" name="perfil[]" value="abogado_especializado" onchange="updateSelected('perfil')">
+                  <label for="perfil_especializado">Abogado</label>
                 </div>
                 <div class="checkbox-item">
                   <input type="checkbox" id="perfil_otro" name="perfil[]" value="otro" onchange="updateSelected('perfil')">
@@ -177,18 +309,37 @@
             </div>
             <!-- Conditional fields -->
             <div class="conditional-field" id="especializacion_field">
-              <input type="text" id="especializacion" name="especializacion" placeholder="Indica los ámbitos en los que trabajas" class="conditional-input">
+              <input type="text" id="especializacion" name="especializacion" placeholder="Indica tu sector específico (ej: derecho mercantil)" class="conditional-input">
             </div>
             <div class="conditional-field" id="otro_perfil_field">
               <input type="text" id="otro_perfil" name="otro_perfil" placeholder="Especifica tu perfil si no encaja en las opciones anteriores" class="conditional-input">
             </div>
           </div>
-
-          <div class="time-saving-promo">
-            <span>¿Quieres comenzar <span class="highlight">ahorrándote tiempo?</span></span>
-            <div class="description">Inserta tu Linkedin y web, de manera automática crearemos tu avatar jurídico personalizado</div>
+          
+          <div class="form-group">
+        
+           <label>Contexto</label>
+           <div style="font-size: 14px;">Indica tus áreas de interés para que nuestra IA desarrolle tu <span class="highlight">avatar jurídico personalizado</span></div>
+            <textarea
+              id="area_interes"
+              name="area_interes"
+              class="area-interes"
+              placeholder="Ej: Abogado especializado en mercados de valores, con especial interés en:
+         - Ofertas Públicas de Adquisición (OPAs)
+         - Titulización de activos
+         - Procedimientos sancionadores de la CNMV..."
+            ></textarea>
+          </div>
           </div>
           
+          <!--
+          <div class="form-group">
+            <label for="area_interes">Área de interés</label>
+            <input type="text" id="area_interes" name="area_interes" placeholder="Ej: Abogado especializado en mercados de valores, con especial interés en Ofertas Públicas de Adquisición (OPAs), titulización de activos y procedimientos sancionadores de la CNMV">
+          </div>
+          -->
+
+          <!--
           <div class="form-group">
             <label for="linkedin">LinkedIn</label>
             <input type="url" id="linkedin" name="linkedin" placeholder="URL de tu perfil de LinkedIn">
@@ -197,6 +348,7 @@
             <label for="webEmpresa">Web de la Empresa</label>
             <input type="url" id="webEmpresa" name="webEmpresa" placeholder="URL de la web de la empresa">
           </div>
+          -->
          
         </div>
         
@@ -215,11 +367,11 @@
                   <label for="boe">Boletín Oficial del Estado (BOE)</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" id="doue" name="fuentes[]" value="doue" checked onchange="updateSelected('cobertura')">
+                  <input type="checkbox" id="doue" name="fuentes[]" value="doue" onchange="updateSelected('cobertura')">
                   <label for="doue">Diario Oficial de la Unión Europea (DOUE)</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" id="bocg" name="fuentes[]" value="bocg" checked onchange="updateSelected('cobertura')">
+                  <input type="checkbox" id="bocg" name="fuentes[]" value="bocg" onchange="updateSelected('cobertura')">
                   <label for="bocg">Boletín Oficial de las Cortes Generales (BOCG)</label>
                 </div>
                 <div class="checkbox-item">
@@ -336,6 +488,147 @@
         }
       });
     }
+
+    // Hacer que los elementos checkbox-item sean clickeables
+// Hacer que los elementos checkbox-item sean clickeables
+document.addEventListener('DOMContentLoaded', function() {
+  // Asegurarse de que este código se ejecute después de que el DOM esté completamente cargado
+  setTimeout(() => {
+    const checkboxItems = document.querySelectorAll('.checkbox-item');
+    
+    checkboxItems.forEach(item => {
+      // Eliminar cualquier event listener existente para evitar duplicados
+      item.removeEventListener('click', handleCheckboxItemClick);
+      // Añadir el nuevo event listener
+      item.addEventListener('click', handleCheckboxItemClick);
+    });
+  }, 100);
+});
+
+// Función separada para manejar el clic en checkbox-item
+function handleCheckboxItemClick(event) {
+  // Evitar que el clic se propague si es en el checkbox o en el botón de eliminar
+  if (event.target.type === 'checkbox' || event.target.classList.contains('tag-remove')) {
+    return;
+  }
+  
+  // Encontrar el checkbox dentro del item
+  const checkbox = this.querySelector('input[type="checkbox"]');
+  if (checkbox) {
+    // Cambiar el estado del checkbox
+    checkbox.checked = !checkbox.checked;
+    
+    // Disparar el evento change para actualizar la UI
+    const changeEvent = new Event('change', { bubbles: true });
+    checkbox.dispatchEvent(changeEvent);
+  }
+}
+
+// Variable para almacenar los dropdowns abiertos
+let openDropdowns = [];
+
+// Toggle dropdown visibility
+function toggleDropdown(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  if (dropdown.style.display === "block") {
+    dropdown.style.display = "none";
+    // Eliminar de la lista de dropdowns abiertos
+    openDropdowns = openDropdowns.filter(id => id !== dropdownId);
+  } else {
+    dropdown.style.display = "block";
+    // Agregar a la lista de dropdowns abiertos
+    openDropdowns.push(dropdownId);
+  }
+}
+
+// Cerrar todos los dropdowns abiertos
+function closeAllDropdowns() {
+  openDropdowns.forEach(dropdownId => {
+    const dropdown = document.getElementById(dropdownId);
+    if (dropdown) {
+      dropdown.style.display = "none";
+    }
+  });
+  openDropdowns = [];
+}
+
+// Manejar clics en cualquier parte del documento
+document.addEventListener('click', function(event) {
+  // Si el clic no fue dentro de un dropdown o en un botón de dropdown
+  if (!event.target.closest('.dropdown-options') && 
+      !event.target.closest('.dropdown-toggle') &&
+      !event.target.classList.contains('tag-remove')) {
+    closeAllDropdowns();
+  }
+});
+
+// Función para hacer clickeables los elementos de los dropdowns de normativa y reguladores
+document.addEventListener('DOMContentLoaded', function() {
+  // Función para manejar el clic en los elementos label
+  function handleLabelClick(event) {
+    // Si el clic fue directamente en el checkbox, no hacer nada adicional
+    if (event.target.type === 'checkbox') return;
+    
+    // Prevenir el comportamiento por defecto del label
+    event.preventDefault();
+    
+    // Encontrar el checkbox dentro del label
+    const checkbox = this.querySelector('input[type="checkbox"]');
+    if (checkbox) {
+      // Cambiar el estado del checkbox
+      checkbox.checked = !checkbox.checked;
+      
+      // Disparar el evento change para actualizar la UI
+      const changeEvent = new Event('change', { bubbles: true });
+      checkbox.dispatchEvent(changeEvent);
+    }
+  }
+  
+  // Función para aplicar el comportamiento a todos los labels en dropdowns
+  function makeDropdownLabelsClickable() {
+    // Seleccionar todos los labels dentro de dropdown-options
+    const dropdownLabels = document.querySelectorAll('.dropdown-options label');
+    
+    dropdownLabels.forEach(label => {
+      // Eliminar cualquier event listener existente para evitar duplicados
+      label.removeEventListener('click', handleLabelClick);
+      // Añadir el nuevo event listener
+      label.addEventListener('click', handleLabelClick);
+    });
+  }
+  
+  // Aplicar inicialmente
+  setTimeout(makeDropdownLabelsClickable, 500);
+  
+  // Aplicar cada vez que se muestre un dropdown
+  const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+  dropdownToggles.forEach(toggle => {
+    toggle.addEventListener('click', function() {
+      // Dar tiempo para que el dropdown se muestre
+      setTimeout(makeDropdownLabelsClickable, 100);
+    });
+  });
+  
+  // También observar cambios en el DOM para detectar nuevos elementos
+  const observer = new MutationObserver(function(mutations) {
+    let needsUpdate = false;
+    
+    mutations.forEach(function(mutation) {
+      if (mutation.addedNodes.length) {
+        needsUpdate = true;
+      }
+    });
+    
+    if (needsUpdate) {
+      setTimeout(makeDropdownLabelsClickable, 100);
+    }
+  });
+  
+  // Iniciar la observación del documento
+  observer.observe(document.body, { childList: true, subtree: true });
+});
+
+
   </script>
 </body>
 </html>

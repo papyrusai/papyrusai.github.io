@@ -1,0 +1,135 @@
+{
+    "perfiles": {
+      "abogado": {
+        "especializacion": "mercado de valores",
+        "etiquetas": [
+          {
+            "nombre": "OPA",
+            "definicion": "Una Oferta Pública de Adquisición (OPA) es una operación mercantil por la que una sociedad ofrece comprar acciones o valores a los accionistas de otra empresa, bajo determinadas condiciones."
+          },
+          {
+            "nombre": "M&A",
+            "definicion": "Mergers and Acquisitions (M&A) son transacciones relacionadas con la adquisición, fusión o restructuración de sociedades y otras organizaciones."
+          },
+          {
+            "nombre": "Procedimiento sancionador CNMV",
+            "definicion": "Es el proceso mediante el cual la Comisión Nacional del Mercado de Valores investiga una posible infracción y, en su caso, impone la sanción correspondiente."
+          },
+          {
+            "nombre": "Información privilegiada (insider trading)",
+            "definicion": "Se refiere al uso de datos o hechos relevantes no públicos para negociar valores en beneficio propio o de terceros."
+          },
+          {
+            "nombre": "Manipulación de mercado",
+            "definicion": "Son prácticas que distorsionan el libre juego de la oferta y la demanda de títulos, creando informaciones o señales falsas o engañosas."
+          },
+          {
+            "nombre": "Folleto informativo (prospectus)",
+            "definicion": "Documento que describe detalladamente los valores que se ofrecen al público y los riesgos asociados, exigido para garantizar la transparencia."
+          },
+          {
+            "nombre": "Gobierno corporativo",
+            "definicion": "Conjunto de normas y procedimientos que regulan el funcionamiento interno de una organización y la relación entre accionistas, consejeros y directivos."
+          },
+          {
+            "nombre": "MiFID II",
+            "definicion": "Directiva de la Unión Europea que establece normas de transparencia y protección al inversor en los mercados de instrumentos financieros."
+          },
+          {
+            "nombre": "Derivados financieros",
+            "definicion": "Contratos cuyo valor depende de la evolución del precio de un activo subyacente, como acciones, divisas o materias primas."
+          },
+          {
+            "nombre": "Ofertas públicas de suscripción (OPS)",
+            "definicion": "Proceso mediante el cual una sociedad emite nuevas acciones o valores y los ofrece a potenciales inversores bajo determinadas condiciones."
+          },
+          {
+            "nombre": "Transparencia y reporting",
+            "definicion": "Obligaciones de las entidades emisoras de informar periódicamente a los inversores y al regulador sobre su situación financiera y operativa."
+          },
+          {
+            "nombre": "Prevención de blanqueo de capitales (PBC)",
+            "definicion": "Normas y controles dirigidos a detectar y evitar el uso del sistema financiero para legitimar dinero de origen ilícito."
+          },
+          {
+            "nombre": "Emisiones de deuda corporativa",
+            "definicion": "Operaciones en las que una empresa obtiene financiación a través de la emisión de bonos u obligaciones, ofreciendo rentabilidad a los inversores."
+          },
+          {
+            "nombre": "Gestión de conflictos de interés",
+            "definicion": "Implementación de políticas y procedimientos para detectar y manejar situaciones donde los intereses personales pueden chocar con los de la empresa o clientes."
+          },
+          {
+            "nombre": "Cumplimiento normativo (compliance)",
+            "definicion": "Conjunto de prácticas y controles internos para asegurar que la organización cumple con las leyes y regulaciones aplicables."
+          }
+        ]
+      },
+      "empresa_regulada": {
+        "especializacion": "energía",
+        "etiquetas": [
+          {
+            "nombre": "Generación de energía",
+            "definicion": "Normas y licencias que regulan la producción de electricidad a partir de fuentes convencionales o renovables."
+          },
+          {
+            "nombre": "Transporte y distribución",
+            "definicion": "Regulación sobre la infraestructura de alta tensión y redes de distribución, incluyendo accesos y peajes."
+          },
+          {
+            "nombre": "Comercialización eléctrica",
+            "definicion": "Requisitos legales para adquirir energía en el mercado mayorista y venderla a usuarios finales."
+          },
+          {
+            "nombre": "Mercado mayorista (OMIE y REE)",
+            "definicion": "Reglamentos que organizan las subastas de compra-venta de energía y la gestión técnica del sistema eléctrico."
+          },
+          {
+            "nombre": "Regulación de la CNMC",
+            "definicion": "Competencias de la Comisión Nacional de los Mercados y la Competencia en supervisión y sanciones para el sector energético."
+          },
+          {
+            "nombre": "Autoconsumo y generación distribuida",
+            "definicion": "Normas que permiten a usuarios producir su propia energía y verter excedentes a la red."
+          },
+          {
+            "nombre": "Energías renovables",
+            "definicion": "Legislación específica que regula la producción y financiación de instalaciones solares, eólicas e hidráulicas."
+          },
+          {
+            "nombre": "Transición energética y descarbonización",
+            "definicion": "Políticas de reducción de emisiones para cumplir compromisos medioambientales (p.ej. PNIEC)."
+          },
+          {
+            "nombre": "Eficiencia energética",
+            "definicion": "Directrices para mejorar el uso de la energía en edificios y procesos industriales, reduciendo costes y emisiones."
+          },
+          {
+            "nombre": "Subvenciones y ayudas públicas",
+            "definicion": "Programas que promueven inversiones en energías limpias o mejoras de eficiencia."
+          },
+          {
+            "nombre": "Contratos de suministro y PPA",
+            "definicion": "Aspectos legales de los acuerdos de compraventa de energía a medio y largo plazo."
+          },
+          {
+            "nombre": "Sostenibilidad y medio ambiente",
+            "definicion": "Normas sobre impacto ambiental, contaminación y uso responsable de recursos en el sector energético."
+          },
+          {
+            "nombre": "Seguridad de instalaciones",
+            "definicion": "Reglamentos técnicos y de prevención de riesgos en infraestructuras energéticas."
+          },
+          {
+            "nombre": "Responsabilidad y régimen sancionador",
+            "definicion": "Procesos para determinar infracciones y penalizaciones en la normativa energética."
+          },
+          {
+            "nombre": "Fiscalidad energética",
+            "definicion": "Impuestos específicos para la producción, transporte o venta de energía en España."
+          }
+        ]
+      }
+    }
+  }
+  

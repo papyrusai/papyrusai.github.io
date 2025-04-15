@@ -103,240 +103,148 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   async function construirPromptEnriquecido(userData) {
-    // Cargar el contexto adicional
+    // 1. Cargar el contexto adicional (que incluye ejemplos y entrevistas)
     const contexto = await cargarContexto();
-    // Cargar el catálogo de etiquetas predefinidas
+  
+    // 2. Cargar el catálogo de etiquetas predefinidas (rangos e industrias)
     let catalogoEtiquetas;
     try {
       const respuestaCatalogo = await fetch('catalogo_etiquetas.json');
       catalogoEtiquetas = await respuestaCatalogo.json();
     } catch (error) {
       console.error('Error al cargar el catálogo de etiquetas:', error);
-      catalogoEtiquetas = { industrias: [], sub_industrias: {}, ramas_juridicas: [], subramas_juridicas: {} };
+      catalogoEtiquetas = {
+        industrias: [],
+        sub_industrias: {},
+        ramas_juridicas: [],
+        subramas_juridicas: {},
+        rangos_normativos: []
+      };
     }
   
-    // Encontrar ejemplos relevantes basados en el perfil del usuario
+    // 3. Cargar la plantilla de ejemplos personalizados (etiquetas jurídicas de ejemplo según perfil)
+    let ejemplosPersonalizados;
+    try {
+      const respuestaEjemplos = await fetch('ejemplos_personalizadas.json');
+      ejemplosPersonalizados = await respuestaEjemplos.json();
+    } catch (error) {
+      console.error('Error al cargar ejemplos personalizados:', error);
+      ejemplosPersonalizados = {};
+    }
+  
+    // 4. Encontrar ejemplos relevantes basados en el perfil del usuario (si tienes funciones auxiliares, aplícalas)
     const ejemplosRelevantes = seleccionarEjemplosRelevantes(contexto.ejemplos, userData);
     const entrevistasRelevantes = seleccionarEntrevistasRelevantes(contexto.entrevistas, userData);
   
-    // Convertir los catálogos a texto para incluirlos en el prompt
-    const industriasCatalogo = catalogoEtiquetas.industrias.join("\n- ");
-    
-    // Crear un texto con las subindustrias disponibles para cada industria
-    let subindustriasPorIndustria = "";
-    for (const industria in catalogoEtiquetas.sub_industrias) {
-      subindustriasPorIndustria += `${industria}:\n- ${catalogoEtiquetas.sub_industrias[industria].join("\n- ")}\n\n`;
-    }
-    
-    const ramasJuridicasCatalogo = catalogoEtiquetas.ramas_juridicas.join("\n- ");
+    // 5. Preparar los rangos normativos en un texto que la IA use como lista cerrada
     const rangosNormativosCatalogo = catalogoEtiquetas.rangos_normativos.join("\n- ");
   
-    // Crear un texto con las subramas disponibles para cada rama
-    let subramasPorRama = "";
-    for (const rama in catalogoEtiquetas.subramas_juridicas) {
-      subramasPorRama += `${rama}:\n- ${catalogoEtiquetas.subramas_juridicas[rama].join("\n- ")}\n\n`;
+    // 6. Buscar dentro de “ejemplosPersonalizados” la sección que coincida con el perfil del usuario
+    //    Suponiendo que “ejemplosPersonalizados” tiene un objeto con claves por perfil, e.g. "abogado_empresa", "empresa_regulada", etc.
+    let ejemploPerfil = "";
+    if (userData.perfil && userData.perfil.length > 0) {
+      // Tomar el primer perfil como referencia o combinar lógicas si hay varios
+      const perfilPrincipal = userData.perfil[0];
+      if (ejemplosPersonalizados[perfilPrincipal]) {
+        ejemploPerfil = JSON.stringify(ejemplosPersonalizados[perfilPrincipal], null, 2);
+      }
     }
   
+    // 7. Construir el prompt con la nueva sección que muestra el ejemplo personalizado
     return `
-  INSTRUCCIÓN PRINCIPAL: DEBES USAR EXCLUSIVAMENTE LAS ETIQUETAS LISTADAS EN ESTE PROMPT.... Eres un asistente especializado en derecho y cumplimiento normativo con acceso a un catálogo cerrado de etiquetas.
+    INSTRUCCIÓN PRINCIPAL: Generar un listado de etiquetas jurídicas junto a sus definiciones para clasificar documentos legales según los intereses de “userData”. Para ello:
   
-  REGLAS OBLIGATORIAS:
-  1. SOLO puedes recomendar etiquetas que aparezcan EXACTAMENTE en las listas proporcionadas.
-  2. NO puedes inventar, modificar o sugerir etiquetas que no estén en estas listas.
-  3. Debes mantener la ortografía y capitalización exactas de las etiquetas proporcionadas.
-  4. Si no encuentras etiquetas relevantes, elige las más cercanas del catálogo, pero NUNCA inventes nuevas.
+    TAREAS:
+    1. ETIQUETAS PERSONALIZADAS:
+       - Basándote en la información de userData (perfil, especialización, áreas de interés) y en la siguiente plantilla de ejemplos para su perfil, genera un listado de etiquetas que ayude a clasificar documentos legales:
+         EJEMPLO DE PERFIL SIMIILAR (para referencia): 
+         ${ejemploPerfil || "No se encontraron ejemplos personalizados para el perfil indicado."}
+       - Debes adaptar las etiquetas y definiciones de la plantilla al usuario según userData.area_interes y userData.especializacion.
+       - Máximo 15 etiquetas.
   
-  INFORMACIÓN DEL USUARIO:
-  Nombre: ${userData.nombre}
-  Cargo: ${userData.cargo}
-  Web de empresa: ${userData.webEmpresa}
-  LinkedIn: ${userData.linkedin || 'No proporcionado'}
-  Perfiles profesionales: ${userData.perfil ? userData.perfil.join(', ') : 'No especificado'}
-  ${userData.especializacion ? `Especialización: ${userData.especializacion}` : ''}
-  ${userData.otro_perfil ? `Otro perfil: ${userData.otro_perfil}` : ''}
-  Fuentes legales: ${userData.fuentes ? userData.fuentes.join(', ') : 'Ninguna seleccionada'}
-  Reguladores: ${userData.reguladores ? userData.reguladores.join(', ') : 'Ninguno seleccionado'}
+    2. RANGOS (CATÁLOGO CERRADO):
+       - Selecciona los rangos normativos apropiados ÚNICAMENTE de la siguiente lista oficial. No inventes ni modifiques:
+         - ${rangosNormativosCatalogo}
+       - Máximo 5 rangos del listado.
   
-  CONTEXTO ADICIONAL:
-  ${entrevistasRelevantes.map(e => `- ${e.resumen}`).join('\n')}
-  ${ejemplosRelevantes.map(e => `- ${e.descripcion}`).join('\n')}
+    Ten en cuenta:
+    - Para las “etiquetas_personalizadas”, inspírate en la plantilla de ejemplos (más la información del usuario) sin limitarte al catálogo.
+    - Para los “rangos_normativos”, no se puede salir del catálogo ni proponer nuevas entradas.
+    - Ajusta la definición de cada etiqueta personalizada al ámbito o áreas de interés del usuario.
   
-  CATÁLOGO CERRADO DE ETIQUETAS PERMITIDAS:
+    INFORMACIÓN DEL USUARIO:
+    Nombre: ${userData.nombre || 'N/D'}
+    Perfiles profesionales: ${userData.perfil ? userData.perfil.join(', ') : 'No especificado'}
+    ${userData.especializacion ? `Especialización: ${userData.especializacion}` : ''}
+    ${userData.otro_perfil ? `Otro perfil: ${userData.otro_perfil}` : ''}
+    Área de interés: ${userData.area_interes || 'No especificada'}
+    Fuentes legales: ${userData.fuentes ? userData.fuentes.join(', ') : 'Ninguna seleccionada'}
+    Reguladores: ${userData.reguladores ? userData.reguladores.join(', ') : 'Ninguno seleccionado'}
   
-  INDUSTRIAS PERMITIDAS (selecciona SOLO de esta lista):
-  - ${industriasCatalogo}
-  
-  SUBINDUSTRIAS PERMITIDAS POR INDUSTRIA (selecciona SOLO de estas listas):
-  ${subindustriasPorIndustria}
-  
-  RAMAS JURÍDICAS PERMITIDAS (selecciona SOLO de esta lista):
-  - ${ramasJuridicasCatalogo}
-  
-  SUBRAMAS JURÍDICAS PERMITIDAS POR RAMA (selecciona SOLO de estas listas):
-  ${subramasPorRama}
-  
-  RANGOS NORMATIVOS PERMITIDOS (selecciona SOLO de esta lista):
-  - ${rangosNormativosCatalogo}
-  
-  INSTRUCCIÓN FINAL:
-  Basándote en la información del usuario, selecciona ÚNICAMENTE etiquetas de los catálogos proporcionados y devuelve un objeto JSON con la siguiente estructura exacta:
-  
-  {
-  "industrias": ["Industria1", "Industria2", ...],
-  "sub_industrias": {
-    "Industria1": ["Subindustria1", "Subindustria2", ...],
-    "Industria2": ["Subindustria3", "Subindustria4", ...]
-  },
-  "ramas_juridicas": ["Rama1", "Rama2", ...],
-  "subramas_juridicas": {
-    "Rama1": ["Subrama1", "Subrama2", ...],
-    "Rama2": ["Subrama3", "Subrama4", ...]
-  },
-  "rangos_normativos": ["Rango1", "Rango2", ...]
-  }
-  
-  LÍMITES:
-  - Industrias: Máximo 5 de la lista proporcionada
-  - Subindustrias: Máximo 3 por industria, solo de las listas proporcionadas para cada industria
-  - Ramas jurídicas: Máximo 5 de la lista proporcionada
-  - Subramas: Máximo 8 por rama, solo de las listas proporcionadas para cada rama
-  - Rangos normativos: Máximo 5 de la lista proporcionada
-  
-  OBSERVACIONES:
-  - Si el usuario es compliance officer o abogado en empresa, probablemente estará unicamente interesado en la industria correspondiente a su empresa, con un enfoque legal más transversal, incluyendo varias ramas jurídicas.
-  - Si el usuario es abogado en despacho, es posible que maneje múltiples industrias de sus clientes y que esté más especializado en una o pocas ramas jurídicas.
-  
-  IMPORTANTE: Tu respuesta debe contener SOLO el objeto JSON, sin explicaciones adicionales.
-  `;
-  }  
-  
-  function procesarRespuestaIA(data) {
-    try {
-      // Cargar el catálogo de etiquetas
-      let catalogoEtiquetas;
-      try {
-        // Intentar obtener el catálogo desde sessionStorage
-        const catalogoString = sessionStorage.getItem('catalogoEtiquetas');
-        if (catalogoString) {
-          catalogoEtiquetas = JSON.parse(catalogoString);
-        } else {
-          // Si no está en sessionStorage, intentar cargarlo de manera asíncrona
-          fetch('catalogo_etiquetas.json')
-            .then(response => response.json())
-            .then(catalogo => {
-              sessionStorage.setItem('catalogoEtiquetas', JSON.stringify(catalogo));
-              return catalogo;
-            })
-            .catch(error => {
-              console.error('Error al cargar el catálogo:', error);
-              return { industrias: [], sub_industrias: {}, ramas_juridicas: [], subramas_juridicas: {} };
-            });
-        }
-      } catch (error) {
-        console.error('Error al recuperar el catálogo:', error);
-        // Valor por defecto si no se puede cargar
-        catalogoEtiquetas = {
-          industrias: [],
-          sub_industrias: {},
-          ramas_juridicas: [],
-          subramas_juridicas: {}
-        };
-      }
-  
-      // Extraer el contenido de la respuesta
-      const respuestaTexto = data.choices[0].message.content;
-      
-      // Buscar el JSON en la respuesta
-      const jsonMatch = respuestaTexto.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        // Parsear el JSON encontrado
-        const etiquetas = JSON.parse(jsonMatch[0]);
-        
-        // Filtrar industrias para que solo incluya las del catálogo
-        if (etiquetas.industrias && catalogoEtiquetas.industrias) {
-          etiquetas.industrias = etiquetas.industrias.filter(industria =>
-            catalogoEtiquetas.industrias.includes(industria)
-          );
-        }
-        
-        // Filtrar subindustrias para cada industria
-        if (!etiquetas.sub_industrias) {
-          etiquetas.sub_industrias = {};
-        }
-        
-        for (const industria in etiquetas.sub_industrias) {
-          if (catalogoEtiquetas.sub_industrias && catalogoEtiquetas.sub_industrias[industria]) {
-            etiquetas.sub_industrias[industria] = etiquetas.sub_industrias[industria].filter(
-              subindustria => catalogoEtiquetas.sub_industrias[industria].includes(subindustria)
-            );
-          } else {
-            // Si la industria no existe en el catálogo, eliminarla
-            delete etiquetas.sub_industrias[industria];
-          }
-        }
-  
-        // Filtrar ramas jurídicas
-        if (etiquetas.ramas_juridicas && catalogoEtiquetas.ramas_juridicas) {
-          etiquetas.ramas_juridicas = etiquetas.ramas_juridicas.filter(rama =>
-            catalogoEtiquetas.ramas_juridicas.includes(rama)
-          );
-        }
-  
-        // Asegurarse de que subramas_juridicas sea un objeto
-        if (!etiquetas.subramas_juridicas) {
-          etiquetas.subramas_juridicas = {};
-        } else if (Array.isArray(etiquetas.subramas_juridicas)) {
-          // Convertir de array a objeto si viene como array
-          const subramasObj = {};
-          etiquetas.ramas_juridicas.forEach(rama => {
-            subramasObj[rama] = [];
-          });
-          etiquetas.subramas_juridicas = subramasObj;
-        }
-  
-        // Filtrar subramas para cada rama
-        for (const rama in etiquetas.subramas_juridicas) {
-          if (catalogoEtiquetas.subramas_juridicas && catalogoEtiquetas.subramas_juridicas[rama]) {
-            etiquetas.subramas_juridicas[rama] = etiquetas.subramas_juridicas[rama].filter(
-              subrama => catalogoEtiquetas.subramas_juridicas[rama].includes(subrama)
-            );
-          } else {
-            // Si la rama no existe en el catálogo, eliminarla
-            delete etiquetas.subramas_juridicas[rama];
-          }
-        }
-  
-        return etiquetas;
-      } else {
-        // Si no se encuentra un JSON válido, crear una estructura por defecto
-        console.warn('No se pudo extraer JSON de la respuesta. Usando valores por defecto.');
-        return {
-          industrias: ["General"],
-          sub_industrias: {
-            "General": ["General"]
-          },
-          ramas_juridicas: ["Derecho Mercantil", "Derecho Administrativo"],
-          subramas_juridicas: {
-            "Derecho Mercantil": ["genérico", "societario"],
-            "Derecho Administrativo": ["genérico", "contratación pública"]
-          },
-          rangos_normativos: ["Legislativa", "Normativa Reglamentaria"],
-        };
-      }
-    } catch (error) {
-      console.error('Error al procesar la respuesta:', error);
-      // Devolver estructura por defecto en caso de error
-      return {
-        industrias: ["General"],
-        sub_industrias: {
-          "General": ["General"]
+    OBJETIVO DE SALIDA:
+    - Devolver SOLO un objeto JSON con la siguiente estructura exacta (sin explicaciones):
+      {
+        "etiquetas_personalizadas": {
+          "etiqueta1": "definicion1",
+          "etiqueta2": "definicion2",
+          ...
         },
-        ramas_juridicas: ["Derecho Mercantil"],
-        subramas_juridicas: {"Derecho Mercantil": ["genérico"]},
-        rangos_normativos: ["Legislativa"]
+        "rangos_normativos": ["Rango1", "Rango2", ...]
+      }
+    
+    LÍMITES:
+    - Hasta 15 etiquetas personalizadas
+    - Hasta 5 rangos normativos
+    
+    No incluyas texto adicional fuera del objeto JSON.
+    `;
+  }
+   
+  
+  // Reemplazar la función procesarRespuestaIA actual (aproximadamente línea 150) con:
+function procesarRespuestaIA(data) {
+  try {
+    // Extraer el contenido de la respuesta
+    const respuestaTexto = data.choices[0].message.content;
+    
+    // Buscar el JSON en la respuesta
+    const jsonMatch = respuestaTexto.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      // Parsear el JSON encontrado
+      const etiquetas = JSON.parse(jsonMatch[0]);
+      
+      // Asegurarse de que la estructura tenga los campos necesarios
+      if (!etiquetas.rangos_normativos) {
+        etiquetas.rangos_normativos = [];
+      }
+      
+      if (!etiquetas.etiquetas_personalizadas) {
+        etiquetas.etiquetas_personalizadas = {};
+      }
+      
+      return etiquetas;
+    } else {
+      // Si no se encuentra un JSON válido, crear una estructura por defecto
+      console.warn('No se pudo extraer JSON de la respuesta. Usando valores por defecto.');
+      return {
+        etiquetas_personalizadas: {
+          "Error, foco legal no encontrada": "Intenta de nuevo o contacta con nuestro equipo de soporte para solucionarlo"
+        },
+        rangos_normativos: ["Error, intente de nuevo"],
       };
     }
+  } catch (error) {
+    console.error('Error al procesar la respuesta:', error);
+    // Devolver estructura por defecto en caso de error
+    return {
+      etiquetas_personalizadas: {
+        "Error, foco legal no encontrado": "Intenta de nuevo o contacta con nuestro equipo de soporte para solucionarlo"
+      },
+      rangos_normativos: ["Error, intente de nuevo"]
+    };
   }
+}
+
   
 // Seleccionar ejemplos relevantes para el usuario
 function seleccionarEjemplosRelevantes(ejemplos, userData) {

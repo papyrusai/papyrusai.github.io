@@ -571,6 +571,7 @@
       const subRamaMap = JSON.parse(sessionStorage.getItem('sub_rama_map') || '{}');
       const rangos = JSON.parse(sessionStorage.getItem('rangos') || '[]');
       const coberturaLegal = JSON.parse(sessionStorage.getItem('cobertura_legal') || '{}');
+      const etiquetas_personalizadas = JSON.parse(sessionStorage.getItem('etiquetas_personalizadas') || '{}');
       
       // Properly parse the feedback object with correct structure
       let feedback;
@@ -633,7 +634,8 @@
           company_name: userData.webEmpresa || '',
           profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : ''),
           especializacion: userData.especializacion,
-          otro_perfil: userData.otro_perfil
+          otro_perfil: userData.otro_perfil,
+          etiquetas_personalizadas
         };
         
         console.log('Sending complete payload to server:', payload);

@@ -2178,7 +2178,8 @@ app.post('/save-free-plan', async (req, res) => {
     linkedin,
     perfil_profesional,
     rangos,
-    feedback
+    feedback, 
+    etiquetas_personalizadas
   } = req.body;
   
   if (!req.user) {
@@ -2217,7 +2218,8 @@ app.post('/save-free-plan', async (req, res) => {
           rangos,
           feedback_login: feedback, // Renamed from feedback to feedback_login
           registration_date: formattedDate,    // String format yyyy-mm-dd
-          registration_date_obj: currentDate   // Also save native Date object for better querying
+          registration_date_obj: currentDate,  // Also save native Date object for better querying
+          etiquetas_personalizadas: etiquetas_personalizadas
         }
       },
       { upsert: true }
@@ -2365,7 +2367,8 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
     especializacion,
     otro_perfil,
     rangos,
-    feedback
+    feedback,
+    etiquetas_personalizadas
   } = req.body;
   
   if (!req.user) {
@@ -2399,7 +2402,8 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
           otro_perfil,
           rangos,
           feedback_login: feedback,
-          subscription_updated_at: new Date()
+          subscription_updated_at: new Date(),
+          etiquetas_personalizadas
         }
       }
     );

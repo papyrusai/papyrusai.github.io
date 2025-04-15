@@ -48,7 +48,7 @@
     }
     /* ----------------- Ramas Jurídicas Specific ----------------- */
     /* Force each rama box to be full-width and on its own line */
-    #industrias-container .rama-box, #ramas-container .rama-box {
+    #etiquetas-personalizadas-container .rama-box, #ramas-container .rama-box {
       width: 100%;
       display: block;
       border: 1px solid #e0e0e0;
@@ -59,10 +59,10 @@
       margin-bottom: 10px;
     }
     /* When collapsed, show only header */
-    #industrias-container .rama-box.collapsed, #ramas-container .rama-box.collapsed {
+    #etiquetas-personalizadas-container .rama-box.collapsed, #ramas-container .rama-box.collapsed {
       height: 50px;
     }
-    #industrias-container .rama-header, #ramas-container .rama-header {
+    #etiquetas-personalizadas-container .rama-header, #ramas-container .rama-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -70,7 +70,7 @@
       cursor: pointer;
     }
   
-    #industrias-container .rama-header h4,  #ramas-container .rama-header h4 {
+    #etiquetas-personalizadas-container .rama-header h4,  #ramas-container .rama-header h4 {
       margin: 0;
       color: var(--text-color);
     }
@@ -84,7 +84,7 @@
     .toggle-detail:focus {
       outline: none;
     }
-    #industrias-container .rama-detail,#ramas-container .rama-detail {
+    #etiquetas-personalizadas-container .rama-detail,#ramas-container .rama-detail {
       padding: 8px 12px;
       display: none;
     }
@@ -170,6 +170,242 @@
       border: 1px solid var(--border-color);
       border-radius: 4px;
     }
+    /*----------------Agregar etiquetas extra ----------------*/
+
+        
+      .add-etiqueta-personalizada {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+
+      .add-etiqueta-personalizada h4 {
+        margin-bottom: 10px;
+        color: var(--text-color);
+      }
+
+
+      .etiqueta-form .form-group {
+        margin-bottom: 10px;
+      }
+
+      .etiqueta-form label {
+        display: block;
+        margin-bottom: 5px;
+      }
+
+      .etiqueta-form input,
+      .etiqueta-form textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+      }
+
+      .etiqueta-form textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+
+      .btn-add-etiqueta {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        margin-top: 5px;
+      }
+
+      .btn-add-etiqueta:hover {
+        background-color: var(--active-color);
+      }
+      .etiquetas-tags-container {
+  margin-bottom: 15px;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+    .etiquetas-tags-scroll {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .etiqueta-tag {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 5px 15px;
+      font-size: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .etiqueta-tag .tag-remove {
+      margin-left: 10px;
+    }
+
+    /* Estilos para el modo de edición */
+   
+
+        .edit-button {
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-color);
+      padding: 5px;
+      margin-right: 5px;
+    }
+
+    .edit-button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .edit-text {
+        display: none;
+      }
+    }
+
+
+    .save-button, .cancel-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      margin-left: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .cancel-button {
+      background-color: #ccc;
+    }
+
+    .edit-etiqueta-nombre {
+      width: 60%;
+      padding: 5px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+    }
+
+    .edit-etiqueta-descripcion {
+      width: 100%;
+      min-height: 80px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      resize: vertical;
+      margin-top: 5px;
+    }
+
+    /* Asegurar que la descripción sea visible por defecto */
+    #etiquetas-personalizadas-container .rama-detail {
+      display: block;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-top: 1px solid #eee;
+    }
+
+    #etiquetas-personalizadas-container .etiqueta-descripcion {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .etiquetas-contador {
+      margin-bottom: 15px;
+    font-size: 17px;
+    color: var(--text-color);
+    font-weight: 500;
+    font-style: italic;
+}
+    .contador-etiquetas{
+      color: var(--primary-color);
+    }
+
+/* ------Skeleton Loader --------- */
+      .skeleton-container {
+        width: 100%;
+        padding: 10px 0;
+      }
+
+      .skeleton-section {
+        margin-bottom: 20px;
+      }
+
+      .skeleton-item {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+        border-radius: 4px;
+        margin-bottom: 10px;
+      }
+
+      .skeleton-item.title {
+        width: 70%;
+        height: 30px;
+        margin-bottom: 10px;
+      }
+
+      .skeleton-item.subtitle {
+        width: 90%;
+        height: 20px;
+        margin-bottom: 20px;
+      }
+
+      .skeleton-item.section-title {
+        width: 50%;
+        height: 20px;
+        margin-bottom: 15px;
+      }
+
+      .skeleton-checkbox-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .skeleton-item.checkbox {
+        width: 100%;
+        height: 40px;
+        border-radius: 6px;
+      }
+
+      .skeleton-item.input-field {
+        width: 100%;
+        height: 45px;
+        border-radius: 6px;
+      }
+
+      .skeleton-item.button {
+        width: 140px;
+        height: 45px;
+        border-radius: 20px;
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+
+
     /* ------------Mobile Responsive CSS for Personalization Form -------------- */
 /* Mobile Responsive CSS for Personalization Form */
 @media (max-width: 768px) {
@@ -432,14 +668,44 @@
     </div>
     <div class="formulario">
       <h2>Avatar Jurídico Personalizado</h2>
+       <!-- Skeleton loader -->
+       <div id="skeleton-loader" class="skeleton-loader">
+        <!-- Título y subtítulo -->
+        <div class="skeleton-item title"></div>
+        <div class="skeleton-item subtitle"></div>
+        
+        <!-- Simulación de los perfiles -->
+        <div class="skeleton-section" style="margin-top: 20px;">
+          <div class="skeleton-item section-title"></div>
+          <div class="skeleton-checkbox-group">
+            <div class="skeleton-item checkbox"></div>
+            <div class="skeleton-item checkbox"></div>
+            <div class="skeleton-item checkbox"></div>
+            <div class="skeleton-item checkbox"></div>
+            <div class="skeleton-item checkbox"></div>
+          </div>
+        </div>
+        
+        <!-- Simulación de campos condicionales -->
+        <div class="skeleton-section" style="margin-top: 15px;">
+          <div class="skeleton-item input-field"></div>
+        </div>
+        
+        <!-- Simulación del botón -->
+        <div class="skeleton-section" style="margin-top: 25px; display: flex; justify-content: center;">
+          <div class="skeleton-item button"></div>
+        </div>
+      </div>
+
+      <div id="form-content" style="display: none;">
       <p>Hemos seleccionado este avatar jurídico en base a tu perfil. Confirma cada sección para continuar.</p>
       <!-- Top Submenu -->
-<div class="submenu">
-  <div class="submenu-item active" data-step="0">Fuentes Oficiales</div>
-  <div class="submenu-item" data-step="1">Rangos</div>
-  <div class="submenu-item" data-step="2">Industrias</div>
-  <div class="submenu-item" data-step="3">Ramas Jurídicas</div>
-</div>
+      <div class="submenu">
+       
+        <div class="submenu-item active" data-step="0">Fuentes</div>
+        <div class="submenu-item" data-step="1">Rangos</div>
+        <div class="submenu-item" data-step="2">Etiquetas Personalizadas</div>
+      </div>
 
 <!-- Section Containers -->
 <div id="section-fuentes" class="section-content active">
@@ -462,7 +728,7 @@
       <input type="text" id="filtro-fuentes-reguladores" placeholder="Añadir otros reguladores (CNMV)..." oninput="filtrarFuentesReguladores()">
       <div id="dropdown-fuentes-reguladores" class="dropdown-container"></div>
       <!-- Feedback element -->
-      <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+      <p class="feedback-msg">Si no encuentras una fuente que estabas buscando, indícanoslo para seguir mejorando el producto</p>
       <input type="text" id="feedback-fuentes-reguladores" placeholder="Escribe aquí...">
     </div>
   </div>
@@ -476,35 +742,41 @@
   <div class="add-tag">
     <input type="text" id="filtro-rangos" placeholder="Añadir otros rangos (CNMV, DGT...)" oninput="filtrarRangos()">
     <div id="dropdown-rangos" class="dropdown-container"></div>
-    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+    <p class="feedback-msg">Si no encuentras un rango que estabas buscando, indícanoslo para seguir mejorando el producto</p>
     <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
   </div>
 </div>
 
-<div id="section-industrias" class="section-content">
-  <div id="industrias-container" class="tags-container">
-    <!-- Selected industries loaded dynamically -->
+<!-- Reemplazar la sección de contenido (aproximadamente línea 70-90) con: -->
+<div class="section-content" id="etiquetas-personalizadas-section">
+  <h3>Etiquetas Personalizadas</h3>
+  <p>Estas etiquetas han sido personalizadas según tu perfil profesional.</p>
+  <div class="etiquetas-tags-container">
+    <div class="etiquetas-tags-scroll">
+      <!-- Las etiquetas se cargarán aquí dinámicamente -->
+    </div>
   </div>
-  <div class="add-tag">
-    <input type="text" id="filtro-industrias" placeholder="Añadir otras industrias" oninput="filtrarIndustrias()">
-    <div id="dropdown-industrias" class="dropdown-container"></div>
-    <!-- Feedback element -->
-    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-    <input type="text" id="feedback-industria" placeholder="Escribe aquí...">
+  <div class="etiquetas-contador">
+    Etiquetas de interés identificadas: <span id="contador-etiquetas" class="contador-etiquetas">0</span>
   </div>
-</div>
-
-<div id="section-ramas" class="section-content">
-  <div id="ramas-container" class="tags-container">
-    <!-- Ramas loaded dynamically -->
-  </div>
-  <div class="add-tag">
-    <input type="text" id="filtro-ramas" placeholder="Añadir otras ramas jurídicas" oninput="filtrarRamas()">
-    <div id="dropdown-ramas" class="dropdown-container"></div>
-    <!-- Feedback element -->
-    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-    <input type="text" id="feedback-ramas" placeholder="Escribe aquí...">
-  </div>
+  
+  
+   <div class="add-etiqueta-personalizada">
+    <h4>Añadir nueva etiqueta personalizada</h4>
+    <div class="etiqueta-form">
+      <div class="form-group">
+        <label for="nueva-etiqueta">Nombre de la etiqueta:</label>
+        <input type="text" id="nueva-etiqueta" placeholder="Ej: Derecho Bancario">
+      </div>
+      <div class="form-group">
+        <label for="nueva-descripcion">Descripción:</label>
+        <textarea id="nueva-descripcion" placeholder="Describe brevemente esta etiqueta..."></textarea>
+      </div>
+      <button type="button" class="btn-add-etiqueta" onclick="agregarEtiquetaPersonalizada()">Añadir etiqueta</button>
+    </div>
+  </div>  
+  <div id="etiquetas-personalizadas-container"></div>
+ 
 </div>
 
 <!-- Bottom Buttons -->
@@ -516,6 +788,7 @@
         <input type="hidden" id="fuentesGobiernoInput" value="[]">
         <input type="hidden" id="fuentesReguladoresInput" value="[]">
 
+  </div> <!-- Cierre de form-content -->
   </div>
   <script src="paso3.js"></script>
   <script>
