@@ -1204,7 +1204,7 @@ function finalizarOnboarding() {
     "fuentes-reguladores": userData.reguladores || []
   };
   
-  /*
+  
   // Store these in sessionStorage for paso4
   sessionStorage.setItem('industry_tags', JSON.stringify(etiquetasFinales.industrias || []));
   sessionStorage.setItem('sub_industria_map', JSON.stringify(sub_industria_map));
@@ -1213,12 +1213,13 @@ function finalizarOnboarding() {
   sessionStorage.setItem('rangos', JSON.stringify(etiquetasFinales.rangos_normativos || []));
   sessionStorage.setItem('cobertura_legal', JSON.stringify(cobertura_legal));
   sessionStorage.setItem('feedback', JSON.stringify(feedback));
+  sessionStorage.setItem('etiquetas_personalizadas', JSON.stringify(feedback));
   
   // Store in hidden inputs for easier access in paso4
   document.getElementById('fuentesGobiernoInput').value = JSON.stringify(userData.fuentes || []);
   document.getElementById('fuentesReguladoresInput').value = JSON.stringify(userData.reguladores || []);
-  */
-
+  
+/*
    // Crear objeto con la selección final
    const seleccionFinal = {
     etiquetas_personalizadas: etiquetasFinales.etiquetas_personalizadas || {},
@@ -1228,7 +1229,7 @@ function finalizarOnboarding() {
   
   // Guardar la selección final
   sessionStorage.setItem("seleccionFinal", JSON.stringify(seleccionFinal));
-  
+ */ 
   // Redirigir a paso4.html
   window.location.href = 'paso4.html';
 
