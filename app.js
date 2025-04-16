@@ -2462,28 +2462,125 @@ app.post('/create-checkout-session', async (req, res) => {
       return res.status(400).json({ error: 'Invalid plan selected' });
     }
 
-    // Generar un ID único para esta transacción
-    const clientReferenceId = req.user ? req.user._id.toString() : uuidv4();
-
-    // Almacenar los datos completos en tu base de datos
-    await saveUserCheckoutData(clientReferenceId, {
-      industry_tags,
-      sub_industria_map,
-      rama_juridicas,
-      profile_type,
-      sub_rama_map,
-      cobertura_legal,
-      company_name,
-      name,
-      web,
-      linkedin,
-      perfil_profesional,
-      rangos,
-      feedback,
-      etiquetas_personalizadas
-    });
-
-    // Build subscription data
+    // Dividir los datos grandes en múltiples campos de metadatos
+    // debido al límite de 500 caracteres por valor
+    const metadataChunks = {};
+    
+    // Datos básicos que son strings simples
+    metadataChunks.plan = plan;
+    metadataChunks.profile_type = profile_type;
+    metadataChunks.company_name = company_name;
+    metadataChunks.name = name;
+    metadataChunks.web = web;
+    metadataChunks.linkedin = linkedin;
+    metadataChunks.perfil_profesional = perfil_profesional;
+    
+    // Datos complejos que necesitan ser divididos
+    // Dividimos los objetos/arrays grandes en múltiples campos de metadatos
+    
+    // Industry tags
+    const industryTagsStr = JSON.stringify(industry_tags);
+    if (industryTagsStr.length <= 500) {
+      metadataChunks.industry_tags = industryTagsStr;
+    } else {
+      // Dividir en chunks de 450 caracteres para dejar margen
+      const chunks = Math.ceil(industryTagsStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`industry_tags_${i}`] = industryTagsStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.industry_tags_chunks = chunks.toString();
+    }
+    
+    // Sub industria map
+    const subIndustriaMapStr = JSON.stringify(sub_industria_map);
+    if (subIndustriaMapStr.length <= 500) {
+      metadataChunks.sub_industria_map = subIndustriaMapStr;
+    } else {
+      const chunks = Math.ceil(subIndustriaMapStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`sub_industria_map_${i}`] = subIndustriaMapStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.sub_industria_map_chunks = chunks.toString();
+    }
+    
+    // Rama juridicas
+    const ramaJuridicasStr = JSON.stringify(rama_juridicas);
+    if (ramaJuridicasStr.length <= 500) {
+      metadataChunks.rama_juridicas = ramaJuridicasStr;
+    } else {
+      const chunks = Math.ceil(ramaJuridicasStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`rama_juridicas_${i}`] = ramaJuridicasStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.rama_juridicas_chunks = chunks.toString();
+    }
+    
+    // Sub rama map
+    const subRamaMapStr = JSON.stringify(sub_rama_map);
+    if (subRamaMapStr.length <= 500) {
+      metadataChunks.sub_rama_map = subRamaMapStr;
+    } else {
+      const chunks = Math.ceil(subRamaMapStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`sub_rama_map_${i}`] = subRamaMapStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.sub_rama_map_chunks = chunks.toString();
+    }
+    
+    // Cobertura legal
+    const coberturaLegalStr = JSON.stringify(cobertura_legal);
+    if (coberturaLegalStr.length <= 500) {
+      metadataChunks.cobertura_legal = coberturaLegalStr;
+    } else {
+      const chunks = Math.ceil(coberturaLegalStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`cobertura_legal_${i}`] = coberturaLegalStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.cobertura_legal_chunks = chunks.toString();
+    }
+    
+    // Rangos
+    const rangosStr = JSON.stringify(rangos);
+    if (rangosStr.length <= 500) {
+      metadataChunks.rangos = rangosStr;
+    } else {
+      const chunks = Math.ceil(rangosStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`rangos_${i}`] = rangosStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.rangos_chunks = chunks.toString();
+    }
+    
+    // Feedback
+    const feedbackStr = JSON.stringify(feedback);
+    if (feedbackStr.length <= 500) {
+      metadataChunks.feedback = feedbackStr;
+    } else {
+      const chunks = Math.ceil(feedbackStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`feedback_${i}`] = feedbackStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.feedback_chunks = chunks.toString();
+    }
+    
+    // Etiquetas personalizadas
+    const etiquetasPersonalizadasStr = JSON.stringify(etiquetas_personalizadas);
+    if (etiquetasPersonalizadasStr.length <= 500) {
+      metadataChunks.etiquetas_personalizadas = etiquetasPersonalizadasStr;
+    } else {
+      const chunks = Math.ceil(etiquetasPersonalizadasStr.length / 450);
+      for (let i = 0; i < chunks; i++) {
+        metadataChunks[`etiquetas_personalizadas_${i}`] = etiquetasPersonalizadasStr.substring(i * 450, (i + 1) * 450);
+      }
+      metadataChunks.etiquetas_personalizadas_chunks = chunks.toString();
+    }
+    
+    // Guardar el ID del usuario si está disponible
+    if (req.user && req.user._id) {
+      metadataChunks.user_id = req.user._id.toString();
+    }
+    
+    // Configuración de datos de suscripción
     let subscriptionData = {};
     if ((plan === 'plan1' || plan === 'plan2' || plan === 'plan3') && isTrial) {
       subscriptionData = {
@@ -2491,6 +2588,7 @@ app.post('/create-checkout-session', async (req, res) => {
       };
     }
 
+    // Crear la sesión de checkout con todos los metadatos
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -2502,12 +2600,7 @@ app.post('/create-checkout-session', async (req, res) => {
       mode: 'subscription',
       subscription_data: subscriptionData,
       locale: 'es',
-      client_reference_id: clientReferenceId,
-      metadata: {
-        plan: plan,
-        name: name,
-        profile_type: profile_type
-      },
+      metadata: metadataChunks,
       success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: 'https://app.papyrus-ai.com/paso1.html',
     });
@@ -2611,30 +2704,47 @@ app.get('/save-user', async (req, res) => {
       return res.status(401).redirect('/login.html');
     }
     
-    // Recuperar el client_reference_id de la sesión
-    const clientReferenceId = session.client_reference_id;
-    if (!clientReferenceId) {
-      console.error('No client_reference_id found in session');
-      return res.redirect('/error.html?reason=missing_reference');
-    }
+    // Obtener todos los metadatos de la sesión
+    const metadata = session.metadata || {};
     
-    // Conectar a la base de datos
-    const client = new MongoClient(uri, mongodbOptions);
-    await client.connect();
-    const db = client.db("papyrus");
-    const tempDataCollection = db.collection("checkout_temp_data");
-    const usersCollection = db.collection("users");
+    // Reconstruir los objetos grandes que fueron divididos en chunks
+    const reconstructedData = {};
     
-    // Recuperar los datos temporales almacenados
-    const tempUserData = await tempDataCollection.findOne({ 
-      client_reference_id: clientReferenceId 
-    });
+    // Función para reconstruir un objeto dividido en chunks
+    const reconstructObject = (prefix, chunksKey) => {
+      if (metadata[prefix]) {
+        // Si el objeto completo está en un solo campo
+        return JSON.parse(metadata[prefix]);
+      } else if (metadata[`${prefix}_chunks`]) {
+        // Si el objeto está dividido en múltiples chunks
+        const chunks = parseInt(metadata[`${prefix}_chunks`]);
+        let fullString = '';
+        for (let i = 0; i < chunks; i++) {
+          fullString += metadata[`${prefix}_${i}`] || '';
+        }
+        return JSON.parse(fullString);
+      }
+      return null;
+    };
     
-    if (!tempUserData) {
-      console.error('No temporary data found for client_reference_id:', clientReferenceId);
-      await client.close();
-      return res.redirect('/error.html?reason=data_not_found');
-    }
+    // Reconstruir cada objeto grande
+    reconstructedData.industry_tags = reconstructObject('industry_tags');
+    reconstructedData.sub_industria_map = reconstructObject('sub_industria_map');
+    reconstructedData.rama_juridicas = reconstructObject('rama_juridicas');
+    reconstructedData.sub_rama_map = reconstructObject('sub_rama_map');
+    reconstructedData.cobertura_legal = reconstructObject('cobertura_legal');
+    reconstructedData.rangos = reconstructObject('rangos');
+    reconstructedData.feedback_login = reconstructObject('feedback');
+    reconstructedData.etiquetas_personalizadas = reconstructObject('etiquetas_personalizadas');
+    
+    // Datos simples
+    reconstructedData.subscription_plan = metadata.plan;
+    reconstructedData.profile_type = metadata.profile_type;
+    reconstructedData.company_name = metadata.company_name;
+    reconstructedData.name = metadata.name;
+    reconstructedData.web = metadata.web;
+    reconstructedData.linkedin = metadata.linkedin;
+    reconstructedData.perfil_profesional = metadata.perfil_profesional;
     
     // Crear current date en formato yyyy-mm-dd
     const currentDate = new Date();
@@ -2643,39 +2753,28 @@ app.get('/save-user', async (req, res) => {
     const dd = String(currentDate.getDate()).padStart(2, '0');
     const formattedDate = `${yyyy}-${mm}-${dd}`;
     
-    // Obtener metadatos básicos de la sesión
-    const sessionMetadata = session.metadata || {};
+    // Añadir información de Stripe y fechas
+    reconstructedData.registration_date = formattedDate;
+    reconstructedData.registration_date_obj = currentDate;
+    reconstructedData.stripe_customer_id = session.customer;
+    reconstructedData.stripe_subscription_id = session.subscription?.id;
+    reconstructedData.payment_status = session.payment_status;
     
-    // Combinar datos almacenados con información de la sesión de Stripe
-    const userData = {
-      ...tempUserData.data,
-      subscription_plan: sessionMetadata.plan || tempUserData.data.plan,
-      registration_date: formattedDate,
-      registration_date_obj: currentDate,
-      stripe_customer_id: session.customer,
-      stripe_subscription_id: session.subscription?.id,
-      payment_status: session.payment_status,
-      // Si hay metadatos adicionales en la sesión, también los incluimos
-      ...Object.keys(sessionMetadata).reduce((acc, key) => {
-        if (!['plan'].includes(key)) { // Excluir claves que ya procesamos
-          acc[key] = sessionMetadata[key];
-        }
-        return acc;
-      }, {})
-    };
+    // Conectar a la base de datos
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const db = client.db("papyrus");
+    const usersCollection = db.collection("users");
     
     // Actualizar el usuario en la base de datos
     await usersCollection.updateOne(
       { _id: new ObjectId(user._id) },
-      { $set: userData },
+      { $set: reconstructedData },
       { upsert: true }
     );
     
     // Enviar correo de confirmación
-    await sendSubscriptionEmail(user, userData);
-    
-    // Eliminar los datos temporales
-    await tempDataCollection.deleteOne({ client_reference_id: clientReferenceId });
+    await sendSubscriptionEmail(user, reconstructedData);
     
     await client.close();
     
