@@ -52,8 +52,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // The existing code for hiding dropdowns when clicking outside remains the same
   document.addEventListener('click', function(e) {
-    /*
+  
     const target = e.target;
+    /*
     const filtroInd = document.getElementById('filtro-industrias');
     const dropdownInd = document.getElementById('dropdown-industrias');
     if (dropdownInd && !dropdownInd.contains(target) && target !== filtroInd) {
@@ -966,15 +967,16 @@ document.addEventListener('DOMContentLoaded', function() {
 /* --- Expose deletion functions to global scope --- */
 window.eliminarFuente = eliminarFuente;
 window.eliminarRango = eliminarRango;
-window.eliminarEtiqueta = eliminarEtiqueta;
+/*window.eliminarEtiqueta = eliminarEtiqueta;
 window.eliminarRamaJuridica = eliminarRamaJuridica;
+
 window.eliminarSubrama = eliminarSubrama;
 // Expose functions to global scope
 window.eliminarIndustria = eliminarIndustria;
 window.eliminarSubindustria = eliminarSubindustria;
 window.agregarIndustria = agregarIndustria;
 window.agregarSubindustria = agregarSubindustria;
-
+*/
 /* ------------------ Section "Industrias" ------------------ */
 /*
 function cargarIndustrias(industrias) {

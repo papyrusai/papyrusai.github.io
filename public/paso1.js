@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('onboardingForm');
   const perfilRegulatorio = document.getElementById('perfil_regulatorio');
   const perfilEmpresasReguladas = document.getElementById('perfil_empresas_reguladas');
-  const perfilAbogadoEmpresa = document.getElementById('perfil_abogado_empresa');
+  const perfilAbogadoEmpresa = document.getElementById('perfil_conocimiento_legal');
   const perfilAbogado = document.getElementById('perfil_abogado');
   const perfilOtro = document.getElementById('perfil_otro');
   

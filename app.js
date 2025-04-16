@@ -2379,6 +2379,11 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 
     // Encode your data for the success_url
+    const encodedIndustryTags  = encodeURIComponent(JSON.stringify(industry_tags));
+    const encodedRamaJuridicas = encodeURIComponent(JSON.stringify(rama_juridicas));
+    const encodedPlan          = encodeURIComponent(plan);
+    const encodedProfileType   = encodeURIComponent(profile_type);
+    const encodedSubRamaMap    = encodeURIComponent(JSON.stringify(sub_rama_map));
    // Añadir los parámetros adicionales a la URL de éxito:
     const encodedSubIndustriaMap = encodeURIComponent(JSON.stringify(sub_industria_map));
     const encodedCoberturaLegal = encodeURIComponent(JSON.stringify(cobertura_legal));
