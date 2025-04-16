@@ -2430,7 +2430,7 @@ app.post('/create-checkout-session', async (req, res) => {
     res.status(500).json({ error: 'Failed to create Checkout Session' });
   }
 });
-
+/*
 app.get('/save-user', async (req, res) => {
   const { session_id, ...userData } = req.query;
   
@@ -2506,7 +2506,97 @@ app.get('/save-user', async (req, res) => {
     res.redirect('/error.html');
   }
 });
-
+*/
+app.get('/save-user', async (req, res) => {
+  const { session_id } = req.query;
+  
+  try {
+    // Verificar la sesión de Stripe con expansión de datos relacionados
+    const session = await stripe.checkout.sessions.retrieve(session_id, {
+      expand: ['subscription']
+    });
+    
+    // Obtener el usuario actual desde la sesión
+    const user = req.user;
+    if (!user) {
+      return res.status(401).redirect('/login.html');
+    }
+    
+    // Recuperar el client_reference_id de la sesión
+    const clientReferenceId = session.client_reference_id;
+    if (!clientReferenceId) {
+      console.error('No client_reference_id found in session');
+      return res.redirect('/error.html?reason=missing_reference');
+    }
+    
+    // Conectar a la base de datos
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const db = client.db("papyrus");
+    const tempDataCollection = db.collection("checkout_temp_data");
+    const usersCollection = db.collection("users");
+    
+    // Recuperar los datos temporales almacenados
+    const tempUserData = await tempDataCollection.findOne({ 
+      client_reference_id: clientReferenceId 
+    });
+    
+    if (!tempUserData) {
+      console.error('No temporary data found for client_reference_id:', clientReferenceId);
+      await client.close();
+      return res.redirect('/error.html?reason=data_not_found');
+    }
+    
+    // Crear current date en formato yyyy-mm-dd
+    const currentDate = new Date();
+    const yyyy = currentDate.getFullYear();
+    const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(currentDate.getDate()).padStart(2, '0');
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    
+    // Obtener metadatos básicos de la sesión
+    const sessionMetadata = session.metadata || {};
+    
+    // Combinar datos almacenados con información de la sesión de Stripe
+    const userData = {
+      ...tempUserData.data,
+      subscription_plan: sessionMetadata.plan || tempUserData.data.plan,
+      registration_date: formattedDate,
+      registration_date_obj: currentDate,
+      stripe_customer_id: session.customer,
+      stripe_subscription_id: session.subscription?.id,
+      payment_status: session.payment_status,
+      // Si hay metadatos adicionales en la sesión, también los incluimos
+      ...Object.keys(sessionMetadata).reduce((acc, key) => {
+        if (!['plan'].includes(key)) { // Excluir claves que ya procesamos
+          acc[key] = sessionMetadata[key];
+        }
+        return acc;
+      }, {})
+    };
+    
+    // Actualizar el usuario en la base de datos
+    await usersCollection.updateOne(
+      { _id: new ObjectId(user._id) },
+      { $set: userData },
+      { upsert: true }
+    );
+    
+    // Enviar correo de confirmación
+    await sendSubscriptionEmail(user, userData);
+    
+    // Eliminar los datos temporales
+    await tempDataCollection.deleteOne({ client_reference_id: clientReferenceId });
+    
+    await client.close();
+    
+    // Redirigir al usuario a su perfil
+    res.redirect('/profile');
+  } catch (error) {
+    console.error('Error saving user after payment:', error);
+    res.status(500).redirect('/error.html');
+  }
+});
 
 app.post('/save-free-plan', async (req, res) => {
   const { 
