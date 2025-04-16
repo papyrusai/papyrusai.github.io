@@ -494,7 +494,7 @@
     
     document.addEventListener('DOMContentLoaded', function() {
       // Global variable to control plan2 free status
-      let plan2isfree = true;
+      let plan2isfree = false;
       
       // Check if we're in editing mode
       const isEditing = sessionStorage.getItem('isEditingPlan') === 'true';
@@ -635,7 +635,8 @@
           profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : ''),
           especializacion: userData.especializacion,
           otro_perfil: userData.otro_perfil,
-          etiquetas_personalizadas
+          etiquetas_personalizadas,
+          isTrial: true
         };
         
         console.log('Sending complete payload to server:', payload);
@@ -645,9 +646,9 @@
           let endpoint = isEditing ? '/update-subscription' : '/save-free-plan';
           
           // For paid plans that aren't free trial
-          if ((planType === 'plan3' || (planType === 'plan2' && !plan2isfree)) && !isEditing) {
+          if ((planType === 'plan1' || planType === 'plan2' || planType === 'plan3') && !isEditing) {
             endpoint = '/create-checkout-session';
-          } else if ((planType === 'plan3' || (planType === 'plan2' && !plan2isfree)) && isEditing) {
+          } else if ((planType === 'plan1' || planType === 'plan2' || planType === 'plan3') && isEditing) {
             endpoint = '/update-subscription-checkout';
           }
           

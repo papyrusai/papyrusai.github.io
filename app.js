@@ -2013,6 +2013,11 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
+/*fetch api_perplixity*/
+app.get('/api-key', (req, res) => {
+  res.json({ apiKey: process.env.API_KEY_PERPLEXITY });
+});
+
 /*Email suscripción*/
 // Añadir esta función en algún lugar antes de tus rutas
 async function sendSubscriptionEmail(user, userData) {
@@ -2023,22 +2028,26 @@ async function sendSubscriptionEmail(user, userData) {
     }
     
     // Determinar el nombre y precio del plan
-    let planName = 'Desconocido';
+    let planName = 'Indeterminado';
     let planPrice = '-';
     
     switch (userData.subscription_plan) {
       case 'plan1':
-        planName = 'Basic';
-        planPrice = '0€';
+        planName = 'Starter';
+        planPrice = '66€';
         break;
       case 'plan2':
-        planName = 'Standard';
-        planPrice = '0€';
+        planName = 'Pro';
+        planPrice = '220€';
         break;
       case 'plan3':
-        planName = 'Premium';
-        planPrice = 'TBD';
+        planName = 'Enterprise';
+        planPrice = 'Custom';
         break;
+      case 'plan4':
+      planName = 'Free';
+      planPrice = '0€';
+      break;
     }
     
     // Preparar las etiquetas personalizadas
@@ -2068,6 +2077,7 @@ async function sendSubscriptionEmail(user, userData) {
         coberturaLegal = fuentes.join(', ');
       }
     }
+    coberturaLegal = toUpperCase(coberturaLegal);
     
     // Preparar los rangos con manejo seguro de valores nulos
     const rangosList = Array.isArray(userData.rangos) && userData.rangos.length > 0 
@@ -2075,8 +2085,10 @@ async function sendSubscriptionEmail(user, userData) {
                       : ['No especificados'];
     
     // Análisis de impacto (puedes ajustar esto según tu lógica de negocio)
-    const analisisImpacto = userData.subscription_plan === 'plan1' ? 'Básico' : 
-                          (userData.subscription_plan === 'plan2' ? 'Estándar' : 'Premium');
+    const analisisImpacto = userData.subscription_plan === 'plan1' ? '50 llamadas/mes' : 
+                          (userData.subscription_plan === 'plan2' ? '500 llamadas/mes' : 
+                            userData.subscription_plan === 'plan3' ? '500 llamadas/mes/usuario' :'No incluido'
+                          );
     
     // Obtener el año actual para el footer
     const currentYear = new Date().getFullYear();
@@ -2223,7 +2235,7 @@ async function sendSubscriptionEmail(user, userData) {
 <body>
   <div class="container">
     <div class="header">
-      <img src="https://pub-fe3d137fb0d341499d19acfda6f6fb59.r2.dev/papyrus-logo.png" alt="Papyrus Logo">
+      <img src="cid:papyrusLogo" alt="Papyrus Logo">
     </div>
     
     <div class="content">
@@ -2232,18 +2244,17 @@ async function sendSubscriptionEmail(user, userData) {
       <p id="greeting">Estimado/a ${userData.name || 'Usuario'},</p>
       
       <p>
-        En el tablero implacable del mundo jurídico, donde cada movimiento cuenta y cada pieza tiene su valor, 
-        usted ha tomado una decisión tan acertada como inevitable: suscribirse a los servicios de Papyrus. 
-        Como esos viejos capitanes que, entre la niebla del mar, saben reconocer el único faro que les llevará a puerto seguro.
+         Como bien sabría decir un viejo jurista, en el complejo tablero de la ley, quien domina la información, 
+        domina el juego. Y ahora, con Papyrus, tienes las mejores cartas en la mano.
       </p>
       
       <p>
-        No se trata simplemente de un servicio. Se trata de un escudo, forjado durante años en el fuego de la experiencia y el 
-        conocimiento, que ahora le protegerá en las batallas legales que el destino, siempre astuto, le tenga reservadas.
+        No se trata simplemente de un servicio. Al contratar Papyrus eliges tranquilidad: estarás siempre al día 
+        y contarás con una guía clara sobre riesgos jurídicos y novedades regulatorias.
       </p>
       
       <div class="subscription-details">
-        <h2>Detalles de su suscripción</h2>
+        <h2>Detalles de tu suscripción</h2>
         
         <div class="details-grid">
           <div>
@@ -2263,9 +2274,6 @@ async function sendSubscriptionEmail(user, userData) {
           </div>
           
           <div>
-            <p class="details-label">Perfil Profesional</p>
-            <p class="details-value" id="perfil-profesional">${Array.isArray(userData.perfil_profesional) ? userData.perfil_profesional.join(', ') : (userData.perfil_profesional || 'No especificado')}</p>
-            
             <p class="details-label">Rangos</p>
             <ul class="details-value" id="rangos-list">
               ${rangosList.map(rango => `<li>${rango}</li>`).join('')}
@@ -2278,19 +2286,17 @@ async function sendSubscriptionEmail(user, userData) {
       </div>
       
       <p>
-        Como bien sabría decir un viejo jurista, en el complejo tablero de la ley, quien domina la información, 
-        domina el juego. Y ahora usted, con Papyrus como su fiel escudero, tiene las mejores cartas en la mano.
-      </p>
-      
-      <p>
-        Le recordamos que puede acceder a su cuenta en cualquier momento a través de nuestra plataforma. 
-        Allí encontrará, como un cartógrafo meticuloso, todos los mapas legales que necesita para navegar con precisión.
+        Recuerda que recibirás el resultado de tu scanner normativo de manera diaria, pudiendo consultar en todo momento el análisis del impacto a través de la app
       </p>
       
       <div class="text-center" style="margin-bottom: 24px;">
         <a href="https://papyrus-legal.com" class="btn">Acceder a mi cuenta</a>
       </div>
       
+      <p>
+        Quote
+      </p>
+
       <p>
         Atentamente,
       </p>
@@ -2318,6 +2324,13 @@ async function sendSubscriptionEmail(user, userData) {
       from: 'info@papyrus-ai.com', // Ajusta esto a tu dirección de correo verificada en SendGrid
       subject: 'Confirmación de Suscripción a Papyrus',
       html: emailHtml,
+       attachments: [
+                {
+                  filename: 'papyrus_logo_white.png',
+                  path: path.join(__dirname, 'assets', 'papyrus_logo_white.png'),
+                  cid: 'papyrusLogo'
+                }
+              ]
     };
     
     // Enviar el correo electrónico
@@ -2338,14 +2351,25 @@ app.post('/create-checkout-session', async (req, res) => {
   const {
     plan,
     industry_tags,
+    sub_industria_map,
     rama_juridicas,
     profile_type,
     sub_rama_map,
-    isTrial // <--- NEW param from client
+    cobertura_legal,
+    company_name,
+    name,
+    web,
+    linkedin,
+    perfil_profesional,
+    rangos,
+    feedback,
+    etiquetas_personalizadas,
+    isTrial
   } = req.body;
 
   try {
     const priceIdMap = {
+      plan1: 'price_dummy_for_plan1', // Añadir ID de precio dummy para plan1
       plan2: 'price_1QOlhEEpe9srfTKESkjGMFvI', //live
       plan3: 'price_1QOlwZEpe9srfTKEBRzcNR8A', //test
     };
@@ -2355,18 +2379,24 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 
     // Encode your data for the success_url
-    const encodedIndustryTags  = encodeURIComponent(JSON.stringify(industry_tags));
-    const encodedRamaJuridicas = encodeURIComponent(JSON.stringify(rama_juridicas));
-    const encodedPlan          = encodeURIComponent(plan);
-    const encodedProfileType   = encodeURIComponent(profile_type);
-    const encodedSubRamaMap    = encodeURIComponent(JSON.stringify(sub_rama_map));
+   // Añadir los parámetros adicionales a la URL de éxito:
+    const encodedSubIndustriaMap = encodeURIComponent(JSON.stringify(sub_industria_map));
+    const encodedCoberturaLegal = encodeURIComponent(JSON.stringify(cobertura_legal));
+    const encodedCompanyName = encodeURIComponent(company_name);
+    const encodedName = encodeURIComponent(name);
+    const encodedWeb = encodeURIComponent(web);
+    const encodedLinkedin = encodeURIComponent(linkedin);
+    const encodedPerfilProfesional = encodeURIComponent(perfil_profesional);
+    const encodedRangos = encodeURIComponent(JSON.stringify(rangos));
+    const encodedFeedback = encodeURIComponent(JSON.stringify(feedback));
+    const encodedEtiquetasPersonalizadas = encodeURIComponent(JSON.stringify(etiquetas_personalizadas));
 
     // Build base subscription data
     let subscriptionData = {};
     // If plan2, set trial_period_days: 60
-    if (plan === 'plan2' && isTrial) {
+    if ((plan === 'plan1' || plan === 'plan2' || plan === 'plan3') && isTrial) {
       subscriptionData = {
-        trial_period_days: 60,  // 2-month free trial
+        trial_period_days: 15,  // 15 días de prueba para todos los planes
       };
     }
 
@@ -2384,8 +2414,9 @@ app.post('/create-checkout-session', async (req, res) => {
       subscription_data: subscriptionData,
       locale: 'es', // 'es' for Spanish
 
-      success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}`,
-      cancel_url: 'https://app.papyrus-ai.com/paso1.html',
+      // Y luego añadirlos a la URL:
+    success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}&sub_industria_map=${encodedSubIndustriaMap}&cobertura_legal=${encodedCoberturaLegal}&company_name=${encodedCompanyName}&name=${encodedName}&web=${encodedWeb}&linkedin=${encodedLinkedin}&perfil_profesional=${encodedPerfilProfesional}&rangos=${encodedRangos}&feedback=${encodedFeedback}&etiquetas_personalizadas=${encodedEtiquetasPersonalizadas}`,
+    cancel_url: 'https://app.papyrus-ai.com/paso1.html',
     });
 
     res.json({ sessionId: session.id });
@@ -2395,10 +2426,82 @@ app.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-/*fetch api_perplixity*/
-app.get('/api-key', (req, res) => {
-  res.json({ apiKey: process.env.API_KEY_PERPLEXITY });
+app.get('/save-user', async (req, res) => {
+  const { session_id, ...userData } = req.query;
+  
+  try {
+    // Verificar la sesión de Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    
+    if (session.payment_status === 'paid') {
+      // Crear current date en formato yyyy-mm-dd
+      const currentDate = new Date();
+      const yyyy = currentDate.getFullYear();
+      const mm = String(currentDate.getMonth() + 1).padStart(2, '0'); // January is 0!
+      const dd = String(currentDate.getDate()).padStart(2, '0');
+      const formattedDate = `${yyyy}-${mm}-${dd}`;
+      
+      // Procesar los datos del usuario (decodificar los parámetros)
+      const decodedUserData = {
+        industry_tags: JSON.parse(decodeURIComponent(userData.industry_tags)),
+        sub_industria_map: JSON.parse(decodeURIComponent(userData.sub_industria_map)),
+        rama_juridicas: JSON.parse(decodeURIComponent(userData.rama_juridicas)),
+        subscription_plan: decodeURIComponent(userData.plan),
+        profile_type: decodeURIComponent(userData.profile_type),
+        sub_rama_map: JSON.parse(decodeURIComponent(userData.sub_rama_map)),
+        cobertura_legal: JSON.parse(decodeURIComponent(userData.cobertura_legal)),
+        company_name: decodeURIComponent(userData.company_name),
+        name: decodeURIComponent(userData.name),
+        web: decodeURIComponent(userData.web),
+        linkedin: decodeURIComponent(userData.linkedin),
+        perfil_profesional: decodeURIComponent(userData.perfil_profesional),
+        rangos: JSON.parse(decodeURIComponent(userData.rangos)),
+        feedback_login: JSON.parse(decodeURIComponent(userData.feedback)),
+        etiquetas_personalizadas: JSON.parse(decodeURIComponent(userData.etiquetas_personalizadas)),
+        registration_date: formattedDate,    // String format yyyy-mm-dd
+        registration_date_obj: currentDate,  // Also save native Date object for better querying
+        stripe_customer_id: session.customer,
+        stripe_subscription_id: session.subscription,
+        payment_status: session.payment_status
+      };
+      
+      // Guardar en la base de datos
+      const client = new MongoClient(uri, mongodbOptions);
+      await client.connect();
+      const db = client.db("papyrus");
+      const usersCollection = db.collection("users");
+      
+      // Obtener el usuario actual desde la sesión
+      const user = req.user;
+      if (!user) {
+        return res.status(401).redirect('/login.html');
+      }
+      
+      // Actualizar el usuario en la base de datos
+      await usersCollection.updateOne(
+        { _id: new ObjectId(user._id) },
+        { $set: decodedUserData },
+        { upsert: true }
+      );
+      
+      // Enviar correo de confirmación
+      await sendSubscriptionEmail(user, decodedUserData);
+      
+      await client.close();
+      
+      // Redirigir al usuario a su perfil
+      res.redirect('/profile');
+    } else {
+      // Si el pago no se completó correctamente
+      console.error('Payment not completed:', session.payment_status);
+      res.redirect('/payment-failed.html');
+    }
+  } catch (error) {
+    console.error('Error saving user after payment:', error);
+    res.redirect('/error.html');
+  }
 });
+
 
 app.post('/save-free-plan', async (req, res) => {
   const { 
