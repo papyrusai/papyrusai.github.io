@@ -2293,9 +2293,9 @@ async function sendSubscriptionEmail(user, userData) {
         <a href="https://papyrus-legal.com" class="btn">Acceder a mi cuenta</a>
       </div>
       
-      <p>
-        Quote
-      </p>
+      <p><em>La inteligencia es la capacidad de adaptarse al cambio.</em></p>
+<p style="text-align: right;"><strong>— Stephen Hawking</strong></p>
+
 
       <p>
         Atentamente,
@@ -2346,7 +2346,7 @@ async function sendSubscriptionEmail(user, userData) {
 
 
 /*Stripe*/
-
+/*
 app.post('/create-checkout-session', async (req, res) => {
   const {
     plan,
@@ -2430,6 +2430,95 @@ app.post('/create-checkout-session', async (req, res) => {
     res.status(500).json({ error: 'Failed to create Checkout Session' });
   }
 });
+*/
+app.post('/create-checkout-session', async (req, res) => {
+  const {
+    plan,
+    industry_tags,
+    sub_industria_map,
+    rama_juridicas,
+    profile_type,
+    sub_rama_map,
+    cobertura_legal,
+    company_name,
+    name,
+    web,
+    linkedin,
+    perfil_profesional,
+    rangos,
+    feedback,
+    etiquetas_personalizadas,
+    isTrial
+  } = req.body;
+
+  try {
+    const priceIdMap = {
+      plan1: 'price_dummy_for_plan1',
+      plan2: 'price_1QOlhEEpe9srfTKESkjGMFvI',
+      plan3: 'price_1QOlwZEpe9srfTKEBRzcNR8A',
+    };
+
+    if (!priceIdMap[plan]) {
+      return res.status(400).json({ error: 'Invalid plan selected' });
+    }
+
+    // Generar un ID único para esta transacción
+    const clientReferenceId = req.user ? req.user._id.toString() : uuidv4();
+
+    // Almacenar los datos completos en tu base de datos
+    await saveUserCheckoutData(clientReferenceId, {
+      industry_tags,
+      sub_industria_map,
+      rama_juridicas,
+      profile_type,
+      sub_rama_map,
+      cobertura_legal,
+      company_name,
+      name,
+      web,
+      linkedin,
+      perfil_profesional,
+      rangos,
+      feedback,
+      etiquetas_personalizadas
+    });
+
+    // Build subscription data
+    let subscriptionData = {};
+    if ((plan === 'plan1' || plan === 'plan2' || plan === 'plan3') && isTrial) {
+      subscriptionData = {
+        trial_period_days: 15,
+      };
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        { 
+          price: priceIdMap[plan],
+          quantity: 1 
+        }
+      ],
+      mode: 'subscription',
+      subscription_data: subscriptionData,
+      locale: 'es',
+      client_reference_id: clientReferenceId,
+      metadata: {
+        plan: plan,
+        name: name,
+        profile_type: profile_type
+      },
+      success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: 'https://app.papyrus-ai.com/paso1.html',
+    });
+
+    res.json({ sessionId: session.id });
+  } catch (error) {
+    console.error('Error creating Checkout Session:', error);
+    res.status(500).json({ error: 'Failed to create Checkout Session' });
+  }
+});
+
 /*
 app.get('/save-user', async (req, res) => {
   const { session_id, ...userData } = req.query;
