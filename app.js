@@ -14,6 +14,11 @@ const stripe = require('stripe')(process.env.STRIPE);
 const SPECIAL_DOMAIN = "@cuatrecasas.com";
 const SPECIAL_ADDRESS = "xx";
 
+// Añadir al inicio del archivo, junto con otros imports
+const sgMail = require('@sendgrid/mail');
+sgMail.setApiKey(process.env.SENDGRID_API_KEY); // Asegúrate de tener esta variable en tu .env
+
+
 //to avoid deprecation error
 const mongodbOptions = {
   useNewUrlParser: true,
@@ -2008,6 +2013,324 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
+/*Email suscripción*/
+// Añadir esta función en algún lugar antes de tus rutas
+async function sendSubscriptionEmail(user, userData) {
+  try {
+    if (!user || !user.email) {
+      console.error('No se puede enviar correo: usuario o email no definido');
+      return false;
+    }
+    
+    // Determinar el nombre y precio del plan
+    let planName = 'Desconocido';
+    let planPrice = '-';
+    
+    switch (userData.subscription_plan) {
+      case 'plan1':
+        planName = 'Basic';
+        planPrice = '0€';
+        break;
+      case 'plan2':
+        planName = 'Standard';
+        planPrice = '0€';
+        break;
+      case 'plan3':
+        planName = 'Premium';
+        planPrice = 'TBD';
+        break;
+    }
+    
+    // Preparar las etiquetas personalizadas
+    const etiquetasList = [];
+    if (userData.etiquetas_personalizadas && typeof userData.etiquetas_personalizadas === 'object') {
+      Object.keys(userData.etiquetas_personalizadas).forEach(key => {
+        etiquetasList.push(key);
+      });
+    }
+    
+    // Si no hay etiquetas, añadir un mensaje predeterminado
+    if (etiquetasList.length === 0) {
+      etiquetasList.push('No especificadas');
+    }
+    
+    // Preparar la cobertura legal con manejo seguro de valores nulos
+    let coberturaLegal = 'No especificada';
+    if (userData.cobertura_legal && typeof userData.cobertura_legal === 'object') {
+      const fuentes = [];
+      if (Array.isArray(userData.cobertura_legal['fuentes-gobierno'])) {
+        fuentes.push(...userData.cobertura_legal['fuentes-gobierno']);
+      }
+      if (Array.isArray(userData.cobertura_legal['fuentes-reguladores'])) {
+        fuentes.push(...userData.cobertura_legal['fuentes-reguladores']);
+      }
+      if (fuentes.length > 0) {
+        coberturaLegal = fuentes.join(', ');
+      }
+    }
+    
+    // Preparar los rangos con manejo seguro de valores nulos
+    const rangosList = Array.isArray(userData.rangos) && userData.rangos.length > 0 
+                      ? userData.rangos 
+                      : ['No especificados'];
+    
+    // Análisis de impacto (puedes ajustar esto según tu lógica de negocio)
+    const analisisImpacto = userData.subscription_plan === 'plan1' ? 'Básico' : 
+                          (userData.subscription_plan === 'plan2' ? 'Estándar' : 'Premium');
+    
+    // Obtener el año actual para el footer
+    const currentYear = new Date().getFullYear();
+    
+    // Construir el HTML del correo electrónico
+    const emailHtml = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmación de Suscripción a Papyrus</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+      color: #0b2431;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header {
+      background-color: #0b2431;
+      padding: 24px;
+      text-align: center;
+    }
+    
+    .header img {
+      height: 48px;
+    }
+    
+    .content {
+      padding: 32px;
+      font-family: Georgia, serif;
+    }
+    
+    h1 {
+      color: #04db8d;
+      font-size: 24px;
+      margin-bottom: 16px;
+      font-family: Georgia, serif;
+    }
+    
+    p {
+      line-height: 1.6;
+      margin-bottom: 16px;
+      color: #0b2431;
+    }
+    
+    .subscription-details {
+      background-color: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .subscription-details h2 {
+      font-size: 20px;
+      color: #455862;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+      font-family: Georgia, serif;
+    }
+    
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    
+    @media (min-width: 500px) {
+      .details-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    .details-label {
+      font-size: 14px;
+      color: #455862;
+      margin-bottom: 4px;
+    }
+    
+    .details-value {
+      font-weight: 500;
+      margin-bottom: 12px;
+      color: #0b2431;
+    }
+    
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: #04db8d;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: 500;
+      text-align: center;
+      transition: background-color 0.3s;
+    }
+    
+    .btn:hover {
+      background-color: #03c57f;
+    }
+    
+    .text-center {
+      text-align: center;
+    }
+    
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      font-size: 14px;
+      color: #455862;
+    }
+    
+    .footer a {
+      color: #04db8d;
+      text-decoration: none;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://pub-fe3d137fb0d341499d19acfda6f6fb59.r2.dev/papyrus-logo.png" alt="Papyrus Logo">
+    </div>
+    
+    <div class="content">
+      <h1>Confirmación de Suscripción</h1>
+      
+      <p id="greeting">Estimado/a ${userData.name || 'Usuario'},</p>
+      
+      <p>
+        En el tablero implacable del mundo jurídico, donde cada movimiento cuenta y cada pieza tiene su valor, 
+        usted ha tomado una decisión tan acertada como inevitable: suscribirse a los servicios de Papyrus. 
+        Como esos viejos capitanes que, entre la niebla del mar, saben reconocer el único faro que les llevará a puerto seguro.
+      </p>
+      
+      <p>
+        No se trata simplemente de un servicio. Se trata de un escudo, forjado durante años en el fuego de la experiencia y el 
+        conocimiento, que ahora le protegerá en las batallas legales que el destino, siempre astuto, le tenga reservadas.
+      </p>
+      
+      <div class="subscription-details">
+        <h2>Detalles de su suscripción</h2>
+        
+        <div class="details-grid">
+          <div>
+            <p class="details-label">Nombre del Plan</p>
+            <p class="details-value" id="plan-name">${planName}</p>
+            
+            <p class="details-label">Precio</p>
+            <p class="details-value" id="plan-price">${planPrice}</p>
+            
+            <p class="details-label">Cobertura Legal</p>
+            <p class="details-value" id="cobertura-legal">${coberturaLegal}</p>
+            
+            <p class="details-label">Etiquetas Personalizadas</p>
+            <ul class="details-value" id="etiquetas-list">
+              ${etiquetasList.map(etiqueta => `<li>${etiqueta}</li>`).join('')}
+            </ul>
+          </div>
+          
+          <div>
+            <p class="details-label">Perfil Profesional</p>
+            <p class="details-value" id="perfil-profesional">${Array.isArray(userData.perfil_profesional) ? userData.perfil_profesional.join(', ') : (userData.perfil_profesional || 'No especificado')}</p>
+            
+            <p class="details-label">Rangos</p>
+            <ul class="details-value" id="rangos-list">
+              ${rangosList.map(rango => `<li>${rango}</li>`).join('')}
+            </ul>
+            
+            <p class="details-label">Análisis de Impacto</p>
+            <p class="details-value" id="analisis-impacto">${analisisImpacto}</p>
+          </div>
+        </div>
+      </div>
+      
+      <p>
+        Como bien sabría decir un viejo jurista, en el complejo tablero de la ley, quien domina la información, 
+        domina el juego. Y ahora usted, con Papyrus como su fiel escudero, tiene las mejores cartas en la mano.
+      </p>
+      
+      <p>
+        Le recordamos que puede acceder a su cuenta en cualquier momento a través de nuestra plataforma. 
+        Allí encontrará, como un cartógrafo meticuloso, todos los mapas legales que necesita para navegar con precisión.
+      </p>
+      
+      <div class="text-center" style="margin-bottom: 24px;">
+        <a href="https://papyrus-legal.com" class="btn">Acceder a mi cuenta</a>
+      </div>
+      
+      <p>
+        Atentamente,
+      </p>
+      
+      <p style="font-weight: 500;">
+        El equipo de Papyrus
+      </p>
+      
+      <div class="footer">
+        <p style="margin-bottom: 8px;">© Papyrus Legal, ${currentYear}. Todos los derechos reservados.</p>
+        <p>
+          Si tiene alguna pregunta, puede contactarnos en
+          <a href="mailto:info@papyrus-ai.com">info@papyrus-ai.com</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    
+    // Configurar el mensaje de correo electrónico
+    const msg = {
+      to: user.email,
+      from: 'info@papyrus-ai.com', // Ajusta esto a tu dirección de correo verificada en SendGrid
+      subject: 'Confirmación de Suscripción a Papyrus',
+      html: emailHtml,
+    };
+    
+    // Enviar el correo electrónico
+    await sgMail.send(msg);
+    console.log(`Correo de confirmación enviado a ${user.email}`);
+    return true;
+  } catch (error) {
+    console.error('Error al enviar el correo de confirmación:', error);
+    // No lanzamos el error para que no interrumpa el flujo principal
+    return false;
+  }
+}
+
 
 /*Stripe*/
 
@@ -2077,90 +2400,80 @@ app.get('/api-key', (req, res) => {
   res.json({ apiKey: process.env.API_KEY_PERPLEXITY });
 });
 
-app.get('/save-user', async (req, res) => {
-  const rawIndustryTags = req.query.industry_tags;
-  const rawRamaJuridicas = req.query.rama_juridicas;
-  const plan = req.query.plan;
-  const rawProfileType = req.query.profile_type;
-  const rawCobertura_legal = req.query.cobertura_legal;
-  const rawCompanyName = req.query.company_name;
-  const rawEspecializacion = req.query.especializacion;
-  const rawOtroperfil = req.query.otro_perfil;
-
-  console.log(rawEspecializacion);
-
-  // [ADDED] sub_rama_map
-  const rawSubRamaMap = req.query.sub_rama_map;
-
-  // [NEW] read session_id if present
-  const sessionId = req.query.session_id || null;
-
+app.post('/save-free-plan', async (req, res) => {
+  const { 
+    plan, 
+    industry_tags, 
+    sub_industria_map, // Añadido: mapa de subindustrias
+    rama_juridicas, 
+    profile_type, 
+    sub_rama_map, 
+    cobertura_legal, 
+    company_name,
+    name,
+    web,
+    linkedin,
+    perfil_profesional,
+    rangos,
+    feedback, 
+    etiquetas_personalizadas
+  } = req.body;
+  
   if (!req.user) {
-    return res.status(401).send('Unauthorized: No logged-in user');
+    return res.status(401).send('Unauthorized');
   }
 
   try {
-    const industryTags = JSON.parse(decodeURIComponent(rawIndustryTags));
-    const ramaJuridicas = JSON.parse(decodeURIComponent(rawRamaJuridicas));
-    const profileType = decodeURIComponent(rawProfileType);
-    const cobertura_legal = JSON.parse(decodeURIComponent(rawCobertura_legal));
-    const company_name = JSON.parse(decodeURIComponent(rawCompanyName));
-    const especializacion = JSON.parse(decodeURIComponent(rawEspecializacion));
-    const otro_perfil = JSON.parse(decodeURIComponent(rawOtroperfil));
-
-
-    // [CHANGED] parse sub_rama_map
-    let subRamaMapObj = {};
-    if (rawSubRamaMap) {
-      subRamaMapObj = JSON.parse(decodeURIComponent(rawSubRamaMap));
-    }
-
-    // 1) Possibly retrieve the subscription ID from Stripe if sessionId is present
-    let stripeSubscriptionId = null;
-    if (sessionId) {
-      // retrieve session from Stripe
-      const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
-      // the subscription ID is stored in stripeSession.subscription
-      if (stripeSession.subscription) {
-        stripeSubscriptionId = stripeSession.subscription;
-      }
-    }
-
+    // Create current date in yyyy-mm-dd format
+    const currentDate = new Date();
+    const yyyy = currentDate.getFullYear();
+    const mm = String(currentDate.getMonth() + 1).padStart(2, '0'); // January is 0!
+    const dd = String(currentDate.getDate()).padStart(2, '0');
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+    
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
+    const db = client.db("papyrus");
+    const usersCollection = db.collection("users");
 
-    // 2) Update the user in DB with subscription_plan, plus the subscription_id if we got it
-    const updateFields = {
-      industry_tags: industryTags,
-      rama_juridicas: ramaJuridicas,
+    // Crear un objeto con los datos del usuario para actualizar
+    const userData = {
+      industry_tags,
+      sub_industria_map, // Añadido: guardamos el mapa de subindustrias
+      rama_juridicas,
       subscription_plan: plan,
-      profile_type: profileType,
-      sub_rama_map: subRamaMapObj,
-      cobertura_legal: cobertura_legal ,
-      company_name : company_name,
-      especializacion: especializacion,
-      otro_perfil: otro_perfil
+      profile_type,
+      sub_rama_map,
+      cobertura_legal,
+      company_name,
+      name,
+      web,
+      linkedin,
+      perfil_profesional,
+      rangos,
+      feedback_login: feedback, // Renamed from feedback to feedback_login
+      registration_date: formattedDate,    // String format yyyy-mm-dd
+      registration_date_obj: currentDate,  // Also save native Date object for better querying
+      etiquetas_personalizadas: etiquetas_personalizadas
     };
-
-    // if we have a valid subscription ID, store it as well
-    if (stripeSubscriptionId) {
-      updateFields.stripe_subscription_id = stripeSubscriptionId;
-    }
 
     await usersCollection.updateOne(
       { _id: new ObjectId(req.user._id) },
-      { $set: updateFields },
+      { $set: userData },
       { upsert: true }
     );
-
-    res.redirect('/profile');
+    
+    // Enviar correo de confirmación
+    await sendSubscriptionEmail(req.user, userData);
+    
+    await client.close();
+    res.json({ redirectUrl: '/profile' });
   } catch (error) {
-    console.error('Error saving user data:', error);
+    console.error('Error saving free plan data:', error);
     res.status(500).send('Error saving user data');
   }
 });
+
 
 /*free*/
 app.post('/save-free-plan', async (req, res) => {
@@ -2588,3 +2901,4 @@ app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
     await client.close();
   }
 });
+

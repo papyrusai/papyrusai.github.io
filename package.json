@@ -11,6 +11,7 @@
   "dependencies": {
     "@alenaksu/json-viewer": "^0.3.4",
     "@mongodb-js/charts-embed-dom": "^3.2.1",
+    "@sendgrid/mail": "^8.1.5",
     "bcryptjs": "^3.0.2",
     "child_process": "^1.0.2",
     "cors": "^2.8.5",
