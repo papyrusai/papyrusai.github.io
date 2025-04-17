@@ -2507,23 +2507,49 @@ app.post('/create-checkout-session', async (req, res) => {
     }
     
     // Añadir extra de agentes si corresponde
-    if (extra_agentes > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Extra de 12 agentes personalizados (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
-            tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
-          },
-          unit_amount: extraPrices.agentes[interval],
-          tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
-          recurring: {
-            interval: interval === 'annual' ? 'year' : 'month',
-          }
-        },
-        quantity: 1
-      });
-    }
+// Convertir explícitamente a número y verificar que sea mayor que 0
+const numExtraAgentes = parseInt(extra_agentes) || 0;
+if (numExtraAgentes > 0) {
+  console.log(`Añadiendo ${numExtraAgentes} extras de agentes`); // Para depuración
+  lineItems.push({
+    price_data: {
+      currency: 'eur',
+      product_data: {
+        name: `Extra de 12 agentes personalizados (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+        tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
+      },
+      unit_amount: extraPrices.agentes[interval],
+      tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
+      recurring: {
+        interval: interval === 'annual' ? 'year' : 'month',
+      }
+    },
+    quantity: 1
+  });
+}
+
+// Añadir extra de fuentes si corresponde
+// Convertir explícitamente a número y verificar que sea mayor que 0
+const numExtraFuentes = parseInt(extra_fuentes) || 0;
+if (numExtraFuentes > 0) {
+  console.log(`Añadiendo ${numExtraFuentes} extras de fuentes`); // Para depuración
+  lineItems.push({
+    price_data: {
+      currency: 'eur',
+      product_data: {
+        name: `Extra de ${numExtraFuentes} fuentes oficiales (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+        tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
+      },
+      unit_amount: extraPrices.fuentes[interval] * numExtraFuentes,
+      tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
+      recurring: {
+        interval: interval === 'annual' ? 'year' : 'month',
+      }
+    },
+    quantity: 1
+  });
+}
+
     
     // Añadir extra de fuentes si corresponde
     if (extra_fuentes > 0) {
