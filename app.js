@@ -2685,9 +2685,6 @@ if (extra_fuentes > 0) {
       tax_id_collection: {
         enabled: true // Habilitar la recolección de ID fiscal para clientes empresariales
       },
-      customer_update: {
-        address: 'auto' // Actualizar automáticamente la dirección del cliente
-      },
       metadata: metadataChunks,
       success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: 'https://app.papyrus-ai.com/paso1.html',
