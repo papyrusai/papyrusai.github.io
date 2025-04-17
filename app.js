@@ -2508,7 +2508,7 @@ app.post('/create-checkout-session', async (req, res) => {
     
     // Añadir extra de agentes si corresponde
 // Convertir explícitamente a número y verificar que sea mayor que 0
-const numExtraAgentes = parseInt(extra_agentes) || 0;
+const numExtraAgentes = parseInt(extra_agentes) || 1;
 if (numExtraAgentes > 0) {
   console.log(`Añadiendo ${numExtraAgentes} extras de agentes`); // Para depuración
   lineItems.push({
@@ -2530,7 +2530,7 @@ if (numExtraAgentes > 0) {
 
 // Añadir extra de fuentes si corresponde
 // Convertir explícitamente a número y verificar que sea mayor que 0
-const numExtraFuentes = parseInt(extra_fuentes) || 0;
+const numExtraFuentes = parseInt(extra_fuentes) || 3;
 if (numExtraFuentes > 0) {
   console.log(`Añadiendo ${numExtraFuentes} extras de fuentes`); // Para depuración
   lineItems.push({
@@ -2690,10 +2690,11 @@ const session = await stripe.checkout.sessions.create({
   tax_id_collection: {
     enabled: true // Habilitar la recolección de ID fiscal para clientes empresariales
   },
-  billing_address_collection: 'required', // Hacer obligatoria la dirección de facturación
+ /* billing_address_collection: 'required', // Hacer obligatoria la dirección de facturación
   shipping_address_collection: {
     allowed_countries: ['ES', 'PT', 'FR', 'IT', 'DE'], // Países de la UE más relevantes
   },
+  */
   metadata: metadataChunks,
   success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
   cancel_url: 'https://app.papyrus-ai.com/paso1.html',
