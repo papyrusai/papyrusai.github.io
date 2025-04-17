@@ -1155,7 +1155,7 @@
           const result = await resp.json();
           
           if (endpoint === '/create-checkout-session' || endpoint === '/update-subscription-checkout') {
-            const { sessionId } = result;pk
+            const { sessionId } = result;
             const stripe = Stripe('pk_live_51REzuGDXdzt0y1c97cWOhKbTvduvuVI4w1fQsKM672HypXhGT0EtiLhjVTl3Hxyi7rW7RBbZ4xd4bhL7arcPljKt00Qrz892wG');
             await stripe.redirectToCheckout({ sessionId });
           } else if (result.redirectUrl) {

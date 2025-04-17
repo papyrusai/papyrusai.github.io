@@ -2550,25 +2550,7 @@ if (numExtraFuentes > 0) {
   });
 }
 
-    
-    // Añadir extra de fuentes si corresponde
-    if (extra_fuentes > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Extra de ${extra_fuentes} fuentes oficiales (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
-            tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
-          },
-          unit_amount: extraPrices.fuentes[interval] * extra_fuentes,
-          tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
-          recurring: {
-            interval: interval === 'annual' ? 'year' : 'month',
-          }
-        },
-        quantity: 1
-      });
-    }
+  
     // Dividir los datos grandes en múltiples campos de metadatos
     const metadataChunks = {};
     
