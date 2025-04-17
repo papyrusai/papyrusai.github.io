@@ -860,32 +860,29 @@
     /*-------------EXTRAS------------------*/
 
     // Función para manejar los extras de agentes y fuentes
-function handleExtras() {
+    function handleExtras() {
   // Obtener valores de sessionStorage
   const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '1');
   const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '3');
+  
+  // Primero, eliminar todos los contenedores de extras existentes en TODOS los planes
+  const allExtrasContainers = document.querySelectorAll('.extras-container');
+  allExtrasContainers.forEach(container => container.remove());
   
   // Obtener el plan box seleccionado
   const selectedPlan = document.querySelector('.plan-box.selected');
   if (!selectedPlan) return;
   
-  // Eliminar extras anteriores si existen
-  const existingExtras = selectedPlan.querySelectorAll('.plan-extra');
-  existingExtras.forEach(extra => extra.remove());
+  // Crear contenedor para extras solo para el plan seleccionado
+  const extrasContainer = document.createElement('div');
+  extrasContainer.className = 'extras-container';
   
-  // Crear contenedor para extras si no existe
-  let extrasContainer = selectedPlan.querySelector('.extras-container');
-  if (!extrasContainer) {
-    extrasContainer = document.createElement('div');
-    extrasContainer.className = 'extras-container';
-    
-    // Insertar después de la lista de características
-    const featuresList = selectedPlan.querySelector('.features-list');
-    if (featuresList) {
-      featuresList.after(extrasContainer);
-    } else {
-      selectedPlan.appendChild(extrasContainer);
-    }
+  // Insertar después de la lista de características
+  const featuresList = selectedPlan.querySelector('.features-list');
+  if (featuresList) {
+    featuresList.after(extrasContainer);
+  } else {
+    selectedPlan.appendChild(extrasContainer);
   }
   
   // Añadir extra de agentes si corresponde

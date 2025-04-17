@@ -2459,15 +2459,15 @@ app.post('/create-checkout-session', async (req, res) => {
     // Definir precios base según el plan y el intervalo (en céntimos)
     const basePrices = {
       plan1: { monthly: 0, annual: 0 },
-      plan2: { monthly: 6600, annual: 5300 },
-      plan3: { monthly: 13900, annual: 11000 },
+      plan2: { monthly: 6600, annual: 63600 },
+      plan3: { monthly: 13900, annual: 132000 },
       plan4: { monthly: 0, annual: 0 } // Personalizado, se maneja por separado
     };
     
     // Definir precios de extras (en céntimos)
     const extraPrices = {
-      agentes: { monthly: 5000, annual: 50000 },
-      fuentes: { monthly: 1500, annual: 15000 } // Precio por fuente
+      agentes: { monthly: 5000, annual: 600000 },
+      fuentes: { monthly: 1500, annual: 180000 } // Precio por fuente
     };
     
     // Verificar que el plan existe
@@ -2482,21 +2482,24 @@ app.post('/create-checkout-session', async (req, res) => {
     const lineItems = [];
     
     // Añadir el plan base si no es plan4 (Enterprise)
-    if (plan !== 'plan4') {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Plan ${plan === 'plan1' ? 'Free' : plan === 'plan2' ? 'Starter' : 'Pro'} (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
-          },
-          unit_amount: basePrices[plan][interval],
-          recurring: {
-            interval: interval === 'annual' ? 'year' : 'month',
-          }
-        },
-        quantity: 1
-      });
-    } else {
+   // Añadir el plan base si no es plan4 (Enterprise)
+if (plan !== 'plan4') {
+  lineItems.push({
+    price_data: {
+      currency: 'eur',
+      product_data: {
+        name: `Plan ${plan === 'plan1' ? 'Free' : plan === 'plan2' ? 'Starter' : 'Pro'} (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+        tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
+      },
+      unit_amount: basePrices[plan][interval],
+      tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
+      recurring: {
+        interval: interval === 'annual' ? 'year' : 'month',
+      }
+    },
+    quantity: 1
+  });
+} else {
       // Para plan4 (Enterprise), redirigir a una página de contacto
       return res.json({ 
         redirectUrl: 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1WN1IhU22dyAFucB4mXPHcgF-5WKU57UAVbkMGuiAVfDRvLcKyLY14oKB8Il6siszUXya8T4Jt',
@@ -2505,39 +2508,43 @@ app.post('/create-checkout-session', async (req, res) => {
     }
     
     // Añadir extra de agentes si corresponde
-    if (extra_agentes > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Extra de 12 agentes personalizados (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
-          },
-          unit_amount: extraPrices.agentes[interval],
-          recurring: {
-            interval: interval === 'annual' ? 'year' : 'month',
-          }
-        },
-        quantity: 1
-      });
-    }
-    
-    // Añadir extra de fuentes si corresponde
-    if (extra_fuentes > 0) {
-      lineItems.push({
-        price_data: {
-          currency: 'eur',
-          product_data: {
-            name: `Extra de ${extra_fuentes} fuentes oficiales (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
-          },
-          unit_amount: extraPrices.fuentes[interval] * extra_fuentes,
-          recurring: {
-            interval: interval === 'annual' ? 'year' : 'month',
-          }
-        },
-        quantity: 1
-      });
-    }
-    
+if (extra_agentes > 0) {
+  lineItems.push({
+    price_data: {
+      currency: 'eur',
+      product_data: {
+        name: `Extra de 12 agentes personalizados (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+        tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
+      },
+      unit_amount: extraPrices.agentes[interval],
+      tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
+      recurring: {
+        interval: interval === 'annual' ? 'year' : 'month',
+      }
+    },
+    quantity: 1
+  });
+}
+
+// Añadir extra de fuentes si corresponde
+if (extra_fuentes > 0) {
+  lineItems.push({
+    price_data: {
+      currency: 'eur',
+      product_data: {
+        name: `Extra de ${extra_fuentes} fuentes oficiales (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+        tax_code: 'txcd_10000000', // Código de impuesto para servicios digitales
+      },
+      unit_amount: extraPrices.fuentes[interval] * extra_fuentes,
+      tax_behavior: 'exclusive', // Indicar que el precio es sin impuestos
+      recurring: {
+        interval: interval === 'annual' ? 'year' : 'month',
+      }
+    },
+    quantity: 1
+  });
+}
+
     // Dividir los datos grandes en múltiples campos de metadatos
     const metadataChunks = {};
     
@@ -2674,6 +2681,12 @@ app.post('/create-checkout-session', async (req, res) => {
       locale: 'es',
       automatic_tax: {
         enabled: true
+      },
+      tax_id_collection: {
+        enabled: true // Habilitar la recolección de ID fiscal para clientes empresariales
+      },
+      customer_update: {
+        address: 'auto' // Actualizar automáticamente la dirección del cliente
       },
       metadata: metadataChunks,
       success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
