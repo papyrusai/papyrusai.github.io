@@ -2669,30 +2669,33 @@ app.post('/create-checkout-session', async (req, res) => {
         trial_period_days: 15,
       };
     }
+// Crear la sesión de checkout con todos los metadatos
+const session = await stripe.checkout.sessions.create({
+  payment_method_types: ['card'],
+  line_items: lineItems,
+  mode: 'subscription',
+  subscription_data: subscriptionData,
+  locale: 'es',
+  automatic_tax: {
+    enabled: true
+  },
+  tax_id_collection: {
+    enabled: true // Habilitar la recolección de ID fiscal para clientes empresariales
+  },
+  billing_address_collection: 'required', // Hacer obligatoria la dirección de facturación
+  shipping_address_collection: {
+    allowed_countries: ['ES', 'PT', 'FR', 'IT', 'DE'], // Países de la UE más relevantes
+  },
+  metadata: metadataChunks,
+  success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: 'https://app.papyrus-ai.com/paso1.html',
+});
 
-    // Crear la sesión de checkout con todos los metadatos
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'subscription',
-      subscription_data: subscriptionData,
-      locale: 'es',
-      automatic_tax: {
-        enabled: true
-      },
-      tax_id_collection: {
-        enabled: true // Habilitar la recolección de ID fiscal para clientes empresariales
-      },
-      metadata: metadataChunks,
-      success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: 'https://app.papyrus-ai.com/paso1.html',
-    });
-
-    res.json({ sessionId: session.id });
-  } catch (error) {
-    console.error('Error creating Checkout Session:', error);
-    res.status(500).json({ error: 'Failed to create Checkout Session' });
-  }
+res.json({ sessionId: session.id });
+} catch (error) {
+console.error('Error creating Checkout Session:', error);
+res.status(500).json({ error: 'Failed to create Checkout Session' });
+}
 });
 
 
