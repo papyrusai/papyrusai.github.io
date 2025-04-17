@@ -6,6 +6,7 @@
   <title>Suscripción - Papyrus</title>
   <link rel="icon" href="assets\papyrus_logo.png" type="image/png"> 
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/onboarding.css">
   <style>
@@ -98,7 +99,7 @@
       font-weight: bold;
     }
 
-    .plan-box p {
+    .plan-box span {
       font-size: clamp(10px, 1.2vw, 12px);
       color: #666;
       margin-bottom: clamp(8px, 1.5vh, 15px);
@@ -226,7 +227,7 @@
     } 
 
     .choose-plan-heading {
-      margin: 20px 0;
+      margin: 0px;
       font-size: 1.2em;
       font-weight: bold;
       text-align: center;
@@ -287,6 +288,239 @@
       align-items: center;
       gap: 8px;
     }
+
+
+    /*Style extra nuevos planes*/
+
+    /* Estilos para el toggle de facturación */
+.billing-toggle-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0 30px;
+}
+
+.billing-toggle {
+  position: relative;
+  display: flex;
+  background-color: #f8f8f8;
+  border-radius: 30px;
+  padding: 4px;
+  width: 240px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.billing-option {
+  flex: 1;
+  text-align: center;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  border-radius: 30px;
+  font-weight: 500;
+  transition: color 0.3s ease;
+}
+
+.billing-option.active {
+  color: var(--text-color);
+}
+
+.billing-option:not(.active) {
+  color: var(--text-color);
+}
+
+.toggle-slider {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: calc(50% - 4px);
+  height: calc(100% - 8px);
+  background-color: var(--primary-color);
+  border-radius: 30px;
+  transition: transform 0.3s ease;
+  z-index: 1;
+}
+
+.billing-option.monthly.active ~ .toggle-slider {
+  transform: translateX(calc(100% + 4px));
+}
+
+.discount {
+  font-size: 0.8em;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+/* Estilos para los plan boxes */
+.plan-box {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.plan-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.plan-box.recommended {
+  border: 2px solid var(--primary-color);
+  position: relative;
+}
+
+.recommended-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Estilos para los badges de plan */
+.plan-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.badge-recommended {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.badge-selected {
+  background-color:#092534 ;
+  color: white;
+}
+
+
+.plan-box h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: var(--text-color);
+}
+
+
+.plan-box h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  color: var(--text-color);
+}
+
+
+.plan-button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: background-color 0.3s ease;
+}
+
+.plan-button:hover {
+  background-color: #03c57f;
+}
+
+.trial-period {
+  font-size: 13px;
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.features-list li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.feature-included {
+  color: #26df5b;
+  margin-right: 8px;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.feature-excluded {
+  color: #cccccc;
+  margin-right: 8px;
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.info-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-size: 12px;
+  margin-left: 3px;
+}
+
+.info-link:hover {
+  text-decoration: underline;
+}
+/* Estilos para los extras */
+.extras-container {
+  margin-top: 15px;
+  border-top: 1px dashed #e0e0e0;
+  padding-top: 15px;
+}
+
+.plan-extra {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgb(245, 158, 11);
+  font-weight: 500;
+}
+
+
+/* Ajustes para móviles */
+@media (max-width: 768px) {
+  .plans-container {
+    flex-direction: column;
+  }
+  
+  .plan-box {
+    margin-bottom: 20px;
+    width: 100%;
+  }
+  
+  .billing-toggle {
+    width: 200px;
+  }
+}
 
     /* Mobile-First Approach - Default styles for smaller screens (up to 600px) */
 @media (max-width: 600px) {
@@ -422,60 +656,114 @@
     </div>
 
     <div class="formulario">
-      <h1>Tipo de Suscripción</h1>
-      <p class="subheading">Seleccione el paquete que más se adapte a sus necesidades</p>
+      <h1>Suscripción</h1>
+      <p class="subheading">Confirma el plan escogido</p>
       <div class="choose-plan-heading">Elige tu plan</div>
-      
-      <div class="plans-container">
-        <!-- Plan 4 -->
-        <div class="plan-box" data-value="plan4">
-          <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
-          <h3 style="color:var(--primary-color); font-weight: bolder;">Prueba</h3>
-          <h2>Gratuito</h2>
-          <p>Un mes</p>
-          <ul>
-            <li>Acceso completo a la plataforma de manera temporal</li>
-            <li>Sin tarjetas, sin compromisos</li>
-          </ul>
-        </div>
-        <!-- Plan 1 -->
 
+      <!-- Añadir el toggle mensual/anual aquí -->
+      <div class="billing-toggle-container">
+        <div class="billing-toggle">
+          <button class="billing-option monthly active" data-billing="monthly">Mensual</button>
+          <button class="billing-option annual" data-billing="annual">Anual <span class="discount">-20%</span></button>
+          <span class="toggle-slider"></span>
+        </div>
+      </div>
+
+      <div class="plans-container">
+        <!-- Plan boxes aquí -->
+      </div>
+
+      <div class="plans-container">
+        <!-- Plan Free -->
         <div class="plan-box" data-value="plan1">
-          <h3>Básico</h3>
-          <h2>Gratuito</h2>
-          <p>Al mes</p>
-          <ul>
-            <li>Resumen diario general del BOE</li>
-            <li>-</li>
-            <li>-</li>
-          </ul>
-        </div>
-        <!-- Plan 2 -->
-        <div class="plan-box" data-value="plan2">
-          <!-- <div class="plan-badge free-two-months">1 mes gratuito, sin tarjeta</div> -->
-          <h3>Estándar</h3>
-          <h2>50€</h2>
-          <p>Al mes por fuente oficial</p>
-          <ul>
-            <li>Descuento por cada fuente extra</li>
-            <li>Alertas normativas personalizadas</li>
-            <li>Análisis de impacto normativo</li>
-          </ul>
-        </div>
-        <!-- Plan 3 -->
-        <div class="plan-box" data-value="plan3" data-disabled="true">
-          <div class="plan-badge coming-soon">Próximamente</div>
-          <h3>Enterprise</h3>
-          <h2>Contact sales</h2>
-          <p>Al mes</p>
-          <ul>
-            <li>Todo el paquete Estándar</li>
-            <li>Cobertura legal completa</li>
-            <li>Integración personalizada</li>
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Free</h3>
+          
+          <h2 class="price-monthly" style="display: none;">Gratis<span>/mes</span></h2>
+          <h2 class="price-annual">Gratis<span>/mes</span></h2>
+       
+          
+          <button class="plan-button">Empezar gratis</button>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso al BOE </li>
+            <li><i class="fa fa-check feature-included"></i> Resúmenes y estadísticas</li>
+            <li><i class="fa fa-times feature-excluded"></i> Agentes Personalizados </li>
+            <li><i class="fa fa-times feature-excluded"></i> Alertas y notificaciones</li>
+            <li><i class="fa fa-times feature-excluded"></i> Análisis de impacto</li>
           </ul>
         </div>
         
+        <!-- Plan Starter -->
+        <div class="plan-box" data-value="plan2">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Starter</h3>
+          
+          <h2 class="price-monthly" style="display: none;">53€<span>/mes</span></h2>
+          <h2 class="price-annual">66€<span>/mes</span></h2>
+       
+          <button class="plan-button">Elegir Starter</button>
+          
+          <p class="trial-period">15 días de prueba gratuita</p>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso a 1 fuente oficial </li>
+            <li><i class="fa fa-check feature-included"></i> 5 Agentes Personalizados </li>
+            <li><i class="fa fa-check feature-included"></i> 50 análisis de impacto/mes</li>
+            <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
+          </ul>
+        </div>
+        
+        <!-- Plan Pro -->
+        <div class="plan-box" data-value="plan3">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Pro</h3>
+          
+          <h2 class="price-monthly" style="display: none;">110€<span>/mes</span></h2>
+          <h2 class="price-annual">139€<span>/mes</span></h2>
+      
+          
+          <button class="plan-button">Elegir Pro</button>
+          
+          <p class="trial-period">15 días de prueba gratuita</p>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso a 3 fuentes oficiales</li>
+            <li><i class="fa fa-check feature-included"></i> 15 Agentes Personalizados </li>
+            <li><i class="fa fa-check feature-included"></i> 500 análisis de impacto/mes</li>
+            <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
+          </ul>
+        </div>
+        
+        <!-- Plan Enterprise -->
+        <div class="plan-box" data-value="plan4">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Enterprise</h3>
+          
+          <h2 class="price-monthly" style="display: none;">Personalizado</h2>
+          <h2 class="price-annual">Personalizado</h2>
+        
+          
+          <button class="plan-button">Contactar con nosotros</button>
+
+          <p class="trial-period">15 días de prueba gratuita</p>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Varios usuarios según necesidades</li>
+            <li><i class="fa fa-check feature-included"></i> Fuentes oficiales ilimitadas</li>
+            <li><i class="fa fa-check feature-included"></i> Agentes Personalizados ilimitados </li>
+            <li><i class="fa fa-check feature-included"></i> Consultas de impacto ilimitadas</li>
+            <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
+            <li><i class="fa fa-check feature-included"></i> Integración API y modelos predictivos</li>
+          </ul>
+        </div>
       </div>
+      
+
+
       <div class="step-navigation">
         <button id="nextBtn" class="btn-siguiente">Finalizar</button>
       </div>
@@ -488,9 +776,136 @@
   <script src="https://js.stripe.com/v3/"></script>
   <script>
     // Toggle menu function for mobile
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Toggle de facturación mensual/anual
+    const monthlyButton = document.querySelector('.billing-option.monthly');
+    const annualButton = document.querySelector('.billing-option.annual');
+    const pricesMonthly = document.querySelectorAll('.price-monthly');
+    const pricesAnnual = document.querySelectorAll('.price-annual');
+    
+    // Función para cambiar entre mensual y anual
+    function toggleBilling(isMonthly) {
+      if (isMonthly) {
+        monthlyButton.classList.remove('active');
+        annualButton.classList.add('active');
+        
+        pricesMonthly.forEach(el => el.style.display = 'none');
+        pricesAnnual.forEach(el => el.style.display = 'block');
+        
+        // Actualizar el valor del plan seleccionado para incluir el tipo de facturación
+        const selectedPlan = document.querySelector('.plan-box.selected');
+        if (selectedPlan) {
+          const planValue = selectedPlan.getAttribute('data-value');
+          document.getElementById('selectedPlan').value = planValue + '_monthly';
+          console.log(document.getElementById('selectedPlan').value);
+        }
+      } else {
+        monthlyButton.classList.add('active');
+        annualButton.classList.remove('active');
+        
+        pricesMonthly.forEach(el => el.style.display = 'block');
+        pricesAnnual.forEach(el => el.style.display = 'none');
+        
+        // Actualizar el valor del plan seleccionado para incluir el tipo de facturación
+        const selectedPlan = document.querySelector('.plan-box.selected');
+        if (selectedPlan) {
+          const planValue = selectedPlan.getAttribute('data-value');
+          document.getElementById('selectedPlan').value = planValue + '_annual';
+          console.log(document.getElementById('selectedPlan').value);
+          
+        }
+      }
+      handleExtras();
+    }
+    
+    // Por defecto, mostrar precios anuales
+    toggleBilling(false);
+    
+    // Event listeners para los botones de toggle
+    monthlyButton.addEventListener('click', () => toggleBilling(true));
+    annualButton.addEventListener('click', () => toggleBilling(false));
+    
+    // Modificar la selección de plan para incluir el tipo de facturación
+    const planBoxes = document.querySelectorAll('.plan-box');
+    planBoxes.forEach(function(box) {
+      box.addEventListener('click', function() {
+        // Skip if plan is disabled
+        if (box.getAttribute('data-disabled') === 'true') {
+          return;
+        }
+        
+        // Remove selected class from all plans
+        planBoxes.forEach(function(plan) {
+          plan.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked plan
+        box.classList.add('selected');
+        
+        // Store the selected plan value with billing period
+        const planValue = box.getAttribute('data-value');
+        const isMonthly = monthlyButton.classList.contains('active');
+        document.getElementById('selectedPlan').value = planValue + (isMonthly ? '_annual' : '_monthly');
+        
+        console.log('Selected plan:', document.getElementById('selectedPlan').value);
+        handleExtras();
+      });
+    });
+  })
     function toggleMenu() {
       document.querySelector('.menu').classList.toggle('show');
     }
+
+    /*-------------EXTRAS------------------*/
+
+    // Función para manejar los extras de agentes y fuentes
+function handleExtras() {
+  // Obtener valores de sessionStorage
+  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '1');
+  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '3');
+  
+  // Obtener el plan box seleccionado
+  const selectedPlan = document.querySelector('.plan-box.selected');
+  if (!selectedPlan) return;
+  
+  // Eliminar extras anteriores si existen
+  const existingExtras = selectedPlan.querySelectorAll('.plan-extra');
+  existingExtras.forEach(extra => extra.remove());
+  
+  // Crear contenedor para extras si no existe
+  let extrasContainer = selectedPlan.querySelector('.extras-container');
+  if (!extrasContainer) {
+    extrasContainer = document.createElement('div');
+    extrasContainer.className = 'extras-container';
+    
+    // Insertar después de la lista de características
+    const featuresList = selectedPlan.querySelector('.features-list');
+    if (featuresList) {
+      featuresList.after(extrasContainer);
+    } else {
+      selectedPlan.appendChild(extrasContainer);
+    }
+  }
+  
+  // Añadir extra de agentes si corresponde
+  if (extraAgentes > 0) {
+    const agenteExtra = document.createElement('div');
+    agenteExtra.className = 'plan-extra';
+    agenteExtra.innerHTML = `<span style="color: rgb(245, 158, 11); margin-right: 8px;">+</span> Extra de 12 agentes personalizados (+50€)`;
+    extrasContainer.appendChild(agenteExtra);
+  }
+  
+  // Añadir extra de fuentes si corresponde
+  if (extraFuentes > 0) {
+    const fuentesExtra = document.createElement('div');
+    fuentesExtra.className = 'plan-extra';
+    const precio = extraFuentes * 15;
+    fuentesExtra.innerHTML = `<span style="color: rgb(245, 158, 11); margin-right: 8px;">+</span> Extra de ${extraFuentes} fuentes oficiales (+${precio}€)`;
+    extrasContainer.appendChild(fuentesExtra);
+  }
+}
+
     
     document.addEventListener('DOMContentLoaded', function() {
       // Global variable to control plan2 free status
@@ -504,6 +919,7 @@
       const selectedPlanInput = document.getElementById('selectedPlan');
       
       // Add click handlers to each plan box
+      /*
       planBoxes.forEach(function(box) {
         box.addEventListener('click', function() {
           // Skip if plan is disabled
@@ -524,16 +940,17 @@
           console.log('Selected plan:', selectedPlanInput.value);
         });
       });
+      */
       
       // If editing, select the current user's plan
       if (isEditing) {
-        const currentPlan = sessionStorage.getItem('subscription_plan') || 'plan1';
+        const currentPlan = sessionStorage.getItem('subscription_plan'); //|| 'plan3';
         const planBox = Array.from(planBoxes).find(box => box.getAttribute('data-value') === currentPlan);
         if (planBox && !planBox.getAttribute('data-disabled')) {
           planBox.click();
         } else {
           // Fallback to plan4 if current plan is unavailable or disabled
-          const defaultBox = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
+          const defaultBox = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan3');
           if (defaultBox) defaultBox.click();
         }
         
@@ -549,8 +966,8 @@
           submitBtn.textContent = 'Guardar Cambios';
         }
       } else {
-        // Select plan4 by default for new users
-        const plan4Box = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan4');
+        // Select plan3 by default for new users
+        const plan4Box = Array.from(planBoxes).find(box => box.getAttribute('data-value') === 'plan3');
         if (plan4Box && !plan4Box.getAttribute('data-disabled')) {
           plan4Box.click();
         } else {
@@ -559,6 +976,60 @@
           if (firstAvailable) firstAvailable.click();
         }
       }
+
+      // Función para gestionar los badges de los planes
+        function setupPlanBadges() {
+          // Obtener todos los plan boxes y sus badges
+          const planBoxes = document.querySelectorAll('.plan-box');
+          
+          // Verificar si el usuario es existente (editando) o nuevo
+          const isEditing = sessionStorage.getItem('isEditingPlan') === 'true';
+          let userPlan = '';
+          
+          if (isEditing) {
+            // Si está editando, obtener el plan actual
+            const currentPlan = document.getElementById('currentPlan')?.value || '';
+            userPlan = currentPlan;
+          } else {
+            // Si es nuevo, verificar si hay un plan en sessionStorage
+            userPlan = sessionStorage.getItem('selectedPlan') || '';
+          }
+          
+          // Si no hay plan definido, mostrar "Recomendado" en el plan Pro
+          if (!userPlan) {
+            const proPlan = document.querySelector('.plan-box[data-value="plan3"]');
+            if (proPlan) {
+              const badge = proPlan.querySelector('.plan-badge');
+              badge.textContent = 'Recomendado';
+              badge.classList.add('badge-recommended');
+              badge.style.display = 'block';
+            }
+          } else {
+            // Si hay un plan definido, mostrar "Tu elección" en ese plan
+            // Extraer el tipo de plan sin el sufijo _monthly o _annual
+            const planType = userPlan.split('_')[0];
+            
+            const selectedPlan = document.querySelector(`.plan-box[data-value="${planType}"]`);
+            if (selectedPlan) {
+              const badge = selectedPlan.querySelector('.plan-badge');
+              badge.textContent = 'Tu elección';
+              badge.classList.add('badge-selected');
+              badge.style.display = 'block';
+              
+              // También seleccionamos este plan
+              planBoxes.forEach(box => box.classList.remove('selected'));
+              selectedPlan.classList.add('selected');
+              
+              // Actualizar el valor del plan seleccionado
+              const isMonthly = document.querySelector('.billing-option.monthly').classList.contains('active');
+              document.getElementById('selectedPlan').value = planType + (isMonthly ? '_monthly' : '_annual');
+            }
+          }
+        }
+
+        // Llamar a la función al cargar la página
+        setupPlanBadges();
+
       
       // Get userData from the original source in sessionStorage
       const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
@@ -597,27 +1068,51 @@
       
       // Add event handler for the submit button
       const submitButton = document.getElementById('nextBtn');
+
+      /*---------ENVIO A SERVIDOR -------------*/
+      // Reemplazar el código actual del evento click del submitButton con este:
       submitButton.addEventListener('click', async function(e) {
         e.preventDefault();
         
         // Get selected plan value
-        const planType = selectedPlanInput.value;
-        if (!planType) {
+        const planValue = selectedPlanInput.value;
+        if (!planValue) {
           alert('Por favor, selecciona un plan');
           return;
         }
         
-        // Show loading state - replace text with loader and disable button
+        // Extraer el tipo de plan y el período de facturación
+        const [planType, billingPeriod] = planValue.split('_');
+        
+        // Show loading state
         const originalButtonText = this.textContent.trim();
         this.innerHTML = '<div class="loader"></div><span>Procesando...</span>';
         this.classList.add('loading');
         this.disabled = true;
         
+        // Obtener los extras de sessionStorage
+        const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+        const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+        
+        // Determinar límites de análisis de impacto según el plan
+        let impactAnalysisLimit = 0;
+        if (planType === 'plan2') {
+          impactAnalysisLimit = 50;
+        } else if (planType === 'plan3') {
+          impactAnalysisLimit = 500;
+        } else if (planType === 'plan4') {
+          impactAnalysisLimit = -1; // -1 significa ilimitado
+        }
+        
         // Create a complete payload with ALL user data
         const payload = {
           plan: planType,
+          billingInterval: billingPeriod || 'monthly', // 'monthly' o 'annual'
+          extra_agentes: extraAgentes,
+          extra_fuentes: extraFuentes,
+          impact_analysis_limit: impactAnalysisLimit,
           industry_tags: industryTags,
-          sub_industria_map: subIndustriaMap, // Añadido: mapa de subindustrias
+          sub_industria_map: subIndustriaMap,
           rama_juridicas: ramaJuridicas,
           sub_rama_map: subRamaMap,
           rangos,
@@ -646,9 +1141,9 @@
           let endpoint = isEditing ? '/update-subscription' : '/save-free-plan';
           
           // For paid plans that aren't free trial
-          if ((planType === 'plan1' || planType === 'plan2' || planType === 'plan3') && !isEditing) {
+          if ((planType === 'plan2' || planType === 'plan3' || planType === 'plan4') && !isEditing) {
             endpoint = '/create-checkout-session';
-          } else if ((planType === 'plan1' || planType === 'plan2' || planType === 'plan3') && isEditing) {
+          } else if ((planType === 'plan2' || planType === 'plan3' || planType === 'plan4') && isEditing) {
             endpoint = '/update-subscription-checkout';
           }
           
@@ -683,6 +1178,7 @@
           alert('Hubo un error al guardar los datos. Por favor, inténtelo de nuevo.');
         }
       });
+
     });
   </script>
     <script>

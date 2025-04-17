@@ -2434,6 +2434,10 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/create-checkout-session', async (req, res) => {
   const {
     plan,
+    billingInterval,
+    extra_agentes,
+    extra_fuentes,
+    impact_analysis_limit,
     industry_tags,
     sub_industria_map,
     rama_juridicas,
@@ -2452,22 +2456,97 @@ app.post('/create-checkout-session', async (req, res) => {
   } = req.body;
 
   try {
-    const priceIdMap = {
-      plan1: 'price_dummy_for_plan1',
-      plan2: 'price_1QOlhEEpe9srfTKESkjGMFvI',
-      plan3: 'price_1QOlwZEpe9srfTKEBRzcNR8A',
+    // Definir precios base según el plan y el intervalo (en céntimos)
+    const basePrices = {
+      plan1: { monthly: 0, annual: 0 },
+      plan2: { monthly: 6600, annual: 5300 },
+      plan3: { monthly: 13900, annual: 11000 },
+      plan4: { monthly: 0, annual: 0 } // Personalizado, se maneja por separado
     };
-
-    if (!priceIdMap[plan]) {
+    
+    // Definir precios de extras (en céntimos)
+    const extraPrices = {
+      agentes: { monthly: 5000, annual: 50000 },
+      fuentes: { monthly: 1500, annual: 15000 } // Precio por fuente
+    };
+    
+    // Verificar que el plan existe
+    if (!basePrices[plan]) {
       return res.status(400).json({ error: 'Invalid plan selected' });
     }
-
+    
+    // Determinar el intervalo de facturación
+    const interval = billingInterval === 'annual' ? 'annual' : 'monthly';
+    
+    // Crear los elementos de línea para Stripe
+    const lineItems = [];
+    
+    // Añadir el plan base si no es plan4 (Enterprise)
+    if (plan !== 'plan4') {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Plan ${plan === 'plan1' ? 'Free' : plan === 'plan2' ? 'Starter' : 'Pro'} (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+          },
+          unit_amount: basePrices[plan][interval],
+          recurring: {
+            interval: interval === 'annual' ? 'year' : 'month',
+          }
+        },
+        quantity: 1
+      });
+    } else {
+      // Para plan4 (Enterprise), redirigir a una página de contacto
+      return res.json({ 
+        redirectUrl: 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1WN1IhU22dyAFucB4mXPHcgF-5WKU57UAVbkMGuiAVfDRvLcKyLY14oKB8Il6siszUXya8T4Jt',
+        isEnterprise: true
+      });
+    }
+    
+    // Añadir extra de agentes si corresponde
+    if (extra_agentes > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Extra de 12 agentes personalizados (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+          },
+          unit_amount: extraPrices.agentes[interval],
+          recurring: {
+            interval: interval === 'annual' ? 'year' : 'month',
+          }
+        },
+        quantity: 1
+      });
+    }
+    
+    // Añadir extra de fuentes si corresponde
+    if (extra_fuentes > 0) {
+      lineItems.push({
+        price_data: {
+          currency: 'eur',
+          product_data: {
+            name: `Extra de ${extra_fuentes} fuentes oficiales (${interval === 'annual' ? 'Anual' : 'Mensual'})`,
+          },
+          unit_amount: extraPrices.fuentes[interval] * extra_fuentes,
+          recurring: {
+            interval: interval === 'annual' ? 'year' : 'month',
+          }
+        },
+        quantity: 1
+      });
+    }
+    
     // Dividir los datos grandes en múltiples campos de metadatos
-    // debido al límite de 500 caracteres por valor
     const metadataChunks = {};
     
     // Datos básicos que son strings simples
     metadataChunks.plan = plan;
+    metadataChunks.billing_interval = interval;
+    metadataChunks.extra_agentes = extra_agentes.toString();
+    metadataChunks.extra_fuentes = extra_fuentes.toString();
+    metadataChunks.impact_analysis_limit = impact_analysis_limit.toString();
     metadataChunks.profile_type = profile_type;
     metadataChunks.company_name = company_name;
     metadataChunks.name = name;
@@ -2476,8 +2555,6 @@ app.post('/create-checkout-session', async (req, res) => {
     metadataChunks.perfil_profesional = perfil_profesional;
     
     // Datos complejos que necesitan ser divididos
-    // Dividimos los objetos/arrays grandes en múltiples campos de metadatos
-    
     // Industry tags
     const industryTagsStr = JSON.stringify(industry_tags);
     if (industryTagsStr.length <= 500) {
@@ -2582,7 +2659,7 @@ app.post('/create-checkout-session', async (req, res) => {
     
     // Configuración de datos de suscripción
     let subscriptionData = {};
-    if ((plan === 'plan1' || plan === 'plan2' || plan === 'plan3') && isTrial) {
+    if (isTrial) {
       subscriptionData = {
         trial_period_days: 15,
       };
@@ -2591,15 +2668,13 @@ app.post('/create-checkout-session', async (req, res) => {
     // Crear la sesión de checkout con todos los metadatos
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [
-        { 
-          price: priceIdMap[plan],
-          quantity: 1 
-        }
-      ],
+      line_items: lineItems,
       mode: 'subscription',
       subscription_data: subscriptionData,
       locale: 'es',
+      automatic_tax: {
+        enabled: true
+      },
       metadata: metadataChunks,
       success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: 'https://app.papyrus-ai.com/paso1.html',
@@ -2611,6 +2686,7 @@ app.post('/create-checkout-session', async (req, res) => {
     res.status(500).json({ error: 'Failed to create Checkout Session' });
   }
 });
+
 
 /*
 app.get('/save-user', async (req, res) => {
@@ -2695,7 +2771,7 @@ app.get('/save-user', async (req, res) => {
   try {
     // Verificar la sesión de Stripe con expansión de datos relacionados
     const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['subscription']
+      expand: ['subscription', 'line_items']
     });
     
     // Obtener el usuario actual desde la sesión
@@ -2746,6 +2822,12 @@ app.get('/save-user', async (req, res) => {
     reconstructedData.linkedin = metadata.linkedin;
     reconstructedData.perfil_profesional = metadata.perfil_profesional;
     
+    // Información de facturación y extras
+    reconstructedData.billing_interval = metadata.billing_interval || 'monthly';
+    reconstructedData.extra_agentes = parseInt(metadata.extra_agentes || '0');
+    reconstructedData.extra_fuentes = parseInt(metadata.extra_fuentes || '0');
+    reconstructedData.impact_analysis_limit = parseInt(metadata.impact_analysis_limit || '0');
+    
     // Crear current date en formato yyyy-mm-dd
     const currentDate = new Date();
     const yyyy = currentDate.getFullYear();
@@ -2759,6 +2841,15 @@ app.get('/save-user', async (req, res) => {
     reconstructedData.stripe_customer_id = session.customer;
     reconstructedData.stripe_subscription_id = session.subscription?.id;
     reconstructedData.payment_status = session.payment_status;
+    
+    // Información sobre los items comprados
+    if (session.line_items && session.line_items.data) {
+      reconstructedData.purchased_items = session.line_items.data.map(item => ({
+        description: item.description,
+        amount: item.amount_total,
+        currency: item.currency
+      }));
+    }
     
     // Conectar a la base de datos
     const client = new MongoClient(uri, mongodbOptions);
@@ -2785,6 +2876,7 @@ app.get('/save-user', async (req, res) => {
     res.status(500).redirect('/error.html');
   }
 });
+
 
 app.post('/save-free-plan', async (req, res) => {
   const { 
