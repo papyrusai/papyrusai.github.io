@@ -1088,8 +1088,8 @@
         this.disabled = true;
         
         // Obtener los extras de sessionStorage
-        const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
-        const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+        const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '1');
+        const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '3');
         
         // Determinar límites de análisis de impacto según el plan
         let impactAnalysisLimit = 0;

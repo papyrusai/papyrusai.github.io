@@ -361,49 +361,49 @@
             <div id="fuentes-selected" class="selected-tags"></div>
             <div class="dropdown-group">
               <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-fuentes')">Selecciona fuentes legales </button>
-              <div id="cobertura-dropdown-fuentes" class="dropdown-options">
-                <div class="checkbox-item">
-                  <input type="checkbox" id="boe" name="fuentes[]" value="boe" onchange="updateSelected('cobertura')">
-                  <label for="boe">Boletín Oficial del Estado (BOE)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="doue" name="fuentes[]" value="doue" onchange="updateSelected('cobertura')">
-                  <label for="doue">Diario Oficial de la Unión Europea (DOUE)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="bocg" name="fuentes[]" value="bocg" onchange="updateSelected('cobertura')">
-                  <label for="bocg">Boletín Oficial de las Cortes Generales (BOCG)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="boa" name="fuentes[]" value="boa" onchange="updateSelected('cobertura')">
-                  <label for="boa">Boletín Oficial de Aragón (BOA)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="bocyl" name="fuentes[]" value="bocyl" onchange="updateSelected('cobertura')">
-                  <label for="bocyl">Boletín Oficial de Castilla y León (BOCyL)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="bocm" name="fuentes[]" value="bocm" onchange="updateSelected('cobertura')">
-                  <label for="bocm">Boletín Oficial de la Comunidad de Madrid (BOCM)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="dogc" name="fuentes[]" value="dogc" onchange="updateSelected('cobertura')">
-                  <label for="docg">Diario Oficial de la Generalitat Catalana (DOGC)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="dog" name="fuentes[]" value="dog" onchange="updateSelected('cobertura')">
-                  <label for="dog">Diario Oficial de Galicia (DOG)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="boja" name="fuentes[]" value="boja" onchange="updateSelected('cobertura')">
-                  <label for="boja">Boletín Oficial de la Junta de Andalucía (BOJA)</label>
-                </div>
-                <div class="checkbox-item">
-                  <input type="checkbox" id="bopv" name="fuentes[]" value="bopv" onchange="updateSelected('cobertura')">
-                  <label for="bopv">Boletín Oficial del País Vasco (BOPV)</label>
+                <div id="cobertura-dropdown-fuentes" class="dropdown-options">
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="boe" name="fuentes[]" value="boe" onchange="updateSelected('cobertura')">
+                    <label for="boe">Boletín Oficial del Estado (BOE)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="doue" name="fuentes[]" value="doue" onchange="updateSelected('cobertura')">
+                    <label for="doue">Diario Oficial de la Unión Europea (DOUE)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="bocg" name="fuentes[]" value="bocg" onchange="updateSelected('cobertura')">
+                    <label for="bocg">Boletín Oficial de las Cortes Generales (BOCG)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="boa" name="fuentes[]" value="boa" onchange="updateSelected('cobertura')">
+                    <label for="boa">Boletín Oficial de Aragón (BOA)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="bocyl" name="fuentes[]" value="bocyl" onchange="updateSelected('cobertura')">
+                    <label for="bocyl">Boletín Oficial de Castilla y León (BOCyL)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="bocm" name="fuentes[]" value="bocm" onchange="updateSelected('cobertura')">
+                    <label for="bocm">Boletín Oficial de la Comunidad de Madrid (BOCM)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="dogc" name="fuentes[]" value="dogc" onchange="updateSelected('cobertura')">
+                    <label for="docg">Diario Oficial de la Generalitat Catalana (DOGC)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="dog" name="fuentes[]" value="dog" onchange="updateSelected('cobertura')">
+                    <label for="dog">Diario Oficial de Galicia (DOG)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="boja" name="fuentes[]" value="boja" onchange="updateSelected('cobertura')">
+                    <label for="boja">Boletín Oficial de la Junta de Andalucía (BOJA)</label>
+                  </div>
+                  <div class="checkbox-item">
+                    <input type="checkbox" id="bopv" name="fuentes[]" value="bopv" onchange="updateSelected('cobertura')">
+                    <label for="bopv">Boletín Oficial del País Vasco (BOPV)</label>
+                  </div>
                 </div>
               </div>
-            </div>
           </div>
           <div class="form-group">
             <label>Reguladores</label>
@@ -415,6 +415,10 @@
                    <div class="checkbox-item">
                     <input type="checkbox" id="cnmv" name="reguladores[]" value="cnmv" onchange="updateSelected('reguladores')">
                     <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
+                   </div>
+                   <div class="checkbox-item">
+                    <input type="checkbox" id="cnmc" name="reguladores[]" value="cnmc" onchange="updateSelected('reguladores')">
+                    <label for="cnmc">Comisión Nacional de los Mercados y la Competencia (CNMC)</label>
                    </div>
                    <div class="checkbox-item">
                     <input type="checkbox" id="aepd" name="reguladores[]" value="aepd" onchange="updateSelected('reguladores')">

@@ -1892,34 +1892,92 @@ app.get('/index.html', (req, res) => {
 });
 
 // In your server code (app.js)
-app.delete('/api/cancel-subscription', async (req, res) => {
+app.post('/api/cancel-subscription', ensureAuthenticated, async (req, res) => {
   try {
-    // We'll assume your user is in req.user
-    // or maybe in req.session.passport.user, etc.
-    // Example: user => { googleId, email, name, ... }
-    if (!req.user) {
-      return res.status(401).json({ error: 'No user in session' });
+    // Obtener el usuario actual
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ error: 'Usuario no autenticado' });
     }
 
+    // Obtener los datos enviados desde el frontend
+    const { cancel_stripe_subscription, billing_interval, rangos, cobertura_legal, etiquetas_personalizadas } = req.body;
+
+    // Conectar a la base de datos
     const client = new MongoClient(uri, mongodbOptions);
     await client.connect();
     const db = client.db("papyrus");
-    // Instead of deleteOne => we do updateOne with $unset
-    await db.collection('users').updateOne(
-      { _id: new ObjectId(req.user._id) },
-      { 
-        $unset: {
-          googleId: "",
-          email: "",
-          name: ""
-        }
+    const usersCollection = db.collection("users");
+
+    // Obtener los datos actuales del usuario
+    const currentUser = await usersCollection.findOne({ _id: new ObjectId(user._id) });
+    
+    // Verificar si el usuario tiene una suscripción activa en Stripe
+    if (cancel_stripe_subscription && currentUser.stripe_subscription_id) {
+      try {
+        // Cancelar la suscripción en Stripe
+        await stripe.subscriptions.cancel(currentUser.stripe_subscription_id, {
+          prorate: true, // Prorratear el reembolso si es necesario
+        });
+        
+        console.log(`Suscripción ${currentUser.stripe_subscription_id} cancelada en Stripe`);
+      } catch (stripeError) {
+        console.error('Error al cancelar suscripción en Stripe:', stripeError);
+        // Continuamos con la actualización en la base de datos incluso si hay un error en Stripe
       }
+    }
+
+    // Crear current date en formato yyyy-mm-dd
+    const currentDate = new Date();
+    const yyyy = currentDate.getFullYear();
+    const mm = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(currentDate.getDate()).padStart(2, '0');
+    const formattedDate = `${yyyy}-${mm}-${dd}`;
+
+    // Datos a actualizar en la base de datos
+    const updateData = {
+      subscription_plan: 'plan1', // Cambiar a plan gratuito
+      billing_interval: billing_interval || 'suscripción cancelada',
+      rangos: rangos || [],
+      cobertura_legal: cobertura_legal || {
+        'fuentes-gobierno': [],
+        'fuentes-reguladores': []
+      },
+      etiquetas_personalizadas: etiquetas_personalizadas || {},
+      cancellation_date: formattedDate,
+      cancellation_date_obj: currentDate,
+      payment_status: 'canceled',
+      // Resetear los extras
+      extra_agentes: 0,
+      extra_fuentes: 0,
+      impact_analysis_limit: 0
+    };
+
+    // Actualizar el usuario en la base de datos
+    await usersCollection.updateOne(
+      { _id: new ObjectId(user._id) },
+      { $set: updateData }
     );
 
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Error removing user credentials:', err);
-    res.status(500).json({ error: 'Failed to remove user credentials' });
+    await client.close();
+
+    // Enviar respuesta de éxito
+    res.status(200).json({
+      success: true,
+      message: 'Suscripción cancelada correctamente',
+      user: {
+        ...updateData,
+        _id: user._id,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('Error al cancelar suscripción:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al cancelar la suscripción',
+      details: error.message
+    });
   }
 });
 
@@ -2508,7 +2566,7 @@ app.post('/create-checkout-session', async (req, res) => {
     
     // Añadir extra de agentes si corresponde
 // Convertir explícitamente a número y verificar que sea mayor que 0
-const numExtraAgentes = parseInt(extra_agentes) || 1;
+const numExtraAgentes = parseInt(extra_agentes) || 0;
 if (numExtraAgentes > 0) {
   console.log(`Añadiendo ${numExtraAgentes} extras de agentes`); // Para depuración
   lineItems.push({
@@ -2530,7 +2588,7 @@ if (numExtraAgentes > 0) {
 
 // Añadir extra de fuentes si corresponde
 // Convertir explícitamente a número y verificar que sea mayor que 0
-const numExtraFuentes = parseInt(extra_fuentes) || 3;
+const numExtraFuentes = parseInt(extra_fuentes) || 0;
 if (numExtraFuentes > 0) {
   console.log(`Añadiendo ${numExtraFuentes} extras de fuentes`); // Para depuración
   lineItems.push({
@@ -2697,7 +2755,7 @@ const session = await stripe.checkout.sessions.create({
   */
   metadata: metadataChunks,
   success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: 'https://app.papyrus-ai.com/paso1.html',
+  cancel_url: 'https://app.papyrus-ai.com/paso4.html',
 });
 
 res.json({ sessionId: session.id });
@@ -3218,6 +3276,126 @@ app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Actualización de la API existente para incluir los nuevos campos
+app.get('/api/get-user-data', ensureAuthenticated, async (req, res) => {
+  try {
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Return all relevant user information including new fields
+    res.json({
+      name: user.name || '',
+      web: user.web || '',
+      linkedin: user.linkedin || '',
+      perfil_profesional: user.perfil_profesional || '',
+      especializacion: user.especializacion || '',
+      otro_perfil: user.otro_perfil || '',
+      subscription_plan: user.subscription_plan || 'plan1',
+      profile_type: user.profile_type || 'individual',
+      company_name: user.company_name || '',
+      industry_tags: user.industry_tags || [],
+      sub_industria_map: user.sub_industria_map || {},
+      rama_juridicas: user.rama_juridicas || [],
+      sub_rama_map: user.sub_rama_map || {},
+      rangos: user.rangos || [],
+      // Actualización de la estructura de cobertura_legal para separar fuentes y reguladores
+      cobertura_legal: user.cobertura_legal || {
+        fuentes: [],
+        reguladores: []
+      },
+      // Nuevos campos necesarios para el menú de gestión de suscripción
+      etiquetas_personalizadas: user.etiquetas_personalizadas || {},
+      impact_analysis_limit: user.impact_analysis_limit || 0,
+      extra_agentes: user.extra_agentes || 0,
+      extra_fuentes: user.extra_fuentes || 0,
+      payment_status: user.payment_status || '',
+      stripe_customer_id: user.stripe_customer_id || '',
+      stripe_subscription_id: user.stripe_subscription_id || '',
+      billing_interval: user.billing_interval || 'monthly',
+      registration_date: user.registration_date || '',
+      purchased_items: user.purchased_items || []
+    });
+    
+    await client.close();
+  } catch (error) {
+    console.error('Error fetching current user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Nueva API para actualizar los datos del usuario
+app.post('/api/update-user-data', ensureAuthenticated, async (req, res) => {
+  try {
+    // Validar que hay datos para actualizar
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ error: 'No data provided for update' });
+    }
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Campos permitidos para actualización
+    const allowedFields = [
+      'etiquetas_personalizadas',
+      'cobertura_legal',
+      'rangos'
+    ];
+
+    // Filtrar solo los campos permitidos
+    const updateData = {};
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    }
+
+    // Verificar que hay campos válidos para actualizar
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided for update' });
+    }
+
+    // Actualizar el documento del usuario
+    const result = await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Obtener el usuario actualizado
+    const updatedUser = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    
+    await client.close();
+
+    // Devolver los campos actualizados
+    const response = {};
+    for (const field of Object.keys(updateData)) {
+      response[field] = updatedUser[field];
+    }
+
+    res.json({
+      success: true,
+      message: 'User data updated successfully',
+      updated_fields: response
+    });
+  } catch (error) {
+    console.error('Error updating user data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 
 app.post('/save-same-plan2', async (req, res) => {

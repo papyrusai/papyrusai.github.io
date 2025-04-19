@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
 
   <!-- Your existing CSS files -->
@@ -275,7 +276,7 @@
     <ul class="menu">
       <li><a href="https://papyrus-ai.com/">WEB</a></li>
       <li><a href="/profile">PANEL DE CONTROL</a></li>
-      <li> <a href="#" id="editSuscription">EDITAR SUSCRIPCION</a></li>
+      <li> <a href="#" id="editSuscription">CUENTA</a></li>
       <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
     </ul>
   </nav>
@@ -437,7 +438,10 @@
   <script id="userBoletines" type="application/json">{{user_boletines_json}}</script>
   <script id="userRangos" type="application/json">{{user_rangos_json}}</script>
 
-  <script src="editarSuscripcion.js"></script>
+  <!--<script src="editarSuscripcion.js"></script> -->
+  <script src="editarSuscripcion2.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+
 
   <script>
     // --------------------- NAV / HAMBURGER ---------------------
@@ -452,6 +456,7 @@
         menu.classList.remove('active');
       }
     });
+
 
     // --------------------- LOADER / CHART ON LOAD ---------------------
     document.addEventListener("DOMContentLoaded", () => {

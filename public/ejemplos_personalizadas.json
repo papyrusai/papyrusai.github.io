@@ -129,7 +129,204 @@
             "definicion": "Impuestos específicos para la producción, transporte o venta de energía en España."
           }
         ]
-      }
+      },
+     "financiero_regulatorio": {
+   "especializacion": "Fondos de créditos dudosos / NPL",
+  "etiquetas": [
+    {
+      "nombre": "Gestión y compra de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la transferencia, valoración y contabilidad de préstamos dudosos cedidos entre entidades financieras e inversores."
+    },
+    {
+      "nombre": "Due diligence de carteras de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los requisitos de información, confidencialidad y fiabilidad de datos en la revisión previa de carteras de préstamos dudosos."
+    },
+    {
+      "nombre": "Servicing y recuperación de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la externalización y prestación de servicios de cobro, gestión y recuperación de préstamos dudosos."
+    },
+    {
+      "nombre": "Securitización de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la estructuración, emisión y divulgación de titulizaciones respaldadas por préstamos dudosos."
+    },
+    {
+      "nombre": "Coberturas prudenciales sobre préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los colchones de capital y provisiones mínimas que las entidades deben constituir respecto a préstamos dudosos."
+    },
+    {
+      "nombre": "Información al supervisor sobre préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los reportes de morosidad, clasificación de activos y planes de reducción de préstamos dudosos ante autoridades supervisoras."
+    },
+    {
+      "nombre": "Protección de deudores vulnerables",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los derechos de consumidores y pymes en situación de mora frente a prácticas de cobro de préstamos dudosos."
+    },
+    {
+      "nombre": "Reestructuración y refinanciación de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los procedimientos para modificar condiciones contractuales de préstamos dudosos y los incentivos regulatorios asociados."
+    },
+    {
+      "nombre": "Subastas electrónicas de carteras de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la organización, transparencia y elegibilidad en subastas de préstamos dudosos."
+    },
+    {
+      "nombre": "Antiblanqueo y origen de fondos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los controles de prevención de blanqueo de capitales y verificación del origen de fondos en operaciones con préstamos dudosos."
+    },
+    {
+      "nombre": "Gobernanza y outsourcing de funciones",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan las políticas internas, contratos de externalización y supervisión de proveedores en el ciclo de vida de los préstamos dudosos."
+    },
+    {
+      "nombre": "Impacto contable IFRS 9",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la clasificación, medición y registro del deterioro de préstamos dudosos conforme a IFRS 9."
+    },
+    {
+      "nombre": "Fiscalidad de transmisiones de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los efectos impositivos derivados de la compraventa, valoración y cobro de préstamos dudosos."
+    },
+    {
+      "nombre": "Resolución bancaria y préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los mecanismos de resolución y ventas forzosas de carteras de préstamos dudosos en situaciones de crisis bancaria."
+    },
+    {
+      "nombre": "Mercado secundario europeo de préstamos dudosos",
+      "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan el marco de funcionamiento y transparencia de los mercados secundarios de préstamos dudosos."
     }
+  ],
+      "especializacion": "Fondos de inversión en real estate",
+      "etiquetas": [
+        {
+          "nombre": "Constitución y registro de fondos inmobiliarios",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los requisitos de creación, capital mínimo, autorización y registro de fondos de inversión especializados en activos inmobiliarios."
+        },
+        {
+          "nombre": "Políticas de inversión y diversificación inmobiliaria",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los límites de concentración por tipo de activo, ubicación y estrategia que deben respetar los fondos inmobiliarios."
+        },
+        {
+          "nombre": "Valoración y tasación de activos",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los métodos de valoración independientes, periodicidad y criterios de tasación aplicables a los inmuebles del fondo."
+        },
+        {
+          "nombre": "Due diligence inmobiliaria",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan las verificaciones técnicas, urbanísticas, medioambientales y jurídicas exigidas antes de adquirir o aportar inmuebles al fondo."
+        },
+        {
+          "nombre": "Gestión de riesgos y apalancamiento",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los límites de endeudamiento, control de liquidez y análisis de riesgos en la cartera inmobiliaria."
+        },
+        {
+          "nombre": "Publicidad y captación de inversores",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan las obligaciones de veracidad, claridad y advertencias de riesgo en la comercialización de participaciones de fondos inmobiliarios."
+        },
+        {
+          "nombre": "Reporting y transparencia",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la frecuencia, formato y contenido de los informes periódicos que los fondos inmobiliarios deben remitir a inversores y supervisores."
+        },
+        {
+          "nombre": "Gobernanza de sociedades gestoras",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la estructura de órganos de administración, políticas de remuneración y controles internos de las gestoras de fondos inmobiliarios."
+        },
+        {
+          "nombre": "Custodia y depositaría de activos",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan las funciones, responsabilidades y supervisión del depositario encargado de la custodia y vigilancia de los activos del fondo."
+        },
+        {
+          "nombre": "Fiscalidad de fondos inmobiliarios",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la tributación a nivel de fondo, beneficios fiscales y obligaciones de retención sobre las distribuciones a partícipes."
+        },
+        {
+          "nombre": "Distribución de rentas y reembolso",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los criterios de cálculo, plazos y límites para pagar dividendos y atender solicitudes de reembolso en fondos inmobiliarios."
+        },
+        {
+          "nombre": "Sostenibilidad ESG en inversiones inmobiliarias",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la integración de factores medioambientales, sociales y de gobierno corporativo en la estrategia y el reporte de los fondos inmobiliarios."
+        },
+        {
+          "nombre": "Financiación y deuda",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la emisión y gestión de deuda senior, mezzanine u otras formas de financiación empleadas por los fondos inmobiliarios."
+        },
+        {
+          "nombre": "Conflictos de interés y transacciones vinculadas",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la identificación, gestión y divulgación de operaciones entre el fondo inmobiliario y partes vinculadas."
+        },
+        {
+          "nombre": "Liquidación y desinversión de activos inmobiliarios",
+          "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los procedimientos de desinversión, valoración final y reparto del patrimonio en caso de disolución o cierre del fondo."
+        }
+      ]
+    
+    
+  }, "otro":   
+  {
+    "especializacion": "Notario",
+    "etiquetas": [
+      {
+        "nombre": "Autorización de escrituras públicas",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la preparación, redacción y autorización de escrituras públicas ante notario."
+      },
+      {
+        "nombre": "Protocolización de documentos privados",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la incorporación de documentos privados al protocolo notarial para otorgarles fe pública."
+      },
+      {
+        "nombre": "Transmisión de bienes inmuebles",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la formalización notarial de compraventa, donación y otros negocios de transmisión inmobiliaria."
+      },
+      {
+        "nombre": "Constitución y gobierno de sociedades",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la intervención notarial en la constitución, modificaciones estatutarias y órganos de administración de sociedades."
+      },
+      {
+        "nombre": "Préstamos hipotecarios y cancelaciones",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la instrumentación notarial de préstamos garantizados con hipoteca y su cancelación registral."
+      },
+      {
+        "nombre": "Testamentos y sucesiones",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la redacción de testamentos, declaración de herederos y partición de herencias ante notario."
+      },
+      {
+        "nombre": "Actas de presencia y manifestaciones",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la fe pública notarial en actas de presencia, notoriedad y manifestaciones."
+      },
+      {
+        "nombre": "Legalización y apostilla de documentos",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la legitimación de firmas y la expedición de apostillas para documentos notariales."
+      },
+      {
+        "nombre": "Prevención de blanqueo de capitales para notarios",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan las obligaciones de diligencia debida, identificación y reporte de operaciones sospechosas por parte de los notarios."
+      },
+      {
+        "nombre": "Custodia del protocolo notarial",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la conservación, ordenación y acceso al protocolo y los índices notariales."
+      },
+      {
+        "nombre": "Aranceles y honorarios notariales",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan las tarifas, devengo y facturación de los servicios prestados por notarios."
+      },
+      {
+        "nombre": "Responsabilidad civil y disciplina notarial",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan la responsabilidad profesional, seguros obligatorios y régimen sancionador de los notarios."
+      },
+      {
+        "nombre": "Firma y sede electrónica notariales",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan el uso de certificados electrónicos cualificados, copias electrónicas y tramitación telemática en la actividad notarial."
+      },
+      {
+        "nombre": "Protección de datos en el ejercicio notarial",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan el tratamiento, seguridad y confidencialidad de datos personales en documentos y protocolos notariales."
+      },
+      {
+        "nombre": "Resoluciones de la Dirección General de Seguridad Jurídica y Fe Pública",
+        "definicion": "Normativa relacionada con las disposiciones generales y específicas que regulan los criterios interpretativos y directrices emanados de las resoluciones de la Dirección General de Seguridad Jurídica y Fe Pública."
+      }
+    ]
+  }
+
+  } 
+    
   }
   

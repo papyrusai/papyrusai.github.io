@@ -153,17 +153,15 @@
     ]
   },
   "rangos_normativos": [
-    "Legislacion",
-    "Normativa Reglamentaria",
-    "Doctrina Administrativa",
-    "Comunicados, Guias y Directivas de Reguladores",
-    "Decisiones Judiciales",
-    "Normativa Europea",
     "Acuerdos Internacionales",
-    "Anuncios de Concentración de Empresas",
-    "Dictamenes y Opiniones Consultivas",
+    "Normativa Europea",
+    "Legislacion Nacional",
+    "Normativa Reglamentaria",
+    "Decisiones Judiciales",
+    "Doctrina Administrativa",
+    "Comunicados, Guias y Opiniones Consultivas",
     "Consultas Publicas",
-    "Propuestas Legislativas",
+    "Normativa en tramitación",
     "Otras"
   ]
 }

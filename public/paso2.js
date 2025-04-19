@@ -152,51 +152,52 @@ document.addEventListener('DOMContentLoaded', function() {
   
     // 7. Construir el prompt con la nueva sección que muestra el ejemplo personalizado
     return `
-    INSTRUCCIÓN PRINCIPAL: Generar un listado de etiquetas jurídicas junto a sus definiciones para clasificar documentos legales según los intereses de “userData”. Para ello:
-  
-    TAREAS:
-    1. ETIQUETAS PERSONALIZADAS:
-       - Basándote en la información de userData (perfil, especialización, áreas de interés) y en la siguiente plantilla de ejemplos para su perfil, genera un listado de etiquetas que ayude a clasificar documentos legales:
-         EJEMPLO DE PERFIL SIMIILAR (para referencia): 
-         ${ejemploPerfil || "No se encontraron ejemplos personalizados para el perfil indicado."}
-       - Debes adaptar las etiquetas y definiciones de la plantilla al usuario según userData.area_interes y userData.especializacion.
-       - Máximo 15 etiquetas.
-  
-    2. RANGOS (CATÁLOGO CERRADO):
-       - Selecciona los rangos normativos apropiados ÚNICAMENTE de la siguiente lista oficial. No inventes ni modifiques:
-         - ${rangosNormativosCatalogo}
-       - Máximo 5 rangos del listado.
-  
-    Ten en cuenta:
+   INSTRUCCIÓN PRINCIPAL: Generar un listado de etiquetas jurídicas junto a sus definiciones para clasificar documentos legales según los intereses de “userData”Eres un experto jurídico en derecho español, tu respuestas serán especificas para legislación nacional española y europea.
+
+TAREAS:
+1. ETIQUETAS PERSONALIZADAS:
+   - Basándote en la información de userData (perfil, especialización, áreas de interés) y en la siguiente plantilla de ejemplos para su perfil:
+     ${ejemploPerfil || "No se encontraron ejemplos personalizados para el perfil indicado."}
+   - Genera hasta 15 etiquetas que ayuden a clasificar documentos legales y cumplan TODAS estas reglas:
+     • En los casos en que la etiqueta sea muy general, ajusta al área jurídica al sector o actividad del usuario, pero asegurate que en la definicion se incluyen tanto disposiciones generales como específicas que afecten al usuario.  
+       Ej.: «Riesgos legales para un fondo de inversión» (no genérico «Riesgos Legales»).  
+     • No incluyas referencias a fuentes, boletines ni jurisdicciones (BOE, DOUE, UE, etc.).   
+
+2. RANGOS (CATÁLOGO CERRADO):
+   - Selecciona únicamente de la lista oficial:
+     - ${rangosNormativosCatalogo}
+   - Máximo 5 rangos. No inventes ni modifiques.
+
+INFORMACIÓN DEL USUARIO:
+Nombre: ${userData.nombre || 'N/D'}
+Perfiles profesionales: ${userData.perfil ? userData.perfil.join(', ') : 'No especificado'}
+${userData.especializacion ? `Especialización: ${userData.especializacion}` : ''}
+${userData.otro_perfil ? `Otro perfil: ${userData.otro_perfil}` : ''}
+Área de interés: ${userData.area_interes || 'No especificada'}
+Fuentes legales: ${userData.fuentes ? userData.fuentes.join(', ') : 'Ninguna seleccionada'}
+Reguladores: ${userData.reguladores ? userData.reguladores.join(', ') : 'Ninguno seleccionado'}
+
+ Ten en cuenta:
     - Para las “etiquetas_personalizadas”, inspírate en la plantilla de ejemplos (más la información del usuario) sin limitarte al catálogo.
     - Para los “rangos_normativos”, no se puede salir del catálogo ni proponer nuevas entradas.
     - Ajusta la definición de cada etiqueta personalizada al ámbito o áreas de interés del usuario.
-  
-    INFORMACIÓN DEL USUARIO:
-    Nombre: ${userData.nombre || 'N/D'}
-    Perfiles profesionales: ${userData.perfil ? userData.perfil.join(', ') : 'No especificado'}
-    ${userData.especializacion ? `Especialización: ${userData.especializacion}` : ''}
-    ${userData.otro_perfil ? `Otro perfil: ${userData.otro_perfil}` : ''}
-    Área de interés: ${userData.area_interes || 'No especificada'}
-    Fuentes legales: ${userData.fuentes ? userData.fuentes.join(', ') : 'Ninguna seleccionada'}
-    Reguladores: ${userData.reguladores ? userData.reguladores.join(', ') : 'Ninguno seleccionado'}
-  
-    OBJETIVO DE SALIDA:
-    - Devolver SOLO un objeto JSON con la siguiente estructura exacta (sin explicaciones):
-      {
-        "etiquetas_personalizadas": {
-          "etiqueta1": "definicion1",
-          "etiqueta2": "definicion2",
-          ...
-        },
-        "rangos_normativos": ["Rango1", "Rango2", ...]
-      }
-    
-    LÍMITES:
-    - Hasta 15 etiquetas personalizadas
-    - Hasta 5 rangos normativos
-    
-    No incluyas texto adicional fuera del objeto JSON.
+
+OBJETIVO DE SALIDA:
+Devolver SOLO un objeto JSON con la siguiente estructura exacta (sin explicaciones):
+{
+  "etiquetas_personalizadas": {
+    "etiqueta1": "definicion1",
+    "etiqueta2": "definicion2",
+    ...
+  },
+  "rangos_normativos": ["Rango1", "Rango2", ...]
+}
+
+LÍMITES:
+- Hasta 15 etiquetas personalizadas
+- Hasta 5 rangos normativos
+
+No incluyas texto adicional fuera del objeto JSON.
     `;
   }
    
