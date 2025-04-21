@@ -413,7 +413,7 @@ app.get('/auth/google/callback',
       }
 
       // Otherwise normal flow
-      if (existingUser && existingUser.industry_tags && existingUser.industry_tags.length > 0) {
+      if (existingUser) {
         if (req.session.returnTo) {
           const redirectPath = req.session.returnTo;
           req.session.returnTo = null;
