@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "r7ltvtr85q");
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Suscripción - Papyrus</title>
@@ -862,8 +869,8 @@
     // Función para manejar los extras de agentes y fuentes
     function handleExtras() {
   // Obtener valores de sessionStorage
-  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '1');
-  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '3');
+  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
   
   // Primero, eliminar todos los contenedores de extras existentes en TODOS los planes
   const allExtrasContainers = document.querySelectorAll('.extras-container');
@@ -1088,8 +1095,8 @@
         this.disabled = true;
         
         // Obtener los extras de sessionStorage
-        const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '1');
-        const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '3');
+        const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+        const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
         
         // Determinar límites de análisis de impacto según el plan
         let impactAnalysisLimit = 0;

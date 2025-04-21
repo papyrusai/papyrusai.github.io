@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "r7ltvtr85q");
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <title>Profile</title>
@@ -256,11 +263,8 @@
     /* Estilos para agentes */
     .agente-item {
       display: inline-block;
-      background-color: #f0f8ff;
-      border: 1px solid #b8d0e8;
       border-radius: 4px;
-      padding: 5px 10px;
-      margin: 5px;
+      margin-top: 15px;
       font-size: 0.9em;
     }
 
@@ -273,7 +277,9 @@
       margin-left: 5px;
       cursor: help;
       color: #666;
+      display: inline-block; /* Asegura que esté en línea con el texto */
     }
+
 
     .tooltip {
       position: absolute;
@@ -293,19 +299,21 @@
     }
 
     .etiqueta-personalizada-value {
-      display: inline-block;
-      background-color: #e6f7f2;
-      border: 1px solid #b3e6d5;
-      border-radius: 4px;
-      padding: 2px 6px;
-      margin: 2px;
-      font-size: 0.85em;
-      color: #0b2431;
+      box-shadow: 0 2px 4px rgba(4, 219, 141, 0.2);
+      margin: 5px 0;
+      background-color: rgba(4, 219, 141, 0.1); /* #04db8d1a */
+      --tw-text-opacity: 1;
+      color: rgb(4 219 141 / var(--tw-text-opacity));
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
     }
 
-    .etiquetas-personalizadas-values {
-      margin: 5px 0;
-    }
   </style>
 </head>
 <body>
@@ -390,19 +398,20 @@
       <!-- RANGO multi-check -->
       <div class="filter-item">
         <div class="etiquetas-label">Rango</div>
-        <div class="dropdown" style="margin-bottom: 10px;">
+        <div class="dropdown">
           <button class="dropbtn" id="btnRango" onclick="toggleRangoDropdown()">
             <span id="selectedRango">Todos</span>
             <i class="fa fa-caret-down"></i>
           </button>
           <div id="rangoDropdown" class="dropdown-content">
-            <label><input type="checkbox" value="Todos" id="chkAllRango" checked> Todos</label>
+           <!-- <label><input type="checkbox" value="Todos" id="chkAllRango" checked> Todos</label>
             <label><input type="checkbox" value="Leyes" checked> Leyes</label>
             <label><input type="checkbox" value="Reglamentos" checked> Reglamentos</label>
             <label><input type="checkbox" value="Decisiones interpretativas y Reguladores" checked> Decisiones interpretativas y Reguladores</label>
             <label><input type="checkbox" value="Jurisprudencia" checked> Jurisprudencia</label>
             <label><input type="checkbox" value="Ayudas,subvenciones y premios" checked> Ayudas,subvenciones y premios</label>
             <label><input type="checkbox" value="Otras" checked> Otras</label>
+            -->
           </div>
         </div>
       </div>
@@ -493,6 +502,8 @@
       // Inicializar las nuevas funciones
       loadAgentesContainer();
       loadEtiquetasDropdown();
+      loadBoletinDropdown();
+      loadRangoDropdown();
       
       // Cerrar dropdowns al hacer clic fuera de ellos
       document.addEventListener('click', function(event) {
@@ -514,38 +525,75 @@
     });
 
     // --------------------- CHART FUNCTIONS ---------------------
+   
+    let myChart;
     function loadChart(months, counts) {
       const ctx = document.getElementById('documentsChart').getContext('2d');
-      const chart = new Chart(ctx, {
+      if (myChart) {
+        myChart.destroy();
+      }
+      myChart = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: months,
           datasets: [{
-            label: 'Documentos por mes',
+            label: 'Documentos',
             data: counts,
-            backgroundColor: '#04db8d',
             borderColor: '#04db8d',
-            borderWidth: 1
+            backgroundColor: 'rgba(4, 219, 141, 0.2)',
+            borderWidth: 1,
+            fill: true,
+            tension: 0.1,
           }]
         },
         options: {
+          responsive: true,
           scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0
-              }
-            }
-          },
-          plugins: {
-            legend: {
-              display: false
-            }
+            y: { beginAtZero: true }
           }
         }
       });
     }
 
+    /*function loadChart(months, counts) {
+  const ctx = document.getElementById('documentsChart').getContext('2d');
+  
+  // Destruir el gráfico existente si hay uno
+  if (window.documentsChart) {
+   window.documentsChart.destroy();
+  }
+  
+  // Crear el nuevo gráfico
+  window.documentsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: 'Documentos por mes',
+        data: counts,
+        backgroundColor: 'rgba(4, 219, 141, 0.2)',
+        borderColor: 'rgba(4, 219, 141, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            precision: 0
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+}
+*/
     // --------------------- DROPDOWN FUNCTIONS ---------------------
     function toggleIndustryDropdown() {
       document.getElementById("myDropdown").classList.toggle("show");
@@ -587,249 +635,462 @@
       document.getElementById("etiquetasDropdown").classList.remove("show");
     }
 
+
     // --------------------- AGENTES FUNCTIONS ---------------------
     // Función para cargar y mostrar los agentes suscritos (etiquetas personalizadas)
     function loadAgentesContainer() {
-      const agentesContainer = document.getElementById('agentesContainer');
-      if (!agentesContainer) return;
-      
-      // Obtener las etiquetas personalizadas del usuario
-      let etiquetasPersonalizadas = {};
-      try {
-        const userEtiquetasElement = document.getElementById('userEtiquetasPersonalizadas');
-        if (userEtiquetasElement) {
-          etiquetasPersonalizadas = JSON.parse(userEtiquetasElement.textContent || '{}');
-        }
-      } catch (error) {
-        console.error('Error al obtener etiquetas personalizadas:', error);
-        etiquetasPersonalizadas = {};
-      }
-      
-      // Verificar si hay etiquetas personalizadas
-      if (Object.keys(etiquetasPersonalizadas).length === 0) {
-        agentesContainer.innerHTML = '<div class="no-agentes">No tienes agentes configurados. <a href="/paso1.html">Configurar agentes</a></div>';
-        return;
-      }
-      
-      // Crear HTML para mostrar las etiquetas personalizadas
-      let agentesHtml = '';
-      Object.entries(etiquetasPersonalizadas).forEach(([etiqueta, descripcion]) => {
-        agentesHtml += `
-          <div class="agente-item">
-            <span class="agente-nombre">${etiqueta}</span>
-            <span class="agente-descripcion" title="${descripcion}">
-              <i class="fas fa-info-circle"></i>
-            </span>
-          </div>
-        `;
-      });
-      
-      agentesContainer.innerHTML = agentesHtml;
-      
-      // Añadir tooltips para mostrar la descripción al pasar el mouse
-      const tooltips = document.querySelectorAll('.agente-descripcion');
-      tooltips.forEach(tooltip => {
-        tooltip.addEventListener('mouseover', function() {
-          const descripcion = this.getAttribute('title');
-          this.setAttribute('data-title', descripcion);
-          this.removeAttribute('title');
-          
-          const tooltipElement = document.createElement('div');
-          tooltipElement.className = 'tooltip';
-          tooltipElement.textContent = descripcion;
-          document.body.appendChild(tooltipElement);
-          
-          const rect = this.getBoundingClientRect();
-          tooltipElement.style.top = `${rect.bottom + window.scrollY + 5}px`;
-          tooltipElement.style.left = `${rect.left + window.scrollX}px`;
-          
-          this.tooltipElement = tooltipElement;
-        });
-        
-        tooltip.addEventListener('mouseout', function() {
-          if (this.tooltipElement) {
-            document.body.removeChild(this.tooltipElement);
-            this.tooltipElement = null;
-          }
-          
-          const descripcion = this.getAttribute('data-title');
-          this.setAttribute('title', descripcion);
-          this.removeAttribute('data-title');
-        });
-      });
-    }
+  const agentesContainer = document.getElementById('agentesContainer');
+  if (!agentesContainer) return;
+  
+  // Obtener las etiquetas personalizadas del usuario
+  const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
+  const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
+  
+  // Si no hay etiquetas personalizadas, mostrar mensaje
+  if (etiquetasKeys.length === 0) {
+    agentesContainer.innerHTML = '<div class="no-agentes">No hay agentes configurados</div>';
+    return;
+  }
+  
+  // Crear HTML para mostrar las etiquetas personalizadas
+  let agentesHtml = '';
+  Object.entries(etiquetasPersonalizadas).forEach(([etiqueta, descripcion]) => {
+    agentesHtml += `
+      <div class="agente-item">
+        <span class="agente-nombre">${etiqueta}<i class="fas fa-info-circle agente-descripcion" title="${descripcion}"></i></span>
+      </div>
+    `;
+  });
+  
+  agentesContainer.innerHTML = agentesHtml;
+}
 
     // Función para cargar y mostrar las etiquetas personalizadas en el dropdown de búsqueda
     function loadEtiquetasDropdown() {
-      const etiquetasDropdown = document.getElementById('etiquetasDropdown');
-      if (!etiquetasDropdown) return;
+  const etiquetasDropdown = document.getElementById('etiquetasDropdown');
+  if (!etiquetasDropdown) return;
+  
+  // Obtener las etiquetas personalizadas del usuario
+  const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
+  const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
+  
+  // Si no hay etiquetas personalizadas, mostrar mensaje
+  if (etiquetasKeys.length === 0) {
+    etiquetasDropdown.innerHTML = '<div class="no-etiquetas">No hay agentes configurados</div>';
+    return;
+  }
+  
+  // Crear el checkbox "Todos"
+  let html = `<label><input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todos</label>`;
+  
+  // Crear un checkbox para cada etiqueta personalizada
+  etiquetasKeys.forEach(etiqueta => {
+    html += `<label><input type="checkbox" value="${etiqueta}" checked> ${etiqueta}</label>`;
+  });
+  
+  etiquetasDropdown.innerHTML = html;
+  
+  // Añadir event listener al checkbox "Todos"
+  const chkAllEtiquetas = document.getElementById('chkAllEtiquetas');
+  if (chkAllEtiquetas) {
+    chkAllEtiquetas.addEventListener('change', function(event) {
+      // Detener la propagación del evento para evitar que se cierre el dropdown
+      event.stopPropagation();
       
-      // Obtener las etiquetas personalizadas del usuario
-      let etiquetasPersonalizadas = {};
-      try {
-        const userEtiquetasElement = document.getElementById('userEtiquetasPersonalizadas');
-        if (userEtiquetasElement) {
-          etiquetasPersonalizadas = JSON.parse(userEtiquetasElement.textContent || '{}');
-        }
-      } catch (error) {
-        console.error('Error al obtener etiquetas personalizadas:', error);
-        etiquetasPersonalizadas = {};
-      }
-      
-      // Verificar si hay etiquetas personalizadas
-      if (Object.keys(etiquetasPersonalizadas).length === 0) {
-        // Ocultar el contenedor si no hay etiquetas
-        const etiquetasContainer = document.getElementById('etiquetasPersonalizadasContainer');
-        if (etiquetasContainer) {
-          etiquetasContainer.style.display = 'none';
-        }
-        return;
-      }
-      
-      // Mostrar el contenedor de etiquetas
-      const etiquetasContainer = document.getElementById('etiquetasPersonalizadasContainer');
-      if (etiquetasContainer) {
-        etiquetasContainer.style.display = 'block';
-      }
-      
-      // Crear HTML para el dropdown de etiquetas
-      let etiquetasHtml = '<label><input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todas</label>';
-      
-      Object.keys(etiquetasPersonalizadas).forEach(etiqueta => {
-        etiquetasHtml += `
-          <label>
-            <input type="checkbox" value="${etiqueta}" checked> ${etiqueta}
-          </label>
-        `;
+      const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
+      etiquetasCheckboxes.forEach(cb => {
+        cb.checked = this.checked;
       });
+      updateSelectedEtiquetasText();
+    });
+  }
+  
+  // Añadir event listeners a los checkboxes de etiquetas
+  const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
+  etiquetasCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function(event) {
+      // Detener la propagación del evento para evitar que se cierre el dropdown
+      event.stopPropagation();
       
-      etiquetasDropdown.innerHTML = etiquetasHtml;
+      // Verificar si todos los checkboxes están marcados o desmarcados
+      const allChecked = Array.from(etiquetasCheckboxes).every(cb => cb.checked);
+      const noneChecked = Array.from(etiquetasCheckboxes).every(cb => !cb.checked);
       
-      // Añadir event listener para el checkbox "Todas"
-      const chkAllEtiquetas = document.getElementById('chkAllEtiquetas');
+      // Actualizar el checkbox "Todos" según corresponda
       if (chkAllEtiquetas) {
-        chkAllEtiquetas.addEventListener('change', function() {
-          const isChecked = this.checked;
-          const checkboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
-          checkboxes.forEach(checkbox => {
-            checkbox.checked = isChecked;
-          });
-          updateSelectedEtiquetas();
-        });
+        chkAllEtiquetas.checked = allChecked;
+        chkAllEtiquetas.indeterminate = !allChecked && !noneChecked;
       }
       
-      // Añadir event listeners para los checkboxes individuales
-      const checkboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
-      checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-          updateSelectedEtiquetas();
-          
-          // Actualizar el estado del checkbox "Todas"
-          const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-          const someChecked = Array.from(checkboxes).some(cb => cb.checked);
-          
-          if (chkAllEtiquetas) {
-            chkAllEtiquetas.checked = allChecked;
-            chkAllEtiquetas.indeterminate = !allChecked && someChecked;
-          }
-        });
-      });
-    }
+      updateSelectedEtiquetasText();
+    });
+  });
+  
+  // Inicializar el texto seleccionado
+  updateSelectedEtiquetasText();
+}
+   
+// Función para actualizar el texto del botón de etiquetas
+function updateSelectedEtiquetasText() {
+  const etiquetasDropdown = document.getElementById('etiquetasDropdown');
+  const selectedEtiquetasSpan = document.getElementById('selectedEtiquetas');
+  if (!etiquetasDropdown || !selectedEtiquetasSpan) return;
+  
+  const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
+  const selectedEtiquetas = Array.from(etiquetasCheckboxes).filter(cb => cb.checked);
+  
+  if (selectedEtiquetas.length === 0) {
+    selectedEtiquetasSpan.textContent = 'Ninguno';
+  } else if (selectedEtiquetas.length === etiquetasCheckboxes.length) {
+    selectedEtiquetasSpan.textContent = 'Todos';
+  } else if (selectedEtiquetas.length <= 2) {
+    selectedEtiquetasSpan.textContent = selectedEtiquetas.map(cb => cb.value).join(', ');
+  } else {
+    selectedEtiquetasSpan.textContent = `${selectedEtiquetas.length} seleccionados`;
+  }
+}
 
-    // Función para actualizar el texto del botón de etiquetas
-    function updateSelectedEtiquetas() {
-      const etiquetasDropdown = document.getElementById('etiquetasDropdown');
-      const selectedEtiquetasSpan = document.getElementById('selectedEtiquetas');
-      if (!etiquetasDropdown || !selectedEtiquetasSpan) return;
-      
-      const checkboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
-      const checkedEtiquetas = Array.from(checkboxes)
-        .filter(cb => cb.checked)
-        .map(cb => cb.value);
-      
-      if (checkedEtiquetas.length === 0) {
-        selectedEtiquetasSpan.textContent = 'Ninguna';
-      } else if (checkedEtiquetas.length === checkboxes.length) {
-        selectedEtiquetasSpan.textContent = 'Todas';
-      } else if (checkedEtiquetas.length <= 2) {
-        selectedEtiquetasSpan.textContent = checkedEtiquetas.join(', ');
-      } else {
-        selectedEtiquetasSpan.textContent = `${checkedEtiquetas.length} seleccionadas`;
+// Función para mostrar/ocultar el dropdown de etiquetas
+function toggleEtiquetasDropdown(event) {
+  if (event) event.stopPropagation(); // Detener la propagación del evento
+  document.getElementById('etiquetasDropdown').classList.toggle('show');
+}
+
+//---------------------- Boletin functions---------------------
+function loadBoletinDropdown() {
+  const boletinDropdown = document.getElementById('boletinDropdown');
+  if (!boletinDropdown) return;
+  
+  // Obtener las fuentes del usuario (cobertura_legal)
+  const coberturaLegal = JSON.parse(document.getElementById('userBoletines').textContent || '[]');
+  
+  // Crear el checkbox "Todos"
+  let html = `<label><input type="checkbox" value="Todos" id="chkAllBoletin" checked> Todos</label>`;
+  
+  // Añadir BOE por defecto
+  html += `<label><input type="checkbox" value="BOE" checked> BOE</label>`;
+  
+  // Añadir todas las fuentes del array directamente
+  if (Array.isArray(coberturaLegal)) {
+    coberturaLegal.forEach(fuente => {
+      if (fuente !== 'BOE') { // Evitar duplicar BOE
+        html += `<label><input type="checkbox" value="${fuente}" checked> ${fuente.toUpperCase()}</label>`;
       }
-    }
+    });
+  }
+  
+  boletinDropdown.innerHTML = html;
+  
+  // Añadir event listener al checkbox "Todos"
+  const chkAllBoletin = document.getElementById('chkAllBoletin');
+  if (chkAllBoletin) {
+    chkAllBoletin.addEventListener('change', function(event) {
+      // Detener la propagación del evento para evitar que se cierre el dropdown
+      event.stopPropagation();
+      
+      const boletinCheckboxes = boletinDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletin)');
+      boletinCheckboxes.forEach(cb => {
+        cb.checked = this.checked;
+      });
+      updateSelectedBoletinesText();
+    });
+  }
+  
+  // Añadir event listeners a los checkboxes de boletines
+  const boletinCheckboxes = boletinDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletin)');
+  boletinCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function(event) {
+      // Detener la propagación del evento para evitar que se cierre el dropdown
+      event.stopPropagation();
+      
+      // Verificar si todos los checkboxes están marcados o desmarcados
+      const allChecked = Array.from(boletinCheckboxes).every(cb => cb.checked);
+      const noneChecked = Array.from(boletinCheckboxes).every(cb => !cb.checked);
+      
+      // Actualizar el checkbox "Todos" según corresponda
+      if (chkAllBoletin) {
+        chkAllBoletin.checked = allChecked;
+        chkAllBoletin.indeterminate = !allChecked && !noneChecked;
+      }
+      
+      updateSelectedBoletinesText();
+    });
+  });
+  
+  // Inicializar el texto seleccionado
+  updateSelectedBoletinesText();
+}
+function updateSelectedBoletinesText() {
+  const boletinDropdown = document.getElementById('boletinDropdown');
+  const selectedBoletinesSpan = document.getElementById('selectedBoletines');
+  if (!boletinDropdown || !selectedBoletinesSpan) return;
+  
+  const boletinCheckboxes = boletinDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletin)');
+  const selectedBoletines = Array.from(boletinCheckboxes).filter(cb => cb.checked);
+  
+  if (selectedBoletines.length === 0) {
+    selectedBoletinesSpan.textContent = 'Ninguno';
+  } else if (selectedBoletines.length === boletinCheckboxes.length) {
+    selectedBoletinesSpan.textContent = 'Todos';
+  } else if (selectedBoletines.length <= 2) {
+    selectedBoletinesSpan.textContent = selectedBoletines.map(cb => cb.value).join(', ');
+  } else {
+    selectedBoletinesSpan.textContent = `${selectedBoletines.length} seleccionados`;
+  }
+}
+
+// Función para mostrar/ocultar el dropdown de boletines
+function toggleBoletinDropdown(event) {
+  if (event) event.stopPropagation(); // Detener la propagación del evento
+  document.getElementById('boletinDropdown').classList.toggle('show');
+}
+
+
+//------------------------- Rangos --------------------------------
+// Función para cargar los rangos en el dropdown
+
+function loadRangoDropdown() {
+  const rangoDropdown = document.getElementById('rangoDropdown');
+  if (!rangoDropdown) return;
+  
+  // Obtener los rangos del usuario
+  const userRangos = JSON.parse(document.getElementById('userRangos').textContent || '[]');
+  
+  // Crear el checkbox "Todos"
+  let html = `<label><input type="checkbox" value="Todos" id="chkAllRango" checked> Todos</label>`;
+  
+  // Añadir todos los rangos del usuario
+  if (Array.isArray(userRangos)) {
+    userRangos.forEach(rango => {
+      html += `<label><input type="checkbox" value="${rango}" checked> ${rango}</label>`;
+    });
+  }
+  
+  rangoDropdown.innerHTML = html;
+  
+  // Añadir event listener al checkbox "Todos"
+  const chkAllRango = document.getElementById('chkAllRango');
+  if (chkAllRango) {
+    chkAllRango.addEventListener('change', function(event) {
+      // Detener la propagación del evento para evitar que se cierre el dropdown
+      event.stopPropagation();
+      
+      const rangoCheckboxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+      rangoCheckboxes.forEach(cb => {
+        cb.checked = this.checked;
+      });
+      updateSelectedRangoText();
+    });
+  }
+  
+  // Añadir event listeners a los checkboxes de rangos
+  const rangoCheckboxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+  rangoCheckboxes.forEach(cb => {
+    cb.addEventListener('change', function(event) {
+      // Detener la propagación del evento para evitar que se cierre el dropdown
+      event.stopPropagation();
+      
+      // Verificar si todos los checkboxes están marcados o desmarcados
+      const allChecked = Array.from(rangoCheckboxes).every(cb => cb.checked);
+      const noneChecked = Array.from(rangoCheckboxes).every(cb => !cb.checked);
+      
+      // Actualizar el checkbox "Todos" según corresponda
+      if (chkAllRango) {
+        chkAllRango.checked = allChecked;
+        chkAllRango.indeterminate = !allChecked && !noneChecked;
+      }
+      
+      updateSelectedRangoText();
+    });
+  });
+  
+  // Inicializar el texto seleccionado
+  updateSelectedRangoText();
+}
+// Función para actualizar el texto de rangos seleccionados
+function updateSelectedRangoText() {
+  const rangoDropdown = document.getElementById('rangoDropdown');
+  const selectedRangoSpan = document.getElementById('selectedRango');
+  if (!rangoDropdown || !selectedRangoSpan) return;
+  
+  const rangoCheckboxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+  const selectedRangos = Array.from(rangoCheckboxes).filter(cb => cb.checked);
+  
+  if (selectedRangos.length === 0) {
+    selectedRangoSpan.textContent = 'Ninguno';
+  } else if (selectedRangos.length === rangoCheckboxes.length) {
+    selectedRangoSpan.textContent = 'Todos';
+  } else if (selectedRangos.length <= 2) {
+    selectedRangoSpan.textContent = selectedRangos.map(cb => cb.value).join(', ');
+  } else {
+    selectedRangoSpan.textContent = `${selectedRangos.length} seleccionados`;
+  }
+}
+
+// Función para mostrar/ocultar el dropdown de rangos
+function toggleRangoDropdown(event) {
+  if (event) event.stopPropagation(); // Detener la propagación del evento
+  document.getElementById('rangoDropdown').classList.toggle('show');
+}
 
     // --------------------- BÚSQUEDA FUNCTION ---------------------
     function handleBuscar() {
-      // Mostrar loader
-      document.getElementById('loading-icon').style.display = 'block';
-      document.getElementById('loading-icon-chart').style.display = 'block';
-      
-      // Recopilar los valores de los filtros
-      
-      // 1. Etiquetas personalizadas (nuevo filtro principal)
-      let selectedEtiquetas = [];
-      const etiquetasDropdown = document.getElementById('etiquetasDropdown');
-      if (etiquetasDropdown) {
-        const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
-        selectedEtiquetas = Array.from(etiquetasCheckboxes)
-          .filter(cb => cb.checked)
-          .map(cb => cb.value);
+  // Mostrar loader
+  document.getElementById('chartContainer').style.display = 'none';
+  document.getElementById('loading-icon').style.display = 'block';
+  document.getElementById('loading-icon-chart').style.display = 'block';
+  
+  // Recopilar los valores de los filtros
+  
+  // 1. Etiquetas personalizadas (filtro principal)
+  let selectedEtiquetas = [];
+  const etiquetasDropdown = document.getElementById('etiquetasDropdown');
+  
+  // Verificar si está seleccionado "Todos"
+  const allEtiquetasSelected = document.getElementById('chkAllEtiquetas')?.checked;
+  
+  if (allEtiquetasSelected) {
+    // Si "Todos" está seleccionado, usar todas las etiquetas del usuario
+    const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
+    selectedEtiquetas = Object.keys(etiquetasPersonalizadas).map(etiqueta => etiqueta.toLowerCase());
+  } else if (etiquetasDropdown) {
+    // Si no, usar solo las etiquetas seleccionadas
+    const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
+    selectedEtiquetas = Array.from(etiquetasCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value.toLowerCase()); // Convertir a minúsculas para comparación case-insensitive
+  }
+  
+  // Si no hay etiquetas seleccionadas, mostrar mensaje y no realizar la búsqueda
+  if (selectedEtiquetas.length === 0) {
+    document.querySelector('.collectionDocs').innerHTML = `
+      <div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        Por favor, selecciona al menos un agente para realizar la búsqueda.
+      </div>
+    `;
+    document.getElementById('loading-icon').style.display = 'none';
+    document.getElementById('loading-icon-chart').style.display = 'none';
+    
+    // Ocultar los títulos y el contenedor del gráfico
+    const analyticsLabels = document.querySelectorAll('.analytics-label');
+    analyticsLabels.forEach(label => {
+      if (!label.classList.contains('busqueda')) {
+        label.style.display = 'none';
       }
-      
-      // 2. Boletines
-      let selectedBoletines = [];
-      const boletinDropdown = document.getElementById('boletinDropdown');
-      if (boletinDropdown) {
-        const boletinCheckboxes = boletinDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletin)');
-        selectedBoletines = Array.from(boletinCheckboxes)
-          .filter(cb => cb.checked)
-          .map(cb => cb.value);
-      }
-      
-      // 3. Rangos
-      let selectedRangos = [];
-      const rangoDropdown = document.getElementById('rangoDropdown');
-      if (rangoDropdown) {
-        const rangoCheckboxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
-        selectedRangos = Array.from(rangoCheckboxes)
-          .filter(cb => cb.checked)
-          .map(cb => cb.value);
-      }
-      
-      // 4. Fechas
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
-      
-      // Construir la URL con los parámetros de búsqueda
-      let searchParams = new URLSearchParams();
-      
-      // Añadir etiquetas personalizadas (nuevo parámetro principal)
-      if (selectedEtiquetas.length > 0) {
-        searchParams.append('etiquetas', JSON.stringify(selectedEtiquetas));
-      }
-      
-      // Añadir boletines
-      if (selectedBoletines.length > 0) {
-        searchParams.append('boletines', JSON.stringify(selectedBoletines));
-      }
-      
-      // Añadir rangos
-      if (selectedRangos.length > 0) {
-        searchParams.append('rangos', JSON.stringify(selectedRangos));
-      }
-      
-      // Añadir fechas
-      if (startDate) {
-        searchParams.append('startDate', startDate);
-      }
-      if (endDate) {
-        searchParams.append('endDate', endDate);
-      }
-      
-      // Redirigir a la página de búsqueda con los parámetros
-      window.location.href = `/profile?${searchParams.toString()}`;
+    });
+    const chartContainer = document.getElementById('chartContainer');
+    if (chartContainer) {
+      chartContainer.style.display = 'none';
     }
-
+    
+    return;
+  }
+  
+  // 2. Boletines
+  let selectedBoletines = [];
+  const boletinDropdown = document.getElementById('boletinDropdown');
+  if (boletinDropdown) {
+    const boletinCheckboxes = boletinDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletin)');
+    selectedBoletines = Array.from(boletinCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+  }
+  
+  // 3. Rangos
+  let selectedRangos = [];
+  const rangoDropdown = document.getElementById('rangoDropdown');
+  if (rangoDropdown) {
+    const rangoCheckboxes = rangoDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)');
+    selectedRangos = Array.from(rangoCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => cb.value);
+  }
+  
+  // 4. Fechas
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  
+  // Construir la URL con los parámetros de búsqueda
+  let searchParams = new URLSearchParams();
+  
+  // Añadir etiquetas personalizadas
+  if (selectedEtiquetas.length > 0) {
+    searchParams.append('etiquetas', selectedEtiquetas.join('||'));
+  }
+  
+  // Añadir boletines
+  if (selectedBoletines.length > 0) {
+    searchParams.append('collections', selectedBoletines.join('||'));
+  }
+  
+  // Añadir rangos
+  if (selectedRangos.length > 0) {
+    searchParams.append('rango', selectedRangos.join('||'));
+  }
+  
+  // Añadir fechas
+  if (startDate) {
+    searchParams.append('desde', startDate);
+  }
+  if (endDate) {
+    searchParams.append('hasta', endDate);
+  }
+  
+  // Realizar la petición al servidor
+  fetch(`/data?${searchParams.toString()}`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Error en la búsqueda: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      // Actualizar el contenido de documentos
+      document.querySelector('.collectionDocs').innerHTML = data.documentsHtml;
+      
+      // Ocultar o mostrar los títulos de estadísticas y documentos según la respuesta
+      const analyticsLabels = document.querySelectorAll('.analytics-label');
+      const chartContainer = document.getElementById('chartContainer');
+      
+      if (data.hideAnalyticsLabels) {
+        // Ocultar los títulos y el contenedor del gráfico
+        analyticsLabels.forEach(label => {
+          if (!label.classList.contains('busqueda')) {
+            label.style.display = 'none';
+          }
+        });
+        if (chartContainer) {
+          chartContainer.style.display = 'none';
+        }
+      } else {
+        // Mostrar los títulos y el contenedor del gráfico
+        analyticsLabels.forEach(label => {
+          if (!label.classList.contains('busqueda')) {
+            label.style.display = 'block';
+          }
+        });
+        if (chartContainer) {
+          chartContainer.style.display = 'block';
+        }
+        
+        // Si hay datos para el gráfico, actualizarlo
+        if (data.monthsForChart && data.countsForChart) {
+          loadChart(data.monthsForChart, data.countsForChart);
+        }
+      }
+      
+      // Ocultar los loaders
+      document.getElementById('loading-icon').style.display = 'none';
+      document.getElementById('loading-icon-chart').style.display = 'none';
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.querySelector('.collectionDocs').innerHTML = `<div class="no-results">Error al realizar la búsqueda: ${error.message}</div>`;
+      document.getElementById('loading-icon').style.display = 'none';
+      document.getElementById('loading-icon-chart').style.display = 'none';
+    });
+}
+ 
     // --------------------- FEEDBACK FUNCTION ---------------------
     async function sendFeedback(docId, feedbackType, element) {
       try {

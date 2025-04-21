@@ -61,7 +61,7 @@ body {
   color: white;
   padding: 5px 10px;
   border: none;
-  border-radius: 5px;
+  border-radius: 15px;
   cursor: pointer;
   margin-bottom: 2%;
   font-size: 14px;
@@ -69,7 +69,7 @@ body {
 }
 
 .button-impacto:hover {
-  background-color: var(--primary-color); /* Darker blue on hover */
+  background-color: var(--secondary-color); /* Darker blue on hover */
 }
 
 
@@ -117,36 +117,22 @@ body {
 .etiquetas-personalizadas-values,
 .etiquetas-values span,
 .rama-value {
-  margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
   display: inline-flex;
   align-items: center;
   border-radius: 9999px; /* Full rounded corners */
-  padding: 0.25rem 0.75rem; /* Slightly larger padding */
   font-size: 0.875rem; /* Bigger font size from 0.75rem */
   line-height: 1.25rem; /* Adjusted line height */
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
-/* Make etiquetas-personalizadas-values more distinct */
-.etiquetas-personalizadas-values {
-  background-color: var(--primary-color);
-  color: white;
-  border: 2px solid var(--primary-color);
-  box-shadow: 0 2px 4px rgba(4, 219, 141, 0.2);
-}
-
-.etiquetas-personalizadas-values:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(4, 219, 141, 0.3);
-}
 
 /* Style for etiquetas-values span */
 .etiquetas-values span {
   background-color: rgba(69, 88, 98, 0.1); /* Secondary color with transparency */
   --tw-text-opacity: 1;
   color: rgb(69 88 98 / var(--tw-text-opacity)); /* Secondary color text */
+  padding: 3px 10px;
 }
 
 /* Style for rama-value */
@@ -344,7 +330,7 @@ a {
   padding: 2vw;
  /* background-color: #ffffff; */
   border: 1px solid var(--text-color);
-  border-radius: 4px;
+  border-radius: 10px;
   background-color: white;
 }
 
