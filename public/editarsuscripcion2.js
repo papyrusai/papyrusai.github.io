@@ -2598,7 +2598,7 @@ function createSubscriptionModal() {
                   <div class="upgrade-plan-card" id="plan-pro">
                     <div class="plan-header">
                       <h4>Plan Pro</h4>
-                      <p class="price">139€<span>/mes</span></p>
+                      <p class="price">120€<span>/mes</span></p>
                     </div>
                     <div class="plan-features">
                       <ul>

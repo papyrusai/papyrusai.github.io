@@ -643,5 +643,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
   </script>
+  <script>
+    // — Capturar plan y propagar al Paso 2 —
+    const params1 = new URLSearchParams(window.location.search);
+    const plan1 = params1.get('plan') || '';
+  
+    if (plan1) {
+      // 1) Inyectar hidden para que, si el form hace POST, también lo envíe
+      const form = document.getElementById('onboardingForm');
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = 'plan';
+      hidden.value = plan1;
+      form.appendChild(hidden);
+  
+      // 2) Cambiar la action para que incluya ?plan=… al ir a paso2.html
+      form.action = `paso2.html?plan=${encodeURIComponent(plan1)}`;
+    }
+  </script>
+  
 </body>
 </html>

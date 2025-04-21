@@ -150,5 +150,20 @@ document.addEventListener('click', function(event) {
     }
 });
 </script>
+<script>
+  // — Capturar plan y propagar al Paso 3 —
+  const params2 = new URLSearchParams(window.location.search);
+  const plan2 = params2.get('plan') || '';
+  const btn = document.getElementById('btn-continuar');
+
+  btn.addEventListener('click', () => {
+    let url = 'paso3.html';
+    if (plan2) {
+      url += `?plan=${encodeURIComponent(plan2)}`;
+    }
+    window.location.href = url;
+  });
+</script>
+
 </body>
 </html>

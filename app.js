@@ -2214,7 +2214,7 @@ async function sendSubscriptionEmail(user, userData) {
         break;
       case 'plan2':
         planName = 'Pro';
-        planPrice = '220€';
+        planPrice = '120€';
         break;
       case 'plan3':
         planName = 'Enterprise';
@@ -2636,7 +2636,7 @@ app.post('/create-checkout-session', async (req, res) => {
     const basePrices = {
       plan1: { monthly: 0, annual: 0 },
       plan2: { monthly: 6600, annual: 63600 },
-      plan3: { monthly: 13900, annual: 132000 },
+      plan3: { monthly: 12000, annual: 118800 },
       plan4: { monthly: 0, annual: 0 } // Personalizado, se maneja por separado
     };
     

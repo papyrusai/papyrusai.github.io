@@ -103,6 +103,19 @@
   </section>
 
   <script>
+
+     // —————— Capturar el parámetro plan de la URL ——————
+     const urlParams = new URLSearchParams(window.location.search);
+    const userPlan = urlParams.get('plan') || '';
+    // — Propagar plan al login de Google —
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    if (userPlan && googleLoginBtn) {
+      const url = new URL(googleLoginBtn.getAttribute('href'), window.location.origin);
+      url.searchParams.set('plan', userPlan);
+      // mantiene sólo path + query para rutas relativas
+      googleLoginBtn.setAttribute('href', url.pathname + url.search);
+    }
+
     // Toggle between login and registration forms
     function toggleForm() {
       const loginForm = document.getElementById('login-form');
@@ -201,7 +214,11 @@
           return false;
         } else {
           const result = await response.json();
-          window.location.href = result.redirectUrl;
+          let redirectUrl = result.redirectUrl;
+          if (userPlan && redirectUrl.includes('paso1.html')) {
+            redirectUrl += `?plan=${encodeURIComponent(userPlan)}`;
+          }
+          window.location.href = redirectUrl;
         }
       } catch (err) {
         errorDiv.textContent = "Error en el registro. Inténtalo de nuevo.";
@@ -241,7 +258,11 @@
         
         if (response.ok) {
           const result = await response.json();
-          window.location.href = result.redirectUrl;
+          let redirectUrl = result.redirectUrl;
+          if (userPlan && redirectUrl.includes('paso1.html')) {
+            redirectUrl += `?plan=${encodeURIComponent(userPlan)}`;
+          }
+          window.location.href = redirectUrl;
         } else {
           const errorData = await response.json();
           errorDiv.textContent = errorData.error || "No existe un usuario con ese correo, por favor regístrate";
