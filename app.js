@@ -755,6 +755,7 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
 //
 // 3) NORMAL PROFILE
 //
+/*
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
@@ -1176,6 +1177,311 @@ console.log(`Query:`, query);
   } catch (err) {
     console.error('Error connecting to MongoDB', err);
     res.status(500).send('Error retrieving documents');
+  } finally {
+    await client.close();
+  }
+});
+*/
+
+app.get('/profile', async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.redirect('/');
+  }
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Retrieve the logged-in user
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    
+    // Obtener las etiquetas personalizadas del usuario (ahora es un objeto con etiquetas como claves)
+    const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
+    const etiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
+    
+    // Mantener estos valores para compatibilidad con el código existente
+    const userSubRamaMap = user.sub_rama_map || {};
+    const userSubIndustriaMap = user.sub_industria_map || {};
+    const userIndustries = user.industry_tags || [];
+    const userRamas = user.rama_juridicas || [];
+    const userRangos = user.rangos || [
+      "Leyes", "Reglamentos", "Decisiones Interpretativas y Reguladores",
+      "Jurisprudencia", "Ayudas, Subvenciones y Premios", "Otras"
+    ];
+    
+    // Extraer boletines de cobertura_legal
+    let userBoletines = [];
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    }
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    }
+    userBoletines = userBoletines.map(b => b.toUpperCase());
+    if (userBoletines.length === 0) {
+      userBoletines = ["BOE"];
+    }
+
+    // Verificar si el usuario tiene etiquetas personalizadas
+    if (etiquetasKeys.length === 0) {
+      // Preparar HTML con mensaje de error
+      let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
+      profileHtml = profileHtml
+        .replace('{{name}}', user.name || '')
+        .replace('{{email}}', user.email || '')
+        .replace('{{subindustria_map_json}}', JSON.stringify(userSubIndustriaMap))
+        .replace('{{industry_tags_json}}', JSON.stringify(userIndustries))
+        .replace('{{rama_juridicas_json}}', JSON.stringify(userRamas))
+        .replace('{{subrama_juridicas_json}}', JSON.stringify(userSubRamaMap))
+        .replace('{{boeDocuments}}', `<div class="no-results" style="color: red; font-weight: bold; padding: 20px; text-align: center; font-size: 16px;">No tienes agentes configurados. Por favor, edita tu suscripción para configurar tus agentes. ¡Gracias!</div>`)
+        .replace('{{months_json}}', JSON.stringify([]))
+        .replace('{{counts_json}}', JSON.stringify([]))
+        .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
+        .replace('{{start_date}}', JSON.stringify(new Date()))
+        .replace('{{end_date}}', JSON.stringify(new Date()))
+        .replace('{{user_boletines_json}}', JSON.stringify(userBoletines || []))
+        .replace('{{user_rangos_json}}', JSON.stringify(userRangos || []))
+        .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas));
+      
+      // Enviar respuesta y terminar la ejecución
+      return res.send(profileHtml);
+    }
+
+    // Default date range for "profile": from 1 month ago to now
+    const now = new Date();
+    const startDate = new Date();
+    startDate.setMonth(now.getMonth());
+    startDate.setDate(now.getDate()-1);
+    const endDate = now;
+
+    // Obtener parámetros de búsqueda de la URL
+    const { etiquetas, boletines, rangos, startDate: queryStartDate, endDate: queryEndDate } = req.query;
+    
+    // Parsear parámetros si existen
+    const selectedEtiquetas = etiquetas ? JSON.parse(etiquetas) : etiquetasKeys;
+    const selectedBoletines = boletines ? JSON.parse(boletines) : userBoletines;
+    const selectedRangos = rangos ? JSON.parse(rangos) : userRangos;
+    
+    // Parsear fechas si existen
+    const searchStartDate = queryStartDate ? new Date(queryStartDate) : startDate;
+    const searchEndDate = queryEndDate ? new Date(queryEndDate) : endDate;
+
+    // NUEVA CONSULTA: Filtrar principalmente por etiquetas personalizadas
+    const query = {
+      $and: [
+        // Condiciones de fecha (siempre requeridas)
+        { anio: { $gte: searchStartDate.getFullYear() } },
+        {
+          $or: [
+            { anio: { $gt: searchStartDate.getFullYear() } },
+            {
+              anio: searchStartDate.getFullYear(),
+              $or: [
+                { mes: { $gt: searchStartDate.getMonth() } }, //+1
+                {
+                  mes: searchStartDate.getMonth() , //+1
+                  dia: { $gte: searchStartDate.getDate() }
+                }
+              ]
+            }
+          ]
+        },
+        
+        // Condición de fecha final si existe
+        queryEndDate ? {
+          $and: [
+            { anio: { $lte: searchEndDate.getFullYear() } },
+            {
+              $or: [
+                { anio: { $lt: searchEndDate.getFullYear() } },
+                {
+                  anio: searchEndDate.getFullYear(),
+                  $or: [
+                    { mes: { $lt: searchEndDate.getMonth() +1 } },
+                    {
+                      mes: searchEndDate.getMonth() + 1,
+                      dia: { $lte: searchEndDate.getDate() }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        } : { $expr: true },
+        
+        // Filtro por rango (siempre requerido)
+        { rango_titulo: { $in: selectedRangos } },
+        
+        // Filtro por etiquetas personalizadas (principal criterio de búsqueda)
+        {
+          $or: [
+            // Documentos que tienen alguna de las etiquetas personalizadas seleccionadas
+            {
+              [`etiquetas_personalizadas.${user._id.toString()}`]: { 
+                $in: selectedEtiquetas 
+              }
+            },
+            // Si no hay etiquetas seleccionadas, mostrar documentos que coincidan con ramas o industrias
+            selectedEtiquetas.length === 0 ? {
+              $or: [
+                // Opción 1: Documentos que cumplen con ramas jurídicas
+                { 'ramas_juridicas': { $in: userRamas } },
+                
+                // Opción 2: Documentos que cumplen con industrias
+                {
+                  $or: Object.entries(userSubIndustriaMap).flatMap(([industria, subIndustrias]) => 
+                    subIndustrias.map(subIndustria => ({
+                      [`divisiones_cnae.${industria}`]: subIndustria
+                    }))
+                  )
+                }
+              ]
+            } : { $expr: false }
+          ]
+        }
+      ]
+    };
+
+    console.log(`Query:`, JSON.stringify(query, null, 2));
+
+    const projection = {
+      short_name: 1,
+      divisiones_cnae: 1,
+      resumen: 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      url_pdf: 1,
+      ramas_juridicas: 1,
+      rango_titulo: 1,
+      _id: 1,
+      etiquetas_personalizadas: 1,
+    };
+
+    let allDocuments = [];
+    // For each chosen collection => gather docs
+    for (const collectionName of selectedBoletines) {
+      const coll = database.collection(collectionName);
+      const docs = await coll.find(query).project(projection).toArray();
+      docs.forEach(doc => {
+        doc.collectionName = collectionName;
+      });
+      allDocuments = allDocuments.concat(docs);
+    }
+
+    // Sort descending by date
+    allDocuments.sort((a, b) => {
+      const dateA = new Date(a.anio, a.mes - 1, a.dia);
+      const dateB = new Date(b.anio, b.mes - 1, b.dia);
+      return dateB - dateA;
+    });
+
+    // Generar HTML para los documentos
+    let documentsHtml;
+    if (allDocuments.length === 0) {
+      documentsHtml = `<div class="no-results">No hay resultados para esa búsqueda</div>`;
+    } else {
+      documentsHtml = allDocuments.map(doc => {
+        const rangoToShow = doc.rango_titulo || "Indefinido";
+        
+        // Generar HTML para etiquetas personalizadas
+        const etiquetasPersonalizadasHtml = (() => { 
+          // Si el documento no tiene etiquetas personalizadas, devolver cadena vacía
+          if (!doc.etiquetas_personalizadas) return '';
+          
+          // Recopilar todas las etiquetas de todos los usuarios
+          const etiquetasArray = Object.entries(doc.etiquetas_personalizadas)
+            .flatMap(([userId, etiquetas]) => Array.isArray(etiquetas) ? etiquetas : [])
+            .filter(etiqueta => etiqueta); // Eliminar valores vacíos
+          
+          // Si no hay etiquetas, devolver cadena vacía
+          if (etiquetasArray.length === 0) return '';
+          
+          // Usar un Set para eliminar duplicados y convertirlo de nuevo a array
+          const allEtiquetas = [...new Set(etiquetasArray)];
+          
+          // Generar HTML para las etiquetas
+          return `
+            <div class="etiquetas-personalizadas-values">
+              ${allEtiquetas.map(etiqueta => 
+                `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
+              ).join(' ')}
+            </div>
+          `;
+        })();
+        
+        // Generar HTML para el documento
+        return `
+          <div class="data-item">
+            <div class="header-row">
+              <div class="id-values">${doc.short_name}</div>
+              <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+            </div>
+            <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+              ${rangoToShow} | ${doc.collectionName}
+            </div>
+            ${etiquetasPersonalizadasHtml}
+            <div class="resumen-label">Resumen</div>
+            <div class="resumen-content">${doc.resumen}</div>
+            <div class="margin-impacto">
+              <a class="button-impacto" 
+                 href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
+                 Análisis impacto normativo
+              </a>
+            </div>
+            <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>
+            <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
+            <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
+               onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+            <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
+            <span class="doc-rango" style="display:none;">${rangoToShow}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Build chart data (by year-month)
+    const documentsByMonth = {};
+    allDocuments.forEach(doc => {
+      const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
+      documentsByMonth[month] = (documentsByMonth[month] || 0) + 1;
+    });
+
+    // Sort months and prepare data for chart
+    const sortedMonths = Object.keys(documentsByMonth).sort();
+    const monthsForChart = sortedMonths.map(m => {
+      const [year, month] = m.split('-');
+      const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return `${monthNames[parseInt(month) - 1]} ${year}`;
+    });
+    const countsForChart = sortedMonths.map(m => documentsByMonth[m]);
+
+    // Render the profile page with data
+    let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
+    profileHtml = profileHtml
+      .replace('{{name}}', user.name || '')
+      .replace('{{email}}', user.email || '')
+      .replace('{{subindustria_map_json}}', JSON.stringify(userSubIndustriaMap))
+      .replace('{{industry_tags_json}}', JSON.stringify(userIndustries))
+      .replace('{{rama_juridicas_json}}', JSON.stringify(userRamas))
+      .replace('{{subrama_juridicas_json}}', JSON.stringify(userSubRamaMap))
+      .replace('{{boeDocuments}}', documentsHtml)
+      .replace('{{months_json}}', JSON.stringify(monthsForChart))
+      .replace('{{counts_json}}', JSON.stringify(countsForChart))
+      .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
+      .replace('{{start_date}}', JSON.stringify(searchStartDate))
+      .replace('{{end_date}}', JSON.stringify(searchEndDate))
+      .replace('{{user_boletines_json}}', JSON.stringify(selectedBoletines))
+      .replace('{{user_rangos_json}}', JSON.stringify(selectedRangos))
+      .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas));
+
+    res.send(profileHtml);
+  } catch (error) {
+    console.error('Error in profile route:', error);
+    res.status(500).send('Error interno del servidor');
   } finally {
     await client.close();
   }
