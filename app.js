@@ -417,7 +417,7 @@ app.get('/auth/google/callback',
       }
 
       // Otherwise normal flow
-      if (existingUser) {
+      if (user.subscription_plan) {
         if (req.session.returnTo) {
           const redirectPath = req.session.returnTo;
           req.session.returnTo = null;
