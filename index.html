@@ -159,7 +159,7 @@
       }
       
       // Check for at least one special character
-      const specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+      const specialCharRegex = /[^\p{L}\p{N}]/u;
       if (!specialCharRegex.test(password)) {
         errorDiv.textContent = "La contraseña debe contener al menos un carácter especial.";
         return false;

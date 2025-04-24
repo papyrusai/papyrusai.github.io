@@ -321,11 +321,15 @@ app.post('/register', async (req, res) => {
       error: "La contraseña debe tener al menos 7 caracteres."
     });
   }
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+  const specialCharRegex = /[^\p{L}\p{N}]/u;
+
+  if (!specialCharRegex.test(password)) {
     return res.status(400).json({
       error: "La contraseña debe contener al menos un carácter especial."
     });
   }
+
+
 
   const client = new MongoClient(uri, mongodbOptions);
   try {
