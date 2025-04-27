@@ -187,42 +187,6 @@
   border-radius: 20px;
 }
 
-/* ---------- BANNER DE PLAN --------- */
-/* Banner */
-#plan-banner {
-  position: relative;
-  background: var(--secondary-color);
-  border: 1px solid var(--text-color);
-  color: var(--background-color);
-  padding: 12px;
-  text-align: center;
-  margin: 20px 40px;
-  border-radius: 6px;
-}
-#plan-banner button {
-  background: var(--placeholder-color);
-  color: var(--background-color);
-  border: none;
-  padding: 6px 12px;
-  margin-left: 12px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-/* Botón de cierre top‑right */
-.banner-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  color: var(--background-color);
-  cursor: pointer;
-}
-/* reutiliza tu .hidden existente */
-
-
-
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -295,13 +259,6 @@
     <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
   </ul>
   </nav>
-
-    <!-- BANNER DE ACTUALIZACIÓN DE PLAN -->
-    <div id="plan-banner" class="hidden">
-      <button id="banner-close" class="banner-close" aria-label="Cerrar">×</button>
-      <span>Versión gratuita aún en desarrollo, por favor cambia al siguiente plan</span>
-      <button id="upgrade-btn">Actualizar a Starter</button>
-    </div>  
 
   <div class="container">
     <!-- Progress Bar (steps remain as Plan / Perfil / Personalización) -->
@@ -687,50 +644,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
   </script>
   <script>
-    // — Capturar plan y propagar al Paso 2 —
-    const params1 = new URLSearchParams(window.location.search);
-    const plan1 = params1.get('plan') || '';
-  
-    if (plan1) {
-      // 1) Inyectar hidden para que, si el form hace POST, también lo envíe
-      const form = document.getElementById('onboardingForm');
-      const hidden = document.createElement('input');
-      hidden.type = 'hidden';
-      hidden.name = 'plan';
-      hidden.value = plan1;
-      form.appendChild(hidden);
-  
-      // 2) Cambiar la action para que incluya ?plan=… al ir a paso2.html
-      form.action = `paso2.html?plan=${encodeURIComponent(plan1)}`;
-    }
-  </script>
-  <script>
-    // — Mostrar banner y manejar “Actualizar” en Paso 1 —
-   
-    const banner       = document.getElementById('plan-banner');
-    const upgradeBtn   = document.getElementById('upgrade-btn');
-    const form         = document.getElementById('onboardingForm');
-    const planInput    = form.querySelector('input[name="plan"]');
-    console.log(plan1);
-  
-    if (plan1 === 'plan1') {
-      // 1) enseñamos el banner
-      banner.classList.remove('hidden');
-    }
-  
-    upgradeBtn.addEventListener('click', () => {
-      // 2) actualizamos a plan=2
-      const newPlan = 'plan2';
-      planInput.value         = newPlan;
-      form.action             = `paso2.html?plan=${newPlan}`;
-      // 3) actualizamos la URL del navegador
-      window.history.replaceState(null, '', `${window.location.pathname}?plan=${newPlan}`);
-      // 4) ocultamos el banner
-      banner.classList.add('hidden');
-    });
-  </script>
-  
+    /* -------------   plan-helper universal   ------------- */
+    (function(){
+      /* ① capturar de la URL y guardar */
+      const qs   = new URLSearchParams(location.search);
+      const plan = qs.get('plan');
+      if (plan) sessionStorage.setItem('current_plan', plan);
+    
+      /* ② expone una función global para obtenerlo */
+      window.getCurrentPlan = () =>
+        sessionStorage.getItem('current_plan') || '';
+    
+      /* ③ expone una función para crear links al siguiente paso */
+      window.buildNextURL = (file, extraQuery = '') => {
+          const p = getCurrentPlan();
+          let url = file;
+          if (p) url += `?plan=${encodeURIComponent(p)}`;
+          if (extraQuery) url += (url.includes('?') ? '&' : '?') + extraQuery;
+          return url;
+      };
+    })();
+    </script>
+    
+    <script>
+      /* --- enviar a Paso 2 usando el helper --- */
+      document.getElementById('onboardingForm').addEventListener('submit', e =>{
+        e.preventDefault();
+        location.href = buildNextURL('paso2.html');
+      });
+      </script>
+      
+</script>
 
-  
 </body>
 </html>

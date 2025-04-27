@@ -404,7 +404,109 @@
         }
       }
 
+/* ░░ BANNERS PLAN / ÉXITO ░░ */
+.plan-banner,
+.success-banner{
+  position:fixed;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  max-width:420px;          /* un poco más ancho */
+  padding:24px 28px 30px;
+  border-radius:14px;
+  z-index:9999;
+  box-shadow:0 8px 26px rgba(0,0,0,.35);
+}
+.plan-banner{
+  background:#fff;          /* fondo blanco */
+  color:var(--text-color);  /* texto oscuro */
+  border:2px solid var(--secondary-color);
+}
+.success-banner{
+  background: #dbfff2;         /* primary, muy suave */
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  text-align:center;
+}
+.hidden{display:none;}
 
+.close-btn{
+  position:absolute;
+  top:6px; right:8px;
+  background:none;
+  border:none;
+  font-size:20px;
+  line-height:20px;
+  color:inherit;
+  cursor:pointer;
+}
+
+.opcion{
+  margin-top: 12px;
+    background:#e0e0e091;
+    padding: 10px 30px;
+    border-radius: 20px;
+    border: 1px solid var(--secondary-color);
+}
+.opcion.separador{padding-top:12px;}
+
+.counter{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:8px 0;
+  margin-right: 8px;
+  color:var(--active-color);
+}
+.counter button{
+  width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 4px;
+    background: var(--secondary-color);
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+.counter span{min-width:20px;text-align:center;font-size:16px;font-weight: 900;}
+
+.plan-banner .action-btn{
+  background: var(--secondary-color);
+    padding: 5px 10px;
+    color: #fff;
+    border-radius: 15px;
+    border: none;
+    margin: 8px 0px;
+}
+.plan-banner .action-btn:hover{
+  background-color: var(--active-color);
+  cursor:pointer;
+  
+}
+.description{
+  font-style: italic;
+    font-size: 14px;
+}
+.pay-btn{
+  margin-top:10px;
+  background:var(--primary-color);
+  color:#fff;
+  border:none;
+  padding:8px 18px;
+  border-radius:20px;
+  cursor:pointer;
+  font-weight:600;
+}
+.tick{font-size:20px;margin-right:6px;}
+/* ---------- Backdrop ---------- */
+.modal-backdrop{
+  position:fixed;
+  inset:0;                       /* top:0 right:0 bottom:0 left:0 */
+  background:rgba(0,0,0,.45);    /* oscurece */
+  backdrop-filter:blur(3px);     /* desenfoca */
+  z-index:9998;                  /* justo por debajo del banner */
+}
+.hidden{display:none !important;}
 
     /* ------------Mobile Responsive CSS for Personalization Form -------------- */
 /* Mobile Responsive CSS for Personalization Form */
@@ -794,8 +896,46 @@
       <!-- Hidden inputs to store data for paso4 -->
         <input type="hidden" id="fuentesGobiernoInput" value="[]">
         <input type="hidden" id="fuentesReguladoresInput" value="[]">
+  
+<!-- capa oscura + blur -->
+<div id="backdrop" class="modal-backdrop hidden"></div>
+  <!-- ░░ Banner de validación de fuentes ░░ -->
+<div id="plan-check-banner" class="plan-banner hidden">
+  <button class="close-btn" id="banner-close">×</button>
+
+  <p class="banner-msg">
+    El plan Start solo incluye 1 fuente oficial.<br>
+    Por favor deselecciona <strong id="deficit-count">0</strong> fuente(s) o mejora tu plan:
+  </p>
+
+  <!-- Opción 1 ░ extras -->
+  <div class="opcion" id="extra-box">
+    <span id="extra-title"> <strong>Añadir fuente oficial </strong></span>
+    <div id="extra-desc" class="description">+15€/fuente</div>
+    <div class="counter">
+      <button id="minus-extra">−</button>
+      <span id="extra-counter">0</span>
+      <button id="plus-extra">+</button>
+    </div>
+    <button id="confirm-extras" class="action-btn">Confirmar extras</button>
+  </div>
+
+  <!-- Opción 2 ░ mejorar plan -->
+
+<div class="opcion separador" id="upgrade-box">
+  <span id="upgrade-title"><strong>Mejorar al plan Pro</strong></span>
+  <div id="upgrade-desc" class="description">Incluye 5 fuentes y hasta 12 agentes</div>
+  <button id="upgrade-plan" class="action-btn">Mejorar plan</button>
+</div>
+
 
   </div> <!-- Cierre de form-content -->
+  <!-- ░░ Banner de éxito ░░ -->
+<div id="success-banner" class="success-banner hidden">
+  <button class="close-btn" id="success-close">×</button>
+  <p><span class="tick">✔</span> Suscripción actualizada correctamente</p>
+  <button id="go-payment" class="pay-btn">Proceder a pago →</button>
+</div>
   </div>
   <script src="paso3.js"></script>
   <script>
@@ -813,5 +953,236 @@ document.addEventListener('click', function(event) {
     }
 });
 </script>
+<script>
+  /* -------------   plan-helper universal   ------------- */
+  (function(){
+    /* ① capturar de la URL y guardar */
+    const qs   = new URLSearchParams(location.search);
+    const plan = qs.get('plan');
+    if (plan) sessionStorage.setItem('current_plan', plan);
+  
+    /* ② expone una función global para obtenerlo */
+    window.getCurrentPlan = () =>
+      sessionStorage.getItem('current_plan') || '';
+  
+    /* ③ expone una función para crear links al siguiente paso */
+    window.buildNextURL = (file, extraQuery = '') => {
+        const p = getCurrentPlan();
+        let url = file;
+        if (p) url += `?plan=${encodeURIComponent(p)}`;
+        if (extraQuery) url += (url.includes('?') ? '&' : '?') + extraQuery;
+        return url;
+    };
+  })();
+  </script>
+<script>
+  /* CONTROL DE FUENTES SEGÚN PLAN */
+  const urlP          = new URLSearchParams(window.location.search);
+  let   userPlan  = getCurrentPlan();
+  let   extraSources  = 0;                           // extras contratados
+  
+  /* refs */
+  const banner        = document.getElementById('plan-check-banner');
+  const successBan    = document.getElementById('success-banner');
+  const deficitSpan   = document.getElementById('deficit-count');
+  const extraCntSpan  = document.getElementById('extra-counter');
+  const plusBtn       = document.getElementById('plus-extra');
+  const minusBtn      = document.getElementById('minus-extra');
+  const confirmBtn    = document.getElementById('confirm-extras');
+  const upgradeBtn    = document.getElementById('upgrade-plan');
+  const closeBtn      = document.getElementById('banner-close');
+  const successClose  = document.getElementById('success-close');
+  const goPayBtn      = document.getElementById('go-payment');
+  const extraBox   = document.getElementById('extra-box');
+  const extraTitle = document.getElementById('extra-title');
+  const extraDesc  = document.getElementById('extra-desc');
+  /* justo donde están el resto de globals del banner */
+let currentDeficit = 0;          // déficit que mostramos al usuario
+
+
+  /* refs adicionales */
+const backdrop = document.getElementById('backdrop');
+
+/* ─── límites por plan ───────────────────────────────────────── */
+const PLAN_LIMITS = {
+  plan2 : { fuentes: 1 , agentes: 5  },   // Start
+  plan3 : { fuentes: 3 , agentes: 12 }    // Pro
+};
+
+/* ─── refs dinámicos del banner ─────────────────────────────── */
+const upgradeBox   = document.getElementById('upgrade-box');
+const upgradeTitle = document.getElementById('upgrade-title');
+const upgradeDesc  = document.getElementById('upgrade-desc');
+  
+
+  /* — función para contar fuentes seleccionadas — */
+  function totalFuentesSeleccionadas(){
+  const u = JSON.parse(sessionStorage.getItem('userData')) || {};
+  return (u.fuentes||[]).length + (u.reguladores||[]).length;
+}
+function totalAgentesSeleccionados(){
+  const e = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')) || {};
+  return Object.keys(e.etiquetas_personalizadas || {}).length;
+}
+  
+  /* — mostrar banner con déficit — */
+  function showBanner(deficit){
+  currentDeficit   = deficit;  
+  deficitSpan.textContent = deficit;
+  extraSources   = 0;
+  extraCntSpan.textContent = extraSources;
+
+  /* --- configurar textos según modo & plan --- */
+  if (bannerMode === 'fuentes'){
+    banner.querySelector('.banner-msg').innerHTML =
+      `Tu plan actual solo incluye ${PLAN_LIMITS[userPlan].fuentes} fuente(s).<br>
+       Por favor deselecciona <strong id="deficit-count">${deficit}</strong> fuente(s) o mejora tu plan:`;
+    extraTitle.innerHTML = '<strong>Añadir fuente oficial</strong>';
+    extraDesc.textContent = '+15€/fuente';
+
+    upgradeTitle.innerHTML = (userPlan === 'plan2')
+        ? '<strong>Mejorar al plan Pro</strong>'
+        : '<strong>Mejorar al plan Enterprise</strong>';
+
+    upgradeDesc.textContent = (userPlan === 'plan2')
+        ? 'Incluye 5 fuentes y hasta 12 agentes'
+        : 'Solución personalizada adaptada a tus necesidades';
+
+    upgradeBtn.textContent  = (userPlan === 'plan2') ? 'Mejorar plan' : 'Contactar ventas';
+  }else{ // agentes
+    banner.querySelector('.banner-msg').innerHTML =
+      `Tu plan actual solo permite ${PLAN_LIMITS[userPlan].agentes} agente(s).<br>
+       Por favor deselecciona <strong id="deficit-count">${deficit}</strong> agente(s) o mejora tu plan:`;
+
+    extraTitle.innerHTML = '<strong>Añadir agente extra</strong>';
+    extraDesc.textContent = '+50€/mes (paquete de 10 agentes)';
+
+    upgradeTitle.innerHTML = (userPlan === 'plan2')
+        ? '<strong>Mejorar al plan Pro</strong>'
+        : '<strong>Mejorar al plan Enterprise</strong>';
+
+    upgradeDesc.textContent = (userPlan === 'plan2')
+        ? 'Incluye 5 fuentes y hasta 12 agentes'
+        : 'Solución personalizada adaptada a tus necesidades';
+
+    upgradeBtn.textContent  = (userPlan === 'plan2') ? 'Mejorar plan' : 'Contactar ventas';
+  }
+
+  banner.classList.remove('hidden');
+  backdrop.classList.remove('hidden');
+}
+  
+  /* — oculta ambos banners — */
+  function hideBanners(){
+  banner.classList.add('hidden');
+  successBan.classList.add('hidden');
+  backdrop.classList.add('hidden');
+}
+  
+  /* ---------- validaciones ---------- */
+  function validateFuentes (){
+
+const extrasYaContratados = Number(sessionStorage.getItem('extra_fuentes')||0);
+const max   = PLAN_LIMITS[userPlan].fuentes + extrasYaContratados;
+const total = totalFuentesSeleccionadas();
+
+if (total <= max) return true;
+
+bannerMode = 'fuentes';
+showBanner(total - max);
+return false;
+}
+
+function validateAgentes(){
+  const max   = PLAN_LIMITS[userPlan].agentes;
+  const total = totalAgentesSeleccionados();
+  if (total <= max) return true;
+
+  bannerMode = 'agentes';
+  showBanner(total - max);
+  return false;
+}
+  
+  /* ░░ EVENTOS DEL BANNER ░░ */
+  plusBtn.addEventListener('click',()=>{
+    extraSources++; extraCntSpan.textContent = extraSources;
+  });
+  minusBtn.addEventListener('click',()=>{
+    if (extraSources>0){extraSources--; extraCntSpan.textContent = extraSources;}
+  });
+  
+ /* ░░ botón CONFIRMAR EXTRAS ░░ */
+confirmBtn.addEventListener('click', () => {
+
+/* ── ¿cubre el déficit? ───────────────────────────── */
+const cubreDeficit = (bannerMode === 'fuentes')
+    ?  extraSources               >= currentDeficit          // 1 extra = 1 fuente
+    : (extraSources * 10)         >= currentDeficit;         // 1 extra = 10 agentes
+
+if (!cubreDeficit){
+    /* nº mínimos que debe seleccionar el usuario */
+    const minExtras = (bannerMode === 'fuentes')
+          ? currentDeficit
+          : Math.ceil(currentDeficit / 10);
+    alert(`Selecciona mínimo ${minExtras} extra(s)`); 
+    return;
+}
+
+/* ── guardar y avanzar ───────────────────────────── */
+if (bannerMode === 'fuentes'){               // ---- FUENTES ----
+    sessionStorage.setItem('extra_fuentes', extraSources);
+    hideBanners();                           // cierra modal
+    confirmarSeccion();                      // → siguiente sub-paso
+}else{                                       // ---- AGENTES ----
+    sessionStorage.setItem('extra_agentes', extraSources * 10);
+    hideBanners();
+    confirmarSeccion();
+    banner.classList.add('hidden');
+    successBan.classList.remove('hidden');   // mantiene banner de éxito
+}
+});
+
+
+  
+  /* Mejorar plan */
+  /* click en upgrade (Pro o Enterprise) */
+
+  upgradeBtn.addEventListener('click', () => {
+    /* Start → Pro (o cualquier otro cambio local) */
+    if (userPlan === 'plan2'){
+        userPlan = 'plan3';
+        urlP.set('plan','plan3');
+        sessionStorage.setItem('current_plan','plan3');
+        window.history.replaceState(null,'',`${location.pathname}?${urlP.toString()}`);
+    }
+    else{                                     // Enterprise → abre enlace
+          window.open('https://calendar.google.com/calendar/u/0/appointments/' +
+                      'schedules/AcZssZ1WN1IhU22dyAFucB4mXPHcgF-5WKU57UAVbkMGuiAVfDRvLcKyLY14oKB8Il6siszUXya8T4Jt',
+                      '_blank');
+      }
+    hideBanners();
+
+    if (bannerMode === 'fuentes'){           // después de subir plan no hay éxito
+        confirmarSeccion();                  // → siguiente sub-paso
+    }else{                                   // agentes sí mantienen banner verde
+        successBan.classList.remove('hidden');
+    }
+});
+  
+  /* Proceder a pago */
+  goPayBtn.addEventListener('click',()=>{
+    let url = 'paso4.html';
+    if(userPlan) url += `?plan=${userPlan}`;
+    if(sessionStorage.getItem('extra_fuentes')){
+      url += (url.includes('?')?'&':'?') + `extra_fuentes=${sessionStorage.getItem('extra_fuentes')}`;
+    }
+    window.location.href = url;
+  });
+  
+  /* cierres de banners */
+  closeBtn.addEventListener('click', hideBanners);
+  successClose.addEventListener('click', hideBanners);
+  </script>
+    
 </body>
 </html>

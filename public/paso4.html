@@ -491,7 +491,7 @@
 /* Estilos para los extras */
 .extras-container {
   margin-top: 15px;
-  border-top: 1px dashed #e0e0e0;
+ /* border-top: 1px dashed #e0e0e0;*/
   padding-top: 15px;
 }
 
@@ -682,6 +682,7 @@
 
       <div class="plans-container">
         <!-- Plan Free -->
+         <!--
         <div class="plan-box" data-value="plan1">
           <div class="plan-badge" style="display: none;"></div>
           <h3>Free</h3>
@@ -701,7 +702,7 @@
             <li><i class="fa fa-times feature-excluded"></i> Análisis de impacto</li>
           </ul>
         </div>
-        
+        -->
         <!-- Plan Starter -->
         <div class="plan-box" data-value="plan2">
           <div class="plan-badge" style="display: none;"></div>
@@ -896,7 +897,7 @@
   if (extraAgentes > 0) {
     const agenteExtra = document.createElement('div');
     agenteExtra.className = 'plan-extra';
-    agenteExtra.innerHTML = `<span style="color: rgb(245, 158, 11); margin-right: 8px;">+</span> Extra de 12 agentes personalizados (+50€)`;
+    agenteExtra.innerHTML = `<span style="color: rgb(245, 158, 11); margin-right: 8px;">+</span> Extra de 10 agentes personalizados (+50€)`;
     extrasContainer.appendChild(agenteExtra);
   }
   

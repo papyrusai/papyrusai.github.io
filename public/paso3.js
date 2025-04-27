@@ -520,7 +520,13 @@ function confirmarSeccion() {
   const submenuItems = document.querySelectorAll('.submenu-item');
   submenuItems[currentStep].classList.add('done');
   submenuItems[currentStep].classList.remove('active');
-  currentStep++;
+ 
+   /* ── validaciones contextuales ── */
+   if (currentStep === 0 && !validateFuentes())  return; // sección “Fuentes”
+   if (currentStep === 2 && !validateAgentes())  return; // sección “Agentes”
+
+   currentStep++;
+
   if (currentStep >= submenuItems.length) {
     finalizarOnboarding();
     return;

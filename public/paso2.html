@@ -151,19 +151,42 @@ document.addEventListener('click', function(event) {
 });
 </script>
 <script>
-  // — Capturar plan y propagar al Paso 3 —
-  const params2 = new URLSearchParams(window.location.search);
-  const plan2 = params2.get('plan') || '';
-  const btn = document.getElementById('btn-continuar');
+  /* botón Continuar */
+  document.getElementById('btn-continuar').addEventListener(
+    'click', () => location.href = buildNextURL('paso3.html')
+  );
+  </script>
+  
+<script>
+  /* botón Continuar */
+  document.getElementById('btn-continuar').addEventListener(
+    'click', () => location.href = buildNextURL('paso3.html')
+  );
+  </script>
+  <script>
+    /* -------------   plan-helper universal   ------------- */
+    (function(){
+      /* ① capturar de la URL y guardar */
+      const qs   = new URLSearchParams(location.search);
+      const plan = qs.get('plan');
+      if (plan) sessionStorage.setItem('current_plan', plan);
+    
+      /* ② expone una función global para obtenerlo */
+      window.getCurrentPlan = () =>
+        sessionStorage.getItem('current_plan') || '';
+    
+      /* ③ expone una función para crear links al siguiente paso */
+      window.buildNextURL = (file, extraQuery = '') => {
+          const p = getCurrentPlan();
+          let url = file;
+          if (p) url += `?plan=${encodeURIComponent(p)}`;
+          if (extraQuery) url += (url.includes('?') ? '&' : '?') + extraQuery;
+          return url;
+      };
+    })();
+    </script>
+    
 
-  btn.addEventListener('click', () => {
-    let url = 'paso3.html';
-    if (plan2) {
-      url += `?plan=${encodeURIComponent(plan2)}`;
-    }
-    window.location.href = url;
-  });
-</script>
 
 </body>
 </html>
