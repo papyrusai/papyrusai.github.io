@@ -363,7 +363,7 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
         <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
       </div>
 
-      <p>Hola ${userName}, a continuación te resumimos las novedades regulatorias de tus alertas normativas suscritas del día <strong>${dateString}</strong>:</p>
+      <p>Hola ${userName}, a continuación te resumimos las novedades normativas de tu interés del día <strong>${dateString}</strong>:</p>
 
       ${summarySection}
 
@@ -1024,6 +1024,14 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       });
 
       // 5) Build HTML
+
+            // if it’s our special email and there are NO alerts today, skip entirely
+      const isEaz = user.email.toLowerCase() === 'eaz@ayuelajimenez.es';
+      if (isEaz && finalGroups.length === 0) {
+        console.log(`Skipping email for ${user.email} – no matches today.`);
+        continue;  // jump to next user, no template, no sendMail
+      }
+
       let htmlBody = '';
       if (!finalGroups.length) {
         // No matches => get BOE documents with seccion = "Disposiciones generales"
@@ -1045,7 +1053,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
           }));
           
           htmlBody = buildNewsletterHTMLNoMatches(
-            user.name,
+            user.name || '',
             user._id.toString(),
             moment().format('YYYY-MM-DD'),
             boeDocsWithCollection
@@ -1054,7 +1062,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
           console.warn(`Error retrieving BOE general docs: ${err}`);
           // If all else fails, show empty
           htmlBody = buildNewsletterHTMLNoMatches(
-            user.name,
+            user.name || '',
             user._id.toString(),
             moment().format('YYYY-MM-DD'),
             []
@@ -1062,7 +1070,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         }
       } else {
         htmlBody = buildNewsletterHTML(
-          user.name,
+          user.name || '',
           user._id.toString(),
           moment().format('YYYY-MM-DD'),
           finalGroups

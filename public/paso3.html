@@ -979,6 +979,13 @@ document.addEventListener('click', function(event) {
   /* CONTROL DE FUENTES SEGÚN PLAN */
   const urlP          = new URLSearchParams(window.location.search);
   let   userPlan  = getCurrentPlan();
+  /* ── fallback si el usuario todavía no ha elegido plan ───────── */
+  if (!userPlan || !PLAN_LIMITS[userPlan]) {
+    /* asignamos plan Start (plan2) como valor por defecto         */
+    userPlan = 'plan2';
+    sessionStorage.setItem('current_plan', 'plan2');  // lo guardamos para el resto del onboarding
+  }
+
   let   extraSources  = 0;                           // extras contratados
   
   /* refs */
@@ -1081,7 +1088,8 @@ function totalAgentesSeleccionados(){
   
   /* ---------- validaciones ---------- */
   function validateFuentes (){
-
+console.log(userPlan);
+if (!PLAN_LIMITS[userPlan]) return true;
 const extrasYaContratados = Number(sessionStorage.getItem('extra_fuentes')||0);
 const max   = PLAN_LIMITS[userPlan].fuentes + extrasYaContratados;
 const total = totalFuentesSeleccionadas();
@@ -1094,6 +1102,7 @@ return false;
 }
 
 function validateAgentes(){
+  if (!PLAN_LIMITS[userPlan]) return true;
   const max   = PLAN_LIMITS[userPlan].agentes;
   const total = totalAgentesSeleccionados();
   if (total <= max) return true;
