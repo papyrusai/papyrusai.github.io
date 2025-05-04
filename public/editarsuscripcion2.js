@@ -948,7 +948,7 @@ function createAgentsSection() {
       agentsContent += `
         <div class="no-agents-message">
           <p>Hemos actualizado nuestro sistema de agentes. Aún no tienes agentes personalizados configurados.</p>
-          <button class="redirect-button" onclick="window.location.href='https://app.papyrus-ai.com/paso1.html'">
+          <button class="redirect-button" onclick="window.location.href='https://app.reversa.ai/paso1.html'">
             Configurar Agentes
           </button>
         </div>

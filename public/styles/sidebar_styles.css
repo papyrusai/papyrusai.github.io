@@ -1,0 +1,139 @@
+
+/* === ESTILOS PARA EL NUEVO MENÚ LATERAL Y LAYOUT === */
+
+/* Contenedor principal que envuelve el menú y el contenido */
+.profile-container {
+    display: flex;
+    /* Ajusta el padding-top si la navbar tiene altura fija */
+    /* padding-top: 60px;  Ejemplo si la navbar mide 60px */
+    margin-top: 0; /* Sobrescribe el margin del body si es necesario */
+  }
+  
+  /* Menú Lateral Fijo */
+  #sidebar {
+    width: 240px; /* Ancho del menú lateral */
+    position: fixed; /* Fijo en la pantalla */
+    left: 0;
+    top: 0; /* Ajusta si tienes una navbar fija arriba. Ejemplo: top: 60px; */
+    bottom: 0;
+    background-color: var(--secondary-color, #455862); /* Color oscuro, usa variable CSS si existe */
+    overflow-y: auto; /* Scroll si el contenido es largo */
+    z-index: 900; /* Asegura que esté sobre el contenido pero debajo de modales/overlays si los hay */
+    transition: width 0.3s ease; /* Transición suave si planeas hacerlo colapsable */
+  }
+  
+  /* Estilo de los elementos del menú */
+  .sidebar-item {
+    display: flex; /* Para alinear icono y texto */
+    align-items: center;
+    padding: 15px 25px;
+    color: #f1f1f1; /* Color de texto claro */
+    text-decoration: none;
+    font-size: 1rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    border-left: 4px solid transparent; /* Borde para indicar selección */
+  }
+  
+  /* Iconos dentro del menú */
+  .sidebar-item i {
+    margin-right: 15px; /* Espacio entre icono y texto */
+    width: 20px; /* Ancho fijo para alinear iconos */
+    text-align: center;
+  }
+  
+  /* Efecto hover sobre los elementos */
+  .sidebar-item:hover {
+    background-color: rgba(255, 255, 255, 0.1); /* Un ligero resaltado */
+    color: #ffffff;
+  }
+  
+  /* Estilo del elemento activo/seleccionado */
+  .sidebar-item.active {
+    background-color: var(--primary-color, #04db8d); /* Color primario para el activo */
+    color: var(--text-color, #0b2431); /* Color de texto oscuro para contraste */
+    font-weight: 500;
+    border-left: 4px solid var(--text-color, #0b2431); /* Borde visible */
+  }
+  
+  /* Área de Contenido Principal */
+  #main-content {
+    margin-left: 240px; /* Mismo ancho que el sidebar */
+    padding: 20px 30px; /* Espaciado interno */
+    width: calc(100% - 240px); /* Ocupa el resto del ancho */
+    /* padding-top: 80px;  Ajusta si la navbar es fija y el sidebar no tiene padding-top */
+    transition: margin-left 0.3s ease, width 0.3s ease; /* Transición si el sidebar es colapsable */
+  }
+  
+  /* Secciones de Contenido (ocultas por defecto por JS) */
+  .content-section {
+    display: none; /* Oculto por defecto, gestionado por JS */
+  }
+  
+  .content-section.active {
+    display: block; /* Muestra la sección activa */
+  }
+  
+  /* Ajustes adicionales */
+  body {
+    margin: 0; /* Elimina el margen por defecto del body si interfiere */
+    overflow-x: hidden; /* Previene scroll horizontal */
+  }
+  
+  /* Mueve el H1 principal si estaba fuera del contenedor */
+  #main-content h1 {
+    margin-top: 0; /* Ajusta el margen superior si es necesario */
+    padding-left: 0; /* Resetea padding si se aplicaba globalmente */
+    padding-right: 0;
+  }
+  
+  /* Ajusta el contenedor de datos si es necesario */
+  #data-container {
+    padding-left: 0; /* Resetea padding si se aplicaba globalmente */
+    padding-right: 0;
+  }
+  
+  /* --- Media Queries para Responsividad (Opcional pero recomendado) --- */
+  @media (max-width: 768px) {
+    #sidebar {
+      width: 60px; /* Menú colapsado en pantallas pequeñas */
+      padding-top: 70px; /* Ajusta padding */
+    }
+  
+    #sidebar .sidebar-item {
+      padding: 15px 0;
+      justify-content: center; /* Centra el icono */
+      border-left: none; /* Quita borde lateral */
+    }
+  
+    #sidebar .sidebar-item i {
+      margin-right: 0; /* Sin margen para el icono */
+    }
+  
+    #sidebar .sidebar-item span { /* Asume que el texto está en un span */
+      display: none; /* Oculta el texto */
+    }
+  
+    #main-content {
+      margin-left: 60px; /* Ajusta margen al menú colapsado */
+      width: calc(100% - 60px);
+      padding: 15px;
+    }
+  
+    /* Podrías necesitar ajustar otros elementos como filtros, etc. */
+    #Filtrar {
+      flex-direction: column; /* Apila filtros verticalmente */
+      align-items: stretch;
+    }
+    .filter-item {
+      margin-left: 0;
+      margin-bottom: 15px;
+    }
+    .date-filter {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+  
+  /* === FIN ESTILOS PARA MENÚ LATERAL === */
+  
+  

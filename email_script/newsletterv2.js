@@ -92,7 +92,7 @@ function buildDocumentHTML(doc, isLastDoc) {
       <p>
         <div class="margin-impacto">
           <a class="button-impacto"
-            href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+            href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
             style="margin-right: 10px;">
             Análisis impacto normativo
           </a>
@@ -155,7 +155,7 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
     <p>
       <div class="margin-impacto">
         <a class="button-impacto"
-           href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+           href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
            style="margin-right: 10px;">
           Análisis impacto normativo
         </a>
@@ -357,7 +357,7 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
   <body>
     <div class="container">
       <div class="online-link">
-        <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
+        <a href="https://reversa.ai/profile" target="_blank">Ver online</a>
       </div>
       <div class="logo-container">
         <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
@@ -368,7 +368,7 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
       ${summarySection}
 
       <div style="text-align:center; margin:15px 0;">
-        <a href="https://papyrus-ai.com/"
+        <a href="https://reversa.ai/"
            style="
              display:inline-block;
              background-color:#4ce3a7;
@@ -398,31 +398,31 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
         <table align="center" style="border-spacing:10px;">
           <tr>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=1"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 1
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=2"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 2
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=3"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 3
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=4"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 4
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=5"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 5
               </a>
@@ -447,7 +447,7 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
       </p>
 
       <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion.html"
+        <a href="https://reversa.ai/suscripcion.html"
            target="_blank"
            style="color: #0c2532; text-decoration: underline; font-size: 14px;">
           Cancelar Suscripción
@@ -716,7 +716,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   <body>
     <div class="container">
       <div class="online-link">
-        <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
+        <a href="https://reversa.ai/profile" target="_blank">Ver online</a>
       </div>
       <div class="logo-container">
         <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
@@ -754,31 +754,31 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         <table align="center" style="border-spacing:10px;">
           <tr>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=1"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 1
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=2"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 2
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=3"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 3
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=4"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 4
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=5"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 5
               </a>
@@ -802,7 +802,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
       </p>
       <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion"
+        <a href="https://reversa.ai/suscripcion"
            target="_blank"
            style="color: #0c2532; text-decoration: underline; font-size: 14px;">
           Cancelar Suscripción

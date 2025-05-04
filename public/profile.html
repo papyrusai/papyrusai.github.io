@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
   <title>Profile</title>
-  <link rel="icon" href="assets/papyrus_logo.png" type="image/png"> 
+  <link rel="icon" href="assets/reversa_logo.png" type="image/png"> 
 
   <!-- Font Awesome + Chart.js + Basic CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -21,6 +21,7 @@
   <link rel="stylesheet" type="text/css" href="styles/dropdown.css" />
   <link rel="stylesheet" type="text/css" href="styles/radio_menu.css" />
   <link rel="stylesheet" type="text/css" href="styles/mobile.css" />
+  <link rel="stylesheet" type="text/css" href="styles/sidebar_styles.css" />
 
   <style>
   html, body {
@@ -306,6 +307,16 @@
       font-weight: 500;
       transition: all 0.2s ease;
     }
+    .plan-badge {
+      position: absolute;
+    color: #092534;
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    z-index: 9999;
+    background-color: var(--border-color);
+    }
 
   </style>
   <script type="text/javascript">
@@ -323,133 +334,223 @@
   </div>
 
   <!-- Navbar -->
+   <!--
   <nav class="navbar">
     <div class="logo">
-      <a href="https://papyrus-ai.com/" target="_blank">
-        <img src="assets/papyrus_app.png" alt="Papyrus Logo">
+      <a href="https://reversa.ai/" target="_blank">
+        <img src="assets/papyrus_app.png" alt="Rev Logo">
       </a>
     </div>
     <button class="hamburger" onclick="toggleMenu()">☰</button>
     <ul class="menu">
-      <li><a href="https://papyrus-ai.com/">WEB</a></li>
+      <li><a href="https://reversa.ai/">WEB</a></li>
       <li><a href="/profile">PANEL DE CONTROL</a></li>
-      <li> <a href="#" id="editSuscription">CUENTA</a></li>
-      <li><a href="https://papyrus-ai.com/pages/contact-1">AYUDA</a></li>
+      <li> <a href="#" id="editSuscription">CUENTA</a></li> 
+      <li><a href="https://reversa.ai/pages/contact-1">AYUDA</a></li>
     </ul>
   </nav>
+-->
+  
 
-  <h1>Hola {{name}}</h1>
-
-  <div id="data-container">
-    <!-- Reemplazado: Sección de Agentes Suscritos en lugar de Industrias/Ramas -->
-    <div class="detalle-cuenta">
-      <div>
-        <div class="etiquetas-label">Agentes Suscritos</div>
-        <div class="etiquetas-values" id="agentesContainer"></div>
+  <!-- NUEVO CONTENEDOR PRINCIPAL -->
+  <div class="profile-container">
+    <!-- NUEVO MENÚ LATERAL -->
+    <div id="sidebar">
+      <div class="logo-reversa">
+        <a href="https://reversa.ai/" target="_blank">
+          <img src="assets/reversa_white.png" alt="Reversa Logo">
+        </a>
       </div>
+      <div class="border-menu"></div>
+      <a href="#" class="sidebar-item active" data-target="content-agentes">
+        <i class="fas fa-users"></i> Agentes
+      </a>
+      <a href="#" class="sidebar-item" data-target="content-boletin">
+        <i class="fas fa-newspaper"></i> Boletín Diario
+      </a>
+      <a href="#" class="sidebar-item" data-target="content-busqueda">
+        <i class="fas fa-search"></i> Búsqueda y Estadísticas
+      </a>
+      <a href="#" class="sidebar-item" data-target="content-listas">
+        <i class="fas fa-list"></i> Tus listas
+      </a>
+      <a href="#" class="sidebar-item" id="editSuscription">
+        <i class="fas fa-user-circle"></i> Cuenta
+      </a>
     </div>
 
-    <a href="#" id="editSuscription2" class="change-subscription">Editar Agentes</a>
-    <div class="analytics-label busqueda">Búsqueda Avanzada</div>
+    <!-- NUEVA ÁREA DE CONTENIDO PRINCIPAL -->
+    <div id="main-content">
 
-    <!-- JSON data for industries, ramas, subramas, etc. -->
-    <script id="industryTags" type="application/json">{{industry_tags_json}}</script>
-    <script id="userSubIndustriaMap" type="application/json">{{subindustria_map_json}}</script>
-    <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
-    <script id="userSubRamaMap" type="application/json">{{subrama_juridicas_json}}</script>
-    <script id="userEtiquetasPersonalizadas" type="application/json">{{etiquetas_personalizadas_json}}</script>
+      <!-- Sección Agentes (Contenido original de profile.html movido aquí) -->
+      <div id="content-agentes" class="vision-section active">
+         <h1>Hola {{name}}</h1> <!-- Título movido aquí -->
 
-    <div class="filter-banner-container">
-      <div class="beta-banner">
-        Búsqueda anterior a 01/04/2025 en versión Beta
-      </div>
-    </div>
-    
-    <!-- Filter Section -->
-    <div id="Filtrar">
-      <!-- Etiquetas Personalizadas multi-check (ahora visible) -->
-      <div class="filter-item" id="etiquetasPersonalizadasContainer" style="display: block;">
-        <div class="etiquetas-label" id="etiquetas-label">Agentes</div>
-        <div class="dropdown">
-          <button class="dropbtn" id="btnEtiquetasPersonalizadas" onclick="toggleEtiquetasDropdown()">
-            <span id="selectedEtiquetas">Todos</span>
-            <i class="fa fa-caret-down"></i>
-          </button>
-          <div id="etiquetasDropdown" class="dropdown-content">
-            <!-- Se poblará dinámicamente con las etiquetas del usuario -->
+         <!-- Contenedor de datos original, ahora dentro de la sección Agentes -->
+         <div id="data-container">
+            <!-- Sección de Agentes Suscritos -->
+            <div class="detalle-cuenta">
+              <div>
+                <div class="etiquetas-label">Agentes Suscritos</div>
+                <div class="etiquetas-values" id="agentesContainer">
+                  <!-- Los agentes se cargarán aquí dinámicamente -->
+                </div>
+              </div>
+            </div>
+            <a href="#" id="editSuscription2" class="change-subscription">Editar Agentes</a>
+
+            <!-- Búsqueda Avanzada -->
+            <div class="analytics-label busqueda">Búsqueda Avanzada</div>
+
+            <!-- Scripts JSON (importante mantenerlos aquí si el JS los espera) -->
+            <script id="industryTags" type="application/json">{{industry_tags_json}}</script>
+            <script id="userSubIndustriaMap" type="application/json">{{subindustria_map_json}}</script>
+            <script id="ramaJuridicas" type="application/json">{{rama_juridicas_json}}</script>
+            <script id="userSubRamaMap" type="application/json">{{subrama_juridicas_json}}</script>
+            <script id="userEtiquetasPersonalizadas" type="application/json">{{etiquetas_personalizadas_json}}</script>
+
+            <div class="filter-banner-container">
+              <div class="beta-banner">Búsqueda personalizada por agente activa desde {{registration_date_formatted}}</div>
+            </div>
+
+            <!-- Sección de Filtros -->
+            <div id="Filtrar">
+              <!-- Filtro Agentes -->
+              <div class="filter-item" id="etiquetasPersonalizadasContainer" style="display: block;">
+                <div class="etiquetas-label" id="etiquetas-label">Agentes</div>
+                <div class="dropdown">
+                  <button class="dropbtn" id="btnEtiquetasPersonalizadas" onclick="toggleEtiquetasDropdown()">
+                    <span id="selectedEtiquetas">Todos</span> <i class="fa fa-caret-down"></i>
+                  </button>
+                  <div id="etiquetasDropdown" class="dropdown-content"></div>
+                </div>
+              </div>
+              <!-- Filtro Boletín -->
+              <div class="filter-item">
+                 <div class="etiquetas-label">Fuente Oficial</div>
+                 <div class="dropdown">
+                   <button class="dropbtn" id="btnBoletin" onclick="toggleBoletinDropdown()">
+                     <span id="selectedBoletines">Todos</span> <i class="fa fa-caret-down"></i>
+                   </button>
+                   <div id="boletinDropdown" class="dropdown-content"></div>
+                 </div>
+              </div>
+              <!-- Filtro Rango -->
+              <div class="filter-item">
+                 <div class="etiquetas-label">Rango</div>
+                 <div class="dropdown">
+                   <button class="dropbtn" id="btnRango" onclick="toggleRangoDropdown()">
+                     <span id="selectedRango">Todos</span> <i class="fa fa-caret-down"></i>
+                   </button>
+                   <div id="rangoDropdown" class="dropdown-content"></div>
+                 </div>
+              </div>
+              <!-- Filtro Fecha -->
+              <div class="filter-item">
+                <div class="etiquetas-label">Fecha de publicación</div>
+                <div class="date-filter">
+                  <label for="startDate">Desde:</label>
+                  <input type="date" id="startDate" name="startDate" />
+                  <label for="endDate">Hasta:</label>
+                  <input type="date" id="endDate" name="endDate" />
+                </div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <button id="buscarBtn" onclick="handleBuscar()">Buscar</button>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="analytics-label">Estadísticas de la búsqueda</div>
+            <div id="loading-icon-chart" style="display: none;"><div class="loader"></div></div>
+            <div id="chartContainer">
+              <canvas id="documentsChart"></canvas>
+            </div>
+
+            <!-- Documentos -->
+            <div class="analytics-label">Documentos</div>
+            <div id="loading-icon" style="display: none;"><div class="loader"></div></div>
+            <div class="collectionDocs">{{boeDocuments}}</div>
+         </div> <!-- Fin de #data-container -->
+
+         <!-- Logout (movido al final de la sección Agentes) -->
+         <div class="logout-container">
+           <a href="/logout">Logout</a>
+         </div>
+      </div> <!-- Fin de #content-agentes -->
+
+      <!-- Sección Boletín Diario (Contenido de marcador de posición) -->
+      <div id="content-boletin" class="vision-section">
+        <h2>Boletín Diario</h2>
+        <div id="boletin-fecha" style="font-weight: bold; margin-bottom: 15px; font-size: 1.1em; color: var(--text-color);">Cargando fecha...</div>
+      
+        <!-- Filtros para Boletín Diario -->
+        <div id="boletin-filtros" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; align-items: flex-end; border: 1px solid var(--border-color, #e0e0e0); padding: 15px; border-radius: 8px; background-color: rgba(69, 88, 98, 0.1);width:500px;">
+          <!-- Filtro Boletín (Fuente Oficial) -->
+          <div class="filter-item">
+            <div class="etiquetas-label">Fuente Oficial</div>
+            <div class="dropdown">
+              <button class="dropbtn" id="btnBoletinDiario" onclick="toggleBoletinDiarioDropdown()">
+                <span id="selectedBoletinesDiario">Todas</span>
+                <i class="fa fa-caret-down"></i>
+              </button>
+              <div id="boletinDiarioDropdown" class="dropdown-content">
+                <!-- Opciones se poblarán dinámicamente -->
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Boletín Oficial multi-check -->
-      <div class="filter-item">
-        <div class="etiquetas-label">Boletín Oficial</div>
-        <div class="dropdown">
-          <button class="dropbtn" id="btnBoletin" onclick="toggleBoletinDropdown()">
-            <span id="selectedBoletines">Todos</span>
-            <i class="fa fa-caret-down"></i>
-          </button>
-          <div id="boletinDropdown" class="dropdown-content">
-            <!-- "Todos" + bulletins, all checked by default, on DOMContentLoaded -->
+      
+          <!-- Filtro Rango -->
+          <div class="filter-item">
+            <div class="etiquetas-label">Rango</div>
+            <div class="dropdown">
+              <button class="dropbtn" id="btnRangoDiario" onclick="toggleRangoDiarioDropdown()">
+                <span id="selectedRangoDiario">Todos</span>
+                <i class="fa fa-caret-down"></i>
+              </button>
+              <div id="rangoDiarioDropdown" class="dropdown-content">
+                <!-- Opciones se poblarán dinámicamente -->
+              </div>
+            </div>
           </div>
+      
+          <!-- Botón Aplicar Filtros -->
+          <button id="aplicarFiltrosBoletinBtn" onclick="fetchBoletinDiario()" style="padding: 8px 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 20px; cursor: pointer; height: fit-content; font-size: 14px;">Aplicar Filtros</button>
+        </div>
+      
+        <!-- Contenedor para los documentos del boletín -->
+        <div id="boletin-loading-icon" style="display: none;">
+            <div class="loader"></div> <!-- Reutiliza tu clase loader existente -->
+        </div>
+        <div id="boletin-documentos-container">
+          <!-- Los documentos se cargarán aquí -->
+          <p>Selecciona los filtros y pulsa "Aplicar Filtros" o espera a la carga inicial.</p>
         </div>
       </div>
 
-      <!-- RANGO multi-check -->
-      <div class="filter-item">
-        <div class="etiquetas-label">Rango</div>
-        <div class="dropdown">
-          <button class="dropbtn" id="btnRango" onclick="toggleRangoDropdown()">
-            <span id="selectedRango">Todos</span>
-            <i class="fa fa-caret-down"></i>
-          </button>
-          <div id="rangoDropdown" class="dropdown-content">
-           <!-- <label><input type="checkbox" value="Todos" id="chkAllRango" checked> Todos</label>
-            <label><input type="checkbox" value="Leyes" checked> Leyes</label>
-            <label><input type="checkbox" value="Reglamentos" checked> Reglamentos</label>
-            <label><input type="checkbox" value="Decisiones interpretativas y Reguladores" checked> Decisiones interpretativas y Reguladores</label>
-            <label><input type="checkbox" value="Jurisprudencia" checked> Jurisprudencia</label>
-            <label><input type="checkbox" value="Ayudas,subvenciones y premios" checked> Ayudas,subvenciones y premios</label>
-            <label><input type="checkbox" value="Otras" checked> Otras</label>
-            -->
-          </div>
-        </div>
+      <!-- Sección Búsqueda y Estadísticas (Contenido de marcador de posición) -->
+      <div id="content-busqueda" class="vision-section">
+        <h2>Búsqueda y Estadísticas</h2>
+        <p>Próximamente podrás acceder a estadísticas normativas y búsqueda por rama jurídica o actividad económica</p>
+        <div class="plan-badge">Coming Soon</div>
       </div>
 
-      <!-- Date filters -->
-      <div class="filter-item">
-        <div class="etiquetas-label">Fecha de publicación</div>
-        <div class="date-filter">
-          <label for="startDate">Desde:</label>
-          <input type="date" id="startDate" name="startDate" />
-          <label for="endDate">Hasta:</label>
-          <input type="date" id="endDate" name="endDate" />
-        </div>
+      <!-- Sección Tus Listas (Contenido de marcador de posición) -->
+      <div id="content-listas" class="vision-section">
+        <h2>Tus listas</h2>
+        <p>Próximamente podrás guardar normativa en listas de tu interés (por cliente o temática), de las que podrás generar píldoras de contenido comercial para compartir con tus clientes, web o RRSS</p>
+        <div class="plan-badge">Coming Soon</div>
       </div>
-    </div>
 
-    <div style="text-align: right;">
-      <button id="buscarBtn" onclick="handleBuscar()">Buscar</button>
-    </div>
+      <!-- Sección Cuenta (Contenido de marcador de posición) -->
+      <div id="content-cuenta" class="vision-section">
+        <h2>Cuenta</h2>
+        <p>Estamos trabajando en desarrollar el producto para que próximamente tenga esta nueva funcionalidad.</p>
+      </div>
 
-    <div class="analytics-label">Estadísticas de la búsqueda</div>
-    <div id="loading-icon-chart" style="display: none;">
-      <div class="loader"></div>
-    </div>
-    <div id="chartContainer">
-      <canvas id="documentsChart"></canvas>
-    </div>
+    </div> <!-- Fin de #main-content -->
+  </div> <!-- Fin de .profile-container -->
 
-    <div class="analytics-label">Documentos</div>
-    <div id="loading-icon" style="display: none;">
-      <div class="loader"></div>
-    </div>
-    <div class="collectionDocs">{{boeDocuments}}</div>
-  </div>
-
-  <div class="logout-container">
-    <a href="/logout">Logout</a>
-  </div>
 
   <!-- Additional JSON data for the chart and plan, etc. -->
   <script id="monthsData" type="application/json">{{months_json}}</script>
@@ -459,6 +560,8 @@
   <script id="endDateInput" type="application/json">{{end_date}}</script>
   <script id="userBoletines" type="application/json">{{user_boletines_json}}</script>
   <script id="userRangos" type="application/json">{{user_rangos_json}}</script>
+
+  <script id="allRangosData" type="application/json">{{all_rangos_json}}</script>
 
   <!--<script src="editarSuscripcion.js"></script> -->
   <script src="editarsuscripcion2.js"></script>
@@ -498,6 +601,34 @@
       if (monthsData.length && countsData.length) {
         loadChart(monthsData, countsData);
       }
+
+       /* 1. Toggle al pulsar en cualquier .dropbtn ------------------ */
+  document.querySelectorAll('.dropbtn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();                     // evita que el click burbujee
+      const dropdown = btn.closest('.dropdown');
+      const menu     = dropdown?.querySelector('.dropdown-content');
+      if (!menu) return;
+
+      // Cierra otros menús que pudieran estar abiertos
+      document.querySelectorAll('.dropdown-content.show')
+              .forEach(el => { if (el !== menu) el.classList.remove('show'); });
+
+      menu.classList.toggle('show');
+    });
+  });
+
+  /* 2. Cerrar cuando se hace click FUERA de cualquier .dropdown -- */
+  window.addEventListener('click', e => {
+    // ¿Hemos hecho click dentro de un .dropdown (botón o contenido)?
+    const clickedInsideDropdown = !!e.target.closest('.dropdown');
+    if (clickedInsideDropdown) return;         // no cerramos nada
+
+    // Click fuera  →  cerrar todos los menús abiertos
+    document.querySelectorAll('.dropdown-content.show')
+            .forEach(el => el.classList.remove('show'));
+  });
+
       
       // Inicializar las nuevas funciones
       loadAgentesContainer();
@@ -505,16 +636,14 @@
       loadBoletinDropdown();
       loadRangoDropdown();
       
-      // Cerrar dropdowns al hacer clic fuera de ellos
-      document.addEventListener('click', function(event) {
-        if (!event.target.matches('.dropbtn') && !event.target.matches('.dropbtn *')) {
-          const dropdowns = document.querySelectorAll('.dropdown-content');
-          dropdowns.forEach(dropdown => {
-            if (dropdown.classList.contains('show')) {
-              dropdown.classList.remove('show');
-            }
-          });
-        }
+       // *** NUEVO: Lógica para mostrar la sección por defecto (Agentes) ***
+      // Asegurarse de que solo la sección activa sea visible al cargar
+      document.querySelectorAll('.vision-section').forEach(section => {
+          if (!section.classList.contains('active')) {
+              section.style.display = 'none';
+          } else {
+              section.style.display = 'block';
+          }
       });
     });
 
@@ -1123,6 +1252,420 @@ function toggleRangoDropdown(event) {
         console.error('Error sending feedback:', error);
       }
     }
+/*----- Boletin diario ---------------*/
+
+// --- LÓGICA PARA BOLETÍN DIARIO ---
+
+let boletinDiarioData = { // Para almacenar los datos actuales
+    date: null,
+    documents: [],
+    availableBoletines: [],
+    availableRangos: []
+};
+let boletinDiarioLoaded = false; // Para cargar solo una vez al activar la sección
+
+// Función para obtener los datos del Boletín Diario desde la API
+async function fetchBoletinDiario() {
+    const loadingIcon = document.getElementById('boletin-loading-icon');
+    const container = document.getElementById('boletin-documentos-container');
+    const fechaContainer = document.getElementById('boletin-fecha');
+
+    if (!loadingIcon || !container || !fechaContainer) return; // Salir si los elementos no existen
+
+    loadingIcon.style.display = 'block';
+    container.innerHTML = ''; // Limpiar contenedor
+    fechaContainer.textContent = 'Cargando fecha...';
+
+    // Obtener filtros seleccionados
+    const selectedBoletines = getSelectedCheckboxes('boletinDiarioDropdown');
+    const selectedRangos = getSelectedCheckboxes('rangoDiarioDropdown');
+
+    // Construir URL con parámetros
+    const params = new URLSearchParams();
+    // Solo añadir el parámetro si no se seleccionó 'Todos' (o si el array no está vacío)
+    if (selectedBoletines.length > 0) {
+        params.append('boletines', JSON.stringify(selectedBoletines));
+    }
+    if (selectedRangos.length > 0) {
+        params.append('rangos', JSON.stringify(selectedRangos));
+    }
+
+    try {
+        console.log(`Fetching /api/boletin-diario?${params.toString()}`);
+        const response = await fetch(`/api/boletin-diario?${params.toString()}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+        }
+        boletinDiarioData = await response.json();
+        console.log('Boletin Diario Data Received:', boletinDiarioData);
+
+        // Actualizar fecha
+        if (boletinDiarioData.date) {
+            fechaContainer.textContent = `Documentos del ${String(boletinDiarioData.date.dia).padStart(2, '0')}/${String(boletinDiarioData.date.mes).padStart(2, '0')}/${boletinDiarioData.date.anio}`;
+        } else {
+            fechaContainer.textContent = 'No se encontraron documentos para la fecha más reciente.';
+        }
+
+        // Renderizar documentos
+        renderBoletinDocumentos(boletinDiarioData.documents);
+
+        // Poblar filtros (solo la primera vez que se cargan los datos)
+        if (!boletinDiarioLoaded) {
+            // Usar los datos devueltos por la API para asegurar consistencia
+            populateBoletinDiarioFilters(boletinDiarioData.availableBoletines || [], boletinDiarioData.availableRangos || []);
+            boletinDiarioLoaded = true;
+        }
+
+    } catch (error) {
+        console.error('Error fetching Boletin Diario:', error);
+        container.innerHTML = `<p style="color: red;">Error al cargar los documentos del boletín diario. Detalles: ${error.message}</p>`;
+        fechaContainer.textContent = 'Error al cargar la fecha.';
+    } finally {
+        if (loadingIcon) loadingIcon.style.display = 'none';
+    }
+}
+
+// Función para renderizar los documentos del boletín
+function renderBoletinDocumentos(documents) {
+    const container = document.getElementById('boletin-documentos-container');
+    if (!container) return;
+
+    if (!documents || documents.length === 0) {
+        container.innerHTML = '<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">No hay documentos para mostrar correspondientes a la fecha y filtros seleccionados.</div>';
+        return;
+    }
+
+    const documentsHtml = documents.map(doc => {
+        const rangoToShow = doc.rango_titulo || "Indefinido";
+        const collectionName = doc.collectionName || "Fuente Desconocida";
+
+        // Generar HTML para ramas_juridicas como tags
+        const ramasHtml = (doc.ramas_juridicas && doc.ramas_juridicas.length > 0)
+            ? `<div class="boletin-tags"><strong>Ramas:</strong> ${doc.ramas_juridicas.map(rama => `<span class="tag-rama">${rama}</span>`).join(' ')}</div>`
+            : '';
+
+        // Generar HTML para divisiones_cnae como tags (asumiendo que es un array)
+        // Asegurarse que doc.divisiones_cnae existe y es un array
+        const divisionesArray = Array.isArray(doc.divisiones_cnae) ? doc.divisiones_cnae : [];
+        const divisionesHtml = (divisionesArray.length > 0)
+            ? `<div class="boletin-tags"><strong>Divisiones:</strong> ${divisionesArray.map(div => `<span class="tag-division">${div}</span>`).join(' ')}</div>`
+            : '';
+
+        // Reutilizar la estructura de .data-item
+        return `
+          <div class="data-item">
+            <div class="header-row">
+              <div class="id-values">${doc.short_name || 'Título no disponible'}</div>
+              <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+            </div>
+            <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">
+              ${rangoToShow} | ${collectionName}
+            </div>
+            ${ramasHtml}
+            ${divisionesHtml}
+            <div class="resumen-label">Resumen</div>
+            <div class="resumen-content">${doc.resumen || 'Resumen no disponible.'}</div>
+            <div class="margin-impacto">
+              <a class="button-impacto"
+                 href="/norma.html?documentId=${doc._id}&collectionName=${collectionName}">
+                 Análisis impacto normativo
+              </a>
+            </div>
+            <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>
+          </div>
+        `;
+    }).join('');
+
+    container.innerHTML = documentsHtml;
+}
+
+// Función para poblar los dropdowns de filtros del Boletín Diario
+function populateBoletinDiarioFilters(boletines, rangos) {
+    const boletinDropdown = document.getElementById('boletinDiarioDropdown');
+    const rangoDropdown = document.getElementById('rangoDiarioDropdown');
+
+    if (!boletinDropdown || !rangoDropdown) return;
+
+    // Poblar Boletines
+    let boletinHtml = '<label><input type="checkbox" value="Todos" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> Todos</label>';
+    (boletines || []).forEach(b => {
+        boletinHtml += `<label><input type="checkbox" value="${b}" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> ${b}</label>`;
+    });
+    boletinDropdown.innerHTML = boletinHtml;
+    updateSelectedText('boletinDiarioDropdown', 'selectedBoletinesDiario'); // Actualizar texto inicial
+
+    // Poblar Rangos
+    let rangoHtml = '<label><input type="checkbox" value="Todos" checked onchange="handleCheckboxChange(this, \'rangoDiarioDropdown\', \'selectedRangoDiario\')"> Todos</label>';
+    (rangos || []).forEach(r => {
+        rangoHtml += `<label><input type="checkbox" value="${r}" checked onchange="handleCheckboxChange(this, \'rangoDiarioDropdown\', \'selectedRangoDiario\')"> ${r}</label>`;
+    });
+    rangoDropdown.innerHTML = rangoHtml;
+    updateSelectedText('rangoDiarioDropdown', 'selectedRangoDiario'); // Actualizar texto inicial
+}
+
+// Funciones auxiliares para manejar dropdowns
+function toggleBoletinDiarioDropdown() {
+    closeOtherDropdowns('boletinDiarioDropdown');
+    document.getElementById("boletinDiarioDropdown").classList.toggle("show");
+}
+function toggleRangoDiarioDropdown() {
+    closeOtherDropdowns('rangoDiarioDropdown');
+    document.getElementById("rangoDiarioDropdown").classList.toggle("show");
+}
+
+// (Asegúrate que closeOtherDropdowns existe o adáptala si es necesario)
+function closeOtherDropdowns(excludeId) {
+    const dropdowns = document.getElementsByClassName("dropdown-content");
+    for (let i = 0; i < dropdowns.length; i++) {
+        if (dropdowns[i].id !== excludeId && dropdowns[i].classList.contains('show')) {
+            dropdowns[i].classList.remove('show');
+        }
+    }
+}
+
+// Reutilizar o adaptar handleCheckboxChange y updateSelectedText si ya existen y son compatibles
+// Asegúrate de que estas funciones estén definidas en tu script global o cópialas/ajústalas aquí si es necesario.
+// Ejemplo de implementación (si no existen):
+if (typeof handleCheckboxChange !== 'function') {
+    function handleCheckboxChange(checkbox, dropdownId, selectedSpanId) {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+        const todosCheckbox = checkboxes[0]; // Asume que "Todos" es el primero
+
+        if (checkbox.value === "Todos") {
+            checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        } else {
+            if (!checkbox.checked) {
+                todosCheckbox.checked = false;
+            }
+            let allOthersChecked = true;
+            for (let i = 1; i < checkboxes.length; i++) {
+                if (!checkboxes[i].checked) {
+                    allOthersChecked = false;
+                    break;
+                }
+            }
+            // Solo marcar 'Todos' si *todos* los demás están marcados
+            todosCheckbox.checked = allOthersChecked;
+        }
+        updateSelectedText(dropdownId, selectedSpanId);
+    }
+}
+
+if (typeof updateSelectedText !== 'function') {
+    function updateSelectedText(dropdownId, selectedSpanId) {
+        const dropdown = document.getElementById(dropdownId);
+        const selectedSpan = document.getElementById(selectedSpanId);
+        if (!dropdown || !selectedSpan) return;
+
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+        const todosCheckbox = dropdown.querySelector('input[value="Todos"]');
+        let count = 0;
+        let firstSelectedValue = '';
+
+        checkboxes.forEach(cb => {
+            if (cb.value !== 'Todos') {
+                count++;
+                if (count === 1) firstSelectedValue = cb.value;
+            }
+        });
+
+        if (todosCheckbox.checked || count === 0) {
+            selectedSpan.textContent = 'Todos';
+        } else if (count === 1) {
+            selectedSpan.textContent = firstSelectedValue;
+        } else {
+            selectedSpan.textContent = `${count} seleccionados`;
+        }
+    }
+}
+
+// Función auxiliar para obtener valores seleccionados (excluyendo "Todos" si otros están marcados)
+function getSelectedCheckboxes(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return [];
+    const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+    const selectedValues = [];
+    let todosSelected = false;
+
+    checkboxes.forEach(cb => {
+        if (cb.value === 'Todos') {
+            todosSelected = true;
+        } else {
+            selectedValues.push(cb.value);
+        }
+    });
+
+    // Si 'Todos' está seleccionado O no hay ninguna otra selección, el backend debe interpretar como 'todos'.
+    // Devolvemos un array vacío en ese caso para que el backend aplique su lógica por defecto (usar todos los disponibles).
+    if (todosSelected || selectedValues.length === 0) {
+        return [];
+    }
+    // Si hay selecciones específicas (y 'Todos' no está marcado, o lo está pero hay otras selecciones), devolvemos esas selecciones.
+    return selectedValues;
+}
+
+//Styles - Boletin Diario
+
+const styleSheet = document.createElement("style");
+styleSheet.type = "text/css";
+styleSheet.innerText = `
+.boletin-tags { margin: 8px 0; font-size: 0.9em; line-height: 1.6; }
+.boletin-tags strong { margin-right: 5px; font-weight: 600; }
+.tag-rama, .tag-division {
+  display: inline-block;
+  padding: 3px 10px;
+  margin: 2px 4px 2px 0;
+  border-radius: 14px;
+  font-size: 0.85em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag-rama { background-color: rgba(69, 88, 98, 0.1); color: rgb(69 88 98); } /* Estilo secundario */
+.tag-division { background-color: rgba(4, 219, 141, 0.1); color: rgb(4 219 141); } /* Estilo primario */
+
+/* Ajustes para dropdowns del boletín */
+#boletinDiarioDropdown, #rangoDiarioDropdown {
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    z-index: 1000;
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 5px;
+    display: none; /* hidden by default */
+    min-width: 200px; /* Ajustar ancho mínimo */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+#boletinDiarioDropdown.show, #rangoDiarioDropdown.show {
+    display: block;
+}
+#boletinDiarioDropdown label, #rangoDiarioDropdown label {
+    display: block;
+    padding: 6px 8px;
+    margin: 0;
+    cursor: pointer;
+    font-size: 0.9em;
+    border-bottom: 1px solid #eee;
+    white-space: nowrap;
+    transition: background-color 0.2s ease;
+}
+#boletinDiarioDropdown label:hover, #rangoDiarioDropdown label:hover {
+    background-color: #f5f5f5;
+}
+#boletinDiarioDropdown label:last-child, #rangoDiarioDropdown label:last-child {
+    border-bottom: none;
+}
+#boletinDiarioDropdown input[type="checkbox"], #rangoDiarioDropdown input[type="checkbox"] {
+    width: 16px; height: 16px; transform: scale(0.9); accent-color: var(--primary-color, #04db8d); margin-right: 8px; vertical-align: middle;
+}
+`;
+document.head.appendChild(styleSheet);
+
+
+/*--------------Visiones--------------*/
+ // *** NUEVO: Lógica de Navegación del Menú Lateral ***
+
+ 
+ document.addEventListener('DOMContentLoaded', function() {
+
+  
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    const contentSections = document.querySelectorAll('.vision-section');
+
+    // Función para manejar el cambio de sección
+    function handleSectionChange(targetId) {
+        const targetSection = document.getElementById(targetId);
+        if (targetSection) {
+            contentSections.forEach(section => section.style.display = 'none');
+            targetSection.style.display = 'block';
+
+            // *** NUEVO/MODIFICADO: Cargar datos del boletín si es la sección correcta y no se ha cargado ***
+            if (targetId === 'content-boletin' && !boletinDiarioLoaded) {
+                // Intentar leer datos para poblar filtros iniciales (pueden no estar listos si la API no ha respondido aún)
+                try {
+                    const userBoletines = JSON.parse(document.getElementById('userBoletines').textContent || '[]');
+                    const allRangos = JSON.parse(document.getElementById('allRangosData').textContent || '[]');
+                    populateBoletinDiarioFilters(userBoletines, allRangos);
+                } catch (e) {
+                    console.warn("Datos iniciales para filtros de boletín no disponibles aún.", e);
+                    // Poblar con vacío o esperar a la respuesta de la API
+                    populateBoletinDiarioFilters([], []);
+                }
+                fetchBoletinDiario(); // Carga inicial de datos
+            }
+        }
+    }
+
+    // Añadir listeners a los items del sidebar
+    sidebarItems.forEach(item => {
+        item.addEventListener('click', function(event) {
+            event.preventDefault();
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+            const targetId = this.getAttribute('data-target');
+            handleSectionChange(targetId);
+        });
+    });
+
+    // Mostrar la sección activa inicial y cargarla si es el Boletín
+    const initialActiveItem = document.querySelector('.sidebar-item.active');
+    if (initialActiveItem) {
+        const initialTargetId = initialActiveItem.getAttribute('data-target');
+        handleSectionChange(initialTargetId);
+    } else {
+        // Si no hay ninguno activo por defecto, activar 'Agentes' y mostrarlo
+        const defaultItem = document.querySelector('.sidebar-item[data-target="content-agentes"]');
+        const defaultSection = document.getElementById('content-agentes');
+        if (defaultItem && defaultSection) {
+            defaultItem.classList.add('active');
+            defaultSection.style.display = 'block';
+        }
+    }
+
+    // Cerrar dropdowns al hacer clic fuera (código existente adaptado)
+});
   </script>
+  <script>
+    /* ===========  DROPDOWNS GENÉRICOS  ===================
+       – Cualquier .dropbtn abre / cierra su propio menú
+       – Sólo se puede abrir un menú a la vez
+       – Si se hace click FUERA de .dropdown   ⇒  se cierran todos
+       – Si se hace click dentro del menú      ⇒  NO se cierra          */
+    document.addEventListener('DOMContentLoaded', () => {
+    
+      /* 1. Toggle al pulsar en cualquier .dropbtn ------------------ */
+      document.querySelectorAll('.dropbtn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();                     // evita que el click burbujee
+          const dropdown = btn.closest('.dropdown');
+          const menu     = dropdown?.querySelector('.dropdown-content');
+          if (!menu) return;
+    
+          // Cierra otros menús que pudieran estar abiertos
+          document.querySelectorAll('.dropdown-content.show')
+                  .forEach(el => { if (el !== menu) el.classList.remove('show'); });
+    
+          menu.classList.toggle('show');
+        });
+      });
+    
+      /* 2. Cerrar cuando se hace click FUERA de cualquier .dropdown -- */
+      window.addEventListener('click', e => {
+        // ¿Hemos hecho click dentro de un .dropdown (botón o contenido)?
+        const clickedInsideDropdown = !!e.target.closest('.dropdown');
+        if (clickedInsideDropdown) return;         // no cerramos nada
+    
+        // Click fuera  →  cerrar todos los menús abiertos
+        document.querySelectorAll('.dropdown-content.show')
+                .forEach(el => el.classList.remove('show'));
+      });
+    });
+    </script>
+    
 </body>
 </html>

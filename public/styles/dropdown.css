@@ -21,6 +21,22 @@
     border: 1px solid var(--text-color);
     cursor: pointer;
     margin-bottom: 2%;
+    display: inline-block;       /* necesario para que text-overflow funcione */
+    display: inline-flex;
+    align-items: center;
+    max-width: 120px;
+  }
+  .dropbtn > span {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .dropbtn > i {
+    flex: 0 0 auto;
+    margin-left: 4px;
   }
   
   .dropbtn:hover, .dropbtn:focus {

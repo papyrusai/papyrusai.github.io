@@ -92,7 +92,7 @@ function buildDocumentHTML(doc, isLastDoc) {
       <p>
         <div class="margin-impacto">
           <a class="button-impacto"
-            href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+            href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
             style="margin-right: 10px;">
             Análisis impacto normativo
           </a>
@@ -120,25 +120,25 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
   // Extraer todas las industrias del documento
   let industrias = [];
   
-  if (doc.divisiones_cnae) {
+  if (doc.divisiones) {
     // Si divisiones_cnae es un objeto (nueva estructura)
-    if (typeof doc.divisiones_cnae === 'object' && !Array.isArray(doc.divisiones_cnae)) {
-      industrias = Object.keys(doc.divisiones_cnae);
+    if (typeof doc.divisiones === 'object' && !Array.isArray(doc.divisiones)) {
+      industrias = Object.keys(doc.divisiones);
     } 
     // Si divisiones_cnae es un array (estructura antigua)
-    else if (Array.isArray(doc.divisiones_cnae)) {
-      industrias = doc.divisiones_cnae;
+    else if (Array.isArray(doc.divisiones)) {
+      industrias = doc.divisiones;
     }
     // Si divisiones_cnae es un string
     else {
-      industrias = [doc.divisiones_cnae];
+      industrias = [doc.divisiones];
     }
   }
 
   // Extraer todas las ramas jurídicas
   let ramas = [];
-  if (doc.ramas_juridicas && typeof doc.ramas_juridicas === 'object') {
-    ramas = Object.keys(doc.ramas_juridicas);
+  if (doc.ramas_juridicas) {
+    ramas = doc.ramas_juridicas;
   }
 
   // Generar HTML para cada tipo de etiqueta
@@ -155,7 +155,7 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
     <p>
       <div class="margin-impacto">
         <a class="button-impacto"
-           href="https://app.papyrus-ai.com/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+           href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
            style="margin-right: 10px;">
           Análisis impacto normativo
         </a>
@@ -357,10 +357,10 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
   <body>
     <div class="container">
       <div class="online-link">
-        <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
+        <a href="https://reversa.ai/profile" target="_blank">Ver online</a>
       </div>
       <div class="logo-container">
-        <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
+        <img src="cid:reversaLogo" alt="Reversa Logo" style="max-width:250px; height:auto;" />
       </div>
 
       <p>Hola ${userName}, a continuación te resumimos las novedades normativas de tu interés del día <strong>${dateString}</strong>:</p>
@@ -368,7 +368,7 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
       ${summarySection}
 
       <div style="text-align:center; margin:15px 0;">
-        <a href="https://papyrus-ai.com/"
+        <a href="https://reversa.ai/"
            style="
              display:inline-block;
              background-color:#4ce3a7;
@@ -398,31 +398,31 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
         <table align="center" style="border-spacing:10px;">
           <tr>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=1"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 1
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=2"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 2
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=3"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 3
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=4"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 4
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=5"
                  style="color:#fff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 5
               </a>
@@ -443,11 +443,11 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
       </div>
 
       <p style="font-size:0.9em; color:#666; text-align:center;">
-        &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
+        &copy; ${moment().year()} Reversa. Todos los derechos reservados.
       </p>
 
       <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion.html"
+        <a href="https://reversa.ai/suscripcion.html"
            target="_blank"
            style="color: #0c2532; text-decoration: underline; font-size: 14px;">
           Cancelar Suscripción
@@ -716,16 +716,16 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   <body>
     <div class="container">
       <div class="online-link">
-        <a href="https://papyrus-ai.com/profile" target="_blank">Ver online</a>
+        <a href="https://reversa.ai/profile" target="_blank">Ver online</a>
       </div>
       <div class="logo-container">
-        <img src="cid:papyrusLogo" alt="Papyrus Logo" style="max-width:200px; height:auto;" />
+        <img src="cid:reversaLogo" alt="Reversa Logo" style="max-width:250px; height:auto;" />
       </div>
 
       <p>Hola ${userName}, <strong>no hay novedades normativas</strong> de tu interés el día <strong>${dateString}</strong>.</p>
 
       <div style="text-align:center; margin:15px 0;">
-        <a href="https://papyrus-ai.com" 
+        <a href="https://reversa.ai" 
            style="
              display:inline-block;
              background-color:#4ce3a7;
@@ -754,31 +754,31 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         <table align="center" style="border-spacing:10px;">
           <tr>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=1"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=1"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 1
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=2"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=2"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 2
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=3"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=3"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 3
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=4"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=4"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 4
               </a>
             </td>
             <td style="background-color:#4ce3a7; width:40px; height:40px; text-align:center; vertical-align:middle;">
-              <a href="https://app.papyrus-ai.com/feedback?userId=${userId}&grade=5"
+              <a href="https://app.reversa.ai/feedback?userId=${userId}&grade=5"
                  style="color:#ffffff; text-decoration:none; display:inline-block; line-height:40px; width:100%;">
                 5
               </a>
@@ -799,10 +799,10 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       </div>
 
       <p style="font-size:0.9em; color:#0c2532; text-align:center;">
-        &copy; ${moment().year()} Papyrus. Todos los derechos reservados.
+        &copy; ${moment().year()} Reversa. Todos los derechos reservados.
       </p>
       <div style="text-align:center; margin-top: 20px;">
-        <a href="https://papyrus-ai.com/suscripcion"
+        <a href="https://reversa.ai/suscripcion"
            target="_blank"
            style="color: #0c2532; text-decoration: underline; font-size: 14px;">
           Cancelar Suscripción
@@ -1082,15 +1082,15 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       console.log(`Email size for ${user.email}: ${emailSize} bytes (~${(emailSize/1024).toFixed(2)} KB)`);
 
       const mailOptions = {
-        from: 'Papyrus <info@papyrus-ai.com>',
+        from: 'Reversa <info@reversa.ai>',
         to: user.email,
-        subject: `Papyrus Alertas Normativas — ${moment().format('YYYY-MM-DD')}`,
+        subject: `Reversa Alertas Normativas — ${moment().format('YYYY-MM-DD')}`,
         html: htmlBody,
         attachments: [
           {
-            filename: 'Intro_to_papyrus.jpeg',
-            path: path.join(__dirname, 'assets', 'Intro_to_papyrus.jpeg'),
-            cid: 'papyrusLogo'
+            filename: 'Intro_to_reversa.jpg',
+            path: path.join(__dirname, 'assets', 'Intro_to_reversa.jpg'),
+            cid: 'reversaLogo'
           }
         ]
       };
@@ -1098,7 +1098,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         await transporter.sendMail(mailOptions);
       
         console.log(`Email sent to ${user.email}.`);
-        console.log(htmlBody);
+        //console.log(htmlBody);
       } catch(err) {
         console.error(`Error sending email to ${user.email}:`, err);
       }

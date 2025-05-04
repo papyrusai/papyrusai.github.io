@@ -38,11 +38,20 @@ body, html {
 }
 
 .logo img {
-    max-height: 30px; /* Adjust the max-height as needed for your logo */
+    max-height: 40px; /* Adjust the max-height as needed for your logo */
     margin-left: 10%;
     width: auto; /* Maintain aspect ratio */
   }
-  
+.logo-reversa img{
+  max-height: 70px;
+    /* margin-left: 10%; */
+    width: auto;
+}
+.border-menu{
+  border-bottom: 1px solid #fff;
+  margin-top: 5px;
+  margin-bottom: 50px;
+}
   .menu {
     list-style: none;
     display: flex;

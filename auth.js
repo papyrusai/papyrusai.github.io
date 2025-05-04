@@ -61,7 +61,7 @@ passport.use(new GoogleStrategy({
   
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: 'https://app.papyrus-ai.com/auth/google/callback'
+  callbackURL: 'https://app.reversa.ai/auth/google/callback'
 },
 async (token, tokenSecret, profile, done) => {
   try {

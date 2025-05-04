@@ -1227,7 +1227,23 @@ function buildDateFilter(start, end) {
   return filters;    // <- se inyecta con el spread operator …
 }
 // ──────────────────────────── /FUNCIÓN COMÚN ────────────────────────────
-
+// Helper function to get the latest date with documents in a collection
+async function getLatestDateForCollection(db, collectionName) {
+  try {
+      const latestDoc = await db.collection(collectionName).find({})
+        .sort({ anio: -1, mes: -1, dia: -1 })
+        .project({ anio: 1, mes: 1, dia: 1 })
+        .limit(1)
+        .toArray();
+      if (latestDoc.length > 0) {
+        return { anio: latestDoc[0].anio, mes: latestDoc[0].mes, dia: latestDoc[0].dia };
+      }
+  } catch (err) {
+      // Handle potential errors, e.g., collection not found
+      console.warn(`Could not get latest date for collection ${collectionName}: ${err.message}`);
+  }
+  return null;
+}
 app.get('/profile', async (req, res) => {
   if (!req.isAuthenticated()) {
     return res.redirect('/');
@@ -1245,6 +1261,30 @@ app.get('/profile', async (req, res) => {
     const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
     const etiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
     
+        let formattedRegDate = "01/04/2025"; // Fecha por defecto si no se encuentra o hay error
+    if (user && user.registration_date) {
+        try {
+            // Intenta crear un objeto Date. MongoDB a veces devuelve string, a veces Date.
+            const dateObj = new Date(user.registration_date);
+            
+            // Verifica si la fecha es válida
+            if (!isNaN(dateObj.getTime())) {
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Los meses son 0-indexados
+                const year = dateObj.getFullYear();
+                formattedRegDate = `${day}/${month}/${year}`;
+            } else {
+                console.warn(`Fecha de registro inválida para el usuario ${user._id}: ${user.registration_date}`);
+            }
+        } catch (e) {
+            console.error(`Error al formatear fecha de registro para usuario ${user._id}:`, e);
+            // Se usará la fecha por defecto
+        }
+    } else {
+        console.warn(`No se encontró fecha de registro para el usuario ${user._id}`);
+        // Se usará la fecha por defecto
+    }
+
     // Mantener estos valores para compatibilidad con el código existente
     const userSubRamaMap = user.sub_rama_map || {};
     const userSubIndustriaMap = user.sub_industria_map || {};
@@ -1290,7 +1330,8 @@ if (etiquetasKeys.length === 0) {
     .replace('{{end_date}}', JSON.stringify(new Date()))
     .replace('{{user_boletines_json}}', JSON.stringify(userBoletines || []))
     .replace('{{user_rangos_json}}', JSON.stringify(userRangos || []))
-    .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas));
+    .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas))
+    .replace('{{registration_date_formatted}}', formattedRegDate);
   
   // Enviar respuesta y terminar la ejecución
   return res.send(profileHtml);
@@ -1431,7 +1472,7 @@ if (etiquetasKeys.length === 0) {
         }
         
         // Generar mensaje personalizado con el número total de páginas
-        documentsHtml = `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Puedes estar tranquilo. Tus agentes han analizado ${totalPages} páginas y no hay nada que te afecte.</div>`;
+        documentsHtml = `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Puedes estar tranquilo. Tus agentes han analizado ${totalPages} páginas hoy y no hay nada que te afecte.</div>`;
         
         // Indicar que se deben ocultar los títulos de estadísticas y documentos
         hideAnalyticsLabels = true;
@@ -1537,7 +1578,8 @@ if (etiquetasKeys.length === 0) {
       .replace('{{end_date}}', JSON.stringify(searchEndDate))
       .replace('{{user_boletines_json}}', JSON.stringify(selectedBoletines))
       .replace('{{user_rangos_json}}', JSON.stringify(selectedRangos))
-      .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas));
+      .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas))
+      .replace('{{registration_date_formatted}}', formattedRegDate);
 
     res.send(profileHtml);
   } catch (error) {
@@ -1545,6 +1587,162 @@ if (etiquetasKeys.length === 0) {
     res.status(500).send('Error interno del servidor');
   } finally {
     await client.close();
+  }
+});
+
+//------------------------- Boletin Diario -----------------------------
+app.get('/api/boletin-diario', async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'User not authenticated' });
+  }
+
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Retrieve the logged-in user
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get user's subscribed collections (boletines)
+    let userBoletines = [];
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    }
+    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
+      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    }
+    userBoletines = userBoletines.map(b => b.toUpperCase());
+    if (userBoletines.length === 0) {
+      userBoletines = ["BOE"]; // Default if none subscribed
+    }
+
+    // Get filter parameters from query string (or use defaults)
+    const { boletines, rangos } = req.query;
+    const selectedBoletines = boletines ? JSON.parse(boletines) : userBoletines;
+    
+    // Read the full list of possible rangos from the file generated earlier.
+    let allRangos = [];
+    try {
+        const rangosContent = fs.readFileSync('/home/ubuntu/rangos_list.txt', 'utf8');
+        allRangos = rangosContent.split('\n').filter(r => r.trim() !== '');
+    } catch (fsError) {
+        console.error("Error reading rangos_list.txt:", fsError);
+        // Use a hardcoded default list as fallback
+        allRangos = ["Acuerdos Internacionales",
+    "Normativa Europea",
+    "Legislacion Nacional",
+    "Normativa Reglamentaria",
+    "Decisiones Judiciales",
+    "Doctrina Administrativa",
+    "Comunicados, Guias y Opiniones Consultivas",
+    "Consultas Publicas",
+    "Normativa en tramitación",
+    "Otras"];
+    }
+    // If 'rangos' query param is missing or empty, use all available rangos for filtering.
+    const selectedRangos = (rangos && JSON.parse(rangos).length > 0) ? JSON.parse(rangos) : allRangos;
+
+
+    // Find the overall latest date across *all* initially subscribed collections (userBoletines)
+    let overallLatestDate = null;
+    for (const collectionName of userBoletines) {
+        const latestDate = await getLatestDateForCollection(database, collectionName);
+        if (latestDate) {
+            const currentDate = new Date(latestDate.anio, latestDate.mes - 1, latestDate.dia);
+            if (!overallLatestDate || currentDate > overallLatestDate.dateObj) {
+                overallLatestDate = {
+                    anio: latestDate.anio,
+                    mes: latestDate.mes,
+                    dia: latestDate.dia,
+                    dateObj: currentDate // Store Date object for comparison
+                };
+            }
+        }
+    }
+
+    if (!overallLatestDate) {
+      // No documents found in any subscribed collection recently
+      return res.json({ 
+          date: null, 
+          documents: [], 
+          availableBoletines: userBoletines, 
+          availableRangos: allRangos 
+      }); 
+    }
+
+    // Build the query based on the overall latest date and selected filters
+    const query = {
+      anio: overallLatestDate.anio,
+      mes: overallLatestDate.mes,
+      dia: overallLatestDate.dia,
+      // Filter by selected rangos
+      rango_titulo: { $in: selectedRangos }
+      // NO filter by etiquetas_personalizadas
+    };
+
+    console.log(`Boletin Diario Query for date ${overallLatestDate.dia}/${overallLatestDate.mes}/${overallLatestDate.anio}:`, JSON.stringify(query, null, 2));
+    console.log(`Filtering collections: ${selectedBoletines.join(', ')}`);
+
+    const projection = {
+      short_name: 1,
+      divisiones_cnae: 1, // Assuming this is the field for 'divisiones'
+      resumen: 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      url_pdf: 1,
+      ramas_juridicas: 1,
+      rango_titulo: 1,
+      _id: 1,
+      // No need for etiquetas_personalizadas here
+    };
+
+    let allDocuments = [];
+    // Iterate through the *selected* collections for the final fetch
+    for (const collectionName of selectedBoletines) {
+       try {
+            const coll = database.collection(collectionName);
+            // Find documents matching the latest date *and* selected rangos in this specific collection
+            const docs = await coll.find(query).project(projection).toArray();
+            docs.forEach(doc => {
+                doc.collectionName = collectionName; // Add collection name for display
+            });
+            allDocuments = allDocuments.concat(docs);
+       } catch (err) {
+           console.error(`Error fetching documents for collection ${collectionName}:`, err);
+           // Continue to next collection if one fails
+       }
+    }
+
+    // Sort by collectionName then short_name for consistency
+     allDocuments.sort((a, b) => {
+        if (a.collectionName < b.collectionName) return -1;
+        if (a.collectionName > b.collectionName) return 1;
+        // Use localeCompare for potentially better string comparison
+        return (a.short_name || '').localeCompare(b.short_name || '');
+    });
+
+
+    // Return the date, the documents, and data for filters
+    res.json({
+      date: { dia: overallLatestDate.dia, mes: overallLatestDate.mes, anio: overallLatestDate.anio },
+      documents: allDocuments,
+      availableBoletines: userBoletines, // User's subscribed boletines
+      availableRangos: allRangos // All possible rangos from file/default
+    });
+
+  } catch (error) {
+    console.error('Error in /api/boletin-diario route:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  } finally {
+    if (client) {
+        await client.close();
+    }
   }
 });
 
@@ -2280,7 +2478,7 @@ async function sendSubscriptionEmail(user, userData) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Confirmación de Suscripción a Papyrus</title>
+  <title>Confirmación de Suscripción a Reversa</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -2415,7 +2613,7 @@ async function sendSubscriptionEmail(user, userData) {
 <body>
   <div class="container">
     <div class="header">
-      <img src="cid:papyrusLogo" alt="Papyrus Logo">
+      <img src="cid:reversaLogo" alt="Reversa Logo">
     </div>
     
     <div class="content">
@@ -2425,11 +2623,11 @@ async function sendSubscriptionEmail(user, userData) {
       
       <p>
          Como bien sabría decir un viejo jurista, en el complejo tablero de la ley, quien domina la información, 
-        domina el juego. Y ahora, con Papyrus, tienes las mejores cartas en la mano.
+        domina el juego. Y ahora, con Reversa, tienes las mejores cartas en la mano.
       </p>
       
       <p>
-        No se trata simplemente de un servicio. Al contratar Papyrus eliges tranquilidad: estarás siempre al día 
+        No se trata simplemente de un servicio. Al contratar Reversa eliges tranquilidad: estarás siempre al día 
         y contarás con una guía clara sobre riesgos jurídicos y novedades regulatorias.
       </p>
       
@@ -2470,7 +2668,7 @@ async function sendSubscriptionEmail(user, userData) {
       </p>
       
       <div class="text-center" style="margin-bottom: 24px;">
-        <a href="https://papyrus-legal.com" class="btn">Acceder a mi cuenta</a>
+        <a href="https://reversa.ai" class="btn">Acceder a mi cuenta</a>
       </div>
       
       <p><em>La inteligencia es la capacidad de adaptarse al cambio.</em></p>
@@ -2482,14 +2680,14 @@ async function sendSubscriptionEmail(user, userData) {
       </p>
       
       <p style="font-weight: 500;">
-        El equipo de Papyrus
+        El equipo de Reversa
       </p>
       
       <div class="footer">
-        <p style="margin-bottom: 8px;">© Papyrus Legal, ${currentYear}. Todos los derechos reservados.</p>
+        <p style="margin-bottom: 8px;">© Reversa Legal, ${currentYear}. Todos los derechos reservados.</p>
         <p>
           Si tiene alguna pregunta, puede contactarnos en
-          <a href="mailto:info@papyrus-ai.com">info@papyrus-ai.com</a>
+          <a href="mailto:info@reversa.ai">info@reversa.ai</a>
         </p>
       </div>
     </div>
@@ -2501,13 +2699,13 @@ async function sendSubscriptionEmail(user, userData) {
     // Configurar el mensaje de correo electrónico
     const msg = {
       to: user.email,
-      from: 'info@papyrus-ai.com', // Ajusta esto a tu dirección de correo verificada en SendGrid
-      subject: 'Confirmación de Suscripción a Papyrus',
+      from: 'info@reversa.ai', // Ajusta esto a tu dirección de correo verificada en SendGrid
+      subject: 'Confirmación de Suscripción a Reversa',
       html: emailHtml,
        attachments: [
                 {
-                  filename: 'papyrus_logo_white.png',
-                  path: path.join(__dirname, 'assets', 'papyrus_logo_white.png'),
+                  filename: 'reversa_white.png',
+                  path: path.join(__dirname, 'assets', 'reversa_white.png'),
                   cid: 'papyrusLogo'
                 }
               ]
@@ -2600,8 +2798,8 @@ app.post('/create-checkout-session', async (req, res) => {
       locale: 'es', // 'es' for Spanish
 
       // Y luego añadirlos a la URL:
-    success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}&sub_industria_map=${encodedSubIndustriaMap}&cobertura_legal=${encodedCoberturaLegal}&company_name=${encodedCompanyName}&name=${encodedName}&web=${encodedWeb}&linkedin=${encodedLinkedin}&perfil_profesional=${encodedPerfilProfesional}&rangos=${encodedRangos}&feedback=${encodedFeedback}&etiquetas_personalizadas=${encodedEtiquetasPersonalizadas}`,
-    cancel_url: 'https://app.papyrus-ai.com/paso1.html',
+    success_url: `https://app.reversa.ai/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}&sub_industria_map=${encodedSubIndustriaMap}&cobertura_legal=${encodedCoberturaLegal}&company_name=${encodedCompanyName}&name=${encodedName}&web=${encodedWeb}&linkedin=${encodedLinkedin}&perfil_profesional=${encodedPerfilProfesional}&rangos=${encodedRangos}&feedback=${encodedFeedback}&etiquetas_personalizadas=${encodedEtiquetasPersonalizadas}`,
+    cancel_url: 'https://app.reversa.ai/paso1.html',
     });
 
     res.json({ sessionId: session.id });
@@ -2876,8 +3074,8 @@ const session = await stripe.checkout.sessions.create({
   },
   */
   metadata: metadataChunks,
-  success_url: `https://app.papyrus-ai.com/save-user?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: 'https://app.papyrus-ai.com/paso4.html',
+  success_url: `https://app.reversa.ai/save-user?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: 'https://app.reversa.ai/paso4.html',
 });
 
 res.json({ sessionId: session.id });
@@ -3201,7 +3399,7 @@ app.get('/feedback', async (req, res) => {
 
     // 4) En lugar de redirigir a feedback.html sin más, 
     //    le mandamos a feedback.html con el param fid=...
-    return res.redirect(`https://app.papyrus-ai.com/feedback.html?fid=${feedbackId}`);
+    return res.redirect(`https://app.reversa.ai/feedback.html?fid=${feedbackId}`);
 
   } catch (err) {
     console.error('Error en /feedback =>', err);

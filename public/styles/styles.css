@@ -166,7 +166,7 @@ body {
 
 /* Flex children - Industria and Boletin Oficial */
 .filter-item {
-    flex: 1;
+    flex:1;
     margin-left: 2%;
     /*text-align: center; */
 }
@@ -349,7 +349,7 @@ a {
 .etiquetas-label {
   margin-right: 10px; /* Add some space between the label and the values */
   font-size: 20px;
-  margin-bottom: 1%;
+  margin-bottom: 3%;
  font-weight:800;
 }
 
