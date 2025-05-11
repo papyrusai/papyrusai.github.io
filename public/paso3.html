@@ -1099,15 +1099,23 @@
 </div>
 
 <div id="section-rangos" class="section-content">
-  <div id="rangos-container" class="tags-container">
-    <!-- Selected rangos loaded dynamically -->
-  </div>
-  <!-- Add a filtering input for rangos on a separate line -->
-  <div class="add-tag">
-    <input type="text" id="filtro-rangos" placeholder="Añadir otros rangos (CNMV, DGT...)" oninput="filtrarRangos()">
-    <div id="dropdown-rangos" class="dropdown-container"></div>
-    <p class="feedback-msg">Si no encuentras un rango que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-    <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
+  <div class="subsection">
+    <h4>Rangos Normativos</h4>
+    <div id="rangos-container" class="tags-container">
+      <!-- Selected rangos loaded dynamically -->
+    </div>
+    <div class="add-tag">
+      <div class="dropdown-group">
+        <button type="button" class="dropdown-toggle" onclick="console.log('Rangos button clicked'); toggleDropdown('dropdown-rangos');">
+          <span>Selecciona rangos normativos</span>
+        </button>
+        <div id="dropdown-rangos" class="dropdown-options">
+          <!-- Checkbox items will be generated dynamically -->
+        </div>
+      </div>
+      <p class="feedback-msg">Si no encuentras un rango que estabas buscando, indícanoslo para seguir mejorando el producto</p>
+      <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
+    </div>
   </div>
 </div>
 
@@ -1418,13 +1426,29 @@ if (bannerMode === 'fuentes'){               // ---- FUENTES ----
   </script>
     
 <script>
+  /* --- Reset button state when navigating back to this page --- */
+  window.addEventListener('pageshow', function(event) {
+    // Check if the page is being shown from the browser's cache (back navigation)
+    if (event.persisted) {
+      const confirmBtn = document.getElementById('confirmar-btn');
+      if (confirmBtn) {
+        const originalButtonText = sessionStorage.getItem('originalButtonText') || 'Confirmar';
+        confirmBtn.innerHTML = originalButtonText;
+        confirmBtn.disabled = false;
+        confirmBtn.style.display = '';
+      }
+    }
+  });
+
   /* --- Handle clicks outside dropdowns --- */
   document.addEventListener('click', function(e) {
     // Get references to dropdowns and their toggles
     const dropdownFuentesGob = document.getElementById('dropdown-fuentes-gobierno');
     const dropdownFuentesReg = document.getElementById('dropdown-fuentes-reguladores');
+    const dropdownRangos = document.getElementById('dropdown-rangos');
     const fuentesGobToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-gobierno"]');
     const fuentesRegToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-reguladores"]');
+    const rangosToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-rangos"]');
     
     // Close the gobierno dropdown if it's open and the click is outside
     if (dropdownFuentesGob && dropdownFuentesGob.classList.contains('show')) {
@@ -1437,6 +1461,13 @@ if (bannerMode === 'fuentes'){               // ---- FUENTES ----
     if (dropdownFuentesReg && dropdownFuentesReg.classList.contains('show')) {
       if (!dropdownFuentesReg.contains(e.target) && fuentesRegToggle && !fuentesRegToggle.contains(e.target)) {
         dropdownFuentesReg.classList.remove('show');
+      }
+    }
+    
+    // Close the rangos dropdown if it's open and the click is outside
+    if (dropdownRangos && dropdownRangos.classList.contains('show')) {
+      if (!dropdownRangos.contains(e.target) && rangosToggle && !rangosToggle.contains(e.target)) {
+        dropdownRangos.classList.remove('show');
       }
     }
   });

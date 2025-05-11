@@ -775,5 +775,18 @@
     });
   </script>
 
+  <script>
+    /* --- Reset button states when navigating back --- */
+    window.addEventListener('pageshow', function(event) {
+      // Reset next button if it exists
+      const nextButton = document.getElementById('btnSiguientePaso0');
+      if (nextButton) {
+        nextButton.classList.remove('loading');
+        nextButton.disabled = false;
+        nextButton.innerHTML = 'Siguiente';
+      }
+    });
+  </script>
+
 </body>
 </html>

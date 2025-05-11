@@ -40,6 +40,15 @@ function checkUserAuthorization() {
 
 document.addEventListener('DOMContentLoaded', async function() {
   
+  // Reset confirm button state if coming back to this page
+  const confirmBtn = document.getElementById('confirmar-btn');
+  if (confirmBtn) {
+    const originalButtonText = sessionStorage.getItem('originalButtonText') || 'Confirmar';
+    confirmBtn.innerHTML = originalButtonText;
+    confirmBtn.disabled = false;
+    confirmBtn.style.display = '';
+  }
+  
   // Check user authorization first
   if (!checkUserAuthorization()) {
     return; // Stop execution if not authorized
@@ -47,16 +56,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Debug logging for plan info
   const selectedPlan = sessionStorage.getItem('selectedPlan');
- /*
-  console.log('=== PLAN DEBUG INFO ===');
-  console.log('selectedPlan from paso0:', selectedPlan);
-  console.log('getCurrentPlan() result:', getCurrentPlan());
-  console.log('Plan limits:', window.PLAN_LIMITS);
-  if (selectedPlan) {
-    console.log(`Limits for selectedPlan (${selectedPlan}):`, window.PLAN_LIMITS[selectedPlan]);
-  }
-  console.log('=====================');
-  */
   
   // Handle return from Stripe checkout
   const urlParams = new URLSearchParams(window.location.search);
@@ -87,7 +86,23 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   // Check if we're in editing mode
   const isEditing = sessionStorage.getItem('isEditing') === 'true';
-  await cargarCatalogoEtiquetas();
+  
+  // DEBUGGING: Log the steps for loading the catalog
+  console.log('=== DEBUGGING CATALOG LOADING ===');
+  console.log('1. About to call cargarCatalogoEtiquetas()');
+  console.log('Initial catalogoEtiquetas value:', catalogoEtiquetas);
+  
+  try {
+    await cargarCatalogoEtiquetas();
+    console.log('2. cargarCatalogoEtiquetas() completed');
+    console.log('catalogoEtiquetas after loading:', catalogoEtiquetas);
+    console.log('Has rangos_normativos?', !!catalogoEtiquetas.rangos_normativos);
+    console.log('rangos_normativos content:', catalogoEtiquetas.rangos_normativos);
+  } catch (error) {
+    console.error('Error loading catalog:', error);
+  }
+
+  console.log('=== END CATALOG LOADING DEBUG ===');
 
   const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas'));
   if (!etiquetas) {
@@ -120,6 +135,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (skeletonLoader && formContent) {
       skeletonLoader.style.display = 'none';
       formContent.style.display = 'block';
+      
+      // DEBUGGING: Check if rangos dropdown works after content is shown
+      console.log('=== DEBUGGING RANGOS DROPDOWN AFTER CONTENT LOADED ===');
+      const rangosDropdown = document.getElementById('dropdown-rangos');
+      console.log('rangosDropdown element exists:', !!rangosDropdown);
+      const rangosToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-rangos"]');
+      console.log('rangosToggle element exists:', !!rangosToggle);
+      if (rangosToggle) {
+        console.log('rangosToggle onclick attribute:', rangosToggle.getAttribute('onclick'));
+      }
+      console.log('=== END RANGOS DROPDOWN DEBUG ===');
     }
   }, 800);
   
@@ -130,9 +156,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Get references to dropdown toggles and dropdown containers
     const fuentesGobToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-gobierno"]');
     const fuentesRegToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-reguladores"]');
+    const rangosToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-rangos"]');
     
     const dropdownFuentesGob = document.getElementById('dropdown-fuentes-gobierno');
     const dropdownFuentesReg = document.getElementById('dropdown-fuentes-reguladores');
+    const dropdownRangos = document.getElementById('dropdown-rangos');
 
     // Only close dropdown if it's open and click is outside of both the dropdown and its toggle
     if (dropdownFuentesGob && dropdownFuentesGob.classList.contains('show')) {
@@ -150,10 +178,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Handle rangos dropdown
-    const filtroRangos = document.getElementById('filtro-rangos');
-    const dropdownRangos = document.getElementById('dropdown-rangos');
-    if (dropdownRangos && !dropdownRangos.contains(target) && target !== filtroRangos) {
-      dropdownRangos.innerHTML = "";
+    if (dropdownRangos && dropdownRangos.classList.contains('show')) {
+      if (!dropdownRangos.contains(target) && 
+          rangosToggle && !rangosToggle.contains(target)) {
+        console.log('Closing rangos dropdown because click was outside');
+        dropdownRangos.classList.remove('show');
+      }
     }
   });
 });
@@ -185,14 +215,11 @@ function setupFilterClickHandlers() {
     // The onclick attribute directly calls toggleDropdown and updateFuentesReguladoresCheckboxes
   }
 
-  // Rangos filter - still using input
-  const filtroRangos = document.getElementById('filtro-rangos');
-  if (filtroRangos) {
-    filtroRangos.addEventListener('click', function(e) {
-      e.stopPropagation();
-      hideAllDropdownsExcept('dropdown-rangos');
-      showAllRangosOptions();
-    });
+  // Rangos filter - now using dropdown toggle instead of input
+  const rangosToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-rangos"]');
+  if (rangosToggle) {
+    // This button already has an onclick attribute, so we don't need to add another event listener
+    // The onclick attribute directly calls toggleDropdown and updateRangosCheckboxes
   }
 }
 
@@ -284,27 +311,82 @@ function showAllFuentesReguladoresOptions() {
 }
 
 function showAllRangosOptions() {
+ 
   const dropdown = document.getElementById('dropdown-rangos');
-  if (!catalogoEtiquetas || !catalogoEtiquetas.rangos_normativos) return;
-  catalogoEtiquetas.rangos_normativos.forEach(match => {
-    const option = document.createElement('div');
-    option.className = "dropdown-item";
-    option.textContent = match;
-    option.onclick = function() {
-      seleccionarRango(match);
-    };
-    dropdown.appendChild(option);
-  });
+  
+ 
+  if (!dropdown) {
+    console.error('dropdown-rangos element not found in the DOM');
+    return;
+  }
+  
+  
+  if (!catalogoEtiquetas || !catalogoEtiquetas.rangos_normativos) {
+    console.error('No rangos_normativos found in catalogoEtiquetas:', catalogoEtiquetas);
+    return;
+  }
+  
+
+  // Clear any existing content
+  dropdown.innerHTML = '';
+  
+  try {
+    // Create checkbox items for each rango
+    catalogoEtiquetas.rangos_normativos.forEach((rango, index) => {
+  
+      
+      const checkboxItem = document.createElement('div');
+      checkboxItem.className = 'checkbox-item';
+      
+      // Create a unique ID for the checkbox based on the rango name
+      const rangoId = rango.toLowerCase().replace(/\s+/g, '-');
+
+      
+      checkboxItem.innerHTML = `
+        <input type="checkbox" id="${rangoId}" name="rangos[]" value="${rango}" onchange="toggleRango(this)">
+        <label for="${rangoId}">${rango}</label>
+      `;
+      
+      dropdown.appendChild(checkboxItem);
+  
+    });
+    
+  } catch (error) {
+    console.error('Error creating rangos checkboxes:', error);
+  }
+  
+  // Update checkboxes based on current selections
+
+  updateRangosCheckboxes();
+
 }
 
 async function cargarCatalogoEtiquetas() {
   try {
+    console.log("Fetching catalogo_etiquetas.json...");
     const respuesta = await fetch('catalogo_etiquetas.json');
+    
+    if (!respuesta.ok) {
+      throw new Error(`Failed to fetch catalogo_etiquetas.json: ${respuesta.status} ${respuesta.statusText}`);
+    }
+    
     catalogoEtiquetas = await respuesta.json();
     console.log("Catálogo de etiquetas cargado:", catalogoEtiquetas);
+    
+    // Verify we have rangos_normativos
+    if (!catalogoEtiquetas.rangos_normativos || !Array.isArray(catalogoEtiquetas.rangos_normativos)) {
+      console.error("rangos_normativos is missing or not an array in the loaded catalog:", catalogoEtiquetas);
+      catalogoEtiquetas.rangos_normativos = [];
+    } else {
+      console.log("Rangos normativos loaded successfully:", catalogoEtiquetas.rangos_normativos);
+    }
+    
+    return catalogoEtiquetas;
   } catch (error) {
     console.error('Error al cargar el catálogo de etiquetas:', error);
-    catalogoEtiquetas = {rangos_normativos:{} }; //industrias: [], ramas_juridicas: [], subramas_juridicas: {}, 
+    // Initialize with empty structure to prevent errors
+    catalogoEtiquetas = { rangos_normativos: [] };
+    return catalogoEtiquetas;
   }
 }
 
@@ -707,74 +789,7 @@ function cargarRangosPredefinidos() {
     `;
     container.appendChild(tagElement);
   });
-  
-  // Remove any existing add-tag div if present
-  const existingAddDiv = document.querySelector("#section-rangos .add-tag");
-  if (existingAddDiv) {
-    existingAddDiv.remove();
-  }
-  
-  // Create a new add-tag div
-  const addDiv = document.createElement("div");
-  addDiv.className = "add-tag";
-  addDiv.innerHTML = `
-    <input type="text" id="filtro-rangos" placeholder="Filtrar rangos..." oninput="filtrarRangos()">
-    <div id="dropdown-rangos" class="dropdown-container"></div>
-    <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
-    <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
-  `;
-  
-  // Append the add-tag div to the section-rangos element
-  const rangosSection = document.getElementById("section-rangos");
-  if (rangosSection) {
-    rangosSection.appendChild(addDiv);
-  }
 }
-
-function filtrarRangos() {
-  const filtro = document.getElementById('filtro-rangos').value.toLowerCase();
-  const dropdown = document.getElementById('dropdown-rangos');
-  dropdown.innerHTML = "";
-  if (!catalogoEtiquetas || !catalogoEtiquetas.rangos_normativos) return;
-  const matches = catalogoEtiquetas.rangos_normativos.filter(rango => rango.toLowerCase().includes(filtro));
-  matches.forEach(match => {
-    const option = document.createElement('div');
-    option.className = "dropdown-item";
-    option.textContent = match;
-    option.onclick = function() {
-      seleccionarRango(match);
-    };
-    dropdown.appendChild(option);
-  });
-}
-
-  function seleccionarRango(value) {
-    // Get current etiquetas from sessionStorage
-    const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas")) || {};
-    
-    // Initialize rangos_normativos array if it doesn't exist
-    if (!etiquetas.rangos_normativos) etiquetas.rangos_normativos = [];
-    
-    // Check if the value already exists in the array to avoid duplicates
-    if (!etiquetas.rangos_normativos.includes(value)) {
-      // Add the value as is, without any numbering
-      etiquetas.rangos_normativos.push(value);
-      
-      // Save updated etiquetas back to sessionStorage
-      sessionStorage.setItem("etiquetasRecomendadas", JSON.stringify(etiquetas));
-      
-      // Reload the UI to show the updated list
-      cargarRangosPredefinidos();
-    }
-    
-    // Clear the filter input and dropdown
-    document.getElementById('filtro-rangos').value = "";
-    document.getElementById('dropdown-rangos').innerHTML = "";
-  }
-  
-
-/* ------------------ Utility Functions ------------------ */
-
 
 function eliminarRango(rango) {
   // Retrieve the etiquetas object or use an empty object if not set
@@ -1168,6 +1183,254 @@ window.toggleDropdown = toggleDropdown;
 window.toggleFuenteGobierno = toggleFuenteGobierno;
 window.toggleFuenteReguladores = toggleFuenteReguladores;
 window.actualizarContadorFuentes = actualizarContadorFuentes;
+
+function validateAgentes() {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  if (!etiquetas || !etiquetas.etiquetas_personalizadas || Object.keys(etiquetas.etiquetas_personalizadas).length === 0) {
+    alert("Por favor, añade al menos un agente personalizado antes de continuar.");
+    return false;
+  }
+  
+  // Get user plan limits
+  const userPlan = sessionStorage.getItem('selectedPlan');
+  console.log('[validateAgentes] Using selectedPlan:', userPlan);
+  
+  const planLimits = window.PLAN_LIMITS[userPlan] || { agentes: 5 }; // Default to plan2 if not specified
+  
+  // Get extras from sessionStorage if any
+  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+  const totalLimit = planLimits.agentes + extraAgentes;
+  
+  const numAgentes = Object.keys(etiquetas.etiquetas_personalizadas).length;
+  
+  // Check if user exceeds plan limits
+  if (numAgentes > totalLimit) {
+    // Show banner for agent limit
+    bannerMode = 'agentes';
+    currentDeficit = numAgentes - totalLimit;
+    deficitSpan.textContent = currentDeficit;
+    document.getElementById('extra-title').textContent = "Añadir agente personalizado";
+    document.getElementById('extra-desc').textContent = "+10€/agente";
+    
+    // Show the banner
+    banner.classList.remove('hidden');
+    document.getElementById('backdrop').classList.remove('hidden');
+    return false;
+  }
+  
+  return true;
+}
+
+function validateFuentes() {
+  const userData = JSON.parse(sessionStorage.getItem("userData"));
+  if (!userData) return true; // No userData yet, let user continue
+  
+  const fuentes = (userData.fuentes || []).length;
+  const reguladores = (userData.reguladores || []).length;
+  const totalFuentes = fuentes + reguladores;
+  
+  if (totalFuentes === 0) {
+    alert("Por favor, añade al menos una fuente antes de continuar.");
+    return false;
+  }
+  
+  // Get user plan limits
+  const userPlan = sessionStorage.getItem('selectedPlan');
+  console.log('[validateFuentes] Using selectedPlan:', userPlan);
+  
+  const planLimits = window.PLAN_LIMITS[userPlan] || { fuentes: 1 }; // Default to plan2 if not specified
+  
+  // Get extras from sessionStorage if any
+  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+  const totalLimit = planLimits.fuentes + extraFuentes;
+  
+  // Check if user exceeds plan limits
+  if (totalFuentes > totalLimit) {
+    // Show banner for source limit
+    bannerMode = 'fuentes';
+    currentDeficit = totalFuentes - totalLimit;
+    deficitSpan.textContent = currentDeficit;
+    document.getElementById('extra-title').textContent = "Añadir fuente oficial";
+    document.getElementById('extra-desc').textContent = "+15€/fuente";
+    
+    // Show the banner
+    banner.classList.remove('hidden');
+    document.getElementById('backdrop').classList.remove('hidden');
+    return false;
+  }
+  
+  return true;
+}
+
+/* ------------------ Utility Functions ------------------ */
+
+// Function to toggle dropdown visibility
+function toggleDropdown(dropdownId) {
+  console.log(`=== toggleDropdown CALLED with ID: ${dropdownId} ===`);
+  const dropdown = document.getElementById(dropdownId);
+  
+  if (!dropdown) {
+    console.error(`Dropdown element not found: ${dropdownId}`);
+    return;
+  }
+  
+  const wasShown = dropdown.classList.contains('show');
+  dropdown.classList.toggle('show');
+  const isNowShown = dropdown.classList.contains('show');
+  
+  console.log(`Dropdown ${dropdownId} was ${wasShown ? 'shown' : 'hidden'}, is now ${isNowShown ? 'shown' : 'hidden'}`);
+  
+  if (dropdownId === 'dropdown-fuentes-gobierno') {
+    console.log('Calling updateFuentesGobiernoCheckboxes()');
+    updateFuentesGobiernoCheckboxes();
+  } else if (dropdownId === 'dropdown-fuentes-reguladores') {
+    console.log('Calling updateFuentesReguladoresCheckboxes()');
+    updateFuentesReguladoresCheckboxes();
+  } else if (dropdownId === 'dropdown-rangos') {
+    console.log('Dropdown is rangos, checking if it is now shown:', isNowShown);
+    if (isNowShown) {
+      console.log('Calling showAllRangosOptions() for rangos dropdown');
+      showAllRangosOptions();
+    } else {
+      console.log('Rangos dropdown was hidden, not calling showAllRangosOptions()');
+    }
+  }
+  console.log(`=== END toggleDropdown ===`);
+}
+
+// Function to update checkboxes based on current selections (fuentes gobierno)
+function updateFuentesGobiernoCheckboxes() {
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  const fuentes = userData.fuentes || [];
+  
+  // Reset all checkboxes first
+  document.querySelectorAll('input[name="fuentes[]"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Check the ones in the current selection
+  fuentes.forEach(fuente => {
+    const checkbox = document.querySelector(`input[name="fuentes[]"][value="${fuente}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  });
+}
+
+// Function to update checkboxes based on current selections (fuentes reguladores)
+function updateFuentesReguladoresCheckboxes() {
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  const reguladores = userData.reguladores || [];
+  
+  // Reset all checkboxes first
+  document.querySelectorAll('input[name="reguladores[]"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Check the ones in the current selection
+  reguladores.forEach(regulador => {
+    const checkbox = document.querySelector(`input[name="reguladores[]"][value="${regulador}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  });
+}
+
+// Function to handle toggling a fuente gobierno checkbox
+function toggleFuenteGobierno(checkbox) {
+  const value = checkbox.value;
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  if (!userData.fuentes) userData.fuentes = [];
+  
+  if (checkbox.checked) {
+    // Add if not already in the array
+    if (!userData.fuentes.includes(value)) {
+      userData.fuentes.push(value);
+    }
+  } else {
+    // Remove from the array
+    userData.fuentes = userData.fuentes.filter(f => f !== value);
+  }
+  
+  // Save back to sessionStorage
+  sessionStorage.setItem('userData', JSON.stringify(userData));
+  
+  // Refresh the display
+  cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
+}
+
+// Function to handle toggling a fuente reguladores checkbox
+function toggleFuenteReguladores(checkbox) {
+  const value = checkbox.value;
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  if (!userData.reguladores) userData.reguladores = [];
+  
+  if (checkbox.checked) {
+    // Add if not already in the array
+    if (!userData.reguladores.includes(value)) {
+      userData.reguladores.push(value);
+    }
+  } else {
+    // Remove from the array
+    userData.reguladores = userData.reguladores.filter(r => r !== value);
+  }
+  
+  // Save back to sessionStorage
+  sessionStorage.setItem('userData', JSON.stringify(userData));
+  
+  // Refresh the display
+  cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
+}
+
+// Función para actualizar el contador de fuentes
+function actualizarContadorFuentes() {
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  const contador = document.getElementById('contador-fuentes');
+  const limiteSpan = document.getElementById('limite-fuentes');
+  
+  if (contador) {
+    const fuentesGobierno = userData.fuentes || [];
+    const fuentesReguladores = userData.reguladores || [];
+    const numFuentes = fuentesGobierno.length + fuentesReguladores.length;
+    contador.textContent = numFuentes;
+    
+    // Get current plan limit
+    const userPlan = sessionStorage.getItem('selectedPlan');
+    
+    const planLimits = window.PLAN_LIMITS[userPlan] || { fuentes: 1 }; // Default to plan2 if not specified
+    
+    // Get extras from sessionStorage if any
+    const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+    const totalLimit = planLimits.fuentes + extraFuentes;
+    
+    // Update or create the limit span
+    if (limiteSpan) {
+      limiteSpan.textContent = `/${totalLimit} incluidas`;
+      
+    } else if (contador.parentNode) {
+      const newLimiteSpan = document.createElement('span');
+      newLimiteSpan.id = 'limite-fuentes';
+      newLimiteSpan.className = 'limite-etiquetas';
+      newLimiteSpan.textContent = `/${totalLimit} incluidas`;
+      contador.parentNode.appendChild(newLimiteSpan);
+    
+    }
+  }
+}
+
+/* ─── límites por plan ───────────────────────────────────────── */
+window.PLAN_LIMITS = {
+  plan2 : { fuentes: 1 , agentes: 5  },   // Start
+  plan3 : { fuentes: 5 , agentes: 12 }    // Pro
+};
+
+// Log plan limits for debugging
+console.log('[paso3.js] PLAN_LIMITS defined:', window.PLAN_LIMITS);
+console.log('[paso3.js] Selected plan from sessionStorage:', sessionStorage.getItem('selectedPlan'));
+
+
+
+
 /*window.eliminarEtiqueta = eliminarEtiqueta;
 window.eliminarRamaJuridica = eliminarRamaJuridica;
 
@@ -1520,235 +1783,46 @@ function eliminarEtiqueta(categoria, etiqueta) {
   */
 
 /* ------------------ Validation Functions ------------------ */
-function validateAgentes() {
-  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
-  if (!etiquetas || !etiquetas.etiquetas_personalizadas || Object.keys(etiquetas.etiquetas_personalizadas).length === 0) {
-    alert("Por favor, añade al menos un agente personalizado antes de continuar.");
-    return false;
-  }
-  
-  // Get user plan limits
-  const userPlan = sessionStorage.getItem('selectedPlan');
-  console.log('[validateAgentes] Using selectedPlan:', userPlan);
-  
-  const planLimits = window.PLAN_LIMITS[userPlan] || { agentes: 5 }; // Default to plan2 if not specified
-  
-  // Get extras from sessionStorage if any
-  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
-  const totalLimit = planLimits.agentes + extraAgentes;
-  
-  const numAgentes = Object.keys(etiquetas.etiquetas_personalizadas).length;
-  
-  // Check if user exceeds plan limits
-  if (numAgentes > totalLimit) {
-    // Show banner for agent limit
-    bannerMode = 'agentes';
-    currentDeficit = numAgentes - totalLimit;
-    deficitSpan.textContent = currentDeficit;
-    document.getElementById('extra-title').textContent = "Añadir agente personalizado";
-    document.getElementById('extra-desc').textContent = "+10€/agente";
-    
-    // Show the banner
-    banner.classList.remove('hidden');
-    document.getElementById('backdrop').classList.remove('hidden');
-    return false;
-  }
-  
-  return true;
-}
 
-function validateFuentes() {
-  const userData = JSON.parse(sessionStorage.getItem("userData"));
-  if (!userData) return true; // No userData yet, let user continue
-  
-  const fuentes = (userData.fuentes || []).length;
-  const reguladores = (userData.reguladores || []).length;
-  const totalFuentes = fuentes + reguladores;
-  
-  if (totalFuentes === 0) {
-    alert("Por favor, añade al menos una fuente antes de continuar.");
-    return false;
-  }
-  
-  // Get user plan limits
-  const userPlan = sessionStorage.getItem('selectedPlan');
-  console.log('[validateFuentes] Using selectedPlan:', userPlan);
-  
-  const planLimits = window.PLAN_LIMITS[userPlan] || { fuentes: 1 }; // Default to plan2 if not specified
-  
-  // Get extras from sessionStorage if any
-  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
-  const totalLimit = planLimits.fuentes + extraFuentes;
-  
-  // Check if user exceeds plan limits
-  if (totalFuentes > totalLimit) {
-    // Show banner for source limit
-    bannerMode = 'fuentes';
-    currentDeficit = totalFuentes - totalLimit;
-    deficitSpan.textContent = currentDeficit;
-    document.getElementById('extra-title').textContent = "Añadir fuente oficial";
-    document.getElementById('extra-desc').textContent = "+15€/fuente";
-    
-    // Show the banner
-    banner.classList.remove('hidden');
-    document.getElementById('backdrop').classList.remove('hidden');
-    return false;
-  }
-  
-  return true;
-}
-
-/* ------------------ Utility Functions ------------------ */
-
-// Function to toggle dropdown visibility
-function toggleDropdown(dropdownId) {
-  const dropdown = document.getElementById(dropdownId);
-  
-  // Close all other dropdowns first
-  const allDropdowns = document.querySelectorAll('.dropdown-options');
-  allDropdowns.forEach(dd => {
-    if (dd.id !== dropdownId) {
-      dd.classList.remove('show');
-    }
-  });
-  
-  // Toggle this dropdown
-  dropdown.classList.toggle('show');
-  
-  // Check current selections to update checkboxes
-  if (dropdownId === 'dropdown-fuentes-gobierno') {
-    updateFuentesGobiernoCheckboxes();
-  } else if (dropdownId === 'dropdown-fuentes-reguladores') {
-    updateFuentesReguladoresCheckboxes();
-  }
-}
-
-// Function to update checkboxes based on current selections (fuentes gobierno)
-function updateFuentesGobiernoCheckboxes() {
-  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
-  const fuentes = userData.fuentes || [];
+// Function to update checkboxes based on current selections (rangos)
+function updateRangosCheckboxes() {
+  const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')) || {};
+  const rangos = etiquetas.rangos_normativos || [];
   
   // Reset all checkboxes first
-  document.querySelectorAll('input[name="fuentes[]"]').forEach(checkbox => {
+  document.querySelectorAll('input[name="rangos[]"]').forEach(checkbox => {
     checkbox.checked = false;
   });
   
   // Check the ones in the current selection
-  fuentes.forEach(fuente => {
-    const checkbox = document.querySelector(`input[name="fuentes[]"][value="${fuente}"]`);
+  rangos.forEach(rango => {
+    const rangoId = rango.toLowerCase().replace(/\s+/g, '-');
+    const checkbox = document.querySelector(`input[name="rangos[]"][value="${rango}"]`);
     if (checkbox) {
       checkbox.checked = true;
     }
   });
 }
 
-// Function to update checkboxes based on current selections (fuentes reguladores)
-function updateFuentesReguladoresCheckboxes() {
-  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
-  const reguladores = userData.reguladores || [];
-  
-  // Reset all checkboxes first
-  document.querySelectorAll('input[name="reguladores[]"]').forEach(checkbox => {
-    checkbox.checked = false;
-  });
-  
-  // Check the ones in the current selection
-  reguladores.forEach(regulador => {
-    const checkbox = document.querySelector(`input[name="reguladores[]"][value="${regulador}"]`);
-    if (checkbox) {
-      checkbox.checked = true;
-    }
-  });
-}
-
-// Function to handle toggling a fuente gobierno checkbox
-function toggleFuenteGobierno(checkbox) {
+// Function to handle toggling a rango checkbox
+function toggleRango(checkbox) {
   const value = checkbox.value;
-  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
-  if (!userData.fuentes) userData.fuentes = [];
+  const etiquetas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')) || {};
+  if (!etiquetas.rangos_normativos) etiquetas.rangos_normativos = [];
   
   if (checkbox.checked) {
     // Add if not already in the array
-    if (!userData.fuentes.includes(value)) {
-      userData.fuentes.push(value);
+    if (!etiquetas.rangos_normativos.includes(value)) {
+      etiquetas.rangos_normativos.push(value);
     }
   } else {
     // Remove from the array
-    userData.fuentes = userData.fuentes.filter(f => f !== value);
+    etiquetas.rangos_normativos = etiquetas.rangos_normativos.filter(r => r !== value);
   }
   
   // Save back to sessionStorage
-  sessionStorage.setItem('userData', JSON.stringify(userData));
+  sessionStorage.setItem('etiquetasRecomendadas', JSON.stringify(etiquetas));
   
   // Refresh the display
-  cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
+  cargarRangosPredefinidos();
 }
-
-// Function to handle toggling a fuente reguladores checkbox
-function toggleFuenteReguladores(checkbox) {
-  const value = checkbox.value;
-  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
-  if (!userData.reguladores) userData.reguladores = [];
-  
-  if (checkbox.checked) {
-    // Add if not already in the array
-    if (!userData.reguladores.includes(value)) {
-      userData.reguladores.push(value);
-    }
-  } else {
-    // Remove from the array
-    userData.reguladores = userData.reguladores.filter(r => r !== value);
-  }
-  
-  // Save back to sessionStorage
-  sessionStorage.setItem('userData', JSON.stringify(userData));
-  
-  // Refresh the display
-  cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
-}
-
-// Función para actualizar el contador de fuentes
-function actualizarContadorFuentes() {
-  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
-  const contador = document.getElementById('contador-fuentes');
-  const limiteSpan = document.getElementById('limite-fuentes');
-  
-  if (contador) {
-    const fuentesGobierno = userData.fuentes || [];
-    const fuentesReguladores = userData.reguladores || [];
-    const numFuentes = fuentesGobierno.length + fuentesReguladores.length;
-    contador.textContent = numFuentes;
-    
-    // Get current plan limit
-    const userPlan = sessionStorage.getItem('selectedPlan');
-    
-    const planLimits = window.PLAN_LIMITS[userPlan] || { fuentes: 1 }; // Default to plan2 if not specified
-    
-    // Get extras from sessionStorage if any
-    const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
-    const totalLimit = planLimits.fuentes + extraFuentes;
-    
-    // Update or create the limit span
-    if (limiteSpan) {
-      limiteSpan.textContent = `/${totalLimit} incluidas`;
-      
-    } else if (contador.parentNode) {
-      const newLimiteSpan = document.createElement('span');
-      newLimiteSpan.id = 'limite-fuentes';
-      newLimiteSpan.className = 'limite-etiquetas';
-      newLimiteSpan.textContent = `/${totalLimit} incluidas`;
-      contador.parentNode.appendChild(newLimiteSpan);
-    
-    }
-  }
-}
-
-/* ─── límites por plan ───────────────────────────────────────── */
-window.PLAN_LIMITS = {
-  plan2 : { fuentes: 1 , agentes: 5  },   // Start
-  plan3 : { fuentes: 5 , agentes: 12 }    // Pro
-};
-
-// Log plan limits for debugging
-console.log('[paso3.js] PLAN_LIMITS defined:', window.PLAN_LIMITS);
-console.log('[paso3.js] Selected plan from sessionStorage:', sessionStorage.getItem('selectedPlan'));

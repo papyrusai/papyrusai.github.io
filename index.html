@@ -333,6 +333,20 @@
     // Reset button state when page is shown
     window.addEventListener('pageshow', () => {
       resetLoginButton();
+      
+      // Reset login button state
+      const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+      if (loginSubmitBtn) {
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.innerHTML = 'Iniciar Sesión';
+      }
+      
+      // Reset registration button state
+      const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+      if (registerSubmitBtn) {
+        registerSubmitBtn.disabled = false;
+        registerSubmitBtn.innerHTML = 'Registrarse';
+      }
     });
 
     // Toggle menu for mobile view

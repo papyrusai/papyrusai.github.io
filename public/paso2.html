@@ -171,30 +171,38 @@
     function toggleMenu() {
         const menu = document.querySelector('.menu');
         menu.classList.toggle('active');
-         }
-         // Close the menu if clicking outside of it
-document.addEventListener('click', function(event) {
-    const menu = document.querySelector('.menu');
-    const hamburger = document.querySelector('.hamburger');
-    
-    if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
-        menu.classList.remove('active');
     }
-});
-</script>
-<script>
-  /* botón Continuar */
-  document.getElementById('btn-continuar').addEventListener(
-    'click', () => location.href = buildNextURL('paso3.html')
-  );
+    // Close the menu if clicking outside of it
+    document.addEventListener('click', function(event) {
+        const menu = document.querySelector('.menu');
+        const hamburger = document.querySelector('.hamburger');
+        
+        if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+            menu.classList.remove('active');
+        }
+    });
+  </script>
+
+  <script>
+    /* --- Reset button states when navigating back --- */
+    window.addEventListener('pageshow', function(event) {
+      // Reset continue button if it exists
+      const continueBtn = document.getElementById('btn-continuar');
+      if (continueBtn) {
+        continueBtn.disabled = false;
+        if (continueBtn.classList.contains('loading')) {
+          continueBtn.classList.remove('loading');
+          continueBtn.textContent = 'Continuar a Paso 3';
+        }
+      }
+    });
+    
+    /* botón Continuar */
+    document.getElementById('btn-continuar').addEventListener(
+      'click', () => location.href = buildNextURL('paso3.html')
+    );
   </script>
   
-<script>
-  /* botón Continuar */
-  document.getElementById('btn-continuar').addEventListener(
-    'click', () => location.href = buildNextURL('paso3.html')
-  );
-  </script>
   <script>
     /* -------------   plan-helper universal   ------------- */
     (function(){
@@ -216,9 +224,6 @@ document.addEventListener('click', function(event) {
           return url;
       };
     })();
-    </script>
-    
-
-
+  </script>
 </body>
 </html>

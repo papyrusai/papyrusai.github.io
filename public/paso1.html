@@ -820,6 +820,17 @@
     </script>
     
     <script>
+      /* --- Reset button state when navigating back --- */
+      window.addEventListener('pageshow', function(event) {
+        // Reset the next button if it exists
+        const nextButton = document.querySelector('.btn-siguiente');
+        if (nextButton) {
+          nextButton.disabled = false;
+          nextButton.classList.remove('loading');
+          nextButton.textContent = 'Siguiente';
+        }
+      });
+      
       /* --- enviar a Paso 2 usando el helper --- */
       document.getElementById('onboardingForm').addEventListener('submit', e =>{
         e.preventDefault();

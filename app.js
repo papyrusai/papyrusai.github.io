@@ -3114,7 +3114,7 @@ const session = await stripe.checkout.sessions.create({
   */
   metadata: metadataChunks,
   success_url: `https://app.reversa.ai/save-user?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: 'https://app.reversa.ai/paso4.html',
+  cancel_url: 'https://app.reversa.ai/paso3.html',
 });
 
 res.json({ sessionId: session.id });
