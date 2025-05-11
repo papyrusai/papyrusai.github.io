@@ -1686,6 +1686,58 @@ app.get('/api/boletin-diario', async (req, res) => {
     // If 'rangos' query param is missing or empty, use all available rangos for filtering.
     const selectedRangos = (rangos && JSON.parse(rangos).length > 0) ? JSON.parse(rangos) : allRangos;
 
+    // ---------- NUEVA LÓGICA: buscar primero documentos con la fecha de hoy ----------
+    const today = new Date();
+    const todayQueryBase = {
+      anio: today.getFullYear(),
+      mes: today.getMonth() + 1,
+      dia: today.getDate(),
+      rango_titulo: { $in: selectedRangos }
+    };
+
+    const todayProjection = {
+      short_name: 1,
+      divisiones: 1,
+      resumen: 1,
+      dia: 1,
+      mes: 1,
+      anio: 1,
+      url_pdf: 1,
+      ramas_juridicas: 1,
+      rango_titulo: 1,
+      _id: 1
+    };
+
+    let todayDocuments = [];
+    for (const collectionName of selectedBoletines) {
+      try {
+        const coll = database.collection(collectionName);
+        const docs = await coll.find(todayQueryBase).project(todayProjection).toArray();
+        docs.forEach(doc => {
+          doc.collectionName = collectionName;
+        });
+        todayDocuments = todayDocuments.concat(docs);
+      } catch (err) {
+        console.error(`Error fetching today's docs for collection ${collectionName}:`, err);
+      }
+    }
+
+    if (todayDocuments.length > 0) {
+      // Ordenar resultados para mantener consistencia con la respuesta estándar
+      todayDocuments.sort((a, b) => {
+        if (a.collectionName < b.collectionName) return -1;
+        if (a.collectionName > b.collectionName) return 1;
+        return (a.short_name || '').localeCompare(b.short_name || '');
+      });
+
+      return res.json({
+        date: { dia: today.getDate(), mes: today.getMonth() + 1, anio: today.getFullYear() },
+        documents: todayDocuments,
+        availableBoletines: userBoletines,
+        availableRangos: allRangos
+      });
+    }
+    // ---------- FIN NUEVA LÓGICA ----------
 
     // Find the overall latest date across *all* initially subscribed collections (userBoletines)
     let overallLatestDate = null;
@@ -3708,7 +3760,8 @@ app.post('/api/update-user-data', ensureAuthenticated, async (req, res) => {
     const allowedFields = [
       'etiquetas_personalizadas',
       'cobertura_legal',
-      'rangos'
+      'rangos',
+      'accepted_email'  // Add accepted_email as an allowed field
     ];
 
     // Filtrar solo los campos permitidos

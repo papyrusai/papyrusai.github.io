@@ -850,27 +850,27 @@ document.addEventListener('DOMContentLoaded', async function() {
   initSubscriptionModal();
   
   // Añadir event listener para el botón de editar suscripción
-  const editSuscriptionButtons = document.querySelectorAll('#editSuscription, #editSuscription2');
+  const editSuscriptionButtons = document.querySelectorAll('#editSuscription, #editSuscription2, #editSuscription3');
   editSuscriptionButtons.forEach(button => {
-    button.addEventListener('click', async function(e) {
+    // Remove any existing event listeners
+    const newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+    
+    // Add new event listener to show the subscription modal directly
+    newButton.addEventListener('click', function(e) {
       e.preventDefault();
-      
-      // Recargar los datos del usuario antes de mostrar el modal
-      await loadUserData();
-      
-      // Actualizar todas las secciones
-      updateCurrentPlanDisplay();
-      updateUpgradePlansVisibility();
-      createAgentsSection();
-      createSourcesSection();
-      createRangeSection();
-      createAnalysisSection();
-      
-      // Mostrar el modal
-      const modal = document.getElementById('subscriptionModal');
-      if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+      // Show subscription container instead of redirecting
+      if (typeof showSubscriptionModal === 'function') {
+        showSubscriptionModal();
+      } else {
+        // Fallback if the function isn't available
+        const modal = document.getElementById('subscription-container');
+        if (modal) {
+          modal.style.display = 'block';
+        } else {
+          console.error('Subscription container not found');
+          alert('La funcionalidad de editar suscripción estará disponible próximamente.');
+        }
       }
     });
   });
@@ -3318,7 +3318,7 @@ function insertSubscriptionModalStyles() {
 // 6. Modificación de la función initSubscriptionModal para inicializar todas las secciones
 function initSubscriptionModal() {
   // Referencias a elementos del DOM
-  const openModalButtons = document.querySelectorAll('#editSuscription, #editSuscription2');
+  const openModalButtons = document.querySelectorAll('#editSuscription, #editSuscription2, #editSuscription3');
   const modal = document.getElementById('subscriptionModal');
   const closeButton = document.querySelector('.close-button');
   const menuItems = document.querySelectorAll('.sidebar-menu li');
@@ -3612,3 +3612,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inicializar el modal
   initSubscriptionModal();
 });
+
+// Function to show the subscription modal
+async function showSubscriptionModal() {
+  try {
+    // Reload user data before showing the modal
+    await loadUserData();
+    
+    // Update all sections
+    updateCurrentPlanDisplay();
+    updateUpgradePlansVisibility();
+    createAgentsSection();
+    createSourcesSection();
+    createRangeSection();
+    createAnalysisSection();
+    
+    // Show the modal
+    const modal = document.getElementById('subscriptionModal');
+    if (modal) {
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    } else {
+      console.error('Subscription modal not found');
+      alert('La funcionalidad de editar suscripción estará disponible próximamente.');
+    }
+  } catch (error) {
+    console.error('Error showing subscription modal:', error);
+    alert('Hubo un error al cargar la información de suscripción. Por favor, inténtalo de nuevo más tarde.');
+  }
+}

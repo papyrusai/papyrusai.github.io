@@ -364,6 +364,28 @@
         menu.classList.remove('active');
       }
     });
+
+    // Add this function after the toggleForm function
+    function checkUrlParams() {
+      // Get URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const linkParam = urlParams.get('link');
+      
+      // If link parameter is 'register', show the registration form
+      if (linkParam === 'register') {
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const formTitle = document.getElementById('form-title');
+        
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        formTitle.textContent = "Regístrate";
+      }
+      // link=login is the default, so we don't need to handle it specifically
+    }
+
+    // Add this line at the end of the script tag to call the function when the page loads
+    document.addEventListener('DOMContentLoaded', checkUrlParams);
   </script>
 </body>
 </html>

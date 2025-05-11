@@ -723,13 +723,13 @@
             });
             if (!response.ok) throw new Error('Error al guardar plan gratuito');
             const result = await response.json();
-            window.location.href = result.redirectUrl || '/profile'; 
+            window.location.href = (result.redirectUrl || '/profile') + '?view=boletin'; 
             
             // Simulación para este ejemplo:
             setTimeout(() => {
                 console.log('Plan gratuito procesado, redirigiendo a /profile (simulado)');
                 alert('Redirigiendo a /profile (simulado para Plan Gratuito). Debes implementar la llamada a /save-free-plan.');
-                // window.location.href = '/profile'; // Descomenta cuando tengas el backend listo
+                // window.location.href = '/profile?view=boletin'; // Descomenta cuando tengas el backend listo
                 nextButton.classList.remove('loading');
                 nextButton.disabled = false;
                 nextButton.innerHTML = 'Siguiente';

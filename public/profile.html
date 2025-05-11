@@ -388,6 +388,32 @@
 
          <!-- Contenedor de datos original, ahora dentro de la sección Agentes -->
          <div id="data-container">
+            <!-- Plan1 User Upsell Banner - Hidden by default -->
+            <div id="radar-normativo-banner" style="display: none; margin-bottom: 25px; padding: 20px; border-radius: 10px; background-color: rgba(4, 219, 141, 0.1); border: 1px solid #04db8d;">
+              <h2 style="color: #0b2431; margin-top: 0; font-size: 22px;">Búsqueda y análisis normativo personalizado por agentes</h2>
+              <p style="color: #455862; margin-bottom: 15px;">Mejora tu plan para poder filtrar y analizar de manera automática la normativa que te afecta a través de nuestros agentes</p>
+              
+              <p style="color: #455862; margin-bottom: 20px; font-style: italic;">Ejemplos de agentes</p>
+              
+              <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div style="flex: 1; min-width: 250px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                  <h3 style="color: #0b2431; margin-top: 0; font-size: 18px;">
+                    <i class="fas fa-money-bill-wave" style="margin-right: 8px;"></i>
+                    Cesión de créditos
+                  </h3>
+                  <p style="color: #455862; font-size: 14px;">El agente supervisa cualquier nueva regulación relacionada con la cesión de créditos, incluyendo requisitos de transparencia, protección del deudor y obligaciones del cesionario.</p>
+                </div>
+                <div style="flex: 1; min-width: 250px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                  <h3 style="color: #0b2431; margin-top: 0; font-size: 18px;">
+                    <i class="fas fa-building" style="margin-right: 8px;"></i>
+                    Alquiler en Barcelona
+                  </h3>
+                  <p style="color: #455862; font-size: 14px;">Este agente supervisa normativas sobre alquileres temporales, limitaciones de precio, requisitos para propietarios y cualquier otra regulación que afecte al mercado inmobiliario en Barcelona.</p>
+                </div>
+              </div>
+              <a href="#" id="editSuscription3" class="change-subscription" style="display: inline-block; margin-top: 15px; padding: 8px 16px; background-color: #0b2431; color: white; text-decoration: none; border-radius: 20px; font-weight: 500;">Mejora tu plan</a>
+            </div>
+
             <!-- Sección de Agentes Suscritos -->
             <div class="detalle-cuenta">
               <div>
@@ -482,6 +508,17 @@
       <!-- Sección Boletín Diario (Contenido de marcador de posición) -->
       <div id="content-boletin" class="vision-section">
         <h2>Boletín Diario</h2>
+        
+        <!-- Newsletter Subscription Banner (hidden by default) -->
+        <div id="newsletter-banner" style="display: none; background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <h3 style="color: var(--text-color); margin-top: 0;">Suscribete a nuestra newsletter</h3>
+          <p style="color: var(--secondary-color); margin-bottom: 20px;">Accede a resúmenes diarios y clasificación por áreas de las disposiciones generales del BOE y DOUE de manera gratuita</p>
+          <div style="display: flex; gap: 10px;">
+            <button id="accept-newsletter" style="background-color: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Aceptar suscripción</button>
+            <button id="reject-newsletter" style="background-color: #f1f1f1; color: var(--text-color); border: 1px solid #ddd; padding: 8px 16px; border-radius: 4px; cursor: pointer;">No gracias</button>
+          </div>
+        </div>
+        
         <div id="boletin-fecha" style="font-weight: bold; margin-bottom: 15px; font-size: 1.1em; color: var(--text-color);">Cargando fecha...</div>
       
         <!-- Filtros para Boletín Diario -->
@@ -560,6 +597,7 @@
   <script id="endDateInput" type="application/json">{{end_date}}</script>
   <script id="userBoletines" type="application/json">{{user_boletines_json}}</script>
   <script id="userRangos" type="application/json">{{user_rangos_json}}</script>
+  <script id="userAcceptedEmail" type="application/json">{{#if accepted_email}}{{accepted_email}}{{else}}null{{/if}}</script>
 
   <script id="allRangosData" type="application/json">{{all_rangos_json}}</script>
 
@@ -587,6 +625,55 @@
       const loaderOverlay = document.getElementById("pageLoaderOverlay");
       if (loaderOverlay) loaderOverlay.style.display = "none";
 
+      // Get user plan early to use throughout the code - make it global
+      window.userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
+
+      // Handle plan1 specific UI in agentes view
+      if (window.userPlan === 'plan1') {
+        const radarBanner = document.getElementById('radar-normativo-banner');
+        const betaBanner = document.querySelector('.beta-banner');
+        
+        if (radarBanner) radarBanner.style.display = 'block';
+        if (betaBanner) betaBanner.style.display = 'none';
+        
+        // Modify the handleBuscar function for plan1 users
+        const originalHandleBuscar = window.handleBuscar;
+        window.handleBuscar = function() {
+          if (window.userPlan === 'plan1') {
+            // Show upgrade message instead of search results
+            document.querySelector('.collectionDocs').innerHTML = `
+              <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <h3 style="color: #0b2431;">¡Mejora tu plan para acceder a esta funcionalidad!</h3>
+                <p style="color: #455862;">Nuestros planes de pago te permiten realizar búsquedas avanzadas y filtrar normativa según tus necesidades específicas.</p>
+                <button onclick="window.location.href='https://reversa.ai/prices'" style="background-color: #04db8d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Ver planes</button>
+              </div>
+            `;
+            
+            // Hide the analytics sections
+            document.querySelectorAll('.analytics-label').forEach(label => {
+              if (!label.classList.contains('busqueda')) {
+                label.style.display = 'none';
+              }
+            });
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer) {
+              chartContainer.style.display = 'none';
+            }
+            
+            // Hide loading indicators
+            document.getElementById('loading-icon').style.display = 'none';
+            document.getElementById('loading-icon-chart').style.display = 'none';
+            
+            return; // Stop execution here for plan1 users
+          }
+          
+          // Call the original function for non-plan1 users
+          if (typeof originalHandleBuscar === 'function') {
+            originalHandleBuscar();
+          }
+        };
+      }
+
       // Fill default date from server
       const startDateInput = JSON.parse(document.getElementById("startDateInput").textContent || '"2024-01-01T00:00:00.000Z"');
       const formattedDate = new Date(startDateInput).toISOString().split('T')[0];
@@ -602,55 +689,106 @@
         loadChart(monthsData, countsData);
       }
 
+      // Check if we should show the newsletter banner
+      checkAndShowNewsletterBanner();
+
        /* 1. Toggle al pulsar en cualquier .dropbtn ------------------ */
-  document.querySelectorAll('.dropbtn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();                     // evita que el click burbujee
-      const dropdown = btn.closest('.dropdown');
-      const menu     = dropdown?.querySelector('.dropdown-content');
-      if (!menu) return;
-
-      // Cierra otros menús que pudieran estar abiertos
-      document.querySelectorAll('.dropdown-content.show')
-              .forEach(el => { if (el !== menu) el.classList.remove('show'); });
-
-      menu.classList.toggle('show');
-    });
-  });
-
-  /* 2. Cerrar cuando se hace click FUERA de cualquier .dropdown -- */
-  window.addEventListener('click', e => {
-    // ¿Hemos hecho click dentro de un .dropdown (botón o contenido)?
-    const clickedInsideDropdown = !!e.target.closest('.dropdown');
-    if (clickedInsideDropdown) return;         // no cerramos nada
-
-    // Click fuera  →  cerrar todos los menús abiertos
-    document.querySelectorAll('.dropdown-content.show')
-            .forEach(el => el.classList.remove('show'));
-  });
-
-      
-      // Inicializar las nuevas funciones
-      loadAgentesContainer();
-      loadEtiquetasDropdown();
-      loadBoletinDropdown();
-      loadRangoDropdown();
-      
-       // *** NUEVO: Lógica para mostrar la sección por defecto (Agentes) ***
-      // Asegurarse de que solo la sección activa sea visible al cargar
-      document.querySelectorAll('.vision-section').forEach(section => {
-          if (!section.classList.contains('active')) {
-              section.style.display = 'none';
-          } else {
-              section.style.display = 'block';
-          }
-      });
+       document.querySelectorAll('.dropbtn').forEach(btn => {
+         btn.addEventListener('click', e => {
+           e.stopPropagation();                     // evita que el click burbujee
+           const dropdown = btn.closest('.dropdown');
+           const menu     = dropdown?.querySelector('.dropdown-content');
+           if (!menu) return;
+     
+           // Cierra otros menús que pudieran estar abiertos
+           document.querySelectorAll('.dropdown-content.show')
+                   .forEach(el => { if (el !== menu) el.classList.remove('show'); });
+     
+           menu.classList.toggle('show');
+         });
+       });
+     
+       /* 2. Cerrar cuando se hace click FUERA de cualquier .dropdown -- */
+       window.addEventListener('click', e => {
+         // ¿Hemos hecho click dentro de un .dropdown (botón o contenido)?
+         const clickedInsideDropdown = e && e.target && typeof e.target.closest === 'function' && !!e.target.closest('.dropdown');
+         if (clickedInsideDropdown) return;         // no cerramos nada
+     
+         // Click fuera  →  cerrar todos los menús abiertos
+         document.querySelectorAll('.dropdown-content.show')
+                 .forEach(el => el.classList.remove('show'));
+       });
+     
+       // Inicializar las nuevas funciones
+       loadAgentesContainer();
+       loadEtiquetasDropdown();
+       loadBoletinDropdown();
+       loadRangoDropdown();
+       
+       // Check URL parameters to determine which section to show
+       const urlParams = new URLSearchParams(window.location.search);
+       const viewParam = urlParams.get('view');
+       
+       // Get user plan
+       const userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
+       
+       // Show Boletín Diario by default for plan1 users or if view=boletin is specified
+       if (viewParam === 'boletin' || (userPlan === 'plan1' && !viewParam)) {
+         // Hide Agentes section, remove active class
+         const agentesSection = document.getElementById('content-agentes');
+         const agentesMenuItem = document.querySelector('.sidebar-item[data-target="content-agentes"]');
+         if (agentesSection) {
+           agentesSection.classList.remove('active');
+           agentesSection.style.display = 'none';
+         }
+         if (agentesMenuItem) {
+           agentesMenuItem.classList.remove('active');
+         }
+         
+         // Show Boletín Diario section, add active class
+         const boletinSection = document.getElementById('content-boletin');
+         const boletinMenuItem = document.querySelector('.sidebar-item[data-target="content-boletin"]');
+         if (boletinSection) {
+           boletinSection.classList.add('active');
+           boletinSection.style.display = 'block';
+         }
+         if (boletinMenuItem) {
+           boletinMenuItem.classList.add('active');
+         }
+         
+         // Populate Boletín Diario filters BEFORE the first data fetch so the dropdown is never empty
+         try {
+           const userBoletinesInit = JSON.parse(document.getElementById('userBoletines').textContent || '[]');
+           const allRangosInit   = JSON.parse(document.getElementById('allRangosData').textContent || '[]');
+           populateBoletinDiarioFilters(userBoletinesInit, allRangosInit);
+         } catch (err) {
+           console.warn('No initial boletín/rango data available, populating defaults.', err);
+           populateBoletinDiarioFilters([], []);
+         }
+         
+         // Load boletin data
+         if (typeof fetchBoletinDiario === 'function') {
+           fetchBoletinDiario();
+           boletinDiarioLoaded = true;
+         }
+       } else {
+         // *** EXISTENTE: Lógica para mostrar la sección por defecto (Agentes) ***
+         // Asegurarse de que solo la sección activa sea visible al cargar
+         document.querySelectorAll('.vision-section').forEach(section => {
+           if (!section.classList.contains('active')) {
+             section.style.display = 'none';
+           } else {
+             section.style.display = 'block';
+           }
+         });
+       }
     });
 
     // --------------------- plan logic => disabling bulletins if plan1 ---------------------
-    let userPlan;
+    // Remove the userPlan variable since we're using window.userPlan now
     document.addEventListener("DOMContentLoaded", () => {
-      userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
+      // We already define userPlan in the main DOMContentLoaded event, don't redefine it here
+      // userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
     });
 
     // --------------------- CHART FUNCTIONS ---------------------
@@ -684,45 +822,6 @@
       });
     }
 
-    /*function loadChart(months, counts) {
-  const ctx = document.getElementById('documentsChart').getContext('2d');
-  
-  // Destruir el gráfico existente si hay uno
-  if (window.documentsChart) {
-   window.documentsChart.destroy();
-  }
-  
-  // Crear el nuevo gráfico
-  window.documentsChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: months,
-      datasets: [{
-        label: 'Documentos por mes',
-        data: counts,
-        backgroundColor: 'rgba(4, 219, 141, 0.2)',
-        borderColor: 'rgba(4, 219, 141, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            precision: 0
-          }
-        }
-      },
-      plugins: {
-        legend: {
-          display: false
-        }
-      }
-    }
-  });
-}
-*/
     // --------------------- DROPDOWN FUNCTIONS ---------------------
     function toggleIndustryDropdown() {
       document.getElementById("myDropdown").classList.toggle("show");
@@ -1391,17 +1490,73 @@ function populateBoletinDiarioFilters(boletines, rangos) {
 
     // Poblar Boletines
     let boletinHtml = '<label><input type="checkbox" value="Todos" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> Todos</label>';
-    (boletines || []).forEach(b => {
-        boletinHtml += `<label><input type="checkbox" value="${b}" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> ${b}</label>`;
-    });
+    
+    // Si no hay boletines seleccionados por el usuario, mostrar todos los disponibles
+    if (!boletines || !Array.isArray(boletines) || boletines.length === 0) {
+        // Lista completa de fuentes de gobierno y reguladores
+        const allBoletines = [
+            "BOE", "DOUE", "BOCG", "BOA", "BOCYL", "BOCM", "DOGC", "DOG", "BOJA", "BOPV", 
+            "CNMV", "CNMC", "AEPD"
+        ];
+        
+        allBoletines.forEach(b => {
+            boletinHtml += `<label><input type="checkbox" value="${b}" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> ${b}</label>`;
+        });
+    } else {
+        // Añadir BOE por defecto si no está incluido
+        if (!boletines.includes('BOE')) {
+            boletinHtml += `<label><input type="checkbox" value="BOE" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> BOE</label>`;
+        }
+        
+        // Añadir todas las fuentes del array directamente
+        boletines.forEach(fuente => {
+            if (fuente !== 'BOE' || !boletinHtml.includes('value="BOE"')) { // Evitar duplicar BOE
+                boletinHtml += `<label><input type="checkbox" value="${fuente}" checked onchange="handleCheckboxChange(this, \'boletinDiarioDropdown\', \'selectedBoletinesDiario\')"> ${fuente}</label>`;
+            }
+        });
+    }
+    
     boletinDropdown.innerHTML = boletinHtml;
     updateSelectedText('boletinDiarioDropdown', 'selectedBoletinesDiario'); // Actualizar texto inicial
 
     // Poblar Rangos
     let rangoHtml = '<label><input type="checkbox" value="Todos" checked onchange="handleCheckboxChange(this, \'rangoDiarioDropdown\', \'selectedRangoDiario\')"> Todos</label>';
-    (rangos || []).forEach(r => {
+
+    // Determinar la lista de rangos a mostrar
+    let rangosParaMostrar = [];
+
+    if (!rangos || !Array.isArray(rangos) || rangos.length === 0) {
+        // Intentar obtener el listado completo desde la etiqueta <script id="allRangosData">
+        try {
+            rangosParaMostrar = JSON.parse(document.getElementById('allRangosData').textContent || '[]');
+        } catch (e) {
+            console.warn('No se pudo parsear allRangosData, usando lista por defecto.', e);
+        }
+
+        // Si sigue vacío, usar un fallback hard-coded (catalogo_etiquetas.json > rangos_normativos)
+        if (!Array.isArray(rangosParaMostrar) || rangosParaMostrar.length === 0) {
+            rangosParaMostrar = [
+                "Acuerdos Internacionales",
+                "Normativa Europea",
+                "Legislacion Nacional",
+                "Normativa Reglamentaria",
+                "Decisiones Judiciales",
+                "Doctrina Administrativa",
+                "Comunicados, Guias y Opiniones Consultivas",
+                "Consultas Publicas",
+                "Normativa en tramitación",
+                "Otras"
+            ];
+        }
+    } else {
+        rangosParaMostrar = rangos;
+    }
+
+    // Generar los checkboxes
+    rangosParaMostrar.forEach(r => {
         rangoHtml += `<label><input type="checkbox" value="${r}" checked onchange="handleCheckboxChange(this, \'rangoDiarioDropdown\', \'selectedRangoDiario\')"> ${r}</label>`;
     });
+    
     rangoDropdown.innerHTML = rangoHtml;
     updateSelectedText('rangoDiarioDropdown', 'selectedRangoDiario'); // Actualizar texto inicial
 }
@@ -1597,6 +1752,24 @@ document.head.appendChild(styleSheet);
                     populateBoletinDiarioFilters([], []);
                 }
                 fetchBoletinDiario(); // Carga inicial de datos
+                boletinDiarioLoaded = true;
+            }
+            
+            // Update URL with view parameter for navigation history
+            if (targetId === 'content-boletin') {
+                // If this is the boletín view, update URL to include view=boletin
+                if (history.pushState) {
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.set('view', 'boletin');
+                    window.history.pushState({path: newUrl.href}, '', newUrl.href);
+                }
+            } else if (targetId === 'content-agentes') {
+                // If this is the agentes view, remove view parameter from URL
+                if (history.pushState) {
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.delete('view');
+                    window.history.pushState({path: newUrl.href}, '', newUrl.href);
+                }
             }
         }
     }
@@ -1628,7 +1801,127 @@ document.head.appendChild(styleSheet);
     }
 
     // Cerrar dropdowns al hacer clic fuera (código existente adaptado)
-});
+    window.addEventListener('click', e => {
+        // Check if the dropdown elements exist before accessing them
+        const dropdownContents = document.querySelectorAll('.dropdown-content.show');
+        if (dropdownContents.length > 0) {
+            // ¿Hemos hecho click dentro de un .dropdown (botón o contenido)?
+            const clickedInsideDropdown = e.target.closest && e.target.closest('.dropdown');
+            if (clickedInsideDropdown) return;         // no cerramos nada
+            
+            // Click fuera  →  cerrar todos los menús abiertos
+            dropdownContents.forEach(el => el.classList.remove('show'));
+        }
+    });
+
+    // Set up event listener for editSuscription buttons - both in the sidebar and content area
+    document.querySelectorAll('#editSuscription, #editSuscription2, #editSuscription3').forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Show subscription container instead of redirecting
+        if (typeof showSubscriptionModal === 'function') {
+          showSubscriptionModal();
+        } else {
+          // Fallback if the function isn't available
+          const modal = document.getElementById('subscription-container');
+          if (modal) {
+            modal.style.display = 'block';
+          } else {
+            console.error('Subscription container not found');
+            alert('La funcionalidad de editar suscripción estará disponible próximamente.');
+          }
+        }
+      });
+    });
+
+    /* === Intercept "Análisis impacto normativo" para usuarios plan1 === */
+    document.body.addEventListener('click', function(e) {
+      const impactoLink = e.target && e.target.closest && e.target.closest('.button-impacto');
+      if (!impactoLink) return; // Click no proveniente del enlace
+
+      if (window.userPlan === 'plan1') {
+        e.preventDefault();
+        showUpgradePlanBanner();
+      }
+    });
+
+    /* === Banner de mejora de plan === */
+    function showUpgradePlanBanner() {
+      // Evitar duplicados
+      let overlay = document.getElementById('upgrade-plan-overlay');
+      let banner  = document.getElementById('upgrade-plan-banner');
+
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'upgrade-plan-overlay';
+        Object.assign(overlay.style, {
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          background: 'rgba(0,0,0,0.4)', zIndex: 9998
+        });
+        document.body.appendChild(overlay);
+        // Cerrar al hacer clic en overlay
+        overlay.addEventListener('click', () => { hideBanner(); });
+      }
+
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'upgrade-plan-banner';
+        Object.assign(banner.style, {
+          position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          background: '#fff', padding: '25px 30px', borderRadius: '10px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 9999, maxWidth: '400px', width: '90%'
+        });
+
+        banner.innerHTML = `
+          <button id="close-upgrade-banner" style="position:absolute; top:8px; right:10px; background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>
+          <h3 style="margin:0 0 15px 0; color:#0b2431; font-size:20px;">Mejora tu plan para poder analizar cualquier norma con IA</h3>
+          <div style="text-align:center;">
+            <button id="upgrade-plan-btn" style="background:#04db8d; color:#fff; border:none; padding:10px 20px; border-radius:20px; cursor:pointer; font-weight:500;">Mejora tu plan</button>
+          </div>
+          <div id="upgrade-loader" style="display:none; text-align:center; margin-top:15px;">
+            <div style="display:inline-block; width:30px; height:30px; border:3px solid rgba(4,219,141,0.3); border-radius:50%; border-top-color:#04db8d; animation:spin 1s linear infinite;"></div>
+          </div>
+        `;
+        document.body.appendChild(banner);
+
+        // Añadir keyframes para la animación del loader si no existen ya
+        if (!document.getElementById('loader-keyframes')) {
+          const style = document.createElement('style');
+          style.id = 'loader-keyframes';
+          style.textContent = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+          document.head.appendChild(style);
+        }
+
+        // Listeners de los botones
+        banner.querySelector('#close-upgrade-banner').addEventListener('click', hideBanner);
+        banner.querySelector('#upgrade-plan-btn').addEventListener('click', () => {
+          // Mostrar loader
+          banner.querySelector('#upgrade-plan-btn').style.display = 'none';
+          banner.querySelector('#upgrade-loader').style.display = 'block';
+
+          // Esperar brevemente para asegurar que se muestra el loader
+          setTimeout(() => {
+            hideBanner();
+            if (typeof showSubscriptionModal === 'function') {
+              showSubscriptionModal();
+            } else {
+              const modal = document.getElementById('subscription-container');
+              if (modal) modal.style.display = 'block';
+            }
+          }, 300);
+        });
+      }
+
+      overlay.style.display = 'block';
+      banner.style.display   = 'block';
+
+      // Helper para ocultar
+      function hideBanner() {
+        if (overlay) overlay.style.display = 'none';
+        if (banner)  banner.style.display  = 'none';
+      }
+    }
+ });
   </script>
   <script>
     /* ===========  DROPDOWNS GENÉRICOS  ===================
@@ -1657,7 +1950,7 @@ document.head.appendChild(styleSheet);
       /* 2. Cerrar cuando se hace click FUERA de cualquier .dropdown -- */
       window.addEventListener('click', e => {
         // ¿Hemos hecho click dentro de un .dropdown (botón o contenido)?
-        const clickedInsideDropdown = !!e.target.closest('.dropdown');
+        const clickedInsideDropdown = e && e.target && typeof e.target.closest === 'function' && !!e.target.closest('.dropdown');
         if (clickedInsideDropdown) return;         // no cerramos nada
     
         // Click fuera  →  cerrar todos los menús abiertos
@@ -1665,6 +1958,172 @@ document.head.appendChild(styleSheet);
                 .forEach(el => el.classList.remove('show'));
       });
     });
+    
+    // Newsletter Subscription Banner Logic
+    function checkAndShowNewsletterBanner() {
+      try {
+        // Using window.userPlan instead of local userPlan
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewParam = urlParams.get('view');
+        
+        try {
+          // Get accepted_email value, default to null if there are any issues
+          const acceptedEmailElement = document.getElementById('userAcceptedEmail');
+          const acceptedEmail = acceptedEmailElement ? 
+            JSON.parse(acceptedEmailElement.textContent || 'null') : null;
+          
+          // Check if this is a plan1 user who hasn't set email preference and is in the appropriate view
+          if (window.userPlan === 'plan1') {
+            // Show radar normativo banner in agentes section
+            const agentesSectionActive = document.getElementById('content-agentes')?.classList.contains('active');
+            
+            // Get the radar banner element
+            const radarBanner = document.getElementById('radar-normativo-banner');
+            
+            if (radarBanner && agentesSectionActive) {
+              // Show radar normativo banner
+              radarBanner.style.display = 'block';
+              
+              // Hide no results message if it exists
+              const noResultsElement = document.querySelector('.no-results');
+              if (noResultsElement) {
+                noResultsElement.style.display = 'none';
+              }
+              
+              // Hide beta banner for plan1 users
+              const betaBanner = document.querySelector('.beta-banner');
+              if (betaBanner) {
+                betaBanner.style.display = 'none';
+              }
+            }
+            
+            // Show newsletter banner if user hasn't set email preference and is viewing boletín
+            const newsletterBanner = document.getElementById('newsletter-banner');
+            const boletinSectionActive = document.getElementById('content-boletin')?.classList.contains('active');
+            
+            if (newsletterBanner && acceptedEmail === null && boletinSectionActive) {
+              newsletterBanner.style.display = 'block';
+              
+              // Get the accept and reject buttons
+              const acceptBtn = document.getElementById('accept-newsletter');
+              const rejectBtn = document.getElementById('reject-newsletter');
+              
+              // Remove any existing event listeners by cloning the buttons
+              if (acceptBtn) {
+                const newAcceptBtn = acceptBtn.cloneNode(true);
+                acceptBtn.parentNode.replaceChild(newAcceptBtn, acceptBtn);
+                newAcceptBtn.addEventListener('click', function() {
+                  saveEmailPreference(true);
+                });
+              }
+              
+              if (rejectBtn) {
+                const newRejectBtn = rejectBtn.cloneNode(true);
+                rejectBtn.parentNode.replaceChild(newRejectBtn, rejectBtn);
+                newRejectBtn.addEventListener('click', function() {
+                  saveEmailPreference(false);
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error processing email preferences:', error);
+        }
+      } catch (error) {
+        console.error('Error in checkAndShowNewsletterBanner:', error);
+      }
+    }
+    
+    // Function to save the user's email preference
+    function saveEmailPreference(preference) {
+      // Create loading overlay
+      const loadingOverlay = document.createElement('div');
+      loadingOverlay.style.position = 'fixed';
+      loadingOverlay.style.top = '0';
+      loadingOverlay.style.left = '0';
+      loadingOverlay.style.width = '100%';
+      loadingOverlay.style.height = '100%';
+      loadingOverlay.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+      loadingOverlay.style.display = 'flex';
+      loadingOverlay.style.justifyContent = 'center';
+      loadingOverlay.style.alignItems = 'center';
+      loadingOverlay.style.zIndex = '9999';
+      
+      const spinner = document.createElement('div');
+      spinner.className = 'loader';
+      spinner.style.border = '5px solid #f3f3f3';
+      spinner.style.borderTop = '5px solid #04db8d';
+      spinner.style.borderRadius = '50%';
+      spinner.style.width = '50px';
+      spinner.style.height = '50px';
+      spinner.style.animation = 'spin 2s linear infinite';
+      
+      // Add animation keyframes
+      const style = document.createElement('style');
+      style.innerHTML = '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
+      document.head.appendChild(style);
+      
+      loadingOverlay.appendChild(spinner);
+      document.body.appendChild(loadingOverlay);
+      
+      // Convert boolean preference to string value that the server expects
+      const accepted_email = preference === true ? 'yes' : 'no';
+      
+      // Make API call to update preferences
+      fetch('/api/update-user-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          accepted_email: accepted_email
+        }),
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(data => {
+        // Hide newsletter banner
+        const banner = document.getElementById('newsletter-banner');
+        if (banner) {
+          banner.style.display = 'none';
+        }
+        
+        // Show success message
+        const successMessage = document.createElement('div');
+        successMessage.style.padding = '10px';
+        successMessage.style.backgroundColor = '#d4edda';
+        successMessage.style.color = '#155724';
+        successMessage.style.borderRadius = '4px';
+        successMessage.style.marginBottom = '20px';
+        successMessage.style.textAlign = 'center';
+        successMessage.innerHTML = preference ? 
+          'Gracias por suscribirte a nuestras actualizaciones.' : 
+          'Tus preferencias han sido actualizadas.';
+        
+        // Find a good place to add the message
+        const contentBoletin = document.getElementById('content-boletin');
+        if (contentBoletin) {
+          contentBoletin.insertBefore(successMessage, contentBoletin.firstChild);
+          
+          // Remove message after 5 seconds
+          setTimeout(() => {
+            successMessage.remove();
+          }, 5000);
+        }
+      })
+      .catch(error => {
+        console.error('Error updating preferences:', error);
+        alert('Error al guardar tus preferencias. Por favor, inténtalo de nuevo.');
+      })
+      .finally(() => {
+        // Remove loading overlay
+        loadingOverlay.remove();
+      });
+    }
     </script>
     
 </body>
