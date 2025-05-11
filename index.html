@@ -171,6 +171,59 @@
     // Global variable to prevent multiple submissions
     let isSubmitting = false;
     
+    // Handle login form submission via AJAX
+    async function handleLoginSubmit(event) {
+      event.preventDefault();
+      
+      const errorDiv = document.getElementById('loginError');
+      errorDiv.textContent = "";
+      
+      const form = document.getElementById('loginForm');
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+
+      // Show loader in the button
+      const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+      const originalText = loginSubmitBtn.innerHTML;
+      loginSubmitBtn.disabled = true;
+      loginSubmitBtn.innerHTML = '<div class="loader"></div>';
+
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          
+          // Store the user email in sessionStorage
+          sessionStorage.setItem('userEmail', data.email);
+          console.log('Email stored in sessionStorage:', data.email);
+          
+          let redirectUrl = result.redirectUrl;
+          if (userPlan && redirectUrl.includes('paso1.html')) {
+            redirectUrl += `?plan=${encodeURIComponent(userPlan)}`;
+          }
+          window.location.href = redirectUrl;
+        } else {
+          const errorData = await response.json();
+          errorDiv.textContent = errorData.error || "No existe un usuario con ese correo, por favor regístrate";
+          loginSubmitBtn.disabled = false;
+          loginSubmitBtn.innerHTML = originalText;
+        }
+      } catch (err) {
+        errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
+        console.error(err);
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.innerHTML = originalText;
+      }
+      
+      return false;
+    }
+
     // Handle registration form submission via AJAX
     async function handleRegistrationSubmit(event) {
       event.preventDefault();
@@ -214,6 +267,11 @@
           return false;
         } else {
           const result = await response.json();
+          
+          // Store the user email in sessionStorage
+          sessionStorage.setItem('userEmail', data.email);
+          console.log('Email stored in sessionStorage:', data.email);
+          
           let redirectUrl = result.redirectUrl;
           if (userPlan && redirectUrl.includes('paso1.html')) {
             redirectUrl += `?plan=${encodeURIComponent(userPlan)}`;
@@ -226,54 +284,6 @@
         registerSubmitBtn.disabled = false;
         registerSubmitBtn.innerHTML = originalText;
         isSubmitting = false;
-      }
-      
-      return false;
-    }
-
-    // Handle login form submission via AJAX
-    async function handleLoginSubmit(event) {
-      event.preventDefault();
-      
-      const errorDiv = document.getElementById('loginError');
-      errorDiv.textContent = "";
-      
-      const form = document.getElementById('loginForm');
-      const formData = new FormData(form);
-      const data = {};
-      formData.forEach((value, key) => data[key] = value);
-
-      // Show loader in the button
-      const loginSubmitBtn = document.getElementById('loginSubmitBtn');
-      const originalText = loginSubmitBtn.innerHTML;
-      loginSubmitBtn.disabled = true;
-      loginSubmitBtn.innerHTML = '<div class="loader"></div>';
-
-      try {
-        const response = await fetch('/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          let redirectUrl = result.redirectUrl;
-          if (userPlan && redirectUrl.includes('paso1.html')) {
-            redirectUrl += `?plan=${encodeURIComponent(userPlan)}`;
-          }
-          window.location.href = redirectUrl;
-        } else {
-          const errorData = await response.json();
-          errorDiv.textContent = errorData.error || "No existe un usuario con ese correo, por favor regístrate";
-          loginSubmitBtn.disabled = false;
-          loginSubmitBtn.innerHTML = originalText;
-        }
-      } catch (err) {
-        errorDiv.textContent = "Error en el inicio de sesión. Inténtalo de nuevo.";
-        console.error(err);
-        loginSubmitBtn.disabled = false;
-        loginSubmitBtn.innerHTML = originalText;
       }
       
       return false;

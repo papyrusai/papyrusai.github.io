@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selecciona tu Plan - Reversa</title>
+  <link rel="icon" href="assets/reversa_logo.png" type="image/png">
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="styles/menu.css">
+  <link rel="stylesheet" href="styles/onboarding.css">
+  <style>
+    :root {
+      --primary-color: #04db8d;
+      --secondary-color: #455862;
+      --border-color: #e0e0e0;
+      --text-color: #0b2431;
+      --placeholder-color: #999;
+      --active-color: #04db8d;
+      --error-color: #d32f2f;
+      --background-color: #ffffff;
+      --primary-transparent: #bffce6fc;
+    }
+
+    * {
+      font-family: 'Satoshi', sans-serif;
+      box-sizing: border-box;
+    }
+    body {
+      color: var(--text-color);
+      margin: 0;
+      background-color: #f9f9f9; /* Added a light background for the page */
+    }
+
+    .container {
+      max-width: 1100px; /* Adjusted for better layout */
+      margin: 20px auto;
+      padding: 20px;
+    }
+
+    .choose-plan-heading {
+      text-align: center;
+      font-size: clamp(22px, 3vw, 28px); /* Slightly larger */
+      margin-top: clamp(20px, 4vh, 40px);
+      margin-bottom: clamp(30px, 5vh, 50px); /* Increased bottom margin */
+      font-weight: bold;
+      color: var(--text-color);
+    }
+
+    /* Estilos para el toggle de facturación */
+    .billing-toggle-container {
+      display: flex;
+      justify-content: center;
+      margin: 20px 0 30px;
+    }
+
+    .billing-toggle {
+      position: relative;
+      display: flex;
+      background-color: #f8f8f8;
+      border-radius: 30px;
+      padding: 4px;
+      width: 240px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .billing-option {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+      border-radius: 30px;
+      font-weight: 500;
+      transition: color 0.3s ease;
+      outline: none;
+    }
+
+    .billing-option.active {
+      color: white;
+    }
+
+    .billing-option:not(.active) {
+      color: var(--text-color);
+    }
+
+    .toggle-slider {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      width: 118px; /* Specific width for the slider */
+      height: calc(100% - 8px);
+      background-color: var(--primary-color);
+      border-radius: 30px;
+      transition: transform 0.3s ease;
+      z-index: 1;
+    }
+
+    /* Position for annual */
+    .billing-option.annual.active ~ .toggle-slider {
+      transform: translateX(114px); /* Specific offset to match the second button */
+    }
+
+    /* Default position for monthly */
+    .billing-option.monthly.active ~ .toggle-slider {
+      transform: translateX(0); /* Stay at the left for monthly */
+    }
+
+    .discount {
+      font-size: 0.8em;
+      margin-left: 4px;
+      opacity: 0.8;
+    }
+
+    .plans-container {
+      display: flex;
+      justify-content: center; /* Center plans */
+      gap: clamp(20px, 2.5vw, 30px); /* Increased gap */
+      flex-wrap: wrap;
+    }
+
+    .plan-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between; /* For button alignment if added later */
+      flex-basis: 250px; /* Base width */
+      flex-grow: 1;
+      max-width: 220px; /* Max width */
+      border-radius: 12px; /* More rounded corners */
+      padding: clamp(20px, 2.5vh, 30px);
+      box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      border: 2px solid transparent;
+      background-color: var(--background-color);
+      cursor: pointer;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      height: auto; /* Allow height to adjust based on content */
+    }
+
+    .plan-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .plan-box.selected {
+      border-color: var(--primary-color);
+      box-shadow: 0px 0px 10px rgba(4, 219, 141, 0.6);
+    }
+
+    .plan-box h3 {
+      font-size: clamp(18px, 2.2vw, 22px);
+      font-weight: 700;
+      color: var(--text-color);
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .plan-box p {
+      font-size: clamp(14px, 1.6vw, 15px);
+      color: var(--secondary-color);
+      line-height: 1.6;
+      margin-bottom: 20px;
+      min-height: 48px; /* Adjusted for 2 lines of text */
+      flex-grow: 1; /* Allow p to take space */
+    }
+    
+    /* Styles for plan features (simplified for paso0) */
+    .features-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      text-align: left;
+      min-height: 200px; /* Adjusted from 220px */
+    }
+
+    .features-list li {
+      font-size: clamp(13px, 1.5vw, 14px);
+      margin-bottom: 10px; /* Slightly increased spacing between items */
+      padding-bottom: 5px; /* Add some padding at the bottom */
+      display: flex;
+      align-items: flex-start; /* Align items at the top for better icon alignment */
+      color: var(--secondary-color);
+      line-height: 1.4; /* Improve readability */
+    }
+    
+    .features-list li i {
+      margin-right: 8px;
+      margin-top: 3px; /* Better vertical alignment with text */
+    }
+
+    .feature-included {
+      color: #26df5b;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .feature-excluded {
+      color: #cccccc;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    
+    /* Price styling */
+    .plan-box h2 {
+      font-size: clamp(18px, 2.2vw, 22px);
+      margin: 8px 0;
+      font-weight: bold;
+      color: var(--text-color);
+    }
+    
+    .plan-box span {
+      font-size: clamp(12px, 1.5vw, 14px);
+      color: var(--secondary-color);
+    }
+    
+    /* Structure for plan box content */
+    .plan-header {
+      margin-bottom: 10px;
+    }
+
+    .step-navigation {
+      margin-top: 40px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+
+    .btn-siguiente {
+      background-color: var(--text-color);
+      color: white;
+      min-width: 180px; /* Wider button */
+      padding: 14px 25px; /* Increased padding */
+      font-size: 16px;
+      font-weight: 500; /* Slightly bolder text */
+      border-radius: 25px; /* More rounded */
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+
+    .btn-siguiente:hover {
+      background-color: var(--active-color);
+      transform: translateY(-2px);
+    }
+
+    .btn-siguiente.loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px; /* Increased gap for loader */
+      cursor: not-allowed;
+      background-color: #cccccc;
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3; /* Light grey */
+      border-top: 3px solid #555555; /* Darker grey for loader */
+      border-radius: 50%;
+      width: 18px; /* Slightly larger loader */
+      height: 18px;
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Progress bar styles (adapt if using) */
+    .progress-container {
+      margin-bottom: 40px; /* Increased margin */
+    }
+    .progress-steps {
+      display: flex;
+      justify-content: space-around; /* Space around for better distribution */
+      margin-bottom: 10px;
+    }
+    .step {
+      flex: 1;
+      text-align: center;
+      font-weight: 600; /* Bolder step text */
+      padding: 10px 5px; /* Adjusted padding */
+      color: var(--secondary-color); /* Default color for inactive steps */
+      position: relative; /* For pseudo-elements if needed */
+    }
+    .step.active {
+      color: var(--primary-color);
+      font-weight: 700;
+    }
+    .progress-bar {
+      height: 8px;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background-color: var(--primary-color);
+      border-radius: 4px;
+      transition: width 0.5s ease-in-out;
+    }
+
+    /* Plan pricing section styling */
+    .plan-pricing-section {
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .features-list {
+      min-height: 200px; /* Adjusted from 220px */
+    }
+    
+    /* Mobile adjustments for the Enterprise plan */
+    @media (max-width: 768px) {
+      .plans-container {
+        flex-direction: column;
+        align-items: center; /* Center plans when stacked */
+      }
+      .plan-box {
+        flex-basis: auto; /* Allow full width */
+        width: 90%; /* Control width on smaller screens */
+        max-width: 400px; /* Max width for stacked plans */
+        margin-bottom: 20px;
+      }
+      .plan-box[data-value="plan4"] {
+        max-width: 500px; /* Wider Enterprise plan on mobile */
+      }
+      .plan-box[data-value="plan4"] .features-list {
+        min-height: unset; /* Remove fixed height on mobile */
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+      .plan-box[data-value="plan4"] .features-list li {
+        width: 48%; /* Two columns for features */
+        margin-bottom: 8px;
+      }
+      .plan-box[data-value="plan4"] .plan-pricing-section {
+        min-height: 120px; /* Less height for pricing section on Enterprise plan */
+      }
+      .choose-plan-heading {
+        font-size: clamp(20px, 5vw, 24px);
+      }
+      .progress-steps {
+        font-size: 13px; /* Smaller font for steps on mobile */
+      }
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 15px;
+      }
+      .plan-box h3 {
+        font-size: 18px;
+      }
+      .plan-box p {
+        font-size: 14px;
+      }
+      .btn-siguiente {
+        min-width: 150px;
+        padding: 12px 20px;
+      }
+      .plan-box[data-value="plan4"] .features-list {
+        flex-direction: column; /* Back to single column on very small screens */
+      }
+      .plan-box[data-value="plan4"] .features-list li {
+        width: 100%;
+      }
+    }
+
+    /* Additional styles for the new plan elements from paso4.html */
+    .plan-button {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background-color 0.3s ease;
+    }
+
+    .plan-button:hover {
+      background-color: #03c57f;
+    }
+
+    .trial-period {
+      font-size: 13px;
+      color: var(--secondary-color);
+      margin-bottom: 10px; /* Reduced from 20px to 10px */
+      text-align: center;
+    }
+
+    .feature-included {
+      color: #26df5b;
+      margin-right: 8px;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .feature-excluded {
+      color: #cccccc;
+      margin-right: 8px;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+  </style>
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "r7ltvtr85q");
+</script>
+</head>
+<body>
+  
+  <script>
+    // Check for user authorization before page loads
+    (function() {
+      // Helper function to get cookies
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+      
+      // Try to get user email from sessionStorage first
+      let userEmail = sessionStorage.getItem('userEmail');
+      
+      // If not found in sessionStorage, try to get from cookies
+      if (!userEmail) {
+        userEmail = getCookie('userEmail');
+        
+        // If found in cookies, save to sessionStorage for future use
+        if (userEmail) {
+          console.log('Email found in cookie, storing in sessionStorage:', userEmail);
+          sessionStorage.setItem('userEmail', userEmail);
+        }
+      }
+      
+      // If no user email is found, redirect to the main app page
+      if (!userEmail) {
+        console.log('No user email found, redirecting to login');
+        window.location.href = 'index.html';
+      }
+    })();
+  </script>
+
+  <nav class="navbar">
+    <div class="logo">
+      <a href="https://reversa.ai/" target="_blank">
+        <img src="assets/reversa_blue.png" alt="Reversa Logo">
+      </a>
+    </div>
+    <button class="hamburger" onclick="toggleMenu()">☰</button> 
+    <ul class="menu">
+      <li><a href="https://reversa.ai/">WEB</a></li>
+      <li><a href="https://app.reversa.ai/profile">PANEL DE CONTROL</a></li>
+      <li><a href="https://reversa.ai/pages/contact-1">AYUDA</a></li>
+    </ul>
+  </nav>
+
+  <div class="container">
+    <!--<div class="progress-container">
+      <div class="progress-steps">
+        <div class="step active">Plan</div>
+        <div class="step">Perfil</div>
+        <div class="step">Personalización</div>
+        <div class="step">Suscripción</div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 25%;"></div>
+      </div>
+    </div>
+  -->
+    
+
+    <div class="formulario">
+      <div class="choose-plan-heading">Elige tu Plan para Empezar</div>
+
+      <!-- Añadir el toggle mensual/anual aquí -->
+      <div class="billing-toggle-container">
+        <div class="billing-toggle">
+          <button class="billing-option monthly active" data-billing="monthly" id="monthly-button">Mensual</button>
+          <button class="billing-option annual" data-billing="annual" id="annual-button">Anual <span class="discount">-20%</span></button>
+          <span class="toggle-slider"></span>
+        </div>
+      </div>
+
+      <div class="plans-container">
+         <!-- Plan Free -->
+         
+        <div class="plan-box" data-value="plan1">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Free</h3>
+          
+          <div class="plan-pricing-section">
+            <h2 class="price-monthly">Gratis<span>/mes</span></h2>
+            <h2 class="price-annual" style="display: none;">Gratis<span>/mes</span></h2>
+            <button class="plan-button">Empezar gratis</button> 
+            <p class="trial-period">Acceso básico gratuito</p>
+          </div>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso al BOE </li>
+            <li><i class="fa fa-check feature-included"></i> Resúmenes y estadísticas</li>
+            <li><i class="fa fa-times feature-excluded"></i> Agentes Personalizados </li>
+            <li><i class="fa fa-times feature-excluded"></i> Alertas y notificaciones</li>
+            <li><i class="fa fa-times feature-excluded"></i> Análisis de impacto</li>
+          </ul>
+        </div>
+        
+
+        <!-- Plan Starter -->
+        <div class="plan-box" data-value="plan2">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Starter</h3>
+          
+          <div class="plan-pricing-section">
+            <h2 class="price-monthly">80€<span>/mes</span></h2>
+            <h2 class="price-annual" style="display: none;">65€<span>/mes</span></h2>
+            <button class="plan-button">Elegir Starter</button>
+            <p class="trial-period">15 días de prueba gratuita</p>
+          </div>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso a 1 fuente oficial </li>
+            <li><i class="fa fa-check feature-included"></i> 5 Agentes Personalizados </li>
+            <li><i class="fa fa-check feature-included"></i> 50 análisis de impacto/mes</li>
+            <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
+          </ul>
+        </div>
+        
+        <!-- Plan Pro -->
+        <div class="plan-box" data-value="plan3">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Pro</h3>
+          
+          <div class="plan-pricing-section">
+            <h2 class="price-monthly">100€<span>/mes</span></h2>
+            <h2 class="price-annual" style="display: none;">80€<span>/mes</span></h2>
+            <button class="plan-button">Elegir Pro</button>
+            <p class="trial-period">15 días de prueba gratuita</p>
+          </div>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso a 5 fuentes oficiales</li>
+            <li><i class="fa fa-check feature-included"></i> 12 Agentes Personalizados </li>
+            <li><i class="fa fa-check feature-included"></i> 500 análisis de impacto/mes</li>
+            <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
+          </ul>
+        </div>
+        
+        <!-- Plan Enterprise -->
+        <div class="plan-box" data-value="plan4">
+          <div class="plan-badge" style="display: none;"></div>
+          <h3>Enterprise</h3>
+          
+          <div class="plan-pricing-section">
+            <h2 class="price-monthly">Personalizado</h2>
+            <h2 class="price-annual" style="display: none;">Personalizado</h2>
+            <button class="plan-button">Contactar con nosotros</button>
+            <p class="trial-period">Solución completa personalizada</p>
+          </div>
+          
+          <ul class="features-list">
+            <li><i class="fa fa-check feature-included"></i> Usuarios: bajo demanda</li>
+            <li><i class="fa fa-check feature-included"></i> Fuentes oficiales ilimitadas</li>
+            <li><i class="fa fa-check feature-included"></i> Agentes Personalizados ilimitados </li>
+            <li><i class="fa fa-check feature-included"></i> Consultas de impacto ilimitadas</li>
+            <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
+            <li><i class="fa fa-check feature-included"></i> Integración API y modelos predictivos</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-navigation">
+        <button type="button" id="btnSiguientePaso0" class="btn-siguiente">Siguiente</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Billing toggle functionality
+      const monthlyButton = document.getElementById('monthly-button');
+      const annualButton = document.getElementById('annual-button');
+      const pricesMonthly = document.querySelectorAll('.price-monthly');
+      const pricesAnnual = document.querySelectorAll('.price-annual');
+      let billingPeriod = 'monthly'; // Default billing period
+      let selectedPlan = null;
+      
+      // Function to toggle between monthly and annual billing
+      function toggleBilling(isAnnual) {
+        console.log('Toggling billing to:', isAnnual ? 'annual' : 'monthly');
+        
+        if (isAnnual) {
+          // Set annual active
+          monthlyButton.classList.remove('active');
+          annualButton.classList.add('active');
+          
+          // Toggle price display
+          pricesMonthly.forEach(el => el.style.display = 'none');
+          pricesAnnual.forEach(el => el.style.display = 'block');
+          
+          billingPeriod = 'annual';
+          
+          // Update any selected plan to include billing period
+          if (selectedPlan) {
+            const planType = selectedPlan.split('_')[0];
+            selectedPlan = planType + '_annual';
+            console.log('Updated to annual plan:', selectedPlan);
+          }
+        } else {
+          // Set monthly active
+          monthlyButton.classList.add('active');
+          annualButton.classList.remove('active');
+          
+          // Toggle price display
+          pricesMonthly.forEach(el => el.style.display = 'block');
+          pricesAnnual.forEach(el => el.style.display = 'none');
+          
+          billingPeriod = 'monthly';
+          
+          // Update any selected plan to include billing period
+          if (selectedPlan) {
+            const planType = selectedPlan.split('_')[0];
+            selectedPlan = planType + '_monthly';
+            console.log('Updated to monthly plan:', selectedPlan);
+          }
+        }
+      }
+      
+      // Initialize with monthly billing as default
+      toggleBilling(false);
+      
+      // Event listeners for the billing toggle buttons
+      monthlyButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Monthly button clicked');
+        toggleBilling(false);
+      });
+      
+      annualButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        console.log('Annual button clicked');
+        toggleBilling(true);
+      });
+      
+      const planBoxes = document.querySelectorAll('.plan-box');
+      const nextButton = document.getElementById('btnSiguientePaso0');
+
+      // Function to handle plan selection
+      function selectPlan(planBox) {
+        planBoxes.forEach(otherBox => otherBox.classList.remove('selected'));
+        planBox.classList.add('selected');
+        selectedPlan = planBox.getAttribute('data-value') + '_' + billingPeriod;
+        console.log('Plan seleccionado:', selectedPlan);
+      }
+
+      // Add click event for both the plan box and the plan button
+      planBoxes.forEach(box => {
+        box.addEventListener('click', function() {
+          selectPlan(this);
+        });
+        
+        // Also add click handler to the plan button inside the box
+        const planButton = box.querySelector('.plan-button');
+        if (planButton) {
+          planButton.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent bubbling to parent box click
+            selectPlan(box);
+            
+            // Immediately proceed with the next button click if plan is selected
+            if (selectedPlan) {
+              nextButton.click();
+            }
+          });
+        }
+      });
+
+      nextButton.addEventListener('click', async function() {
+        if (!selectedPlan) {
+          alert('Por favor, selecciona un plan para continuar.');
+          return;
+        }
+
+        nextButton.classList.add('loading');
+        nextButton.disabled = true;
+        nextButton.innerHTML = '<span class="loader"></span> Procesando...';
+
+        try {
+          // Extract plan type and billing period
+          const [planType, billing] = selectedPlan.split('_');
+          
+          if (planType === 'plan1') {
+            console.log('Procesando Plan Gratuito...');
+            // Simulación de guardado y redirección para plan1
+            // En un caso real, aquí llamarías a tu API /save-free-plan
+            const response = await fetch('/save-free-plan', {
+             method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan: planType, billingPeriod: billing })
+            });
+            if (!response.ok) throw new Error('Error al guardar plan gratuito');
+            const result = await response.json();
+            window.location.href = result.redirectUrl || '/profile'; 
+            
+            // Simulación para este ejemplo:
+            setTimeout(() => {
+                console.log('Plan gratuito procesado, redirigiendo a /profile (simulado)');
+                alert('Redirigiendo a /profile (simulado para Plan Gratuito). Debes implementar la llamada a /save-free-plan.');
+                // window.location.href = '/profile'; // Descomenta cuando tengas el backend listo
+                nextButton.classList.remove('loading');
+                nextButton.disabled = false;
+                nextButton.innerHTML = 'Siguiente';
+            }, 1500);
+
+          } else if (planType === 'plan2' || planType === 'plan3') {
+            console.log('Guardando plan en sessionStorage y redirigiendo a paso1.html...');
+            sessionStorage.setItem('selectedPlan', planType);
+            sessionStorage.setItem('billingPeriod', billing);
+            window.location.href = 'paso1.html';
+
+          } else if (planType === 'plan4') {
+            console.log('Redirigiendo a contacto de ventas para Plan Empresa...');
+            window.location.href = 'https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ2HhDRDZRQ4yuOGq9PvinINc1hgbuEc-Ky4yOoYy_naazSIWUgG3UTpVGzCOLZmZb-96i8JBiuO'; // URL de ejemplo, reemplaza con tu URL real de contacto de ventas
+          } else {
+            alert('Plan no reconocido.');
+            nextButton.classList.remove('loading');
+            nextButton.disabled = false;
+            nextButton.innerHTML = 'Siguiente';
+          }
+        } catch (error) {
+          console.error('Error al procesar el plan:', error);
+          alert('Ocurrió un error: ' + error.message);
+          nextButton.classList.remove('loading');
+          nextButton.disabled = false;
+          nextButton.innerHTML = 'Siguiente';
+        }
+      });
+      
+      // Script para el menú hamburguesa (si lo tienes en menu.css/js)
+      function toggleMenu() {
+        const menu = document.querySelector('.navbar .menu');
+        if (menu) {
+            menu.classList.toggle('show');
+        }
+      }
+      // Adjuntar evento al botón hamburguesa si existe
+      const hamburgerButton = document.querySelector('.navbar .hamburger');
+      if (hamburgerButton) {
+          hamburgerButton.addEventListener('click', toggleMenu);
+      }
+
+    });
+  </script>
+
+</body>
+</html>

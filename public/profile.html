@@ -1342,14 +1342,14 @@ function renderBoletinDocumentos(documents) {
 
         // Generar HTML para ramas_juridicas como tags
         const ramasHtml = (doc.ramas_juridicas && doc.ramas_juridicas.length > 0)
-            ? `<div class="boletin-tags"><strong>Ramas:</strong> ${doc.ramas_juridicas.map(rama => `<span class="tag-rama">${rama}</span>`).join(' ')}</div>`
+            ? `<span class="boletin-tags"> ${doc.ramas_juridicas.map(rama => `<span class="tag-rama">${rama}</span>`).join(' ')}</span>`
             : '';
 
         // Generar HTML para divisiones_cnae como tags (asumiendo que es un array)
         // Asegurarse que doc.divisiones_cnae existe y es un array
-        const divisionesArray = Array.isArray(doc.divisiones_cnae) ? doc.divisiones_cnae : [];
+        const divisionesArray = Array.isArray(doc.divisiones) ? doc.divisiones : [];
         const divisionesHtml = (divisionesArray.length > 0)
-            ? `<div class="boletin-tags"><strong>Divisiones:</strong> ${divisionesArray.map(div => `<span class="tag-division">${div}</span>`).join(' ')}</div>`
+            ? `<span class="boletin-tags">${divisionesArray.map(div => `<span class="tag-division">${div}</span>`).join(' ')}</span>`
             : '';
 
         // Reutilizar la estructura de .data-item

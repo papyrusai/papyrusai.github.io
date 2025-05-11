@@ -1,3 +1,16 @@
+// ****** INICIO: OBTENER PLAN SELECCIONADO DE PASO 0 ******
+const selectedPlan = sessionStorage.getItem('selectedPlan');
+if (selectedPlan) {
+    console.log('Plan recuperado de sessionStorage:', selectedPlan);
+    // Puedes usar la variable 'selectedPlan' más adelante si es necesario
+    // Por ejemplo, para mostrar información diferente en este paso
+    // o para añadirla a los datos que se guardan al final.
+}
+// ****** FIN: OBTENER PLAN SELECCIONADO DE PASO 0 ******
+
+
+
+
 async function cargarYGuardarCatalogo() {
   try {
     const respuesta = await fetch('catalogo_etiquetas.json');
@@ -11,148 +24,217 @@ async function cargarYGuardarCatalogo() {
 document.addEventListener('DOMContentLoaded', cargarYGuardarCatalogo);
 document.addEventListener('DOMContentLoaded', function() {
   const form = document.getElementById('onboardingForm');
-  const perfilRegulatorio = document.getElementById('perfil_regulatorio');
+  const perfilAbogadoDespacho = document.getElementById('perfil_abogado_despacho');
   const perfilEmpresasReguladas = document.getElementById('perfil_empresas_reguladas');
-  const perfilAbogadoEmpresa = document.getElementById('perfil_conocimiento_legal');
-  const perfilAbogado = document.getElementById('perfil_abogado');
   const perfilOtro = document.getElementById('perfil_otro');
   
   const especializacionField = document.getElementById('especializacion_field');
   const otroPerfilField = document.getElementById('otro_perfil_field');
-
-  // Mostrar/ocultar campos condicionales
-  function toggleConditionalFields() {
-      // Mostrar campo de especialización para perfiles que lo requieren
-      especializacionField.style.display = 
-          (perfilRegulatorio.checked || 
-           perfilEmpresasReguladas.checked || 
-           perfilAbogadoEmpresa.checked || 
-           perfilAbogado.checked) ? 'block' : 'none';
-      
-      // Mostrar campo de otro perfil cuando se selecciona "Otro"
-      otroPerfilField.style.display = perfilOtro.checked ? 'block' : 'none';
-
-      // Actualizar el placeholder según el perfil seleccionado
-const especializacionInput = document.getElementById('especializacion');
-if (especializacionInput) {
-  if (perfilRegulatorio.checked) {
-    especializacionInput.placeholder = "Indica tu tipo de entidad (Agencia de Valores, Entidad de Crédito...)";
-  } else if (perfilEmpresasReguladas.checked) {
-    especializacionInput.placeholder = "Indica tu sector regulado (farmaceútico, energía, construcción...)";
-  } else if (perfilAbogadoEmpresa.checked) {
-    especializacionInput.placeholder = "Indica si tu despacho está especializado en un sector o cubre diversos servicios";
-  } else if (perfilAbogado.checked) {
-    especializacionInput.placeholder = "Indica tu especialización jurídica (urbanismo, fiscal, M&A...)";
-  } else {
-    especializacionInput.placeholder = "Indica el perfil que aplique (empresario,opositor, notario...)";
-  }
-}
-
-const area_interes = document.getElementById('area_interes');
-if (area_interes) {
-  if (perfilRegulatorio.checked) {
-    area_interes.placeholder = `Ej: Fondo de inversión especializado en Non-Performing Loans (NPL), con especial interés en:
-- Crédito Hipotecario
-- Morosidad
-- Consumidor vulnerable...`;
-  } else if (perfilEmpresasReguladas.checked) {
-    area_interes.placeholder = `Ej: Empresa energética regulada, con especial interés en:
+  
+  // Button for showing examples
+  const verEjemploBtn = document.getElementById('verEjemploBtn');
+  
+  // Store example placeholders for different profiles
+  const examplePlaceholders = {
+    abogado_despacho: `Ej: Abogado especializado en mercados de valores, con especial interés en:
+     - Ofertas Públicas de Adquisición (OPAs)
+     - Titulización de activos
+     - Procedimientos sancionadores de la CNMV...`,
+    abogado_empresa: `Ej: Empresa energética regulada, con especial interés en:
 - Legislación sobre energías renovables
 - Mercado eléctrico mayorista
 - Subvenciones y ayudas estatales
-- Límites de emisiones de CO₂...`;
-  } else if (perfilAbogadoEmpresa.checked) {
-    area_interes.placeholder =`Ej: Clasificación normativa en base a departamentos:
-- Aribitraje y Litigación Internacional
-- Digital, Tecnología y Telecomunicaciones
-- Financiero y Bancario
-- Inmobiliario y Urbanismo...`;
-  } else if (perfilAbogado.checked) {
-    area_interes.placeholder = `Ej: Abogado especializado en mercados de valores, con especial interés en:
-     - Ofertas Públicas de Adquisición (OPAs)
-     - Titulización de activos
-     - Procedimientos sancionadores de la CNMV...`;
-  } else {
-    area_interes.placeholder = `Ej: Asesoría enfocada en subvenciones agrarias, con especial interés en:
+- Límites de emisiones de CO₂...`,
+    default: `Ej: Asesoría enfocada en subvenciones agrarias, con especial interés en:
 - Normativa de la PAC (Política Agraria Común)
 - Gestión y tramitación de ayudas estatales
-- Reglamentos de producción ecológica...`;
+- Reglamentos de producción ecológica...`
+  };
+
+  // ****** INICIO: NUEVOS ELEMENTOS PARA POLÍTICA DE PRIVACIDAD ******
+  const privacyCheckbox = document.getElementById('privacyPolicy');
+  const privacyPolicyLink = document.getElementById('privacyPolicyLink');
+  const privacyModal = document.getElementById('privacyModal');
+  const warningModal = document.getElementById('warningModal');
+  const closePrivacyModal = document.getElementById('closePrivacyModal');
+  const closeWarningModal = document.getElementById('closeWarningModal');
+  // ****** FIN: NUEVOS ELEMENTOS PARA POLÍTICA DE PRIVACIDAD ******
+
+  // Add event listener for the "Ver un ejemplo" button
+  if (verEjemploBtn) {
+    verEjemploBtn.addEventListener('click', function() {
+      const area_interes = document.getElementById('area_interes');
+      if (area_interes) {
+        // Get the appropriate placeholder based on selected profile
+        let placeholder = "";
+        if (document.getElementById('perfil_abogado_despacho')?.checked) {
+          placeholder = examplePlaceholders.abogado_despacho;
+        } else if (document.getElementById('perfil_empresas_reguladas')?.checked) {
+          placeholder = examplePlaceholders.abogado_empresa;
+        } else {
+          placeholder = examplePlaceholders.default;
+        }
+        // Set the placeholder
+        area_interes.placeholder = placeholder;
+      }
+    });
   }
-}
 
-  }
+  // Mostrar/ocultar campos condicionales
+  // Define toggleConditionalFields in the global scope
+  window.toggleConditionalFields = function() {
+      console.log("toggleConditionalFields called");
+      // Log the status of the checkboxes
+      console.log("Abogado despacho checked:", document.getElementById('perfil_abogado_despacho')?.checked);
+      console.log("Abogado empresa checked:", document.getElementById('perfil_empresas_reguladas')?.checked);
+      console.log("Otro checked:", perfilOtro?.checked);
+      
+      // Mostrar campo de especialización para perfiles que lo requieren
+      if (especializacionField) {
+        especializacionField.style.display = 
+            (document.getElementById('perfil_abogado_despacho')?.checked || 
+             document.getElementById('perfil_empresas_reguladas')?.checked || 
+             perfilOtro?.checked) ? 'block' : 'none';
+      }
+      
+      // Mostrar campo de otro perfil cuando se selecciona "Otro"
+      if (otroPerfilField) {
+        otroPerfilField.style.display = perfilOtro?.checked ? 'block' : 'none';
+      }
 
+      // Actualizar el placeholder según el perfil seleccionado
+      const especializacionInput = document.getElementById('especializacion');
+      if (especializacionInput) {
+        if (document.getElementById('perfil_abogado_despacho')?.checked) {
+          console.log("Setting placeholder for abogado despacho");
+          especializacionInput.placeholder = "Indica tu área de especialización legal";
+        } else if (document.getElementById('perfil_empresas_reguladas')?.checked) {
+          console.log("Setting placeholder for abogado empresa");
+          especializacionInput.placeholder = "Indica a qué tipo de empresa perteneces";
+        } else {
+          console.log("Setting default placeholder");
+          especializacionInput.placeholder = "Indica el perfil que aplique (empresario, opositor, notario...)";
+        }
+      }
 
-  // Agregar event listeners para todos los perfiles
-  perfilRegulatorio.addEventListener('change', toggleConditionalFields);
-  perfilEmpresasReguladas.addEventListener('change', toggleConditionalFields);
-  perfilAbogadoEmpresa.addEventListener('change', toggleConditionalFields);
-  perfilAbogado.addEventListener('change', toggleConditionalFields);
-  perfilOtro.addEventListener('change', toggleConditionalFields);
+      // We don't set the area_interes placeholder here anymore
+      // It will remain empty until the user clicks "Ver un ejemplo"
+  };
 
-  // Inicializar estado de campos condicionales
+  // Call toggleConditionalFields once at the beginning
   toggleConditionalFields();
 
-  // Manejo del envío del formulario
-  form.addEventListener('submit', function(event) {
-      event.preventDefault();
-      
-      // Validación adicional para perfiles que requieren especialización
-      if ((perfilRegulatorio.checked || 
-           perfilEmpresasReguladas.checked || 
-           perfilAbogadoEmpresa.checked || 
-           perfilAbogado.checked) && 
-          document.getElementById('especializacion').value.trim() === '') {
-          alert('Por favor, indica los ámbitos en los que trabajas');
-          document.getElementById('especializacion').focus();
-          return;
-      }
-      
-      // Validación para otro perfil
-      if (perfilOtro.checked && document.getElementById('otro_perfil').value.trim() === '') {
-          alert('Por favor, especifica tu perfil');
-          document.getElementById('otro_perfil').focus();
-          return;
-      }
+  // Agregar event listeners para todos los perfiles with toggleConditionalFields
+  if (document.getElementById('perfil_abogado_despacho')) {
+    document.getElementById('perfil_abogado_despacho').addEventListener('change', toggleConditionalFields);
+  }
+  if (document.getElementById('perfil_empresas_reguladas')) {
+    document.getElementById('perfil_empresas_reguladas').addEventListener('change', toggleConditionalFields);
+  }
+  if (perfilOtro) {
+    perfilOtro.addEventListener('change', toggleConditionalFields);
+  }
 
-      const formData = new FormData(form);
-      const userData = {};
-      
-      // Convertir FormData a objeto
-      for (let [key, value] of formData.entries()) {
-          if (key.endsWith('[]')) {
-              // Manejar arrays (checkboxes múltiples)
-              const arrayKey = key.slice(0, -2);
-              if (!userData[arrayKey]) {
-                  userData[arrayKey] = [];
-              }
-              userData[arrayKey].push(value);
-          } else {
-              userData[key] = value;
+  // ****** INICIO: LÓGICA PARA MODALES ******
+  // Abrir modal de política de privacidad
+  if (privacyPolicyLink) {
+    privacyPolicyLink.addEventListener('click', function() {
+        if (privacyModal) privacyModal.style.display = 'block';
+    });
+  }
+
+  // Cerrar modal de política de privacidad
+  if (closePrivacyModal) {
+    closePrivacyModal.addEventListener('click', function() {
+        if (privacyModal) privacyModal.style.display = 'none';
+    });
+  }
+
+  // Cerrar modal de advertencia
+  if (closeWarningModal) {
+    closeWarningModal.addEventListener('click', function() {
+        if (warningModal) warningModal.style.display = 'none';
+    });
+  }
+
+  // Cerrar modales si se hace clic fuera del contenido
+  window.addEventListener('click', function(event) {
+    if (event.target == privacyModal) {
+        if (privacyModal) privacyModal.style.display = 'none';
+    }
+    if (event.target == warningModal) {
+        if (warningModal) warningModal.style.display = 'none';
+    }
+  });
+  // ****** FIN: LÓGICA PARA MODALES ******
+
+  // Manejo del envío del formulario (modificado)
+form.addEventListener('submit', function(event) {
+  event.preventDefault(); // Prevenir siempre el envío por defecto para validar
+
+  // ****** INICIO: VALIDACIÓN DE POLÍTICA DE PRIVACIDAD ******
+  if (!privacyCheckbox || !privacyCheckbox.checked) {
+      if (warningModal) warningModal.style.display = 'block'; // Mostrar modal de advertencia
+      return; // Detener el proceso si no está aceptada
+  }
+  // ****** FIN: VALIDACIÓN DE POLÍTICA DE PRIVACIDAD ******
+  
+  // Validación adicional para perfiles (lógica existente)
+ /* if ((document.getElementById('perfil_abogado_despacho').checked || 
+       document.getElementById('perfil_empresas_reguladas').checked) && 
+      document.getElementById('especializacion').value.trim() === '') {
+      alert('Por favor, completa el campo de especialización');
+      document.getElementById('especializacion').focus();
+      return;
+  }
+  
+  if (perfilOtro.checked && document.getElementById('otro_perfil').value.trim() === '') {
+      alert('Por favor, especifica tu perfil');
+      document.getElementById('otro_perfil').focus();
+      return;
+  }*/
+
+  // Si todas las validaciones pasan, proceder con la lógica original
+  const formData = new FormData(form);
+  const userData = {};
+  
+  for (let [key, value] of formData.entries()) {
+      if (key.endsWith('[]')) {
+          const arrayKey = key.slice(0, -2);
+          if (!userData[arrayKey]) {
+              userData[arrayKey] = [];
+          }
+          userData[arrayKey].push(value);
+      } else {
+          // No incluir el checkbox de privacidad en los datos a guardar/enviar
+          if (key !== 'privacyPolicy') {
+             userData[key] = value;
           }
       }
+  }
 
-      // Asegurar que los campos condicionales se incluyan en userData
-      if ((perfilRegulatorio.checked || 
-           perfilEmpresasReguladas.checked || 
-           perfilAbogadoEmpresa.checked || 
-           perfilAbogado.checked) && 
-          document.getElementById('especializacion')) {
-          userData.especializacion = document.getElementById('especializacion').value.trim();
-      }
-      
-      if (perfilOtro.checked && document.getElementById('otro_perfil')) {
-          userData.otro_perfil = document.getElementById('otro_perfil').value.trim();
-      }
-      
-      console.log('Datos del usuario:', userData);
-      // Guardar datos en sessionStorage
-      sessionStorage.setItem('userData', JSON.stringify(userData));
-      // Redirigir a paso2.html
-      window.location.href = 'paso2.html';
-          
-      
-  });
+  if ((document.getElementById('perfil_abogado_despacho').checked || 
+       document.getElementById('perfil_empresas_reguladas').checked) && 
+      document.getElementById('especializacion')) {
+      userData.especializacion = document.getElementById('especializacion').value.trim();
+  }
+  
+  if (perfilOtro.checked && document.getElementById('otro_perfil')) {
+      userData.otro_perfil = document.getElementById('otro_perfil').value.trim();
+  }
+
+    // ****** INICIO: AÑADIR PLAN A USERDATA ******
+  if (selectedPlan) {
+    userData.plan = selectedPlan; // Añade el plan al objeto de datos
+  }
+  // ****** FIN: AÑADIR PLAN A USERDATA ******
+
+  
+  console.log('Datos del usuario (sin política de privacidad):', userData);
+  sessionStorage.setItem('userData', JSON.stringify(userData));
+  window.location.href = 'paso2.html'; // Redirigir al siguiente paso
+});
+
 });
 
 // Función para procesar los datos del formulario y enviarlos a la API

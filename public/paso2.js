@@ -158,7 +158,7 @@ TAREAS:
 1. ETIQUETAS PERSONALIZADAS:
    - Basándote en la información de userData (perfil, especialización, áreas de interés) y en la siguiente plantilla de ejemplos para su perfil:
      ${ejemploPerfil || "No se encontraron ejemplos personalizados para el perfil indicado."}
-   - Genera hasta 15 etiquetas que ayuden a clasificar documentos legales y cumplan TODAS estas reglas:
+   - Genera hasta 5 etiquetas que ayuden a clasificar documentos legales y cumplan TODAS estas reglas:
      • En los casos en que la etiqueta sea muy general, ajusta al área jurídica al sector o actividad del usuario, pero asegurate que en la definicion se incluyen tanto disposiciones generales como específicas que afecten al usuario.  
        Ej.: «Riesgos legales para un fondo de inversión» (no genérico «Riesgos Legales»).  
      • No incluyas referencias a fuentes, boletines ni jurisdicciones (BOE, DOUE, UE, etc.).   
@@ -194,7 +194,7 @@ Devolver SOLO un objeto JSON con la siguiente estructura exacta (sin explicacion
 }
 
 LÍMITES:
-- Hasta 15 etiquetas personalizadas
+- Hasta 5 etiquetas personalizadas
 - Hasta 5 rangos normativos
 
 No incluyas texto adicional fuera del objeto JSON.

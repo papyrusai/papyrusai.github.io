@@ -634,6 +634,38 @@
 </script>
 </head>
 <body>
+  <script>
+    // Check for user authorization before page loads
+    (function() {
+      // Helper function to get cookies
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+      
+      // Try to get user email from sessionStorage first
+      let userEmail = sessionStorage.getItem('userEmail');
+      
+      // If not found in sessionStorage, try to get from cookies
+      if (!userEmail) {
+        userEmail = getCookie('userEmail');
+        
+        // If found in cookies, save to sessionStorage for future use
+        if (userEmail) {
+          console.log('Email found in cookie, storing in sessionStorage:', userEmail);
+          sessionStorage.setItem('userEmail', userEmail);
+        }
+      }
+      
+      // If no user email is found, redirect to the main app page
+      if (!userEmail) {
+        console.log('No user email found, redirecting to login');
+        window.location.href = 'index.html';
+      }
+    })();
+  </script>
   
   <nav class="navbar">
     <div class="logo">
@@ -674,10 +706,6 @@
           <button class="billing-option annual" data-billing="annual">Anual <span class="discount">-20%</span></button>
           <span class="toggle-slider"></span>
         </div>
-      </div>
-
-      <div class="plans-container">
-        <!-- Plan boxes aquí -->
       </div>
 
       <div class="plans-container">

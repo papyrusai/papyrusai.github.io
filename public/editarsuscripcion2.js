@@ -7,7 +7,7 @@ function getPlanLimits(planType, extraAgentes = 0, extraFuentes = 0) {
   const baseLimits = {
     plan1: { fuentes: 0, agentes: 0 }, // Plan Free
     plan2: { fuentes: 1, agentes: 5 }, // Plan Starter
-    plan3: { fuentes: 3, agentes: 12 }, // Plan Pro (asumiendo 10 agentes para plan3)
+    plan3: { fuentes: 5, agentes: 12 }, // Plan Pro (asumiendo 10 agentes para plan3)
     plan4: { fuentes: Infinity, agentes: Infinity } // Plan Enterprise (sin límites)
   };
   

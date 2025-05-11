@@ -119,6 +119,10 @@ app.get('/paso1.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'paso1.html'));
 });
 
+app.get('/paso0.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'paso0.html'));
+});
+
 app.get('/profile.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
@@ -268,7 +272,9 @@ async function processAODomainUser(user) {
 app.post('/login', (req, res, next) => {
   passport.authenticate('local', async (err, user, info) => {
     if (err) {
+      console.log(err);
       return res.status(500).json({ error: "Error interno de autenticación" });
+      
     }
     if (!user) {
       return res.status(400).json({
@@ -279,6 +285,17 @@ app.post('/login', (req, res, next) => {
     req.logIn(user, async (err) => {
       if (err) {
         return res.status(500).json({ error: "Error al iniciar sesión" });
+      }
+
+      // Store the user email in a cookie for client-side access
+      if (user && user.email) {
+        // Set a cookie with the user's email - this will be accessible to client-side JavaScript
+        res.cookie('userEmail', user.email, { 
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+          httpOnly: false, // Allow JavaScript access
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        });
       }
 
       // If the email ends with Cuatrecasas domain
@@ -298,7 +315,7 @@ app.post('/login', (req, res, next) => {
         return res.status(200).json({ redirectUrl: '/profile' });
         //return res.redirect('/profile');
       } else {
-        return res.status(200).json({ redirectUrl: '/paso1.html' });
+        return res.status(200).json({ redirectUrl: '/paso0.html' });
       }
     });
   })(req, res, next);
@@ -364,6 +381,17 @@ app.post('/register', async (req, res) => {
         });
       }
 
+      // Store the user email in a cookie for client-side access
+      if (newUser && newUser.email) {
+        // Set a cookie with the user's email - this will be accessible to client-side JavaScript
+        res.cookie('userEmail', newUser.email, { 
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+          httpOnly: false, // Allow JavaScript access
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        });
+      }
+
       // If the email is Cuatrecasas
       if (newUser.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
         await processSpecialDomainUser(newUser);
@@ -377,7 +405,7 @@ app.post('/register', async (req, res) => {
       }
 
       // Otherwise normal new user flow
-      return res.status(200).json({ redirectUrl: '/paso1.html' });
+      return res.status(200).json({ redirectUrl: '/paso0.html' });
     });
   } catch (err) {
     console.error("Error registering user:", err);
@@ -400,6 +428,17 @@ app.get('/auth/google/callback',
       await client.connect();
       const database = client.db("papyrus");
       const usersCollection = database.collection("users");
+
+      // Store the user email in a cookie for client-side access
+      if (req.user && req.user.email) {
+        // Set a cookie with the user's email - this will be accessible to client-side JavaScript
+        res.cookie('userEmail', req.user.email, { 
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+          httpOnly: false, // Allow JavaScript access
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        });
+      }
 
       // Fetch the user from DB
       const existingUser = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
@@ -425,7 +464,7 @@ app.get('/auth/google/callback',
         }
         return res.redirect('/profile');
       } else {
-        return res.redirect('/paso1.html');
+        return res.redirect('/paso0.html');
       }
     } catch (err) {
       console.error('Error connecting to MongoDB', err);
@@ -1179,8 +1218,8 @@ console.log(`Query:`, query);
 
     res.send(profileHtml);
   } catch (err) {
-    console.error('Error connecting to MongoDB', err);
-    res.status(500).send('Error retrieving documents');
+    console.error('Error in profile route:', error);
+    res.status(500).send('Error interno del servidor');
   } finally {
     await client.close();
   }
@@ -1188,7 +1227,7 @@ console.log(`Query:`, query);
 */
 // ──────────────────────────── FUNCIÓN COMÚN ────────────────────────────
 /**
- * Devuelve un array con las condiciones Mongo para
+ * Devuelve un array con las condiciones Mongo para
  *  • fecha inicial  >= start   (si viene)
  *  • fecha final    <= end     (si viene)
  * La fecha se guarda en tres campos numéricos: anio, mes (1‑12) y dia.
@@ -1402,7 +1441,7 @@ if (etiquetasKeys.length === 0) {
 
     const projection = {
       short_name: 1,
-      divisiones_cnae: 1,
+      divisiones: 1,
       resumen: 1,
       dia: 1,
       mes: 1,
@@ -1690,7 +1729,7 @@ app.get('/api/boletin-diario', async (req, res) => {
 
     const projection = {
       short_name: 1,
-      divisiones_cnae: 1, // Assuming this is the field for 'divisiones'
+      divisiones: 1, // Assuming this is the field for 'divisiones'
       resumen: 1,
       dia: 1,
       mes: 1,
@@ -2837,14 +2876,14 @@ app.post('/create-checkout-session', async (req, res) => {
     // Definir precios base según el plan y el intervalo (en céntimos)
     const basePrices = {
       plan1: { monthly: 0, annual: 0 },
-      plan2: { monthly: 6600, annual: 63600 },
-      plan3: { monthly: 12000, annual: 118800 },
+      plan2: { monthly: 8000, annual: 78000 },
+      plan3: { monthly: 10000, annual: 96000 },
       plan4: { monthly: 0, annual: 0 } // Personalizado, se maneja por separado
     };
     
     // Definir precios de extras (en céntimos) - CORREGIDOS
     const extraPrices = {
-      agentes: { monthly: 5000, annual: 60000 }, // 5000 * 12 = 60000
+      agentes: { monthly: 2000, annual: 24000 }, // 5000 * 12 = 60000
       fuentes: { monthly: 1500, annual: 18000 } // 1500 * 12 = 18000
     };
     
@@ -3175,7 +3214,8 @@ app.get('/save-user', async (req, res) => {
     // Obtener el usuario actual desde la sesión
     const user = req.user;
     if (!user) {
-      return res.status(401).redirect('/login.html');
+      console.error('No user found in session or through other means');
+      return res.redirect('/login.html?error=session_lost&redirect_to=' + encodeURIComponent('/save-user?session_id=' + session_id));
     }
     
     // Obtener todos los metadatos de la sesión

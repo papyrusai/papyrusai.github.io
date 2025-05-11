@@ -8,6 +8,22 @@
   <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap">
   <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/onboarding.css">
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    // Sync 'selectedPlan' from paso0 with 'current_plan' needed in paso3
+    document.addEventListener('DOMContentLoaded', function() {
+      // Always use selectedPlan as the source of truth
+      const selectedPlan = sessionStorage.getItem('selectedPlan');
+      
+      console.log('[Plan sync] Selected plan:', selectedPlan);
+      
+      if (selectedPlan) {
+        // Always override current_plan with selectedPlan
+        sessionStorage.setItem('current_plan', selectedPlan);
+        console.log(`[Plan sync] Updated current_plan to match selectedPlan: ${selectedPlan}`);
+      }
+    });
+  </script>
   <style>
     /* ----------------- Submenu Styles ----------------- */
     .submenu {
@@ -45,6 +61,28 @@
     }
     .section-content.active {
       display: block;
+    }
+    /* ----------------- Loader Styles for Checkout ----------------- */
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid var(--primary-color);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      animation: spin 2s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .btn-siguiente.loading {
+      display: flex !important;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
     }
     /* ----------------- Ramas Jurídicas Specific ----------------- */
     /* Force each rama box to be full-width and on its own line */
@@ -156,6 +194,90 @@
     .dropdown-item:hover {
       background-color: var(--secondary-color);
       color: var(--background-color);
+    }
+    
+    /* Dropdown group styles for checkboxes */
+    .dropdown-group {
+      position: relative;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    
+    .dropdown-toggle {
+      width: 100%;
+      padding: 8px 12px;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      text-align: left;
+      cursor: pointer;
+      position: relative;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #333;
+      transition: border-color 0.2s;
+    }
+    
+    .dropdown-toggle:hover {
+      border-color: var(--primary-color);
+    }
+    
+    .dropdown-toggle::after {
+      /*content: '▾';*/
+      font-size: 10px;
+      margin-left: 6px;
+      color: #666;
+    }
+    
+    .dropdown-options {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      z-index: 100;
+      margin-top: 4px;
+      padding: 4px 0;
+    }
+    
+    .dropdown-options.show {
+      display: block;
+    }
+    
+    .checkbox-item {
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .checkbox-item:hover {
+      background-color: #f3f3f3;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      margin-right: 8px;
+      min-width: 14px;
+      min-height: 14px;
+      cursor: pointer;
+    }
+    
+    .checkbox-item label {
+      cursor: pointer;
+      flex: 1;
+      user-select: none;
+    }
+    
+    .dropdown-options {
+      padding: 8px 0;
     }
     /* ----------------- Feedback Message ----------------- */
     .feedback-msg {
@@ -324,15 +446,22 @@
       font-size: 14px;
       line-height: 1.5;
     }
-    .etiquetas-contador {
+    .etiquetas-contador, .fuentes-contador {
       margin-bottom: 15px;
-    font-size: 17px;
-    color: var(--text-color);
-    font-weight: 500;
-    font-style: italic;
-}
+      font-size: 17px;
+      color: var(--text-color);
+      font-weight: 500;
+      font-style: italic;
+    }
     .contador-etiquetas{
       color: var(--primary-color);
+    }
+    
+    .limite-etiquetas {
+      font-size: 13px;
+      font-style: italic;
+      color: #666;
+      margin-left: 2px;
     }
 
 /* ------Skeleton Loader --------- */
@@ -748,6 +877,38 @@
 </script>
 </head>
 <body>
+  <script>
+    // Check for user authorization before page loads
+    (function() {
+      // Helper function to get cookies
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+      
+      // Try to get user email from sessionStorage first
+      let userEmail = sessionStorage.getItem('userEmail');
+      
+      // If not found in sessionStorage, try to get from cookies
+      if (!userEmail) {
+        userEmail = getCookie('userEmail');
+        
+        // If found in cookies, save to sessionStorage for future use
+        if (userEmail) {
+          console.log('Email found in cookie, storing in sessionStorage:', userEmail);
+          sessionStorage.setItem('userEmail', userEmail);
+        }
+      }
+      
+      // If no user email is found, redirect to the main app page
+      if (!userEmail) {
+        console.log('No user email found, redirecting to login');
+        window.location.href = 'index.html';
+      }
+    })();
+  </script>
   
   <nav class="navbar">
     <div class="logo">
@@ -807,35 +968,129 @@
       </div>
 
       <div id="form-content" style="display: none;">
-      <p>Hemos seleccionado este avatar jurídico en base a tu perfil. Confirma cada sección para continuar.</p>
       <!-- Top Submenu -->
       <div class="submenu">
-       
-        <div class="submenu-item active" data-step="0">Fuentes</div>
-        <div class="submenu-item" data-step="1">Rangos</div>
-        <div class="submenu-item" data-step="2">Agentes Personalizados</div>
+        <div class="submenu-item active" data-step="0">Agentes Personalizados</div>
+        <div class="submenu-item" data-step="1">Fuentes</div>
+        <div class="submenu-item" data-step="2">Rangos</div>
       </div>
 
 <!-- Section Containers -->
-<div id="section-fuentes" class="section-content active">
+<div id="section-agentes" class="section-content active">
+  <h3>Agentes Personalizados</h3>
+  <p>En base a tu perfil, hemos generado de manera personalizada los siguientes agentes que diariamente analizaran las fuentes oficiales de tu interés</p>
+  <p>Puedes añadir, eliminar y editarlos según consideres.</p>
+  <div class="etiquetas-tags-container">
+   <!-- <div class="etiquetas-tags-scroll">
+    </div>
+    -->
+  </div>
+  <div class="etiquetas-contador">
+    Agentes jurídicos personalizados: <span id="contador-etiquetas" class="contador-etiquetas">0</span><span id="limite-etiquetas" class="limite-etiquetas"></span>
+  </div>
+   
+  <div id="etiquetas-personalizadas-container"></div>
+  <div class="add-etiqueta-personalizada">
+    <h4>Añadir nuevo agente personalizado</h4>
+    <div class="etiqueta-form">
+      <div class="form-group">
+        <label for="nueva-etiqueta">Nombre del agente/área de interés:</label>
+        <input type="text" id="nueva-etiqueta" placeholder="Ej: Derecho Bancario">
+      </div>
+      <div class="form-group">
+        <label for="nueva-descripcion">Descripción:</label>
+        <textarea id="nueva-descripcion" placeholder="Describe brevemente este agente..."></textarea>
+      </div>
+      <button type="button" class="btn-add-etiqueta" onclick="agregarEtiquetaPersonalizada()">Añadir etiqueta</button>
+    </div>
+  </div>  
+</div>
+
+<div id="section-fuentes" class="section-content">
   <div class="subsection">
     <h4>Regulación de la UE, Estatal y Autonómica</h4>
+    <div class="fuentes-contador">
+      Fuentes seleccionadas: <span id="contador-fuentes" class="contador-etiquetas">0</span><span id="limite-fuentes" class="limite-etiquetas"></span>
+    </div>
     <div id="fuentes-gobierno-container" class="tags-container">
       <!-- Selected fuentes loaded dynamically -->
     </div>
     <div class="add-tag">
-      <input type="text" id="filtro-fuentes-gobierno" placeholder="Añadir otras fuentes (BOE, DOUE, BOCM, BOJA, BOA, BOCYL)..." oninput="filtrarFuentesGobierno()">
-      <div id="dropdown-fuentes-gobierno" class="dropdown-container"></div>
+      <div class="dropdown-group">
+        <button type="button" class="dropdown-toggle" onclick="document.getElementById('dropdown-fuentes-gobierno').classList.toggle('show'); updateFuentesGobiernoCheckboxes();">
+          <span>Selecciona fuentes legales</span>
+        </button>
+        <div id="dropdown-fuentes-gobierno" class="dropdown-options">
+          <div class="checkbox-item">
+            <input type="checkbox" id="boe" name="fuentes[]" value="BOE" onchange="toggleFuenteGobierno(this)">
+            <label for="boe">Boletín Oficial del Estado (BOE)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="doue" name="fuentes[]" value="DOUE" onchange="toggleFuenteGobierno(this)">
+            <label for="doue">Diario Oficial de la Unión Europea (DOUE)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="bocg" name="fuentes[]" value="BOCG" onchange="toggleFuenteGobierno(this)">
+            <label for="bocg">Boletín Oficial de las Cortes Generales (BOCG)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="boa" name="fuentes[]" value="BOA" onchange="toggleFuenteGobierno(this)">
+            <label for="boa">Boletín Oficial de Aragón (BOA)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="bocyl" name="fuentes[]" value="BOCYL" onchange="toggleFuenteGobierno(this)">
+            <label for="bocyl">Boletín Oficial de Castilla y León (BOCYL)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="bocm" name="fuentes[]" value="BOCM" onchange="toggleFuenteGobierno(this)">
+            <label for="bocm">Boletín Oficial de la Comunidad de Madrid (BOCM)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="dogc" name="fuentes[]" value="DOGC" onchange="toggleFuenteGobierno(this)">
+            <label for="dogc">Diario Oficial de la Generalitat Catalana (DOGC)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="dog" name="fuentes[]" value="DOG" onchange="toggleFuenteGobierno(this)">
+            <label for="dog">Diario Oficial de Galicia (DOG)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="boja" name="fuentes[]" value="BOJA" onchange="toggleFuenteGobierno(this)">
+            <label for="boja">Boletín Oficial de la Junta de Andalucía (BOJA)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="bopv" name="fuentes[]" value="BOPV" onchange="toggleFuenteGobierno(this)">
+            <label for="bopv">Boletín Oficial del País Vasco (BOPV)</label>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+  
   <div class="subsection">
     <h4>Reguladores</h4>
     <div id="fuentes-reguladores-container" class="tags-container">
       <!-- Selected reguladores loaded dynamically -->
     </div>
     <div class="add-tag">
-      <input type="text" id="filtro-fuentes-reguladores" placeholder="Añadir otros reguladores (CNMV)..." oninput="filtrarFuentesReguladores()">
-      <div id="dropdown-fuentes-reguladores" class="dropdown-container"></div>
+      <div class="dropdown-group">
+        <button type="button" class="dropdown-toggle" onclick="document.getElementById('dropdown-fuentes-reguladores').classList.toggle('show'); updateFuentesReguladoresCheckboxes();">
+          <span>Selecciona reguladores</span>
+        </button>
+        <div id="dropdown-fuentes-reguladores" class="dropdown-options">
+          <div class="checkbox-item">
+            <input type="checkbox" id="cnmv" name="reguladores[]" value="CNMV" onchange="toggleFuenteReguladores(this)">
+            <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="cnmc" name="reguladores[]" value="CNMC" onchange="toggleFuenteReguladores(this)">
+            <label for="cnmc">Comisión Nacional de los Mercados y la Competencia (CNMC)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="aepd" name="reguladores[]" value="AEPD" onchange="toggleFuenteReguladores(this)">
+            <label for="aepd">Agencia Española de Protección de Datos (AEPD)</label>
+          </div>
+        </div>
+      </div>
       <!-- Feedback element -->
       <p class="feedback-msg">Si no encuentras una fuente que estabas buscando, indícanoslo para seguir mejorando el producto</p>
       <input type="text" id="feedback-fuentes-reguladores" placeholder="Escribe aquí...">
@@ -854,38 +1109,6 @@
     <p class="feedback-msg">Si no encuentras un rango que estabas buscando, indícanoslo para seguir mejorando el producto</p>
     <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
   </div>
-</div>
-
-<!-- Reemplazar la sección de contenido (aproximadamente línea 70-90) con: -->
-<div class="section-content" id="etiquetas-personalizadas-section">
-  <h3>Agentes Personalizados</h3>
-  <p>Selecciona y edita los agentes jurídicos que analizaran toda la normativa de tu interés.</p>
-  <div class="etiquetas-tags-container">
-    <div class="etiquetas-tags-scroll">
-      <!-- Las etiquetas se cargarán aquí dinámicamente -->
-    </div>
-  </div>
-  <div class="etiquetas-contador">
-    Agentes jurídicos personalizados: <span id="contador-etiquetas" class="contador-etiquetas">0</span>
-  </div>
-  
-  
-   <div class="add-etiqueta-personalizada">
-    <h4>Añadir nuevo agente personalizado</h4>
-    <div class="etiqueta-form">
-      <div class="form-group">
-        <label for="nueva-etiqueta">Nombre del agente/área de interés:</label>
-        <input type="text" id="nueva-etiqueta" placeholder="Ej: Derecho Bancario">
-      </div>
-      <div class="form-group">
-        <label for="nueva-descripcion">Descripción:</label>
-        <textarea id="nueva-descripcion" placeholder="Describe brevemente este agente..."></textarea>
-      </div>
-      <button type="button" class="btn-add-etiqueta" onclick="agregarEtiquetaPersonalizada()">Añadir etiqueta</button>
-    </div>
-  </div>  
-  <div id="etiquetas-personalizadas-container"></div>
- 
 </div>
 
 <!-- Bottom Buttons -->
@@ -956,16 +1179,14 @@ document.addEventListener('click', function(event) {
 <script>
   /* -------------   plan-helper universal   ------------- */
   (function(){
-    /* ① capturar de la URL y guardar */
-    const qs   = new URLSearchParams(location.search);
-    const plan = qs.get('plan');
-    if (plan) sessionStorage.setItem('current_plan', plan);
+    /* ① expone una función global para obtener el plan seleccionado */
+    window.getCurrentPlan = () => {
+      const selectedPlan = sessionStorage.getItem('selectedPlan') || '';
+      console.log('[getCurrentPlan called] Using selectedPlan:', selectedPlan);
+      return selectedPlan;
+    }
   
-    /* ② expone una función global para obtenerlo */
-    window.getCurrentPlan = () =>
-      sessionStorage.getItem('current_plan') || '';
-  
-    /* ③ expone una función para crear links al siguiente paso */
+    /* ② expone una función para crear links al siguiente paso */
     window.buildNextURL = (file, extraQuery = '') => {
         const p = getCurrentPlan();
         let url = file;
@@ -977,16 +1198,25 @@ document.addEventListener('click', function(event) {
   </script>
 <script>
   /* CONTROL DE FUENTES SEGÚN PLAN */
-  const urlP          = new URLSearchParams(window.location.search);
-  let   userPlan  = getCurrentPlan();
+  const urlP = new URLSearchParams(window.location.search);
+  let userPlan = sessionStorage.getItem('selectedPlan');
+  console.log('[paso3.html] Using selectedPlan from sessionStorage:', userPlan);
+  
   /* ── fallback si el usuario todavía no ha elegido plan ───────── */
-  if (!userPlan || !PLAN_LIMITS[userPlan]) {
-    /* asignamos plan Start (plan2) como valor por defecto         */
+  if (!userPlan || !window.PLAN_LIMITS || !window.PLAN_LIMITS[userPlan]) {
+    console.log('[paso3.html] Using default plan2 because:', { 
+      'userPlan exists': !!userPlan, 
+      'window.PLAN_LIMITS exists': !!window.PLAN_LIMITS,
+      'window.PLAN_LIMITS[userPlan] exists': userPlan && window.PLAN_LIMITS ? !!window.PLAN_LIMITS[userPlan] : false
+    });
+    /* asignamos plan Start (plan2) como valor por defecto */
     userPlan = 'plan2';
-    sessionStorage.setItem('current_plan', 'plan2');  // lo guardamos para el resto del onboarding
+    sessionStorage.setItem('selectedPlan', 'plan2');  // Actualizamos selectedPlan en vez de current_plan
+    console.log('[paso3.html] Set default plan to selectedPlan:', userPlan);
   }
 
   let   extraSources  = 0;                           // extras contratados
+  let   bannerMode    = 'fuentes';                   // mode for banner: 'fuentes' or 'agentes'
   
   /* refs */
   const banner        = document.getElementById('plan-check-banner');
@@ -1010,18 +1240,11 @@ let currentDeficit = 0;          // déficit que mostramos al usuario
   /* refs adicionales */
 const backdrop = document.getElementById('backdrop');
 
-/* ─── límites por plan ───────────────────────────────────────── */
-const PLAN_LIMITS = {
-  plan2 : { fuentes: 1 , agentes: 5  },   // Start
-  plan3 : { fuentes: 3 , agentes: 12 }    // Pro
-};
-
-/* ─── refs dinámicos del banner ─────────────────────────────── */
+  /* ─── refs dinámicos del banner ─────────────────────────────── */
 const upgradeBox   = document.getElementById('upgrade-box');
 const upgradeTitle = document.getElementById('upgrade-title');
 const upgradeDesc  = document.getElementById('upgrade-desc');
   
-
   /* — función para contar fuentes seleccionadas — */
   function totalFuentesSeleccionadas(){
   const u = JSON.parse(sessionStorage.getItem('userData')) || {};
@@ -1042,7 +1265,7 @@ function totalAgentesSeleccionados(){
   /* --- configurar textos según modo & plan --- */
   if (bannerMode === 'fuentes'){
     banner.querySelector('.banner-msg').innerHTML =
-      `Tu plan actual solo incluye ${PLAN_LIMITS[userPlan].fuentes} fuente(s).<br>
+      `Tu plan actual solo incluye ${window.PLAN_LIMITS[userPlan].fuentes} fuente(s).<br>
        Por favor deselecciona <strong id="deficit-count">${deficit}</strong> fuente(s) o mejora tu plan:`;
     extraTitle.innerHTML = '<strong>Añadir fuente oficial</strong>';
     extraDesc.textContent = '+15€/fuente';
@@ -1058,11 +1281,11 @@ function totalAgentesSeleccionados(){
     upgradeBtn.textContent  = (userPlan === 'plan2') ? 'Mejorar plan' : 'Contactar ventas';
   }else{ // agentes
     banner.querySelector('.banner-msg').innerHTML =
-      `Tu plan actual solo permite ${PLAN_LIMITS[userPlan].agentes} agente(s).<br>
+      `Tu plan actual solo permite ${window.PLAN_LIMITS[userPlan].agentes} agente(s).<br>
        Por favor deselecciona <strong id="deficit-count">${deficit}</strong> agente(s) o mejora tu plan:`;
 
     extraTitle.innerHTML = '<strong>Añadir agente extra</strong>';
-    extraDesc.textContent = '+50€/mes (paquete de 10 agentes)';
+    extraDesc.textContent = '+20€/mes (paquete de 10 agentes)';
 
     upgradeTitle.innerHTML = (userPlan === 'plan2')
         ? '<strong>Mejorar al plan Pro</strong>'
@@ -1089,9 +1312,9 @@ function totalAgentesSeleccionados(){
   /* ---------- validaciones ---------- */
   function validateFuentes (){
 console.log(userPlan);
-if (!PLAN_LIMITS[userPlan]) return true;
+if (!window.PLAN_LIMITS[userPlan]) return true;
 const extrasYaContratados = Number(sessionStorage.getItem('extra_fuentes')||0);
-const max   = PLAN_LIMITS[userPlan].fuentes + extrasYaContratados;
+const max   = window.PLAN_LIMITS[userPlan].fuentes + extrasYaContratados;
 const total = totalFuentesSeleccionadas();
 
 if (total <= max) return true;
@@ -1102,8 +1325,8 @@ return false;
 }
 
 function validateAgentes(){
-  if (!PLAN_LIMITS[userPlan]) return true;
-  const max   = PLAN_LIMITS[userPlan].agentes;
+  if (!window.PLAN_LIMITS[userPlan]) return true;
+  const max   = window.PLAN_LIMITS[userPlan].agentes;
   const total = totalAgentesSeleccionados();
   if (total <= max) return true;
 
@@ -1161,8 +1384,9 @@ if (bannerMode === 'fuentes'){               // ---- FUENTES ----
     if (userPlan === 'plan2'){
         userPlan = 'plan3';
         urlP.set('plan','plan3');
-        sessionStorage.setItem('current_plan','plan3');
+        sessionStorage.setItem('selectedPlan','plan3');
         window.history.replaceState(null,'',`${location.pathname}?${urlP.toString()}`);
+        console.log('[upgradeBtn] Upgraded plan from plan2 to plan3, updated selectedPlan');
     }
     else{                                     // Enterprise → abre enlace
           window.open('https://calendar.google.com/calendar/u/0/appointments/' +
@@ -1193,5 +1417,29 @@ if (bannerMode === 'fuentes'){               // ---- FUENTES ----
   successClose.addEventListener('click', hideBanners);
   </script>
     
+<script>
+  /* --- Handle clicks outside dropdowns --- */
+  document.addEventListener('click', function(e) {
+    // Get references to dropdowns and their toggles
+    const dropdownFuentesGob = document.getElementById('dropdown-fuentes-gobierno');
+    const dropdownFuentesReg = document.getElementById('dropdown-fuentes-reguladores');
+    const fuentesGobToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-gobierno"]');
+    const fuentesRegToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-reguladores"]');
+    
+    // Close the gobierno dropdown if it's open and the click is outside
+    if (dropdownFuentesGob && dropdownFuentesGob.classList.contains('show')) {
+      if (!dropdownFuentesGob.contains(e.target) && fuentesGobToggle && !fuentesGobToggle.contains(e.target)) {
+        dropdownFuentesGob.classList.remove('show');
+      }
+    }
+    
+    // Close the reguladores dropdown if it's open and the click is outside
+    if (dropdownFuentesReg && dropdownFuentesReg.classList.contains('show')) {
+      if (!dropdownFuentesReg.contains(e.target) && fuentesRegToggle && !fuentesRegToggle.contains(e.target)) {
+        dropdownFuentesReg.classList.remove('show');
+      }
+    }
+  });
+</script>
 </body>
 </html>

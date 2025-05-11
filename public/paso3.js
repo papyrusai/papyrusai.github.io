@@ -2,7 +2,79 @@
 let catalogoEtiquetas = null;
 let currentStep = 0; // 0: Industrias, 1: Ramas, 2: Fuentes, 3: Rangos
 
+// Function to read cookie by name
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+}
+
+// Function to check if user is authorized
+function checkUserAuthorization() {
+  console.log('Checking user authorization...');
+  
+  const userEmailFromSession = sessionStorage.getItem('userEmail');
+  console.log('userEmail from sessionStorage:', userEmailFromSession);
+  
+  const userEmailFromCookie = getCookie('userEmail');
+  console.log('userEmail from cookie:', userEmailFromCookie);
+  
+  const userEmail = userEmailFromSession || userEmailFromCookie;
+  
+  if (!userEmail) {
+    console.log('No user email found, redirecting to login');
+    window.location.href = 'index.html';
+    return false;
+  }
+  
+  // If we found a cookie but not in sessionStorage, save it
+  if (!userEmailFromSession && userEmailFromCookie) {
+    console.log('Saving email from cookie to sessionStorage');
+    sessionStorage.setItem('userEmail', userEmailFromCookie);
+  }
+  
+  console.log('User is authorized with email:', userEmail);
+  return true;
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
+  
+  // Check user authorization first
+  if (!checkUserAuthorization()) {
+    return; // Stop execution if not authorized
+  }
+  
+  // Debug logging for plan info
+  const selectedPlan = sessionStorage.getItem('selectedPlan');
+ /*
+  console.log('=== PLAN DEBUG INFO ===');
+  console.log('selectedPlan from paso0:', selectedPlan);
+  console.log('getCurrentPlan() result:', getCurrentPlan());
+  console.log('Plan limits:', window.PLAN_LIMITS);
+  if (selectedPlan) {
+    console.log(`Limits for selectedPlan (${selectedPlan}):`, window.PLAN_LIMITS[selectedPlan]);
+  }
+  console.log('=====================');
+  */
+  
+  // Handle return from Stripe checkout
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('stripe_session') || urlParams.has('session_id') || urlParams.has('canceled')) {
+    const confirmBtn = document.getElementById('confirmar-btn');
+    if (confirmBtn) {
+      // Restore the original button state
+      const originalButtonText = sessionStorage.getItem('originalButtonText') || 'Confirmar';
+      confirmBtn.innerHTML = originalButtonText;
+      confirmBtn.style.display = '';
+      confirmBtn.disabled = false;
+      
+      if (urlParams.has('canceled')) {
+        // User canceled the checkout
+        alert('Has cancelado el proceso de pago. Puedes continuar personalizando tu plan.');
+      }
+    }
+  }
   
   const skeletonLoader = document.getElementById('skeleton-loader');
   const formContent = document.getElementById('form-content');
@@ -29,6 +101,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Add this line to setup the new click handlers
   setupFilterClickHandlers();
   actualizarContadorEtiquetas();
+  actualizarContadorFuentes();
 
    // Add title to indicate editing mode if needed
    if (isEditing) {
@@ -50,38 +123,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   }, 800);
   
-  // The existing code for hiding dropdowns when clicking outside remains the same
+  // Handle clicks outside dropdowns to close them
   document.addEventListener('click', function(e) {
-  
     const target = e.target;
-    /*
-    const filtroInd = document.getElementById('filtro-industrias');
-    const dropdownInd = document.getElementById('dropdown-industrias');
-    if (dropdownInd && !dropdownInd.contains(target) && target !== filtroInd) {
-      dropdownInd.innerHTML = "";
-    }
-    const filtroRam = document.getElementById('filtro-ramas');
-    const dropdownRam = document.getElementById('dropdown-ramas');
-    if (dropdownRam && !dropdownRam.contains(target) && target !== filtroRam) {
-      dropdownRam.innerHTML = "";
-    }
-      */
-    const filtroFuentesGob = document.getElementById('filtro-fuentes-gobierno');
+    
+    // Get references to dropdown toggles and dropdown containers
+    const fuentesGobToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-gobierno"]');
+    const fuentesRegToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-reguladores"]');
+    
     const dropdownFuentesGob = document.getElementById('dropdown-fuentes-gobierno');
-    if (dropdownFuentesGob && !dropdownFuentesGob.contains(target) && target !== filtroFuentesGob) {
-      dropdownFuentesGob.innerHTML = "";
-    }
-    const filtroFuentesReg = document.getElementById('filtro-fuentes-reguladores');
     const dropdownFuentesReg = document.getElementById('dropdown-fuentes-reguladores');
-    if (dropdownFuentesReg && !dropdownFuentesReg.contains(target) && target !== filtroFuentesReg) {
-      dropdownFuentesReg.innerHTML = "";
+
+    // Only close dropdown if it's open and click is outside of both the dropdown and its toggle
+    if (dropdownFuentesGob && dropdownFuentesGob.classList.contains('show')) {
+      if (!dropdownFuentesGob.contains(target) && 
+          fuentesGobToggle && !fuentesGobToggle.contains(target)) {
+        dropdownFuentesGob.classList.remove('show');
+      }
     }
+    
+    if (dropdownFuentesReg && dropdownFuentesReg.classList.contains('show')) {
+      if (!dropdownFuentesReg.contains(target) && 
+          fuentesRegToggle && !fuentesRegToggle.contains(target)) {
+        dropdownFuentesReg.classList.remove('show');
+      }
+    }
+    
+    // Handle rangos dropdown
     const filtroRangos = document.getElementById('filtro-rangos');
     const dropdownRangos = document.getElementById('dropdown-rangos');
     if (dropdownRangos && !dropdownRangos.contains(target) && target !== filtroRangos) {
       dropdownRangos.innerHTML = "";
     }
-    // ... rest of your click handler code for other dropdowns
   });
 });
 
@@ -98,62 +171,21 @@ function updateButtonLayout() {
 
 // Add this function to your paso3.js file
 function setupFilterClickHandlers() {
-  // Industries filter
-/*
-  const filtroIndustrias = document.getElementById('filtro-industrias');
-  if (filtroIndustrias) {
-    filtroIndustrias.addEventListener('click', function(e) {
-      e.stopPropagation();
-      hideAllDropdownsExcept('dropdown-industrias');
-      showAllIndustriesOptions();
-    });
-  }
-    */
-   // Etiquetas personalizadas filter
-   /*
-   const filtroEtiquetas = document.getElementById('filtro-etiquetas');
-   if (filtroEtiquetas) {
-     filtroEtiquetas.addEventListener('click', function(e) {
-       e.stopPropagation();
-       hideAllDropdownsExcept('dropdown-etiquetas');
-       showAllEtiquetasOptions();
-     });
-   }
-     */
-
-  // Ramas filter
-  /*
-  const filtroRamas = document.getElementById('filtro-ramas');
-  if (filtroRamas) {
-    filtroRamas.addEventListener('click', function(e) {
-      e.stopPropagation();
-      hideAllDropdownsExcept('dropdown-ramas');
-      showAllRamasOptions();
-    });
-  }
-    */
-
-  // Fuentes gobierno filter
-  const filtroFuentesGob = document.getElementById('filtro-fuentes-gobierno');
-  if (filtroFuentesGob) {
-    filtroFuentesGob.addEventListener('click', function(e) {
-      e.stopPropagation();
-      hideAllDropdownsExcept('dropdown-fuentes-gobierno');
-      showAllFuentesGobiernoOptions();
-    });
+  // Fuentes gobierno filter - now using dropdown toggle instead of input
+  const fuentesGobToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-gobierno"]');
+  if (fuentesGobToggle) {
+    // This button already has an onclick attribute, so we don't need to add another event listener
+    // The onclick attribute directly calls toggleDropdown and updateFuentesGobiernoCheckboxes
   }
 
-  // Fuentes reguladores filter
-  const filtroFuentesReg = document.getElementById('filtro-fuentes-reguladores');
-  if (filtroFuentesReg) {
-    filtroFuentesReg.addEventListener('click', function(e) {
-      e.stopPropagation();
-      hideAllDropdownsExcept('dropdown-fuentes-reguladores');
-      showAllFuentesReguladoresOptions();
-    });
+  // Fuentes reguladores filter - now using dropdown toggle instead of input
+  const fuentesRegToggle = document.querySelector('.dropdown-toggle[onclick*="dropdown-fuentes-reguladores"]');
+  if (fuentesRegToggle) {
+    // This button already has an onclick attribute, so we don't need to add another event listener
+    // The onclick attribute directly calls toggleDropdown and updateFuentesReguladoresCheckboxes
   }
 
-  // Rangos filter
+  // Rangos filter - still using input
   const filtroRangos = document.getElementById('filtro-rangos');
   if (filtroRangos) {
     filtroRangos.addEventListener('click', function(e) {
@@ -164,34 +196,9 @@ function setupFilterClickHandlers() {
   }
 }
 
-/*function showAllEtiquetasOptions() {
-  const dropdown = document.getElementById('dropdown-etiquetas');
-  dropdown.innerHTML = "";
-  
-  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
-  if (!etiquetas || !etiquetas.etiquetas_personalizadas) return;
-  
-  Object.keys(etiquetas.etiquetas_personalizadas).forEach(etiqueta => {
-    const option = document.createElement('div');
-    option.className = "dropdown-item";
-    option.textContent = etiqueta;
-    option.onclick = function() {
-      document.getElementById('filtro-etiquetas').value = etiqueta;
-      dropdown.innerHTML = "";
-    };
-    dropdown.appendChild(option);
-  });
-}
-  */
-
 // Helper function to hide all dropdowns except the specified one
 function hideAllDropdownsExcept(exceptId) {
   const allDropdowns = [
-    'dropdown-etiquetas',
- /*   'dropdown-ramas',
-    'dropdown-fuentes-gobierno',
-    'dropdown-fuentes-reguladores', 
-    */
     'dropdown-rangos'
   ];
   
@@ -203,6 +210,21 @@ function hideAllDropdownsExcept(exceptId) {
       }
     }
   });
+  
+  // Also close the fuentes dropdowns if they're not the excepted one
+  if (exceptId !== 'dropdown-fuentes-gobierno') {
+    const dropdownFuentesGob = document.getElementById('dropdown-fuentes-gobierno');
+    if (dropdownFuentesGob) {
+      dropdownFuentesGob.classList.remove('show');
+    }
+  }
+  
+  if (exceptId !== 'dropdown-fuentes-reguladores') {
+    const dropdownFuentesReg = document.getElementById('dropdown-fuentes-reguladores');
+    if (dropdownFuentesReg) {
+      dropdownFuentesReg.classList.remove('show');
+    }
+  }
 }
 
 // Functions to show all options in each dropdown
@@ -240,33 +262,25 @@ function showAllRamasOptions() {
   */
 
 function showAllFuentesGobiernoOptions() {
+  // Don't clear the dropdown since we're now using static HTML for the checkboxes
   const dropdown = document.getElementById('dropdown-fuentes-gobierno');
-  dropdown.innerHTML = "";
-  const fuentesStatic = ["BOE", "DOUE", "BOCG", "BOA","BOCM", "BOCYL","BOJA","BOPV","DOG","DOGC" ];
-  fuentesStatic.forEach(match => {
-    const option = document.createElement('div');
-    option.className = "dropdown-item";
-    option.textContent = match;
-    option.onclick = function() {
-      seleccionarFuenteGobierno(match);
-    };
-    dropdown.appendChild(option);
-  });
+  
+  // Just show the dropdown instead of modifying its content
+  dropdown.classList.add('show');
+  
+  // Update checkboxes based on current selections
+  updateFuentesGobiernoCheckboxes();
 }
 
 function showAllFuentesReguladoresOptions() {
+  // Don't clear the dropdown since we're now using static HTML for the checkboxes
   const dropdown = document.getElementById('dropdown-fuentes-reguladores');
-  dropdown.innerHTML = "";
-  const fuentesStatic = ["CNMV","AEPD"];
-  fuentesStatic.forEach(match => {
-    const option = document.createElement('div');
-    option.className = "dropdown-item";
-    option.textContent = match;
-    option.onclick = function() {
-      seleccionarFuenteReguladores(match);
-    };
-    dropdown.appendChild(option);
-  });
+  
+  // Just show the dropdown instead of modifying its content
+  dropdown.classList.add('show');
+  
+  // Update checkboxes based on current selections
+  updateFuentesReguladoresCheckboxes();
 }
 
 function showAllRangosOptions() {
@@ -295,8 +309,16 @@ async function cargarCatalogoEtiquetas() {
 }
 
 function cargarSecciones(etiquetas) {
+  console.log("Cargando secciones con etiquetas:", etiquetas);
+  
+  // Cargar etiquetas personalizadas primero (ahora es la primera sección - section-agentes)
   cargarEtiquetasPersonalizadas(etiquetas.etiquetas_personalizadas || {});
+  actualizarContadorEtiquetas();
+  
+  // Luego cargar fuentes (ahora es la segunda sección - section-fuentes)
   cargarFuentesOficiales(etiquetas);
+  
+  // Finalmente cargar rangos (ahora es la tercera sección - section-rangos)
   cargarRangosPredefinidos();
 }
 
@@ -305,9 +327,9 @@ function cargarSecciones(etiquetas) {
 
 function cargarEtiquetasPersonalizadas(etiquetas) {
   // Cargar etiquetas como tags
-  const tagsContainer = document.querySelector('.etiquetas-tags-scroll');
+  /*const tagsContainer = document.querySelector('.etiquetas-tags-scroll');
   tagsContainer.innerHTML = '';
-  
+  */
   // Cargar etiquetas con definiciones
   const container = document.getElementById('etiquetas-personalizadas-container');
   container.innerHTML = '';
@@ -320,7 +342,7 @@ function cargarEtiquetasPersonalizadas(etiquetas) {
       <span>${etiqueta}</span>
       <span class="tag-remove" onclick="eliminarEtiquetaPersonalizada('${etiqueta}')">×</span>
     `;
-    tagsContainer.appendChild(etiquetaTag);
+    //tagsContainer.appendChild(etiquetaTag);
     
     // Crear caja para la vista detallada
     const ramaBox = document.createElement('div');
@@ -412,10 +434,11 @@ function guardarEdicionEtiqueta(etiquetaOriginal) {
   const nuevoNombre = ramaBox.querySelector('.edit-etiqueta-nombre').value.trim();
   const nuevaDescripcion = ramaBox.querySelector('.edit-etiqueta-descripcion').value.trim();
   
-  if (!nuevoNombre || !nuevaDescripcion) {
+ /* if (!nuevoNombre || !nuevaDescripcion) {
     alert('Por favor, completa tanto el nombre como la descripción de la etiqueta.');
     return;
   }
+    */
   
   const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
   
@@ -467,12 +490,30 @@ function eliminarEtiquetaPersonalizada(etiqueta) {
 }
 // Función para actualizar el contador de etiquetas
 function actualizarContadorEtiquetas() {
-  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  const etiquetasContainer = document.getElementById('etiquetas-personalizadas-container');
   const contador = document.getElementById('contador-etiquetas');
+  const limiteSpan = document.getElementById('limite-etiquetas');
   
-  if (contador && etiquetas && etiquetas.etiquetas_personalizadas) {
-    const numEtiquetas = Object.keys(etiquetas.etiquetas_personalizadas).length;
-    contador.textContent = numEtiquetas;
+  if (contador) {
+    const etiquetasSeleccionadas = etiquetasContainer.querySelectorAll('.rama-box').length;
+    contador.textContent = etiquetasSeleccionadas;
+    
+    const userPlan = sessionStorage.getItem('selectedPlan');
+    
+    const planLimits = window.PLAN_LIMITS[userPlan] || { agentes: 5 };
+    
+    const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+    const totalLimit = planLimits.agentes + extraAgentes;
+    
+    if (limiteSpan) {
+      limiteSpan.textContent = `/${totalLimit} incluidos`;
+          } else if (contador.parentNode) {
+      const newLimiteSpan = document.createElement('span');
+      newLimiteSpan.id = 'limite-etiquetas';
+      newLimiteSpan.className = 'limite-etiquetas';
+      newLimiteSpan.textContent = `/${totalLimit} incluidos`;
+      contador.parentNode.appendChild(newLimiteSpan);
+         }
   }
 }
 
@@ -522,8 +563,8 @@ function confirmarSeccion() {
   submenuItems[currentStep].classList.remove('active');
  
    /* ── validaciones contextuales ── */
-   if (currentStep === 0 && !validateFuentes())  return; // sección “Fuentes”
-   if (currentStep === 2 && !validateAgentes())  return; // sección “Agentes”
+   if (currentStep === 0 && !validateAgentes())  return; // sección "Agentes Personalizados"
+   if (currentStep === 1 && !validateFuentes())  return; // sección "Fuentes"
 
    currentStep++;
 
@@ -551,6 +592,13 @@ function cargarFuentesOficiales(etiquetas) {
   cargarFuentesGobierno(fuentesGobierno);
   const fuentesReguladores = userData.reguladores || [];
   cargarFuentesReguladores(fuentesReguladores);
+  
+  // Update checkboxes based on current selections
+  updateFuentesGobiernoCheckboxes();
+  updateFuentesReguladoresCheckboxes();
+  
+  // Update the fuentes counter
+  actualizarContadorFuentes();
 }
 
 function cargarFuentesGobierno(selected) {
@@ -648,6 +696,8 @@ function cargarRangosPredefinidos() {
   const rangos = etiquetas.rangos_normativos || [];
   const container = document.getElementById("rangos-container");
   container.innerHTML = "";
+  
+  // Display existing ranges
   rangos.forEach(rango => {
     const tagElement = document.createElement("div");
     tagElement.className = "tag rango-tag";
@@ -657,10 +707,14 @@ function cargarRangosPredefinidos() {
     `;
     container.appendChild(tagElement);
   });
-  // Remove any existing add-tag block if present
+  
+  // Remove any existing add-tag div if present
   const existingAddDiv = document.querySelector("#section-rangos .add-tag");
-  if (existingAddDiv) existingAddDiv.remove();
-  // Add a filtering input for rangos on a separate line
+  if (existingAddDiv) {
+    existingAddDiv.remove();
+  }
+  
+  // Create a new add-tag div
   const addDiv = document.createElement("div");
   addDiv.className = "add-tag";
   addDiv.innerHTML = `
@@ -669,7 +723,12 @@ function cargarRangosPredefinidos() {
     <p class="feedback-msg">Si no encuentras un filtro que estabas buscando, indícanoslo para seguir mejorando el producto</p>
     <input type="text" id="feedback-rangos" placeholder="Escribe aquí...">
   `;
-  document.getElementById("section-rangos").appendChild(addDiv);
+  
+  // Append the add-tag div to the section-rangos element
+  const rangosSection = document.getElementById("section-rangos");
+  if (rangosSection) {
+    rangosSection.appendChild(addDiv);
+  }
 }
 
 function filtrarRangos() {
@@ -686,7 +745,8 @@ function filtrarRangos() {
       seleccionarRango(match);
     };
     dropdown.appendChild(option);
-  });}
+  });
+}
 
   function seleccionarRango(value) {
     // Get current etiquetas from sessionStorage
@@ -731,15 +791,27 @@ function eliminarRango(rango) {
 
 function eliminarFuente(containerId, fuente) {
   const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  
   if (containerId === 'fuentes-gobierno-container') {
     if (userData.fuentes) {
       userData.fuentes = userData.fuentes.filter(f => f !== fuente);
+    }
+    // Update checkbox if it exists
+    const checkbox = document.querySelector(`input[name="fuentes[]"][value="${fuente}"]`);
+    if (checkbox) {
+      checkbox.checked = false;
     }
   } else if (containerId === 'fuentes-reguladores-container') {
     if (userData.reguladores) {
       userData.reguladores = userData.reguladores.filter(f => f !== fuente);
     }
+    // Update checkbox if it exists
+    const checkbox = document.querySelector(`input[name="reguladores[]"][value="${fuente}"]`);
+    if (checkbox) {
+      checkbox.checked = false;
+    }
   }
+  
   sessionStorage.setItem('userData', JSON.stringify(userData));
   cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
 }
@@ -784,11 +856,11 @@ function agregarEtiquetaPersonalizada() {
   const nombreEtiqueta = document.getElementById('nueva-etiqueta').value.trim();
   const descripcionEtiqueta = document.getElementById('nueva-descripcion').value.trim();
   
-  if (!nombreEtiqueta || !descripcionEtiqueta) {
+ /* if (!nombreEtiqueta || !descripcionEtiqueta) {
     alert('Por favor, completa tanto el nombre como la descripción de la etiqueta.');
     return;
   }
-  
+  */
   const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
   
   if (!etiquetas.etiquetas_personalizadas) {
@@ -894,7 +966,7 @@ function finalizarOnboarding() {
   };
   
   
-  // Store these in sessionStorage for paso4 - dejar ramas e industrias para que no pete bbdd
+  // Store these in sessionStorage for later reference
   sessionStorage.setItem('industry_tags', JSON.stringify(etiquetasFinales.industrias || []));
   sessionStorage.setItem('sub_industria_map', JSON.stringify(sub_industria_map));
   sessionStorage.setItem('rama_juridicas', JSON.stringify(etiquetasFinales.ramas_juridicas || []));
@@ -904,31 +976,150 @@ function finalizarOnboarding() {
   sessionStorage.setItem('feedback', JSON.stringify(feedback));
   sessionStorage.setItem('etiquetas_personalizadas', JSON.stringify(etiquetasFinales.etiquetas_personalizadas));
   
-  // Store in hidden inputs for easier access in paso4
+  // Save return URL to ensure we come back to paso3.html
+  sessionStorage.setItem('returnUrl', 'paso3.html');
+  
+  // Store in hidden inputs for easier access
   document.getElementById('fuentesGobiernoInput').value = JSON.stringify(userData.fuentes || []);
   document.getElementById('fuentesReguladoresInput').value = JSON.stringify(userData.reguladores || []);
   
-  // Redirigir a paso4.html
-  window.location.href = 'paso4.html';
+  // Instead of redirecting to paso4.html, redirect directly to Stripe checkout
+  redirectToStripeCheckout();
 
-  // If we're in edit mode, set a flag for paso4
+  // If we're in edit mode, set a flag
   if (sessionStorage.getItem('isEditing') === 'true') {
     sessionStorage.setItem('isEditingPlan', 'true');
   }
-  
-  console.log("Redirecting to paso4.html with data:", {
-    industry_tags: etiquetasFinales.industrias,
-    sub_industria_map: sub_industria_map,
-    rama_juridicas: etiquetasFinales.ramas_juridicas,
-    sub_rama_map: sub_rama_map,
-    rangos: etiquetasFinales.rangos_normativos,
-    cobertura_legal: cobertura_legal,
-    feedback: feedback
-  });
-  
 }
 
+// New function to prepare and redirect to Stripe checkout
+async function redirectToStripeCheckout() {
+  // Show loading state on confirm button
+  const confirmBtn = document.getElementById('confirmar-btn');
+  const originalButtonText = confirmBtn.textContent;
+  
+  // Save the original button state to restore if user comes back
+  sessionStorage.setItem('originalButtonText', originalButtonText);
+  
+  confirmBtn.innerHTML = '<div class="loader"></div><span>Procesando...</span>';
+  confirmBtn.style.display = 'flex';
+  confirmBtn.style.alignItems = 'center';
+  confirmBtn.style.justifyContent = 'center';
+  confirmBtn.style.gap = '8px';
+  confirmBtn.disabled = true;
 
+  // Get user plan and extras data
+  const userPlan = sessionStorage.getItem('selectedPlan'); 
+  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+  
+  // Get billing period from sessionStorage (default to monthly if not set)
+  const billingPeriod = sessionStorage.getItem('billingPeriod') || 'monthly';
+  
+  // Determine impact analysis limits based on plan
+  let impactAnalysisLimit = 0;
+  if (userPlan === 'plan2') {
+    impactAnalysisLimit = 50;
+  } else if (userPlan === 'plan3') {
+    impactAnalysisLimit = 500;
+  } else if (userPlan === 'plan4') {
+    impactAnalysisLimit = -1; // -1 means unlimited
+  }
+
+  // Retrieve data from sessionStorage
+  const userData = JSON.parse(sessionStorage.getItem('userData') || '{}');
+  const etiquetasRecomendadas = JSON.parse(sessionStorage.getItem('etiquetasRecomendadas') || '{}');
+  
+  // Get current user's email if available
+  const currentUserEmail = userData.email || sessionStorage.getItem('userEmail');
+  
+  // Prepare the checkout payload (same structure as paso4)
+  const payload = {
+    plan: userPlan,
+    billingInterval: billingPeriod, // Use the billing period from sessionStorage
+    extra_agentes: extraAgentes,
+    extra_fuentes: extraFuentes,
+    impact_analysis_limit: impactAnalysisLimit,
+    industry_tags: etiquetasRecomendadas.industrias || [],
+    sub_industria_map: {},
+    rama_juridicas: etiquetasRecomendadas.ramas_juridicas || [],
+    sub_rama_map: {},
+    rangos: etiquetasRecomendadas.rangos_normativos || [],
+    cobertura_legal: {
+      "fuentes-gobierno": userData.fuentes || [],
+      "fuentes-reguladores": userData.reguladores || []
+    },
+    feedback: {
+      industrias: '',
+      ramas: '',
+      fuentes_reguladores: document.getElementById('feedback-fuentes-reguladores')?.value || '',
+      rangos: document.getElementById('feedback-rangos')?.value || ''
+    },
+    // User profile data
+    name: userData.nombre || '',
+    web: userData.webEmpresa || '',
+    linkedin: userData.linkedin || '',
+    perfil_profesional: Array.isArray(userData.perfil) ? userData.perfil.join(',') : '',
+    company_name: userData.webEmpresa || '',
+    profile_type: userData.otro_perfil || (Array.isArray(userData.perfil) ? userData.perfil[0] : ''),
+    especializacion: userData.especializacion || '',
+    otro_perfil: userData.otro_perfil || '',
+    etiquetas_personalizadas: etiquetasRecomendadas.etiquetas_personalizadas || {},
+    isTrial: true,
+    returnUrl: 'paso3.html', // Add return URL for Stripe to redirect back here
+    email: currentUserEmail // Include user email to help identify the user when returning from Stripe
+  };
+
+  try {
+    // Determine if we're in editing mode
+    const isEditing = sessionStorage.getItem('isEditing') === 'true';
+    
+    // Use the appropriate endpoint
+    const endpoint = isEditing ? '/update-subscription-checkout' : '/create-checkout-session';
+    
+    // Send request to create checkout session
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error creating checkout session: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    const { sessionId } = result;
+    
+    // Load Stripe.js if not already loaded
+    if (!window.Stripe) {
+      const script = document.createElement('script');
+      script.src = 'https://js.stripe.com/v3/';
+      script.onload = function() {
+        completeStripeRedirect(sessionId);
+      };
+      document.head.appendChild(script);
+    } else {
+      completeStripeRedirect(sessionId);
+    }
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    confirmBtn.innerHTML = originalButtonText;
+    confirmBtn.disabled = false;
+    alert('Hubo un error al procesar tu solicitud. Por favor, inténtalo de nuevo.');
+  }
+}
+
+// Function to complete the redirect to Stripe Checkout
+function completeStripeRedirect(sessionId) {
+  const stripe = Stripe('pk_live_51REzuGDXdzt0y1c97cWOhKbTvduvuVI4w1fQsKM672HypXhGT0EtiLhjVTl3Hxyi7rW7RBbZ4xd4bhL7arcPljKt00Qrz892wG');
+  
+  // Store the return URL to ensure we come back to paso3.html
+  sessionStorage.setItem('returnUrl', 'paso3.html');
+  
+  // Redirect to Stripe checkout
+  stripe.redirectToCheckout({ sessionId });
+}
 
 /* ------------------ Toggle Detail for Etiquetas personalizadas------------------ */
 function toggleDetalleRama(button) {
@@ -973,6 +1164,10 @@ document.addEventListener('DOMContentLoaded', function() {
 /* --- Expose deletion functions to global scope --- */
 window.eliminarFuente = eliminarFuente;
 window.eliminarRango = eliminarRango;
+window.toggleDropdown = toggleDropdown;
+window.toggleFuenteGobierno = toggleFuenteGobierno;
+window.toggleFuenteReguladores = toggleFuenteReguladores;
+window.actualizarContadorFuentes = actualizarContadorFuentes;
 /*window.eliminarEtiqueta = eliminarEtiqueta;
 window.eliminarRamaJuridica = eliminarRamaJuridica;
 
@@ -1020,7 +1215,6 @@ function cargarIndustrias(industrias) {
     if (subIndustrias[industria] && subIndustrias[industria].length > 0) {
    //   console.log(subIndustrias)
      // const subindustriasContainer = document.createElement('div');
-      //subindustriasContainer.className = 'subramas-container';
       
       subIndustrias[industria].forEach(subindustria => {
         const subramaTag = document.createElement('div');
@@ -1324,3 +1518,237 @@ function eliminarEtiqueta(categoria, etiqueta) {
   cargarSecciones(etiquetas);
 }
   */
+
+/* ------------------ Validation Functions ------------------ */
+function validateAgentes() {
+  const etiquetas = JSON.parse(sessionStorage.getItem("etiquetasRecomendadas"));
+  if (!etiquetas || !etiquetas.etiquetas_personalizadas || Object.keys(etiquetas.etiquetas_personalizadas).length === 0) {
+    alert("Por favor, añade al menos un agente personalizado antes de continuar.");
+    return false;
+  }
+  
+  // Get user plan limits
+  const userPlan = sessionStorage.getItem('selectedPlan');
+  console.log('[validateAgentes] Using selectedPlan:', userPlan);
+  
+  const planLimits = window.PLAN_LIMITS[userPlan] || { agentes: 5 }; // Default to plan2 if not specified
+  
+  // Get extras from sessionStorage if any
+  const extraAgentes = parseInt(sessionStorage.getItem('extra_agentes') || '0');
+  const totalLimit = planLimits.agentes + extraAgentes;
+  
+  const numAgentes = Object.keys(etiquetas.etiquetas_personalizadas).length;
+  
+  // Check if user exceeds plan limits
+  if (numAgentes > totalLimit) {
+    // Show banner for agent limit
+    bannerMode = 'agentes';
+    currentDeficit = numAgentes - totalLimit;
+    deficitSpan.textContent = currentDeficit;
+    document.getElementById('extra-title').textContent = "Añadir agente personalizado";
+    document.getElementById('extra-desc').textContent = "+10€/agente";
+    
+    // Show the banner
+    banner.classList.remove('hidden');
+    document.getElementById('backdrop').classList.remove('hidden');
+    return false;
+  }
+  
+  return true;
+}
+
+function validateFuentes() {
+  const userData = JSON.parse(sessionStorage.getItem("userData"));
+  if (!userData) return true; // No userData yet, let user continue
+  
+  const fuentes = (userData.fuentes || []).length;
+  const reguladores = (userData.reguladores || []).length;
+  const totalFuentes = fuentes + reguladores;
+  
+  if (totalFuentes === 0) {
+    alert("Por favor, añade al menos una fuente antes de continuar.");
+    return false;
+  }
+  
+  // Get user plan limits
+  const userPlan = sessionStorage.getItem('selectedPlan');
+  console.log('[validateFuentes] Using selectedPlan:', userPlan);
+  
+  const planLimits = window.PLAN_LIMITS[userPlan] || { fuentes: 1 }; // Default to plan2 if not specified
+  
+  // Get extras from sessionStorage if any
+  const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+  const totalLimit = planLimits.fuentes + extraFuentes;
+  
+  // Check if user exceeds plan limits
+  if (totalFuentes > totalLimit) {
+    // Show banner for source limit
+    bannerMode = 'fuentes';
+    currentDeficit = totalFuentes - totalLimit;
+    deficitSpan.textContent = currentDeficit;
+    document.getElementById('extra-title').textContent = "Añadir fuente oficial";
+    document.getElementById('extra-desc').textContent = "+15€/fuente";
+    
+    // Show the banner
+    banner.classList.remove('hidden');
+    document.getElementById('backdrop').classList.remove('hidden');
+    return false;
+  }
+  
+  return true;
+}
+
+/* ------------------ Utility Functions ------------------ */
+
+// Function to toggle dropdown visibility
+function toggleDropdown(dropdownId) {
+  const dropdown = document.getElementById(dropdownId);
+  
+  // Close all other dropdowns first
+  const allDropdowns = document.querySelectorAll('.dropdown-options');
+  allDropdowns.forEach(dd => {
+    if (dd.id !== dropdownId) {
+      dd.classList.remove('show');
+    }
+  });
+  
+  // Toggle this dropdown
+  dropdown.classList.toggle('show');
+  
+  // Check current selections to update checkboxes
+  if (dropdownId === 'dropdown-fuentes-gobierno') {
+    updateFuentesGobiernoCheckboxes();
+  } else if (dropdownId === 'dropdown-fuentes-reguladores') {
+    updateFuentesReguladoresCheckboxes();
+  }
+}
+
+// Function to update checkboxes based on current selections (fuentes gobierno)
+function updateFuentesGobiernoCheckboxes() {
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  const fuentes = userData.fuentes || [];
+  
+  // Reset all checkboxes first
+  document.querySelectorAll('input[name="fuentes[]"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Check the ones in the current selection
+  fuentes.forEach(fuente => {
+    const checkbox = document.querySelector(`input[name="fuentes[]"][value="${fuente}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  });
+}
+
+// Function to update checkboxes based on current selections (fuentes reguladores)
+function updateFuentesReguladoresCheckboxes() {
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  const reguladores = userData.reguladores || [];
+  
+  // Reset all checkboxes first
+  document.querySelectorAll('input[name="reguladores[]"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Check the ones in the current selection
+  reguladores.forEach(regulador => {
+    const checkbox = document.querySelector(`input[name="reguladores[]"][value="${regulador}"]`);
+    if (checkbox) {
+      checkbox.checked = true;
+    }
+  });
+}
+
+// Function to handle toggling a fuente gobierno checkbox
+function toggleFuenteGobierno(checkbox) {
+  const value = checkbox.value;
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  if (!userData.fuentes) userData.fuentes = [];
+  
+  if (checkbox.checked) {
+    // Add if not already in the array
+    if (!userData.fuentes.includes(value)) {
+      userData.fuentes.push(value);
+    }
+  } else {
+    // Remove from the array
+    userData.fuentes = userData.fuentes.filter(f => f !== value);
+  }
+  
+  // Save back to sessionStorage
+  sessionStorage.setItem('userData', JSON.stringify(userData));
+  
+  // Refresh the display
+  cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
+}
+
+// Function to handle toggling a fuente reguladores checkbox
+function toggleFuenteReguladores(checkbox) {
+  const value = checkbox.value;
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  if (!userData.reguladores) userData.reguladores = [];
+  
+  if (checkbox.checked) {
+    // Add if not already in the array
+    if (!userData.reguladores.includes(value)) {
+      userData.reguladores.push(value);
+    }
+  } else {
+    // Remove from the array
+    userData.reguladores = userData.reguladores.filter(r => r !== value);
+  }
+  
+  // Save back to sessionStorage
+  sessionStorage.setItem('userData', JSON.stringify(userData));
+  
+  // Refresh the display
+  cargarFuentesOficiales(JSON.parse(sessionStorage.getItem('etiquetasRecomendadas')));
+}
+
+// Función para actualizar el contador de fuentes
+function actualizarContadorFuentes() {
+  const userData = JSON.parse(sessionStorage.getItem('userData')) || {};
+  const contador = document.getElementById('contador-fuentes');
+  const limiteSpan = document.getElementById('limite-fuentes');
+  
+  if (contador) {
+    const fuentesGobierno = userData.fuentes || [];
+    const fuentesReguladores = userData.reguladores || [];
+    const numFuentes = fuentesGobierno.length + fuentesReguladores.length;
+    contador.textContent = numFuentes;
+    
+    // Get current plan limit
+    const userPlan = sessionStorage.getItem('selectedPlan');
+    
+    const planLimits = window.PLAN_LIMITS[userPlan] || { fuentes: 1 }; // Default to plan2 if not specified
+    
+    // Get extras from sessionStorage if any
+    const extraFuentes = parseInt(sessionStorage.getItem('extra_fuentes') || '0');
+    const totalLimit = planLimits.fuentes + extraFuentes;
+    
+    // Update or create the limit span
+    if (limiteSpan) {
+      limiteSpan.textContent = `/${totalLimit} incluidas`;
+      
+    } else if (contador.parentNode) {
+      const newLimiteSpan = document.createElement('span');
+      newLimiteSpan.id = 'limite-fuentes';
+      newLimiteSpan.className = 'limite-etiquetas';
+      newLimiteSpan.textContent = `/${totalLimit} incluidas`;
+      contador.parentNode.appendChild(newLimiteSpan);
+    
+    }
+  }
+}
+
+/* ─── límites por plan ───────────────────────────────────────── */
+window.PLAN_LIMITS = {
+  plan2 : { fuentes: 1 , agentes: 5  },   // Start
+  plan3 : { fuentes: 5 , agentes: 12 }    // Pro
+};
+
+// Log plan limits for debugging
+console.log('[paso3.js] PLAN_LIMITS defined:', window.PLAN_LIMITS);
+console.log('[paso3.js] Selected plan from sessionStorage:', sessionStorage.getItem('selectedPlan'));

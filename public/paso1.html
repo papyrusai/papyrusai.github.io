@@ -186,6 +186,76 @@
   height: 45px;
   border-radius: 20px;
 }
+/* --- NUEVOS ESTILOS PARA MODALES Y CHECKBOX --- */
+.privacy-policy-container {
+    margin: 20px; /* Espacio antes del botón */
+    display: flex;
+    align-items: center;
+}
+
+.privacy-policy-container input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.privacy-policy-container label {
+    font-size: 14px; /* Ajusta según necesites */
+    color: var(--text-color);
+}
+
+.privacy-policy-link {
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* Estilos básicos para el modal */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Posición fija */
+    z-index: 1000; /* Asegurar que esté por encima */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Habilitar scroll si es necesario */
+    background-color: rgba(0,0,0,0.4); /* Fondo oscuro semitransparente */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* Centrado vertical y horizontal */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Ancho del modal */
+    max-width: 600px; /* Ancho máximo */
+    position: relative;
+    border-radius: 8px;
+}
+
+.modal-content-policy {
+    max-height: 60vh; /* Altura máxima para el contenido de la política */
+    overflow-y: auto; /* Scroll vertical si el contenido es largo */
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding-right: 15px; /* Espacio para la barra de scroll */
+}
+
+.close-button {
+    color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
 
 @keyframes shimmer {
   0% {
@@ -223,6 +293,21 @@
       display: none !important;
     }
 
+    /* Styles for the example button */
+    .btn-ejemplo {
+      background-color: var(--text-color);
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-ejemplo:hover {
+      background-color: var(--active-color);
+    }
 
     @media (max-width: 600px) {
   .area-interes {
@@ -245,6 +330,39 @@
 
 </head>
 <body>
+  
+  <script>
+    // Check for user authorization before page loads
+    (function() {
+      // Helper function to get cookies
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+      }
+      
+      // Try to get user email from sessionStorage first
+      let userEmail = sessionStorage.getItem('userEmail');
+      
+      // If not found in sessionStorage, try to get from cookies
+      if (!userEmail) {
+        userEmail = getCookie('userEmail');
+        
+        // If found in cookies, save to sessionStorage for future use
+        if (userEmail) {
+          console.log('Email found in cookie, storing in sessionStorage:', userEmail);
+          sessionStorage.setItem('userEmail', userEmail);
+        }
+      }
+      
+      // If no user email is found, redirect to the main app page
+      if (!userEmail) {
+        console.log('No user email found, redirecting to login');
+        window.location.href = 'index.html';
+      }
+    })();
+  </script>
   
   <nav class="navbar">
     <div class="logo">
@@ -294,7 +412,7 @@
             <div class="dropdown-group">
               <button type="button" class="dropdown-toggle" onclick="toggleDropdown('perfil-dropdown')">Selecciona perfil profesional </button>
               <div id="perfil-dropdown" class="dropdown-options">
-                <div class="checkbox-item">
+                <!--<div class="checkbox-item">
                   <input type="checkbox" id="perfil_regulatorio" name="perfil[]" value="regulatorio_financiero" onchange="updateSelected('perfil')">
                   <label for="perfil_regfinanciero">Regulatorio-financiero</label>
                 </div>
@@ -306,37 +424,46 @@
                   <input type="checkbox" id="perfil_conocimiento_legal" name="perfil[]" value="conocimiento_legal" onchange="updateSelected('perfil')">
                   <label for="conocimiento_legal">Departamento del conocimiento legal</label>
                 </div>
+                -->
                 <div class="checkbox-item">
-                  <input type="checkbox" id="perfil_abogado" name="perfil[]" value="abogado_especializado" onchange="updateSelected('perfil')">
-                  <label for="perfil_especializado">Abogado</label>
+                  <input type="checkbox" id="perfil_abogado_despacho" name="perfil[]" value="abogado_despacho" onchange="updateSelected('perfil'); triggerFieldUpdate();">
+                  <label for="perfil_especializado">Abogado en despacho</label>
                 </div>
                 <div class="checkbox-item">
-                  <input type="checkbox" id="perfil_otro" name="perfil[]" value="otro" onchange="updateSelected('perfil')">
+                  <input type="checkbox" id="perfil_empresas_reguladas" name="perfil[]" value="abogado_empresa" onchange="updateSelected('perfil'); triggerFieldUpdate();">
+                  <label for="perfil_especializado">Abogado en empresa</label>
+                </div>
+                <div class="checkbox-item">
+                  <input type="checkbox" id="perfil_otro" name="perfil[]" value="otro" onchange="updateSelected('perfil'); triggerFieldUpdate();">
                   <label for="perfil_otro">Otro</label>
                 </div>
               </div>
             </div>
             <!-- Conditional fields -->
+             
             <div class="conditional-field" id="especializacion_field">
               <input type="text" id="especializacion" name="especializacion" placeholder="Indica tu sector específico (ej: derecho mercantil)" class="conditional-input">
             </div>
+            <!--
             <div class="conditional-field" id="otro_perfil_field">
               <input type="text" id="otro_perfil" name="otro_perfil" placeholder="Especifica tu perfil si no encaja en las opciones anteriores" class="conditional-input">
             </div>
+            -->
           </div>
           
           <div class="form-group">
         
-           <label>Contexto</label>
-           <div style="font-size: 14px;">Indica tus áreas de interés para que nuestra IA desarrolle tu <span class="highlight">avatar jurídico personalizado</span></div>
+           <label>¿Qué normas buscas en tu día a día?</label>
+           <div style="font-size: 14px;">Describenos lo que te interesa, cuanto más detallado seas, mejor podremos personalizar tu experiencia.</div>
+           
+           <div style="margin-top: 5px; margin-bottom: 8px;">
+             <button type="button" id="verEjemploBtn" class="btn-ejemplo">Ver un ejemplo</button>
+           </div>
             <textarea
               id="area_interes"
               name="area_interes"
               class="area-interes"
-              placeholder="Ej: Abogado especializado en mercados de valores, con especial interés en:
-         - Ofertas Públicas de Adquisición (OPAs)
-         - Titulización de activos
-         - Procedimientos sancionadores de la CNMV..."
+              placeholder=""
             ></textarea>
           </div>
           </div>
@@ -362,11 +489,12 @@
         </div>
         
         <!-- Cobertura Legal Section -->
+         <!--
         <div class="section">
           <h3>Cobertura Legal</h3>
           <div class="form-group">
             <label>Normativa de la UE, Estatal y Autonómica</label>
-            <!-- Selected sources will appear here -->
+           
             <div id="fuentes-selected" class="selected-tags"></div>
             <div class="dropdown-group">
               <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-fuentes')">Selecciona fuentes legales </button>
@@ -416,7 +544,7 @@
           </div>
           <div class="form-group">
             <label>Reguladores</label>
-            <!-- Selected reguladores will appear here -->
+          
             <div id="reguladores-selected" class="selected-tags"></div>
             <div class="dropdown-group">
                 <button type="button" class="dropdown-toggle" onclick="toggleDropdown('cobertura-dropdown-reguladores')">Selecciona reguladores</button>
@@ -438,7 +566,16 @@
           </div>
         
         </div>
-        
+        -->
+        <!-- ****** INICIO: NUEVO CHECKBOX DE POLÍTICA DE PRIVACIDAD ****** -->
+        <div class="privacy-policy-container">
+          <input type="checkbox" id="privacyPolicy" name="privacyPolicy" required>
+          <label for="privacyPolicy">
+              Acepto la <span id="privacyPolicyLink" class="privacy-policy-link">política de privacidad</span> de Reversa AI.
+          </label>
+        </div>
+<!-- ****** FIN: NUEVO CHECKBOX DE POLÍTICA DE PRIVACIDAD ****** -->
+
         <button type="submit" class="btn-siguiente">Siguiente</button>
       </form>
     </div>
@@ -465,6 +602,18 @@
     function toggleDropdown(dropdownId) {
       const dropdown = document.getElementById(dropdownId);
       dropdown.style.display = (dropdown.style.display === "block") ? "none" : "block";
+    }
+    
+    // Trigger field update function to call toggleConditionalFields from paso1.js
+    function triggerFieldUpdate() {
+      // Small delay to ensure the checkbox state has been updated
+      setTimeout(() => {
+        if (typeof toggleConditionalFields === 'function') {
+          toggleConditionalFields();
+        } else {
+          console.error("toggleConditionalFields function not found");
+        }
+      }, 50);
     }
     
     // Update selected tags for either 'perfil' or 'cobertura'
@@ -503,143 +652,147 @@
     }
 
     // Hacer que los elementos checkbox-item sean clickeables
-// Hacer que los elementos checkbox-item sean clickeables
-document.addEventListener('DOMContentLoaded', function() {
-  // Asegurarse de que este código se ejecute después de que el DOM esté completamente cargado
-  setTimeout(() => {
-    const checkboxItems = document.querySelectorAll('.checkbox-item');
-    
-    checkboxItems.forEach(item => {
-      // Eliminar cualquier event listener existente para evitar duplicados
-      item.removeEventListener('click', handleCheckboxItemClick);
-      // Añadir el nuevo event listener
-      item.addEventListener('click', handleCheckboxItemClick);
+    document.addEventListener('DOMContentLoaded', function() {
+      // Asegurarse de que este código se ejecute después de que el DOM esté completamente cargado
+      setTimeout(() => {
+        const checkboxItems = document.querySelectorAll('.checkbox-item');
+        
+        checkboxItems.forEach(item => {
+          // Eliminar cualquier event listener existente para evitar duplicados
+          item.removeEventListener('click', handleCheckboxItemClick);
+          // Añadir el nuevo event listener
+          item.addEventListener('click', handleCheckboxItemClick);
+        });
+      }, 100);
     });
-  }, 100);
-});
 
-// Función separada para manejar el clic en checkbox-item
-function handleCheckboxItemClick(event) {
-  // Evitar que el clic se propague si es en el checkbox o en el botón de eliminar
-  if (event.target.type === 'checkbox' || event.target.classList.contains('tag-remove')) {
-    return;
-  }
-  
-  // Encontrar el checkbox dentro del item
-  const checkbox = this.querySelector('input[type="checkbox"]');
-  if (checkbox) {
-    // Cambiar el estado del checkbox
-    checkbox.checked = !checkbox.checked;
-    
-    // Disparar el evento change para actualizar la UI
-    const changeEvent = new Event('change', { bubbles: true });
-    checkbox.dispatchEvent(changeEvent);
-  }
-}
-
-// Variable para almacenar los dropdowns abiertos
-let openDropdowns = [];
-
-// Toggle dropdown visibility
-function toggleDropdown(dropdownId) {
-  const dropdown = document.getElementById(dropdownId);
-  if (dropdown.style.display === "block") {
-    dropdown.style.display = "none";
-    // Eliminar de la lista de dropdowns abiertos
-    openDropdowns = openDropdowns.filter(id => id !== dropdownId);
-  } else {
-    dropdown.style.display = "block";
-    // Agregar a la lista de dropdowns abiertos
-    openDropdowns.push(dropdownId);
-  }
-}
-
-// Cerrar todos los dropdowns abiertos
-function closeAllDropdowns() {
-  openDropdowns.forEach(dropdownId => {
-    const dropdown = document.getElementById(dropdownId);
-    if (dropdown) {
-      dropdown.style.display = "none";
-    }
-  });
-  openDropdowns = [];
-}
-
-// Manejar clics en cualquier parte del documento
-document.addEventListener('click', function(event) {
-  // Si el clic no fue dentro de un dropdown o en un botón de dropdown
-  if (!event.target.closest('.dropdown-options') && 
-      !event.target.closest('.dropdown-toggle') &&
-      !event.target.classList.contains('tag-remove')) {
-    closeAllDropdowns();
-  }
-});
-
-// Función para hacer clickeables los elementos de los dropdowns de normativa y reguladores
-document.addEventListener('DOMContentLoaded', function() {
-  // Función para manejar el clic en los elementos label
-  function handleLabelClick(event) {
-    // Si el clic fue directamente en el checkbox, no hacer nada adicional
-    if (event.target.type === 'checkbox') return;
-    
-    // Prevenir el comportamiento por defecto del label
-    event.preventDefault();
-    
-    // Encontrar el checkbox dentro del label
-    const checkbox = this.querySelector('input[type="checkbox"]');
-    if (checkbox) {
-      // Cambiar el estado del checkbox
-      checkbox.checked = !checkbox.checked;
+    // Función separada para manejar el clic en checkbox-item
+    function handleCheckboxItemClick(event) {
+      // Evitar que el clic se propague si es en el checkbox o en el botón de eliminar
+      if (event.target.type === 'checkbox' || event.target.classList.contains('tag-remove')) {
+        return;
+      }
       
-      // Disparar el evento change para actualizar la UI
-      const changeEvent = new Event('change', { bubbles: true });
-      checkbox.dispatchEvent(changeEvent);
+      // Encontrar el checkbox dentro del item
+      const checkbox = this.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        // Cambiar el estado del checkbox
+        checkbox.checked = !checkbox.checked;
+        
+        // Disparar el evento change para actualizar la UI
+        const changeEvent = new Event('change', { bubbles: true });
+        checkbox.dispatchEvent(changeEvent);
+        
+        // Also trigger field update for perfil changes
+        if (checkbox.name === 'perfil[]') {
+          triggerFieldUpdate();
+        }
+      }
     }
-  }
-  
-  // Función para aplicar el comportamiento a todos los labels en dropdowns
-  function makeDropdownLabelsClickable() {
-    // Seleccionar todos los labels dentro de dropdown-options
-    const dropdownLabels = document.querySelectorAll('.dropdown-options label');
-    
-    dropdownLabels.forEach(label => {
-      // Eliminar cualquier event listener existente para evitar duplicados
-      label.removeEventListener('click', handleLabelClick);
-      // Añadir el nuevo event listener
-      label.addEventListener('click', handleLabelClick);
-    });
-  }
-  
-  // Aplicar inicialmente
-  setTimeout(makeDropdownLabelsClickable, 500);
-  
-  // Aplicar cada vez que se muestre un dropdown
-  const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-  dropdownToggles.forEach(toggle => {
-    toggle.addEventListener('click', function() {
-      // Dar tiempo para que el dropdown se muestre
-      setTimeout(makeDropdownLabelsClickable, 100);
-    });
-  });
-  
-  // También observar cambios en el DOM para detectar nuevos elementos
-  const observer = new MutationObserver(function(mutations) {
-    let needsUpdate = false;
-    
-    mutations.forEach(function(mutation) {
-      if (mutation.addedNodes.length) {
-        needsUpdate = true;
+
+    // Variable para almacenar los dropdowns abiertos
+    let openDropdowns = [];
+
+    // Toggle dropdown visibility
+    function toggleDropdown(dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      if (dropdown.style.display === "block") {
+        dropdown.style.display = "none";
+        // Eliminar de la lista de dropdowns abiertos
+        openDropdowns = openDropdowns.filter(id => id !== dropdownId);
+      } else {
+        dropdown.style.display = "block";
+        // Agregar a la lista de dropdowns abiertos
+        openDropdowns.push(dropdownId);
+      }
+    }
+
+    // Cerrar todos los dropdowns abiertos
+    function closeAllDropdowns() {
+      openDropdowns.forEach(dropdownId => {
+        const dropdown = document.getElementById(dropdownId);
+        if (dropdown) {
+          dropdown.style.display = "none";
+        }
+      });
+      openDropdowns = [];
+    }
+
+    // Manejar clics en cualquier parte del documento
+    document.addEventListener('click', function(event) {
+      // Si el clic no fue dentro de un dropdown o en un botón de dropdown
+      if (!event.target.closest('.dropdown-options') && 
+          !event.target.closest('.dropdown-toggle') &&
+          !event.target.classList.contains('tag-remove')) {
+        closeAllDropdowns();
       }
     });
-    
-    if (needsUpdate) {
-      setTimeout(makeDropdownLabelsClickable, 100);
-    }
-  });
-  
-  // Iniciar la observación del documento
-  observer.observe(document.body, { childList: true, subtree: true });
-});
+
+    // Función para hacer clickeables los elementos de los dropdowns de normativa y reguladores
+    document.addEventListener('DOMContentLoaded', function() {
+      // Función para manejar el clic en los elementos label
+      function handleLabelClick(event) {
+        // Si el clic fue directamente en el checkbox, no hacer nada adicional
+        if (event.target.type === 'checkbox') return;
+        
+        // Prevenir el comportamiento por defecto del label
+        event.preventDefault();
+        
+        // Encontrar el checkbox dentro del label
+        const checkbox = this.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+          // Cambiar el estado del checkbox
+          checkbox.checked = !checkbox.checked;
+          
+          // Disparar el evento change para actualizar la UI
+          const changeEvent = new Event('change', { bubbles: true });
+          checkbox.dispatchEvent(changeEvent);
+        }
+      }
+      
+      // Función para aplicar el comportamiento a todos los labels en dropdowns
+      function makeDropdownLabelsClickable() {
+        // Seleccionar todos los labels dentro de dropdown-options
+        const dropdownLabels = document.querySelectorAll('.dropdown-options label');
+        
+        dropdownLabels.forEach(label => {
+          // Eliminar cualquier event listener existente para evitar duplicados
+          label.removeEventListener('click', handleLabelClick);
+          // Añadir el nuevo event listener
+          label.addEventListener('click', handleLabelClick);
+        });
+      }
+      
+      // Aplicar inicialmente
+      setTimeout(makeDropdownLabelsClickable, 500);
+      
+      // Aplicar cada vez que se muestre un dropdown
+      const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+      dropdownToggles.forEach(toggle => {
+        toggle.addEventListener('click', function() {
+          // Dar tiempo para que el dropdown se muestre
+          setTimeout(makeDropdownLabelsClickable, 100);
+        });
+      });
+      
+      // También observar cambios en el DOM para detectar nuevos elementos
+      const observer = new MutationObserver(function(mutations) {
+        let needsUpdate = false;
+        
+        mutations.forEach(function(mutation) {
+          if (mutation.addedNodes.length) {
+            needsUpdate = true;
+          }
+        });
+        
+        if (needsUpdate) {
+          setTimeout(makeDropdownLabelsClickable, 100);
+        }
+      });
+      
+      // Iniciar la observación del documento
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
 
 
   </script>
@@ -672,9 +825,68 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         location.href = buildNextURL('paso2.html');
       });
-      </script>
       
+      // Ensure placeholders are updated on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        // Delay to ensure all scripts are loaded
+        setTimeout(function() {
+          // If toggleConditionalFields is available, call it
+          if (typeof toggleConditionalFields === 'function') {
+            toggleConditionalFields();
+            console.log('Initial field update triggered');
+          }
+        }, 500);
+      });
+    </script>
 </script>
+<!-- ****** INICIO: MODAL POLÍTICA DE PRIVACIDAD ****** -->
+<div id="privacyModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" id="closePrivacyModal">&times;</span>
+    <h2>Política de Privacidad</h2>
+    <div class="modal-content-policy">
+      <!-- Aquí va el texto de tu política de privacidad -->
+      <p><strong>Última actualización: 5/6/2025</strong></p>
+        <p><strong>1. Introducción</strong><br>Reversa AI, con domicilio en Calle Valle de la Fuenfría, 10, 28034, Madrid, ha creado esta Política de Privacidad para demostrar nuestro firme compromiso con la privacidad de los datos personales de nuestros usuarios. Esta política describe cómo recopilamos, utilizamos, compartimos y protegemos la información personal que recibimos de los usuarios de nuestra plataforma y servicios.</p>
+        <p><strong>2. Recopilación de Información</strong><br>Recopilamos información personal cuando un usuario se registra en nuestra plataforma, utiliza nuestros servicios o interactúa con nuestro sitio web. Esta información puede incluir, entre otros:</p>
+        <ul>
+          <li>Información de contacto (nombre, correo electrónico, teléfono)</li>
+          <li>Información de la empresa</li>
+          <li>Registros de uso y actividad en la plataforma</li>
+          <li>Información técnica como dirección IP y datos de navegación</li>
+        </ul>
+        <p><strong>3. Uso de la Información</strong><br>Utilizamos la información recopilada para:</p>
+        <ul>
+          <li>Proporcionar, mantener y mejorar nuestros servicios</li>
+          <li>Procesar transacciones y enviar notificaciones relacionadas</li>
+          <li>Personalizar la experiencia del usuario</li>
+          <li>Enviar información sobre actualizaciones, ofertas y eventos</li>
+          <li>Analizar tendencias y mejorar nuestras ofertas</li>
+        </ul>
+        <p><strong>4. Protección de Datos</strong><br>Implementamos medidas técnicas y organizativas adecuadas para proteger sus datos personales contra el acceso no autorizado, la pérdida o el daño. Estas medidas son revisadas y actualizadas regularmente para garantizar su efectividad.</p>
+        <p><strong>5. Compartir Información</strong><br>No vendemos, comercializamos ni alquilamos información personal a terceros. Podemos compartir información en las siguientes circunstancias:</p>
+        <ul>
+          <li>Con proveedores de servicios que nos ayudan a ofrecer nuestros servicios</li>
+          <li>Cuando sea requerido por ley o para proteger nuestros derechos</li>
+          <li>En caso de fusión, adquisición o venta de activos</li>
+        </ul>
+        <p><strong>6. Derechos del Usuario</strong><br>Los usuarios tienen derecho a acceder, rectificar, limitar, portar y eliminar sus datos personales. Para ejercer estos derechos, contacte con nosotros a través de info@reversa.ai.</p>
+        <p><strong>7. Cambios en esta Política</strong><br>Podemos actualizar esta política periódicamente. Le notificaremos cualquier cambio significativo publicando la nueva política en nuestro sitio web.</p>
+        <p><strong>8. Contacto</strong><br>Si tiene alguna pregunta sobre esta política, puede contactarnos en:</p>
+        <p>Reversa AI<br>Calle Valle de la Fuenfría, 10, 28034<br>Madrid, España<br>Email: info@reversa.ai</p>
+    </div>
+  </div>
+</div>
+<!-- ****** FIN: MODAL POLÍTICA DE PRIVACIDAD ****** -->
+
+<!-- ****** INICIO: MODAL DE ADVERTENCIA ****** -->
+<div id="warningModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" id="closeWarningModal">&times;</span>
+    <p>Es necesario que aceptes la política de privacidad para poder continuar.</p>
+  </div>
+</div>
+<!-- ****** FIN: MODAL DE ADVERTENCIA ****** -->
 
 </body>
 </html>
