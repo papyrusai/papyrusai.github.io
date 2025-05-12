@@ -1686,15 +1686,6 @@ app.get('/api/boletin-diario', async (req, res) => {
     // If 'rangos' query param is missing or empty, use all available rangos for filtering.
     const selectedRangos = (rangos && JSON.parse(rangos).length > 0) ? JSON.parse(rangos) : allRangos;
 
-    // ---------- NUEVA LÓGICA: buscar primero documentos con la fecha de hoy ----------
-    const today = new Date();
-    const todayQueryBase = {
-      anio: today.getFullYear(),
-      mes: today.getMonth() + 1,
-      dia: today.getDate(),
-      rango_titulo: { $in: selectedRangos }
-    };
-
     const todayProjection = {
       short_name: 1,
       divisiones: 1,
@@ -1708,124 +1699,79 @@ app.get('/api/boletin-diario', async (req, res) => {
       _id: 1
     };
 
-    let todayDocuments = [];
-    for (const collectionName of selectedBoletines) {
-      try {
-        const coll = database.collection(collectionName);
-        const docs = await coll.find(todayQueryBase).project(todayProjection).toArray();
-        docs.forEach(doc => {
-          doc.collectionName = collectionName;
-        });
-        todayDocuments = todayDocuments.concat(docs);
-      } catch (err) {
-        console.error(`Error fetching today's docs for collection ${collectionName}:`, err);
+    // ---------- COMPLETELY REVISED LOGIC ----------
+    // 1. Get today's date for comparison
+    const today = new Date();
+    
+    // 2. Initialize variable to store found date and documents
+    let foundDocuments = [];
+    let foundDate = null;
+    
+    // 3. Iterate backwards from today up to 60 days
+    for (let daysAgo = 0; daysAgo <= 60; daysAgo++) {
+      // Calculate the date to check
+      const checkDate = new Date();
+      checkDate.setDate(today.getDate() - daysAgo);
+      
+      // Create the query for this date
+      const dateQuery = {
+        anio: checkDate.getFullYear(),
+        mes: checkDate.getMonth() + 1,
+        dia: checkDate.getDate(),
+        rango_titulo: { $in: selectedRangos }
+      };
+      
+      console.log(`Checking date: ${checkDate.getDate()}/${checkDate.getMonth() + 1}/${checkDate.getFullYear()}`);
+      
+      // Search for documents on this date across all selected boletines
+      let documentsOnDate = [];
+      for (const collectionName of selectedBoletines) {
+        try {
+          const coll = database.collection(collectionName);
+          const docs = await coll.find(dateQuery).project(todayProjection).toArray();
+          
+          if (docs.length > 0) {
+            // Add collection name to each document
+            docs.forEach(doc => {
+              doc.collectionName = collectionName;
+            });
+            documentsOnDate = documentsOnDate.concat(docs);
+          }
+        } catch (err) {
+          console.error(`Error fetching docs for collection ${collectionName} on date ${checkDate.toISOString()}:`, err);
+        }
+      }
+      
+      // If we found documents for this date, save and break the loop
+      if (documentsOnDate.length > 0) {
+        foundDocuments = documentsOnDate;
+        foundDate = {
+          dia: checkDate.getDate(),
+          mes: checkDate.getMonth() + 1,
+          anio: checkDate.getFullYear()
+        };
+        console.log(`Found ${documentsOnDate.length} documents for date ${foundDate.dia}/${foundDate.mes}/${foundDate.anio}`);
+        break;
       }
     }
-
-    if (todayDocuments.length > 0) {
-      // Ordenar resultados para mantener consistencia con la respuesta estándar
-      todayDocuments.sort((a, b) => {
+    
+    // 4. Sort the documents if we found any
+    if (foundDocuments.length > 0) {
+      foundDocuments.sort((a, b) => {
         if (a.collectionName < b.collectionName) return -1;
         if (a.collectionName > b.collectionName) return 1;
         return (a.short_name || '').localeCompare(b.short_name || '');
       });
-
-      return res.json({
-        date: { dia: today.getDate(), mes: today.getMonth() + 1, anio: today.getFullYear() },
-        documents: todayDocuments,
-        availableBoletines: userBoletines,
-        availableRangos: allRangos
-      });
     }
-    // ---------- FIN NUEVA LÓGICA ----------
-
-    // Find the overall latest date across *all* initially subscribed collections (userBoletines)
-    let overallLatestDate = null;
-    for (const collectionName of userBoletines) {
-        const latestDate = await getLatestDateForCollection(database, collectionName);
-        if (latestDate) {
-            const currentDate = new Date(latestDate.anio, latestDate.mes - 1, latestDate.dia);
-            if (!overallLatestDate || currentDate > overallLatestDate.dateObj) {
-                overallLatestDate = {
-                    anio: latestDate.anio,
-                    mes: latestDate.mes,
-                    dia: latestDate.dia,
-                    dateObj: currentDate // Store Date object for comparison
-                };
-            }
-        }
-    }
-
-    if (!overallLatestDate) {
-      // No documents found in any subscribed collection recently
-      return res.json({ 
-          date: null, 
-          documents: [], 
-          availableBoletines: userBoletines, 
-          availableRangos: allRangos 
-      }); 
-    }
-
-    // Build the query based on the overall latest date and selected filters
-    const query = {
-      anio: overallLatestDate.anio,
-      mes: overallLatestDate.mes,
-      dia: overallLatestDate.dia,
-      // Filter by selected rangos
-      rango_titulo: { $in: selectedRangos }
-      // NO filter by etiquetas_personalizadas
-    };
-
-    console.log(`Boletin Diario Query for date ${overallLatestDate.dia}/${overallLatestDate.mes}/${overallLatestDate.anio}:`, JSON.stringify(query, null, 2));
-    console.log(`Filtering collections: ${selectedBoletines.join(', ')}`);
-
-    const projection = {
-      short_name: 1,
-      divisiones: 1, // Assuming this is the field for 'divisiones'
-      resumen: 1,
-      dia: 1,
-      mes: 1,
-      anio: 1,
-      url_pdf: 1,
-      ramas_juridicas: 1,
-      rango_titulo: 1,
-      _id: 1,
-      // No need for etiquetas_personalizadas here
-    };
-
-    let allDocuments = [];
-    // Iterate through the *selected* collections for the final fetch
-    for (const collectionName of selectedBoletines) {
-       try {
-            const coll = database.collection(collectionName);
-            // Find documents matching the latest date *and* selected rangos in this specific collection
-            const docs = await coll.find(query).project(projection).toArray();
-            docs.forEach(doc => {
-                doc.collectionName = collectionName; // Add collection name for display
-            });
-            allDocuments = allDocuments.concat(docs);
-       } catch (err) {
-           console.error(`Error fetching documents for collection ${collectionName}:`, err);
-           // Continue to next collection if one fails
-       }
-    }
-
-    // Sort by collectionName then short_name for consistency
-     allDocuments.sort((a, b) => {
-        if (a.collectionName < b.collectionName) return -1;
-        if (a.collectionName > b.collectionName) return 1;
-        // Use localeCompare for potentially better string comparison
-        return (a.short_name || '').localeCompare(b.short_name || '');
+    
+    // 5. Return the results
+    return res.json({
+      date: foundDate,
+      documents: foundDocuments,
+      availableBoletines: userBoletines,
+      availableRangos: allRangos
     });
-
-
-    // Return the date, the documents, and data for filters
-    res.json({
-      date: { dia: overallLatestDate.dia, mes: overallLatestDate.mes, anio: overallLatestDate.anio },
-      documents: allDocuments,
-      availableBoletines: userBoletines, // User's subscribed boletines
-      availableRangos: allRangos // All possible rangos from file/default
-    });
+    // ---------- END REVISED LOGIC ----------
 
   } catch (error) {
     console.error('Error in /api/boletin-diario route:', error);
@@ -2928,8 +2874,8 @@ app.post('/create-checkout-session', async (req, res) => {
     // Definir precios base según el plan y el intervalo (en céntimos)
     const basePrices = {
       plan1: { monthly: 0, annual: 0 },
-      plan2: { monthly: 8000, annual: 78000 },
-      plan3: { monthly: 10000, annual: 96000 },
+      plan2: { monthly: 5600, annual: 54000 },
+      plan3: { monthly: 7000, annual: 67200 },
       plan4: { monthly: 0, annual: 0 } // Personalizado, se maneja por separado
     };
     

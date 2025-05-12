@@ -160,7 +160,7 @@
 
     .plan-box p {
       font-size: clamp(14px, 1.6vw, 15px);
-      color: var(--secondary-color);
+      color: var(--primary-color);
       line-height: 1.6;
       margin-bottom: 20px;
       min-height: 48px; /* Adjusted for 2 lines of text */
@@ -420,14 +420,16 @@
     }
 
     .discount-banner {
-      background-color: var(--primary-color);
+      background-color: var(--secondary-color);
       color: white;
       text-align: center;
-      padding: 10px;
+      padding: 8px 15px;
       border-radius: 8px;
-      margin-bottom: 20px;
+      margin: 0 auto 20px;
       font-weight: 600;
-      animation: pulse 2s infinite;
+      font-size: 14px;
+      max-width: 500px;
+      display: inline-block;
     }
 
     .discount-banner i {
@@ -531,8 +533,10 @@
         </div>
       </div>
 
-      <div class="discount-banner">
-        <i class="fas fa-tags"></i> 30% descuento en todos los planes para primeros usuarios
+      <div style="text-align: center;">
+        <div class="discount-banner">
+          <i class="fas fa-tags"></i> 30% descuento en todos los planes para primeros usuarios
+        </div>
       </div>
 
       <div class="plans-container">
