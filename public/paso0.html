@@ -320,12 +320,125 @@
     .features-list {
       min-height: 200px; /* Adjusted from 220px */
     }
+
+    /* Additional styles for the new plan elements from paso4.html */
+    .plan-button {
+      background-color: var(--text-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background-color 0.3s ease;
+    }
+
+    .plan-button:hover {
+      background-color: #03c57f;
+    }
+
+    .trial-period {
+      font-size: 13px;
+      color: var(--secondary-color);
+      margin-bottom: 10px; /* Reduced from 20px to 10px */
+      text-align: center;
+    }
+
+    .feature-included {
+      color: #26df5b;
+      margin-right: 8px;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .feature-excluded {
+      color: #cccccc;
+      margin-right: 8px;
+      font-size: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .discount-banner {
+      background-color: var(--secondary-color);
+      color: white;
+      text-align: center;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      max-width: 500px;
+      height: 35px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+    }
+
+    .discount-banner i {
+      margin-right: 8px;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.8; }
+      100% { opacity: 1; }
+    }
+
+    .original-price {
+      text-decoration: line-through;
+      color: #999;
+      font-size: 0.8em;
+      margin-right: 8px;
+    }
+
+    .promo-code-wrapper {
+      position: relative;
+      padding-bottom: 30px; /* Increased padding to make room for error message */
+      min-height: 90px; /* Ensure minimum height to contain all elements */
+      width: 300px;
+    }
+    
+    .promo-code-label {
+      text-align: left;
+      margin-bottom: 5px;
+    }
+    
+    .promo-code-container {
+      display: flex;
+      align-items: center;
+    }
+    
+    .promo-code-input {
+      padding: 8px 15px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      font-size: 14px;
+      width: 180px;
+      height: 35px;
+      box-sizing: border-box;
+    }
+    
+    .promo-code-error {
+      color: #d32f2f;
+      font-size: 14px;
+      position: absolute;
+      bottom: 5px; /* Position from bottom with margin */
+      left: 0;
+      text-align: left;
+      display: none;
+      width: 100%; /* Ensure it doesn't overflow */
+    } 
     
     /* Mobile adjustments for the Enterprise plan */
     @media (max-width: 768px) {
       .plans-container {
         flex-direction: column;
         align-items: center; /* Center plans when stacked */
+      }
+      .discount-banner{
+        height: 50px;
       }
       .plan-box {
         flex-basis: auto; /* Allow full width */
@@ -379,75 +492,7 @@
       }
     }
 
-    /* Additional styles for the new plan elements from paso4.html */
-    .plan-button {
-      background-color: var(--text-color);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 10px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-bottom: 15px;
-      transition: background-color 0.3s ease;
-    }
-
-    .plan-button:hover {
-      background-color: #03c57f;
-    }
-
-    .trial-period {
-      font-size: 13px;
-      color: var(--secondary-color);
-      margin-bottom: 10px; /* Reduced from 20px to 10px */
-      text-align: center;
-    }
-
-    .feature-included {
-      color: #26df5b;
-      margin-right: 8px;
-      font-size: 16px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .feature-excluded {
-      color: #cccccc;
-      margin-right: 8px;
-      font-size: 16px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
-
-    .discount-banner {
-      background-color: var(--secondary-color);
-      color: white;
-      text-align: center;
-      padding: 8px 15px;
-      border-radius: 8px;
-      margin: 0 auto 20px;
-      font-weight: 600;
-      font-size: 14px;
-      max-width: 500px;
-      display: inline-block;
-    }
-
-    .discount-banner i {
-      margin-right: 8px;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.8; }
-      100% { opacity: 1; }
-    }
-
-    .original-price {
-      text-decoration: line-through;
-      color: #999;
-      font-size: 0.8em;
-      margin-right: 8px;
-    }
+    
   </style>
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -533,9 +578,16 @@
         </div>
       </div>
 
-      <div style="text-align: center;">
+      <div style="text-align: center; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
         <div class="discount-banner">
           <i class="fas fa-tags"></i> 30% descuento en todos los planes para primeros usuarios
+        </div>
+        <div class="promo-code-wrapper">
+          <div class="promo-code-label"><strong>Código promocional</strong></div>
+          <div class="promo-code-container">
+            <input type="text" id="promotion-code" placeholder="Código promocional" class="promo-code-input">
+          </div>
+          <div id="promo-code-error" class="promo-code-error">Código incorrecto, compruébalo por favor</div>
         </div>
       </div>
 
@@ -740,6 +792,14 @@
           return;
         }
 
+        // Get the promotion code value
+        const promotionCodeInput = document.getElementById('promotion-code');
+        const promotionCode = promotionCodeInput.value.trim();
+        const promoCodeError = document.getElementById('promo-code-error');
+        
+        // Hide any existing error message
+        promoCodeError.style.display = 'none';
+
         nextButton.classList.add('loading');
         nextButton.disabled = true;
         nextButton.innerHTML = '<span class="loader"></span> Procesando...';
@@ -747,6 +807,24 @@
         try {
           // Extract plan type and billing period
           const [planType, billing] = selectedPlan.split('_');
+          
+          // Check if promotion code is valid or empty
+          if (promotionCode && promotionCode !== "ReversaTrial1620") {
+            // Invalid promotion code
+            promoCodeError.style.display = 'block';
+            nextButton.classList.remove('loading');
+            nextButton.disabled = false;
+            nextButton.innerHTML = 'Siguiente';
+            return;
+          }
+          
+          // Set promotion code status in sessionStorage
+          if (promotionCode === "ReversaTrial1620") {
+            sessionStorage.setItem('promotion_code', 'yes');
+            console.log('Promoción aplicada correctamente');
+          } else {
+            sessionStorage.setItem('promotion_code', 'no');
+          }
           
           if (planType === 'plan1') {
             console.log('Procesando Plan Gratuito...');
@@ -824,5 +902,6 @@
     });
   </script>
 
+  <!-- Add hidden error message element -->
 </body>
 </html>

@@ -36,8 +36,12 @@
             border-radius: 20px;
         }
 
-        body{
-          font-family: 'Satoshi',sans-serif;
+        body {
+          font-family: 'Satoshi', sans-serif;
+          background: radial-gradient(circle at 50% 0, rgba(4, 219, 141, 0.25) 0%, #ffffff 70%);
+          margin: 0;
+          padding: 0;
+          min-height: 100vh;
         }
 
         #loader {
@@ -65,8 +69,12 @@
               font-size: 14px;
               text-decoration: none;
           }
-          .container-norma{
-            margin: 2%;
+          .container-norma {
+            max-width: 1100px; 
+            margin: 40px auto; 
+            padding: 30px;     
+            border-radius: 12px; 
+            text-align: center;
           }
           /* Style the input field */
           .user-prompt {
@@ -99,7 +107,7 @@
         .input-button-container {
           display: flex;
           flex-direction: column;
-          align-items: flex-start; /* Aligns items to the start (left) */
+          align-items: center; /* Aligns items to the start (left) */
           width: 100%;
           margin-bottom: 20px;
           /*padding-left: 2%; *//* Matches the left margin of the input */
@@ -182,17 +190,19 @@
     </nav>
 
     <div class="container-norma">
-    <h1 style="padding-left:0%">Análisis Normativo</h1>
+      <h2 > <span id="normaShortName"></span></h2>
+      <div id="normaExtraDetails" style="font-size: 0.85em; color: #757575; margin-top: 4px; margin-bottom: 15px; line-height: 1.4;"></div>
+
     <div id="normaDetails">
         <!-- This will be populated with data from MongoDB -->
         <h2>  </h2>
            <!-- <label for="userPrompt">Custom Prompt:</label> --> </div>
              <div class="input-button-container">
-  <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Escribe aquí para analizar la norma..." spellcheck="false"></textarea>
-    <div>
-    <button id="analyzeButton" class="analisis-impacto">Analizar Impacto</button>
+
+<textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Escribe aquí para analizar la norma..." spellcheck="false"></textarea>
+<div>
+    <button id="analyzeButton" class="analisis-impacto">📝 Realizar resumen</button>
 </div>
-<h2 > <span id="normaShortName"></span></h2>
 </div>
     <div id="analysisResult"></div>
 <!-- Sección de Feedback -->
@@ -238,7 +248,29 @@
                 .then(response => response.json())
                 .then(data => {
                     shortNameSpan.textContent = data.short_name;
-                    pageLoaderOverlay.style.display = 'none';// Hide the overlay after loading shortname
+                     // Nuevo código para mostrar detalles adicionales
+                    const extraDetailsDiv = document.getElementById('normaExtraDetails');
+                    if (extraDetailsDiv) {
+                        let detailsParts = [];
+
+                        // data.collectionName ya lo estás recibiendo de la API
+                        if (data.collectionName) {
+                            detailsParts.push(data.collectionName);
+                        }
+
+                        if (data.rango_titulo) {
+                            detailsParts.push(data.rango_titulo);
+                        }
+
+                        if (data.url_pdf) {
+                            detailsParts.push(`<a href="${data.url_pdf}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`);
+                        }
+                        
+                        // Une las partes con ' | ', filtrando las que estén vacías o nulas
+                        extraDetailsDiv.innerHTML = detailsParts.filter(part => part !== null && part !== undefined && part !== '').join(' | ');
+                    }
+                    pageLoaderOverlay.style.display = 'none';
+    // Fin del nuevo código
                 })
                 .catch(error => {
                     console.error('Error fetching norma details:', error);
@@ -257,17 +289,30 @@
                 fetch('/api/analyze-norma', { // New endpoint in app.js
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/html; charset=utf-8'
                     },
                     body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt , collectionName:collectionName})
                 })
-                .then(response => response.text()) // Expecting plain text
+                .then(response => {
+                    // Ensure we're properly handling the UTF-8 encoding
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('charset=utf-8')) {
+                        return response.text();
+                    }
+                    // Explicitly decode as UTF-8 if charset not specified
+                    return response.arrayBuffer().then(buffer => {
+                        const decoder = new TextDecoder('utf-8');
+                        return decoder.decode(buffer);
+                    });
+                })
                 .then(data => {
-                         const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                        analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
-                        analyzeButton.style.backgroundColor = 'var(--primary-color)';
-                        analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-                        showFeedbackSection()
+                    // Process the response (unchanged)
+                    const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                    analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
+                    analyzeButton.style.backgroundColor = 'var(--primary-color)';
+                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                    showFeedbackSection()
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);

@@ -229,6 +229,12 @@ form.addEventListener('submit', function(event) {
   }
   // ****** FIN: AÑADIR PLAN A USERDATA ******
 
+  // Preserve promotion code from paso0.html
+  const promotionCode = sessionStorage.getItem('promotion_code');
+  if (promotionCode) {
+    userData.promotion_code = promotionCode;
+    console.log('Preserved promotion code:', promotionCode);
+  }
   
   console.log('Datos del usuario (sin política de privacidad):', userData);
   sessionStorage.setItem('userData', JSON.stringify(userData));

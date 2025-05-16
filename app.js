@@ -1406,32 +1406,15 @@ if (etiquetasKeys.length === 0) {
         // Filtro por etiquetas personalizadas (principal criterio de búsqueda)
         {
           $or: [
-            // Documentos que tienen alguna de las etiquetas personalizadas seleccionadas (case-insensitive)
+            // Los documentos tienen etiquetas personalizadas asignadas al usuario
             {
-              $expr: {
-                $gt: [
-                  {
-                    $size: {
-                      $filter: {
-                        input: { $ifNull: [`$etiquetas_personalizadas.${user._id.toString()}`, []] },
-                        as: "etiqueta",
-                        cond: {
-                          $or: selectedEtiquetas.map(etiqueta => ({
-                            $regexMatch: {
-                              input: { $toLower: "$$etiqueta" },
-                              regex: etiqueta.toLowerCase(),
-                              options: "i"
-                            }
-                          }))
-                        }
-                      }
-                    }
-                  },
-                  0
-                ]
-              }
-            },
-            // Resto del código...
+              $or: selectedEtiquetas.map(etiqueta => {
+                // Usar la notación de puntos correcta para consultar
+                // etiquetas_personalizadas.userId.nombreEtiqueta 
+                const field = `etiquetas_personalizadas.${user._id.toString()}.${etiqueta}`;
+                return { [field]: { $exists: true } };
+              })
+            }
           ]
         }  
       ]
@@ -1526,17 +1509,18 @@ if (etiquetasKeys.length === 0) {
           // Si el documento no tiene etiquetas personalizadas, devolver cadena vacía
           if (!doc.etiquetas_personalizadas) return '';
           
-          // Obtener solo las etiquetas del usuario actual
+          // En documentos, las etiquetas están bajo el ID del usuario
           const userId = user._id.toString();
-          const userEtiquetas = doc.etiquetas_personalizadas[userId] || [];
+          const docEtiquetasObj = doc.etiquetas_personalizadas[userId] || {};
+          const etiquetasKeys = Object.keys(docEtiquetasObj);
           
-          // Si no hay etiquetas del usuario actual, devolver cadena vacía
-          if (userEtiquetas.length === 0) return '';
+          // Si no hay etiquetas para este usuario, devolver cadena vacía
+          if (etiquetasKeys.length === 0) return '';
           
-          // Generar HTML para las etiquetas del usuario actual
+          // Generar HTML para las etiquetas
           return `
             <div class="etiquetas-personalizadas-values">
-              ${userEtiquetas.map(etiqueta => 
+              ${etiquetasKeys.map(etiqueta => 
                 `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
               ).join(' ')}
             </div>
@@ -1666,13 +1650,10 @@ app.get('/api/boletin-diario', async (req, res) => {
     
     // Read the full list of possible rangos from the file generated earlier.
     let allRangos = [];
-    try {
-        const rangosContent = fs.readFileSync('/home/ubuntu/rangos_list.txt', 'utf8');
-        allRangos = rangosContent.split('\n').filter(r => r.trim() !== '');
-    } catch (fsError) {
-        console.error("Error reading rangos_list.txt:", fsError);
+    
+      //  console.error("Error reading rangos_list.txt:", fsError);
         // Use a hardcoded default list as fallback
-        allRangos = ["Acuerdos Internacionales",
+    allRangos = ["Acuerdos Internacionales",
     "Normativa Europea",
     "Legislacion Nacional",
     "Normativa Reglamentaria",
@@ -1682,7 +1663,7 @@ app.get('/api/boletin-diario', async (req, res) => {
     "Consultas Publicas",
     "Normativa en tramitación",
     "Otras"];
-    }
+    
     // If 'rangos' query param is missing or empty, use all available rangos for filtering.
     const selectedRangos = (rangos && JSON.parse(rangos).length > 0) ? JSON.parse(rangos) : allRangos;
 
@@ -1952,10 +1933,13 @@ const queryWithoutEtiquetas = {
       
       // Verificar si el documento tiene etiquetas personalizadas para este usuario
       if (doc.etiquetas_personalizadas && doc.etiquetas_personalizadas[userId]) {
-        const docEtiquetasUsuario = doc.etiquetas_personalizadas[userId] || [];
+        // En documentos, etiquetas_personalizadas[userId] es un objeto 
+        // donde las claves son los nombres de las etiquetas
+        const docEtiquetasObj = doc.etiquetas_personalizadas[userId];
+        const docEtiquetasKeys = Object.keys(docEtiquetasObj || {});
         
         // Verificar si alguna de las etiquetas elegidas coincide con las del documento (case-insensitive)
-        const etiquetasCoincidentes = docEtiquetasUsuario.filter(etiqueta => 
+        const etiquetasCoincidentes = docEtiquetasKeys.filter(etiqueta => 
           selectedEtiquetas.includes(etiqueta.toLowerCase())
         );
         
@@ -2056,16 +2040,18 @@ const queryWithoutEtiquetas = {
         // Si el documento no tiene etiquetas personalizadas, devolver cadena vacía
         if (!doc.etiquetas_personalizadas) return '';
         
-        // Obtener solo las etiquetas del usuario actual
-        const userEtiquetas = doc.etiquetas_personalizadas[userId] || [];
+        // En documentos, las etiquetas están bajo el ID del usuario
+        const userId = user._id.toString();
+        const docEtiquetasObj = doc.etiquetas_personalizadas[userId] || {};
+        const etiquetasKeys = Object.keys(docEtiquetasObj);
         
-        // Si no hay etiquetas del usuario actual, devolver cadena vacía
-        if (userEtiquetas.length === 0) return '';
+        // Si no hay etiquetas para este usuario, devolver cadena vacía
+        if (etiquetasKeys.length === 0) return '';
         
-        // Generar HTML para las etiquetas del usuario actual
+        // Generar HTML para las etiquetas
         return `
           <div class="etiquetas-personalizadas-values">
-            ${userEtiquetas.map(etiqueta => 
+            ${etiquetasKeys.map(etiqueta => 
               `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
             ).join(' ')}
           </div>
@@ -2365,7 +2351,13 @@ app.get('/logout', (req, res) => {
 
       const document = await collection.findOne({ _id: documentId });
       if (document) {
-          res.json({ short_name: document.short_name,collectionName: collectionName });
+        res.json({
+          short_name: document.short_name,
+          collectionName: collectionName, // Este es el nombre de la colección de MongoDB que ya estabas enviando
+          rango_titulo: document.rango_titulo, // Nuevo: Añade esta línea
+          url_pdf: document.url_pdf // Nuevo: Añade esta línea
+      });   
+      
       } else {
           res.status(404).json({ error: 'Document not found' });
       }
@@ -2392,19 +2384,23 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
       // Spawn a new process to execute the Python script
       const pythonProcess = spawn('python', [pythonScriptPath, documentId, userPrompt, collectionName]); // Pass documentId and userPrompt as arguments
 
+      // Explicitly set encoding for stdout and stderr
+      pythonProcess.stdout.setEncoding('utf8');
+      pythonProcess.stderr.setEncoding('utf8');
+
       let result = '';
       let errorOutput = '';
 
       // Capture the output from the Python script
       pythonProcess.stdout.on('data', (data) => {
-          result += data.toString();
-           console.log(`Python stdout: ${data.toString()}`);
+          result += data; // data is now a UTF-8 string
+           console.log(`Python stdout: ${data}`);
       });
 
       // Capture errors from the Python script
       pythonProcess.stderr.on('data', (data) => {
-          errorOutput += data.toString();
-           console.error(`Python stderr: ${data.toString()}`);
+          errorOutput += data; // data is now a UTF-8 string
+           console.error(`Python stderr: ${data}`);
       });
 
       // Handle process completion
@@ -2414,7 +2410,8 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
               return res.status(500).send(`Python script failed with error: ${errorOutput}`);
           }
 
-          // Send the result back to the client
+          // Send the result back to the client with explicit UTF-8 encoding
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
           res.send(result);
       });
 
@@ -3318,7 +3315,7 @@ app.post('/save-free-plan', async (req, res) => {
   const { 
     plan, 
     industry_tags, 
-    sub_industria_map, // Añadido: mapa de subindustrias
+    sub_industria_map,
     rama_juridicas, 
     profile_type, 
     sub_rama_map, 
@@ -3330,7 +3327,10 @@ app.post('/save-free-plan', async (req, res) => {
     perfil_profesional,
     rangos,
     feedback, 
-    etiquetas_personalizadas
+    etiquetas_personalizadas,
+    promotion_code,
+    extra_agentes,
+    extra_fuentes
   } = req.body;
   
   if (!req.user) {
@@ -3350,10 +3350,20 @@ app.post('/save-free-plan', async (req, res) => {
     const db = client.db("papyrus");
     const usersCollection = db.collection("users");
 
+    // Calculate impact analysis limit based on plan
+    let impactAnalysisLimit = 0;
+    if (plan === 'plan2') {
+      impactAnalysisLimit = 50;
+    } else if (plan === 'plan3') {
+      impactAnalysisLimit = 500;
+    } else if (plan === 'plan4') {
+      impactAnalysisLimit = -1; // -1 means unlimited
+    }
+
     // Crear un objeto con los datos del usuario para actualizar
     const userData = {
       industry_tags,
-      sub_industria_map, // Añadido: guardamos el mapa de subindustrias
+      sub_industria_map,
       rama_juridicas,
       subscription_plan: plan,
       profile_type,
@@ -3365,10 +3375,15 @@ app.post('/save-free-plan', async (req, res) => {
       linkedin,
       perfil_profesional,
       rangos,
-      feedback_login: feedback, // Renamed from feedback to feedback_login
-      registration_date: formattedDate,    // String format yyyy-mm-dd
-      registration_date_obj: currentDate,  // Also save native Date object for better querying
-      etiquetas_personalizadas: etiquetas_personalizadas
+      feedback_login: feedback,
+      registration_date: formattedDate,
+      registration_date_obj: currentDate,
+      etiquetas_personalizadas: etiquetas_personalizadas,
+      promotion_code: promotion_code || 'no',
+      impact_analysis_limit: impactAnalysisLimit,
+      extra_agentes: parseInt(extra_agentes || '0'),
+      extra_fuentes: parseInt(extra_fuentes || '0'),
+      payment_status: promotion_code === 'yes' ? 'promotion_approved' : 'free_plan'
     };
 
     await usersCollection.updateOne(

@@ -1086,6 +1086,32 @@ async function redirectToStripeCheckout() {
   };
 
   try {
+    // Check if promotion code is valid
+    const promotionCode = sessionStorage.getItem('promotion_code');
+    if (promotionCode === 'yes') {
+      console.log('Valid promotion code found, saving user directly without Stripe');
+      
+      // Add promotion_code to payload
+      payload.promotion_code = 'yes';
+      
+      // Save user data directly to backend
+      const response = await fetch('/save-free-plan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error saving user data: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Redirect to profile page or wherever the backend specifies
+      window.location.href = result.redirectUrl || '/profile';
+      return;
+    }
+    
     // Determine if we're in editing mode
     const isEditing = sessionStorage.getItem('isEditing') === 'true';
     

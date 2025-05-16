@@ -7,6 +7,7 @@ import sys
 import requests
 import io
 import pypdf
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -88,9 +89,15 @@ def download_and_extract_text_from_pdf(pdf_url):
 
 def ask_gemini(text, prompt):
     """Asks Gemini a question about the text and returns the response."""
+    if not model:
+        logging.error("Gemini model is not initialized. Cannot ask Gemini.")
+        return None
     try:
         logging.info(f"Sending prompt to Gemini: {prompt[:100]}...")  # Log the first 100 chars of the prompt
-        response = model.generate_content(f"{prompt}:\n\n{text}")
+        
+        response = model.generate_content(
+            f"{prompt}:\n\n{text}"
+        )
         logging.info("Gemini API call successful")  # Log success
 
         return response.text
@@ -116,33 +123,76 @@ def main(document_id, user_prompt, collection_name): # Removed default value
         logging.error("Failed to extract text from PDF")
         return
 
-    system_prompt = """Eres un Asistente Legal de primer nivel, con profundo conocimiento en leyes y normativas. Has leído minuciosamente el documento proporcionado (PDF) y tu objetivo es responder únicamente en base a la información contenida en él.
-Instrucciones y Restricciones
+    system_prompt = """Eres un Asistente Legal de primer nivel, con profundo conocimiento en leyes y normativas. Tu tarea es analizar el documento PDF proporcionado y responder a la pregunta del usuario basándote *única y exclusivamente* en la información contenida en ese PDF.
 
-1. No inventes información (“alucines”). Si no aparece en el documento, indica con cortesía que no dispones de esa información.
-2. Tus respuestas deben estar siempre en formato HTML sencillo.
-  - Utiliza <h2>, <p>, <ul>, <li> y <b> (para destacar palabras importantes) en la estructura.
-  - No incluyas otros elementos HTML más allá de los solicitados.
-3. Cita las referencias internas (artículos, secciones, capítulos) del PDF cada vez que justifiques o fundamentes tu respuesta.
-4. Mantén una extensión máxima aproximada de 300 palabras en cada respuesta.
-5. Emplea un estilo “Mike Ross”:
-  - Sé claro, analítico y preciso.
-  - Muestra conocimiento profundo, pero con lenguaje accesible.
-6. Si te piden un resumen, elabora una explicación precisa y ordenada, como lo haría un abogado experimentado; sin exceder el límite de palabras.
-7. Al evaluar el impacto de la ley en industrias, sectores o casos concretos, utiliza la información disponible en el PDF. Mantén un nivel mínimo de sensibilidad para inferir implicaciones, pero sin sesgos.
-8. Si la ley no menciona un aspecto específico, acláralo y explica qué datos adicionales se requerirían.
-9. No ofrezcas opiniones personales ni especulaciones. Limítate al contenido del PDF o, en caso de interpretaciones, señala claramente si el texto deja alguna ventana para esa lectura.
-10. Recuerda que tu respuesta debe estar respaldada por la información provista en el PDF. Cualquier tema no contemplado en el documento será declarado como “no disponible”.
-        """
+**Instrucciones Críticas de Formato de Salida:**
+1.  **OBLIGATORIO: Formato JSON Estricto:** Tu respuesta DEBE ser SIEMPRE un objeto JSON válido.
+2.  **Esquema JSON Requerido:** El objeto JSON debe tener UNA SOLA CLAVE llamada `html_response`. El valor de esta clave DEBE ser un string conteniendo el fragmento de HTML bien formado.
+3.  **Contenido del HTML (`html_response`):**
+    *   El HTML debe seguir estas reglas: NO utilices NINGÚN OTRO FORMATO que no sea HTML para el valor de `html_response`. NO utilices Markdown dentro del string HTML.
+    *   **Etiquetas HTML Permitidas y Uso (dentro del string `html_response`):**
+        *   **Títulos Principales:** Usa UNA SOLA etiqueta `<h2>` para el título principal de tu respuesta. Ejemplo: `<h2>Análisis del Artículo 5</h2>`
+        *   **Párrafos:** Envuelve cada párrafo de texto con etiquetas `<p>`. Ejemplo: `<p>El documento establece que...</p>`
+        *   **Listas con Viñetas (Bullets):** Usa etiquetas `<ul>` para la lista y `<li>` para cada elemento. Ejemplo: `<ul><li>Primer punto.</li><li>Segundo punto.</li></ul>`
+        *   **Texto en Negrita:** Usa etiquetas `<b>` para resaltar palabras o frases importantes. Ejemplo: `<p>Es <b>fundamental</b> considerar...</p>`
+        *   **NO USES OTRAS ETIQUETAS HTML** (ej. no `<h3>`, `<a>`, `<span>`, `<div>`, etc.).
+    *   **Prohibición de Markdown (dentro del string `html_response`):** NO uses sintaxis Markdown. No `*` o `_` para énfasis (usa `<b>`), no `#` para encabezados (usa `<h2>`), no `* ` para listas (usa `<ul><li>`), no `[texto](url)`.
+
+**Contenido y Estilo de la Respuesta (para el HTML en `html_response`):**
+4.  **Basado en el PDF:** No inventes información. Si la respuesta no está en el PDF, indícalo cortésmente (ej: `<p>El documento no proporciona información específica sobre este tema.</p>`).
+5.  **Citas:** Cita referencias internas del PDF (artículos, secciones, etc.) cuando fundamentes tu respuesta.
+6.  **Extensión:** Máximo aproximado de 300 palabras.
+7.  **Estilo "Mike Ross":** Claro, analítico, preciso, lenguaje accesible pero demostrando conocimiento.
+8.  **Resúmenes:** Si se pide un resumen, que sea preciso, ordenado y conciso.
+9.  **Sensibilidad e Implicaciones:** Al evaluar el impacto de la ley en industrias, sectores o casos concretos, utiliza la información disponible en el PDF. Mantén un nivel mínimo de sensibilidad para inferir implicaciones, pero sin sesgos.
+10. **Sin Opiniones Personales:** No ofrezcas opiniones personales ni especulaciones, realiza un análisis aséptico. Recuerda que tu respuesta debe estar respaldada por la información provista en el PDF. Cualquier tema no contemplado en el documento será declarado como "No disponible"
+
+**Ejemplo de Respuesta JSON Esperada:**
+```json
+{
+  "html_response": "<h2>Análisis de la Cláusula de Confidencialidad</h2><p>La cláusula de confidencialidad <b>(Sección 3.A)</b>, establece las obligaciones de las partes respecto a la información sensible compartida.</p><p>Los puntos clave incluyen:</p><ul><li>La definición de qué se considera <b>información confidencial</b>.</li><li>El período durante el cual las obligaciones de confidencialidad permanecen vigentes, que es de <b>cinco años</b> post-contrato.</li><li>Las excepciones permitidas para la divulgación de información.</li></ul><p>Es <b>crucial</b> que ambas partes comprendan y adhieran estrictamente a estas disposiciones para evitar incumplimientos.</p>"
+}
+```
+
+**Recuerda: Tu salida debe ser únicamente el objeto JSON como el del ejemplo anterior, sin nada antes ni después. El string HTML dentro de `html_response` no debe contener saltos de línea innecesarios, solo el HTML puro.**
+"""
 
     final_prompt = user_prompt + ". " + system_prompt
 
-    gemini_response = ask_gemini(text, final_prompt)
+    gemini_response_json_str = ask_gemini(text, final_prompt)
 
-    if gemini_response:
-        print(gemini_response)  # Just print the HTML response
-        logging.info("Gemini response printed to standard output")
+    if gemini_response_json_str:
+        try:
+            # Strip potential markdown fences before parsing
+            cleaned_json_str = gemini_response_json_str.strip()
+            if cleaned_json_str.startswith("```json"):
+                cleaned_json_str = cleaned_json_str[7:] # Remove ```json
+            if cleaned_json_str.startswith("```"):
+                 cleaned_json_str = cleaned_json_str[3:] # Remove ``` (if ```json wasn't caught)
+            if cleaned_json_str.endswith("```"):
+                cleaned_json_str = cleaned_json_str[:-3]
+            cleaned_json_str = cleaned_json_str.strip() # clean any trailing/leading whitespaces after stripping
 
+            gemini_data = json.loads(cleaned_json_str)
+            html_output = gemini_data.get("html_response")
+
+            if html_output:
+                # Set stdout to use utf-8 encoding
+                sys.stdout.reconfigure(encoding='utf-8')
+                
+                print(html_output)  # Print only the HTML content
+                logging.info("Gemini HTML response printed to standard output")
+            else:
+                logging.error("Key 'html_response' not found in Gemini JSON output.")
+                print("Error: La respuesta del análisis no tiene el formato HTML esperado.")
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed to decode JSON response from Gemini: {e}")
+            logging.error(f"Raw Gemini response: {gemini_response_json_str}") # Log the original raw response
+            logging.error(f"Cleaned JSON string attempt: {cleaned_json_str}") # Log the string we tried to parse
+            print("Error: La respuesta del análisis no es un JSON válido.")
+        except Exception as e:
+            logging.exception(f"An unexpected error occurred while processing Gemini response: {e}")
+            print("Error: Ocurrió un error inesperado al procesar la respuesta del análisis.")
     else:
         print("Error: Gemini did not respond.")  # print error
         logging.error("Gemini API did not respond.")

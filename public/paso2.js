@@ -139,8 +139,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // 5. Preparar los rangos normativos en un texto que la IA use como lista cerrada
     const rangosNormativosCatalogo = catalogoEtiquetas.rangos_normativos.join("\n- ");
   
-    // 6. Buscar dentro de “ejemplosPersonalizados” la sección que coincida con el perfil del usuario
-    //    Suponiendo que “ejemplosPersonalizados” tiene un objeto con claves por perfil, e.g. "abogado_empresa", "empresa_regulada", etc.
+    // 6. Buscar dentro de "ejemplosPersonalizados" la sección que coincida con el perfil del usuario
+    //    Suponiendo que "ejemplosPersonalizados" tiene un objeto con claves por perfil, e.g. "abogado_empresa", "empresa_regulada", etc.
     let ejemploPerfil = "";
     if (userData.perfil && userData.perfil.length > 0) {
       // Tomar el primer perfil como referencia o combinar lógicas si hay varios
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
   
     // 7. Construir el prompt con la nueva sección que muestra el ejemplo personalizado
     return `
-   INSTRUCCIÓN PRINCIPAL: Generar un listado de etiquetas jurídicas junto a sus definiciones para clasificar documentos legales según los intereses de “userData”Eres un experto jurídico en derecho español, tu respuestas serán especificas para legislación nacional española y europea.
+   INSTRUCCIÓN PRINCIPAL: Generar un listado de etiquetas jurídicas junto a sus definiciones para clasificar documentos legales según los intereses de "userData"Eres un experto jurídico en derecho español, tu respuestas serán especificas para legislación nacional española y europea.
 
 TAREAS:
 1. ETIQUETAS PERSONALIZADAS:
@@ -178,8 +178,8 @@ Fuentes legales: ${userData.fuentes ? userData.fuentes.join(', ') : 'Ninguna sel
 Reguladores: ${userData.reguladores ? userData.reguladores.join(', ') : 'Ninguno seleccionado'}
 
  Ten en cuenta:
-    - Para las “etiquetas_personalizadas”, inspírate en la plantilla de ejemplos (más la información del usuario) sin limitarte al catálogo.
-    - Para los “rangos_normativos”, no se puede salir del catálogo ni proponer nuevas entradas.
+    - Para las "etiquetas_personalizadas", inspírate en la plantilla de ejemplos (más la información del usuario) sin limitarte al catálogo.
+    - Para los "rangos_normativos", no se puede salir del catálogo ni proponer nuevas entradas.
     - Ajusta la definición de cada etiqueta personalizada al ámbito o áreas de interés del usuario.
 
 OBJETIVO DE SALIDA:
@@ -222,27 +222,54 @@ function procesarRespuestaIA(data) {
       if (!etiquetas.etiquetas_personalizadas) {
         etiquetas.etiquetas_personalizadas = {};
       }
+
+      // Preserve promotion code from sessionStorage
+      const promotionCode = sessionStorage.getItem('promotion_code');
+      if (promotionCode) {
+        etiquetas.promotion_code = promotionCode;
+        console.log('Preserved promotion code in etiquetas:', promotionCode);
+      }
       
       return etiquetas;
     } else {
       // Si no se encuentra un JSON válido, crear una estructura por defecto
       console.warn('No se pudo extraer JSON de la respuesta. Usando valores por defecto.');
-      return {
+      
+      // Even with default values, preserve promotion code
+      const promotionCode = sessionStorage.getItem('promotion_code');
+      const defaultData = {
         etiquetas_personalizadas: {
           "Error, foco legal no encontrada": "Intenta de nuevo o contacta con nuestro equipo de soporte para solucionarlo"
         },
         rangos_normativos: ["Error, intente de nuevo"],
       };
+      
+      if (promotionCode) {
+        defaultData.promotion_code = promotionCode;
+        console.log('Preserved promotion code in default etiquetas:', promotionCode);
+      }
+      
+      return defaultData;
     }
   } catch (error) {
     console.error('Error al procesar la respuesta:', error);
     // Devolver estructura por defecto en caso de error
-    return {
+    
+    // Even on error, preserve promotion code
+    const promotionCode = sessionStorage.getItem('promotion_code');
+    const errorData = {
       etiquetas_personalizadas: {
         "Error, foco legal no encontrado": "Intenta de nuevo o contacta con nuestro equipo de soporte para solucionarlo"
       },
       rangos_normativos: ["Error, intente de nuevo"]
     };
+    
+    if (promotionCode) {
+      errorData.promotion_code = promotionCode;
+      console.log('Preserved promotion code in error etiquetas:', promotionCode);
+    }
+    
+    return errorData;
   }
 }
 

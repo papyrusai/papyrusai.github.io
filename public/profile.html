@@ -870,8 +870,11 @@
   const agentesContainer = document.getElementById('agentesContainer');
   if (!agentesContainer) return;
   
-  // Obtener las etiquetas personalizadas del usuario
+  // Obtener las etiquetas personalizadas del usuario 
   const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
+  
+  // En el documento de usuario, etiquetas_personalizadas es directamente el objeto de etiquetas,
+  // no contiene un objeto anidado con userId como clave
   const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
   
   // Si no hay etiquetas personalizadas, mostrar mensaje
@@ -898,7 +901,7 @@
   const etiquetasDropdown = document.getElementById('etiquetasDropdown');
   if (!etiquetasDropdown) return;
   
-  // Obtener las etiquetas personalizadas del usuario
+  // Obtener las etiquetas personalizadas del usuario (directamente, no anidado por userId)
   const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
   const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
   
@@ -1178,7 +1181,7 @@ function toggleRangoDropdown(event) {
   const allEtiquetasSelected = document.getElementById('chkAllEtiquetas')?.checked;
   
   if (allEtiquetasSelected) {
-    // Si "Todos" está seleccionado, usar todas las etiquetas del usuario
+    // Si "Todos" está seleccionado, usar todas las etiquetas del usuario (estructura directa)
     const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
     selectedEtiquetas = Object.keys(etiquetasPersonalizadas).map(etiqueta => etiqueta.toLowerCase());
   } else if (etiquetasDropdown) {
