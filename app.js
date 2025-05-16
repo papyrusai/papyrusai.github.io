@@ -1406,14 +1406,18 @@ if (etiquetasKeys.length === 0) {
         // Filtro por etiquetas personalizadas (principal criterio de búsqueda)
         {
           $or: [
-            // Los documentos tienen etiquetas personalizadas asignadas al usuario
+            // Opción 1: Los documentos tienen etiquetas como objeto (nueva estructura)
             {
               $or: selectedEtiquetas.map(etiqueta => {
-                // Usar la notación de puntos correcta para consultar
-                // etiquetas_personalizadas.userId.nombreEtiqueta 
                 const field = `etiquetas_personalizadas.${user._id.toString()}.${etiqueta}`;
                 return { [field]: { $exists: true } };
               })
+            },
+            // Opción 2: Los documentos tienen etiquetas como array (estructura antigua)
+            {
+              [`etiquetas_personalizadas.${user._id.toString()}`]: { 
+                $in: selectedEtiquetas 
+              }
             }
           ]
         }  
@@ -1503,24 +1507,36 @@ if (etiquetasKeys.length === 0) {
       documentsHtml = allDocuments.map(doc => {
         const rangoToShow = doc.rango_titulo || "Indefinido";
         
-        // Generar HTML para etiquetas personalizadas
-        // Generar HTML para etiquetas personalizadas
+        // Generar HTML para etiquetas personalizadas - compatible con ambas estructuras
         const etiquetasPersonalizadasHtml = (() => { 
           // Si el documento no tiene etiquetas personalizadas, devolver cadena vacía
           if (!doc.etiquetas_personalizadas) return '';
           
           // En documentos, las etiquetas están bajo el ID del usuario
           const userId = user._id.toString();
-          const docEtiquetasObj = doc.etiquetas_personalizadas[userId] || {};
-          const etiquetasKeys = Object.keys(docEtiquetasObj);
+          const userEtiquetas = doc.etiquetas_personalizadas[userId];
           
           // Si no hay etiquetas para este usuario, devolver cadena vacía
-          if (etiquetasKeys.length === 0) return '';
+          if (!userEtiquetas || (Array.isArray(userEtiquetas) && userEtiquetas.length === 0) || 
+              (typeof userEtiquetas === 'object' && Object.keys(userEtiquetas).length === 0)) {
+            return '';
+          }
+          
+          // Determinar qué etiquetas mostrar según la estructura
+          let etiquetasParaMostrar = [];
+          
+          if (Array.isArray(userEtiquetas)) {
+            // ESTRUCTURA ANTIGUA: Array de etiquetas
+            etiquetasParaMostrar = userEtiquetas;
+          } else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
+            // ESTRUCTURA NUEVA: Objeto con etiquetas como claves
+            etiquetasParaMostrar = Object.keys(userEtiquetas);
+          }
           
           // Generar HTML para las etiquetas
           return `
             <div class="etiquetas-personalizadas-values">
-              ${etiquetasKeys.map(etiqueta => 
+              ${etiquetasParaMostrar.map(etiqueta => 
                 `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
               ).join(' ')}
             </div>
@@ -1927,26 +1943,38 @@ const queryWithoutEtiquetas = {
       
       if (!passesRangoFilter) continue;
 
-      // Verificar coincidencia de etiquetas personalizadas
+      // Verificar coincidencia de etiquetas personalizadas - soportando ambas estructuras
       let hasEtiquetasMatch = false;
       let matchedEtiquetas = [];
       
       // Verificar si el documento tiene etiquetas personalizadas para este usuario
       if (doc.etiquetas_personalizadas && doc.etiquetas_personalizadas[userId]) {
-        // En documentos, etiquetas_personalizadas[userId] es un objeto 
-        // donde las claves son los nombres de las etiquetas
-        const docEtiquetasObj = doc.etiquetas_personalizadas[userId];
-        const docEtiquetasKeys = Object.keys(docEtiquetasObj || {});
+        const userEtiquetas = doc.etiquetas_personalizadas[userId];
         
-        // Verificar si alguna de las etiquetas elegidas coincide con las del documento (case-insensitive)
-        const etiquetasCoincidentes = docEtiquetasKeys.filter(etiqueta => 
-          selectedEtiquetas.includes(etiqueta.toLowerCase())
-        );
-        
-        // Si hay al menos una coincidencia, el documento pasa el filtro
-        if (etiquetasCoincidentes.length > 0) {
-          hasEtiquetasMatch = true;
-          matchedEtiquetas = etiquetasCoincidentes;
+        if (Array.isArray(userEtiquetas)) {
+          // ESTRUCTURA ANTIGUA: Array de etiquetas
+          // Verificar si alguna de las etiquetas elegidas coincide con las del documento (case-insensitive)
+          const etiquetasCoincidentes = userEtiquetas.filter(etiqueta => 
+            selectedEtiquetas.includes(etiqueta.toLowerCase())
+          );
+          
+          if (etiquetasCoincidentes.length > 0) {
+            hasEtiquetasMatch = true;
+            matchedEtiquetas = etiquetasCoincidentes;
+          }
+        } else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
+          // ESTRUCTURA NUEVA: Objeto con etiquetas como claves
+          const docEtiquetasKeys = Object.keys(userEtiquetas);
+          
+          // Verificar si alguna de las etiquetas elegidas coincide con las del documento (case-insensitive)
+          const etiquetasCoincidentes = docEtiquetasKeys.filter(etiqueta => 
+            selectedEtiquetas.includes(etiqueta.toLowerCase())
+          );
+          
+          if (etiquetasCoincidentes.length > 0) {
+            hasEtiquetasMatch = true;
+            matchedEtiquetas = etiquetasCoincidentes;
+          }
         }
       }
       
@@ -2035,23 +2063,36 @@ const queryWithoutEtiquetas = {
     const documentsHtml = filteredDocuments.map(doc => {
       const rangoToShow = doc.rango_titulo || "Indefinido";
       
-      // Generar HTML para etiquetas personalizadas
+      // Generar HTML para etiquetas personalizadas - compatible con ambas estructuras
       const etiquetasPersonalizadasHtml = (() => { 
         // Si el documento no tiene etiquetas personalizadas, devolver cadena vacía
         if (!doc.etiquetas_personalizadas) return '';
         
         // En documentos, las etiquetas están bajo el ID del usuario
         const userId = user._id.toString();
-        const docEtiquetasObj = doc.etiquetas_personalizadas[userId] || {};
-        const etiquetasKeys = Object.keys(docEtiquetasObj);
+        const userEtiquetas = doc.etiquetas_personalizadas[userId];
         
         // Si no hay etiquetas para este usuario, devolver cadena vacía
-        if (etiquetasKeys.length === 0) return '';
+        if (!userEtiquetas || (Array.isArray(userEtiquetas) && userEtiquetas.length === 0) || 
+            (typeof userEtiquetas === 'object' && Object.keys(userEtiquetas).length === 0)) {
+          return '';
+        }
+        
+        // Determinar qué etiquetas mostrar según la estructura
+        let etiquetasParaMostrar = [];
+        
+        if (Array.isArray(userEtiquetas)) {
+          // ESTRUCTURA ANTIGUA: Array de etiquetas
+          etiquetasParaMostrar = userEtiquetas;
+        } else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
+          // ESTRUCTURA NUEVA: Objeto con etiquetas como claves
+          etiquetasParaMostrar = Object.keys(userEtiquetas);
+        }
         
         // Generar HTML para las etiquetas
         return `
           <div class="etiquetas-personalizadas-values">
-            ${etiquetasKeys.map(etiqueta => 
+            ${etiquetasParaMostrar.map(etiqueta => 
               `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
             ).join(' ')}
           </div>
