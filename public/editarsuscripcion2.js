@@ -753,7 +753,7 @@ async function handlePlanUpgrade(event) {
     planType = 'plan3';
   } else if (planText.includes('enterprise') || planText.includes('ventas')) {
     planType = 'plan4';
-    window.location.href = 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1WN1IhU22dyAFucB4mXPHcgF-5WKU57UAVbkMGuiAVfDRvLcKyLY14oKB8Il6siszUXya8T4Jt';
+    window.location.href = 'https://cal.com/tomasburgaleta/30min';
     return;
   } else {
     alert_personalizada('No se pudo determinar el plan seleccionado. Por favor, inténtalo de nuevo.');

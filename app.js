@@ -1533,12 +1533,42 @@ if (etiquetasKeys.length === 0) {
             etiquetasParaMostrar = Object.keys(userEtiquetas);
           }
           
-          // Generar HTML para las etiquetas
+          // Generar HTML solo para las etiquetas (badges)
           return `
             <div class="etiquetas-personalizadas-values">
               ${etiquetasParaMostrar.map(etiqueta => 
                 `<span class="etiqueta-personalizada-value">${etiqueta}</span>`
               ).join(' ')}
+            </div>
+          `;
+        })();
+
+        // Generar HTML para la sección "Impacto en agentes" solo si es estructura nueva
+        const impactoAgentesHtml = (() => {
+          if (!doc.etiquetas_personalizadas) return '';
+          
+          const userId = user._id.toString();
+          const userEtiquetas = doc.etiquetas_personalizadas[userId];
+          
+          // Solo mostrar para la estructura nueva (objeto, no array)
+          if (!userEtiquetas || Array.isArray(userEtiquetas) || typeof userEtiquetas !== 'object') return '';
+          
+          const etiquetasKeys = Object.keys(userEtiquetas);
+          if (etiquetasKeys.length === 0) return '';
+          
+          return `
+            <div class="impacto-agentes" style="margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #04db8d; background-color: rgba(4, 219, 141, 0.05);">
+              <div style="font-weight: 600;font-size: large; margin-bottom: 10px; color: #455862; padding: 5px;">Impacto en agentes</div>
+              <div style="padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;">
+                ${etiquetasKeys.map(etiqueta => 
+                  `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;">
+                      <path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path>
+                    </svg>
+                    <div style="flex: 1;"><span style="font-weight: 600;">${etiqueta}:</span> ${userEtiquetas[etiqueta]}</div>
+                  </div>`
+                ).join('')}
+              </div>
             </div>
           `;
         })();
@@ -1556,7 +1586,8 @@ if (etiquetasKeys.length === 0) {
             </div>
             ${etiquetasPersonalizadasHtml}
             <div class="resumen-label">Resumen</div>
-            <div class="resumen-content">${doc.resumen}</div>
+            <div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
+            ${impactoAgentesHtml}
             <div class="margin-impacto">
               <a class="button-impacto" 
                  href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
@@ -2089,7 +2120,7 @@ const queryWithoutEtiquetas = {
           etiquetasParaMostrar = Object.keys(userEtiquetas);
         }
         
-        // Generar HTML para las etiquetas
+        // Generar HTML solo para las etiquetas (badges)
         return `
           <div class="etiquetas-personalizadas-values">
             ${etiquetasParaMostrar.map(etiqueta => 
@@ -2098,6 +2129,37 @@ const queryWithoutEtiquetas = {
           </div>
         `;
       })();
+
+      // Generar HTML para la sección "Impacto en agentes" solo si es estructura nueva
+      const impactoAgentesHtml = (() => {
+        if (!doc.etiquetas_personalizadas) return '';
+        
+        const userId = user._id.toString();
+        const userEtiquetas = doc.etiquetas_personalizadas[userId];
+        
+        // Solo mostrar para la estructura nueva (objeto, no array)
+        if (!userEtiquetas || Array.isArray(userEtiquetas) || typeof userEtiquetas !== 'object') return '';
+        
+        const etiquetasKeys = Object.keys(userEtiquetas);
+        if (etiquetasKeys.length === 0) return '';
+        
+        return `
+          <div class="impacto-agentes" style="margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #04db8d; background-color: rgba(4, 219, 141, 0.05);">
+            <div style="font-weight: 600; margin-bottom: 10px; color: #455862; padding: 5px;">Impacto en agentes</div>
+            <div style="padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;">
+              ${etiquetasKeys.map(etiqueta => 
+                `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;">
+                    <path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path>
+                  </svg>
+                  <div style="flex: 1;"><span style="font-weight: 600;">${etiqueta}:</span> ${userEtiquetas[etiqueta]}</div>
+                </div>`
+              ).join('')}
+            </div>
+          </div>
+        `;
+      })();
+
       
       // Generar HTML para el documento
       return `
@@ -2111,7 +2173,8 @@ const queryWithoutEtiquetas = {
           </div>
           ${etiquetasPersonalizadasHtml}
           <div class="resumen-label">Resumen</div>
-          <div class="resumen-content">${doc.resumen}</div>
+          <div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
+          ${impactoAgentesHtml}
           <div class="margin-impacto">
             <a class="button-impacto" 
                href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
@@ -2954,7 +3017,7 @@ app.post('/create-checkout-session', async (req, res) => {
     } else {
       // Para plan4 (Enterprise), redirigir a una página de contacto
       return res.json({ 
-        redirectUrl: 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1WN1IhU22dyAFucB4mXPHcgF-5WKU57UAVbkMGuiAVfDRvLcKyLY14oKB8Il6siszUXya8T4Jt',
+        redirectUrl: 'https://cal.com/tomasburgaleta/30min',
         isEnterprise: true
       });
     }
