@@ -1046,6 +1046,10 @@
             <label for="bocm">Boletín Oficial de la Comunidad de Madrid (BOCM)</label>
           </div>
           <div class="checkbox-item">
+            <input type="checkbox" id="borm" name="fuentes[]" value="BORM" onchange="toggleFuenteGobierno(this)">
+            <label for="borm">Boletín Oficial de la Región de Murcia (BORM)</label>
+          </div>
+          <div class="checkbox-item">
             <input type="checkbox" id="dogc" name="fuentes[]" value="DOGC" onchange="toggleFuenteGobierno(this)">
             <label for="dogc">Diario Oficial de la Generalitat Catalana (DOGC)</label>
           </div>
@@ -1077,18 +1081,28 @@
           <span>Selecciona reguladores</span>
         </button>
         <div id="dropdown-fuentes-reguladores" class="dropdown-options">
+          
+          <div class="checkbox-item">
+            <input type="checkbox" id="aepd" name="reguladores[]" value="AEPD" onchange="toggleFuenteReguladores(this)">
+            <label for="aepd">Agencia Española de Protección de Datos (AEPD)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="eba" name="reguladores[]" value="EBA" onchange="toggleFuenteReguladores(this)">
+            <label for="eba">Autoridad Bancaria Europea (EBA)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="esma" name="reguladores[]" value="ESMA" onchange="toggleFuenteReguladores(this)">
+            <label for="esma">Autoridad Europea de Valores y Mercados (ESMA)</label>
+          </div>
           <div class="checkbox-item">
             <input type="checkbox" id="cnmv" name="reguladores[]" value="CNMV" onchange="toggleFuenteReguladores(this)">
-            <label for="cnmv">Comisión Nacional del Mercado de Valores (CNMV)</label>
+            <label for="cnmv">Comisión Nacional de Mercado de Valores (CNMV)</label>
           </div>
           <div class="checkbox-item">
             <input type="checkbox" id="cnmc" name="reguladores[]" value="CNMC" onchange="toggleFuenteReguladores(this)">
             <label for="cnmc">Comisión Nacional de los Mercados y la Competencia (CNMC)</label>
           </div>
-          <div class="checkbox-item">
-            <input type="checkbox" id="aepd" name="reguladores[]" value="AEPD" onchange="toggleFuenteReguladores(this)">
-            <label for="aepd">Agencia Española de Protección de Datos (AEPD)</label>
-          </div>
+          
         </div>
       </div>
       <!-- Feedback element -->

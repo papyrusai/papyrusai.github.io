@@ -1731,7 +1731,8 @@ function createSourcesSection() {
     { value: "dogc", label: "Diario Oficial de la Generalitat Catalana (DOGC)" },
     { value: "dog", label: "Diario Oficial de Galicia (DOG)" },
     { value: "boja", label: "Boletín Oficial de la Junta de Andalucía (BOJA)" },
-    { value: "bopv", label: "Boletín Oficial del País Vasco (BOPV)" }
+    { value: "bopv", label: "Boletín Oficial del País Vasco (BOPV)" },
+    { value: "borm", label: "Boletín Oficial de la Región de Murcia (BORM)" }
   ];
   
   // Filtrar las fuentes que no están ya seleccionadas
@@ -1793,6 +1794,9 @@ function createSourcesSection() {
   // Lista de reguladores disponibles
   const reguladoresDisponibles = [
     { value: "cnmv", label: "Comisión Nacional del Mercado de Valores (CNMV)" },
+    { value: "cnmc", label: "Comisión Nacional de los Mercados y la Competencia (CNMC)" },
+    { value: "eba", label: "Autoridad Bancaria Europea (EBA)" },
+    { value: "esma", label: "Autoridad Europea de Valores y Mercados (ESMA)" },
     { value: "aepd", label: "Agencia Española de Protección de Datos (AEPD)" }
   ];
   

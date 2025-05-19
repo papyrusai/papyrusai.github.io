@@ -135,6 +135,7 @@ def main(document_id, user_prompt, collection_name): # Removed default value
         *   **Párrafos:** Envuelve cada párrafo de texto con etiquetas `<p>`. Ejemplo: `<p>El documento establece que...</p>`
         *   **Listas con Viñetas (Bullets):** Usa etiquetas `<ul>` para la lista y `<li>` para cada elemento. Ejemplo: `<ul><li>Primer punto.</li><li>Segundo punto.</li></ul>`
         *   **Texto en Negrita:** Usa etiquetas `<b>` para resaltar palabras o frases importantes. Ejemplo: `<p>Es <b>fundamental</b> considerar...</p>`
+        *   **Tablas:** Para estructurar datos tabulares, puedes usar `<table>`, `<tr>`, `<th>` y `<td>`. Ejemplo: `<table><tr><th>Encabezado 1</th><th>Encabezado 2</th></tr><tr><td>Dato 1</td><td>Dato 2</td></tr></table>`
         *   **NO USES OTRAS ETIQUETAS HTML** (ej. no `<h3>`, `<a>`, `<span>`, `<div>`, etc.).
     *   **Prohibición de Markdown (dentro del string `html_response`):** NO uses sintaxis Markdown. No `*` o `_` para énfasis (usa `<b>`), no `#` para encabezados (usa `<h2>`), no `* ` para listas (usa `<ul><li>`), no `[texto](url)`.
 

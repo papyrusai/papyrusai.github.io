@@ -31,9 +31,11 @@
       }
         #analysisResult {
             margin-top: 20px;
-            padding: 10px;
+            padding: 20px 30px;
             border: 1px solid #ccc;
             border-radius: 20px;
+            text-align: left;
+            display: none;
         }
 
         body {
@@ -93,6 +95,7 @@
             white-space: pre-wrap; /* Allows line breaks within the text area */
             word-break: break-word;/*Break on new word, not letter*/
              spellcheck: false; /* Disable spellcheck */
+             padding-right: 45px; /* Add space for the button */
         }
 
 
@@ -110,12 +113,68 @@
           align-items: center; /* Aligns items to the start (left) */
           width: 100%;
           margin-bottom: 20px;
-          /*padding-left: 2%; *//* Matches the left margin of the input */
+          position: relative;
         }
         .input-button-container > * {
             margin-bottom: 10px; /* Adds spacing between elements */
         }
-
+        
+        /* Style for the custom prompt submit button */
+        #sendCustomPrompt {
+            position: absolute;
+            bottom: 20px;
+            right: 12%;
+            background-color: var(--text-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        
+        #sendCustomPrompt:hover {
+            background-color: #03c57f;
+        }
+        
+        /* When textarea is focused, ensure the button is visible */
+        .user-prompt:focus + #sendCustomPrompt {
+            opacity: 1;
+        }
+        
+        /* Styling for active analysis buttons */
+        .analisis-impacto.active {
+            background-color: var(--primary-color);
+        }
+        
+        /* Table styling for checklist */
+        #analysisResult table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        #analysisResult th, #analysisResult td {
+            border: 1px solid #e0e0e0;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        #analysisResult th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+        
+        #analysisResult tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
         /*feedback*/
 
                 #feedbackSection {
@@ -191,7 +250,7 @@
 
     <div class="container-norma">
       <h2 > <span id="normaShortName"></span></h2>
-      <div id="normaExtraDetails" style="font-size: 0.85em; color: #757575; margin-top: 4px; margin-bottom: 15px; line-height: 1.4;"></div>
+      <div id="normaExtraDetails" style="font-size: large; color: #757575; margin-top: 4px; margin-bottom: 15px; line-height: 1.4;"></div>
 
     <div id="normaDetails">
         <!-- This will be populated with data from MongoDB -->
@@ -200,8 +259,11 @@
              <div class="input-button-container">
 
 <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Escribe aquí para analizar la norma..." spellcheck="false"></textarea>
-<div>
+<button id="sendCustomPrompt" title="Enviar consulta personalizada">↑</button>
+<div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
     <button id="analyzeButton" class="analisis-impacto">📝 Realizar resumen</button>
+    <button id="checklistButton" class="analisis-impacto">✅ Cuadro de obligaciones</button>
+    <button id="risksButton" class="analisis-impacto">⚠️ Riesgos y oportunidades</button>
 </div>
 </div>
     <div id="analysisResult"></div>
@@ -224,6 +286,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         const shortNameSpan = document.getElementById('normaShortName');
         const analyzeButton = document.getElementById('analyzeButton');
+        const checklistButton = document.getElementById('checklistButton');
+        const risksButton = document.getElementById('risksButton');
+        const sendCustomPromptButton = document.getElementById('sendCustomPrompt');
         const analysisResultDiv = document.getElementById('analysisResult');
         const loaderDiv = document.getElementById('loader');
         const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
@@ -232,15 +297,233 @@
         // Get the document ID from the URL (you can change this if you pass it differently)
         const urlParams = new URLSearchParams(window.location.search);
         const documentId = urlParams.get('documentId');
-                const collectionName = urlParams.get('collectionName'); // Get the collection from URL
-
-        // Assuming the document ID is passed as a query parameter
-        // Example: norma.html?documentId=BOE-A-2025-2144
+        const collectionName = urlParams.get('collectionName'); // Get the collection from URL
 
         // Función para mostrar la sección de feedback
-                function showFeedbackSection() {
+        function showFeedbackSection() {
           const feedbackSection = document.getElementById('feedbackSection');
           feedbackSection.style.display = 'block';
+        }
+
+        // Add event listener for custom prompt button
+        sendCustomPromptButton.addEventListener('click', () => {
+            handleCustomPrompt();
+        });
+
+        // Also allow pressing Enter in the textarea to submit
+        userPromptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleCustomPrompt();
+            }
+        });
+
+        // Function to handle custom prompt submissions
+        function handleCustomPrompt() {
+            const userInput = userPromptInput.value.trim();
+            if (!userInput) {
+                alert('Por favor, escribe una consulta antes de enviar.');
+                return;
+            }
+            
+            const customPrompt = `${userInput}
+
+=== Formato de salida ===
+• Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
+• El string HTML solo puede incluir <h2>, <p>, <ul>, <li>, <b>. Nada más.  
+• Sin saltos de línea innecesarios ni Markdown.`;
+            
+            performCustomAnalysis(customPrompt, sendCustomPromptButton);
+        }
+
+        // Function for custom prompt analysis
+        function performCustomAnalysis(customPrompt, buttonElement) {
+            analysisResultDiv.textContent = ''; // Clear previous results
+            const originalButtonText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; // Show loading icon
+            buttonElement.disabled = true;
+            
+            // Reset any active button state
+            document.querySelectorAll('.analisis-impacto').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            fetch('/api/analyze-norma', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/html; charset=utf-8'
+                },
+                body: JSON.stringify({ documentId: documentId, userPrompt: customPrompt, collectionName: collectionName })
+            })
+            .then(response => {
+                // Ensure we're properly handling the UTF-8 encoding
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('charset=utf-8')) {
+                    return response.text();
+                }
+                // Explicitly decode as UTF-8 if charset not specified
+                return response.arrayBuffer().then(buffer => {
+                    const decoder = new TextDecoder('utf-8');
+                    return decoder.decode(buffer);
+                });
+            })
+            .then(data => {
+                // Process the response
+                const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                buttonElement.innerHTML = originalButtonText; // Restore original button text
+                buttonElement.disabled = false;
+                analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                showFeedbackSection();
+            })
+            .catch(error => {
+                console.error('Error analyzing norma:', error);
+                buttonElement.innerHTML = originalButtonText; // Restore original button text
+                buttonElement.disabled = false;
+                analysisResultDiv.textContent = 'Error al analizar la norma.';
+                analysisResultDiv.style.display = 'block'; // Show the analysis result div
+            });
+        }
+
+        // Function to handle all analysis requests
+        function performAnalysis(promptType, buttonElement) {
+            analysisResultDiv.textContent = ''; // Clear previous results
+            const originalButtonText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
+            
+            // Reset any active button state
+            document.querySelectorAll('.analisis-impacto').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Set this button as active
+            buttonElement.classList.add('active');
+            
+            let userPrompt;
+            
+            // Set the specific prompt based on button type
+            if (promptType === 'checklist') {
+                userPrompt = `Eres un abogado senior.
+
+Lee el siguiente documento PDF y genera un checklist de obligaciones:
+
+INSTRUCCIONES CRÍTICAS DE FORMATO DE SALIDA  
+1. **OBLIGATORIO – JSON estricto:** responde SIEMPRE con un objeto JSON válido.  
+2. **Esquema único:** el objeto JSON debe tener UNA SOLA clave llamada \`html_response\`, cuyo valor sea un string que contenga SOLO el fragmento HTML.  
+3. **Sin saltos de línea innecesarios:** el string HTML irá en una sola línea continua (o con los mínimos saltos indispensables para la legibilidad).  
+4. **Basado en el PDF:** no inventes información. Si algo no figura, indica cortésmente: \`<p>El documento no proporciona información específica sobre este tema.</p>\`.  
+5. **Citas internas:** cita siempre el artículo o sección del PDF cuando fundamentes tu respuesta.  
+6. **Extensión:** máximo aproximado de 300 palabras dentro del string HTML.    
+7. **Resúmenes concisos:** cuando se pida un resumen, que sea ordenado y breve.  
+8. **Sensibilidad e implicaciones:** evalúa el impacto usando solo la información disponible; sin sesgos ni especulaciones.  
+9. **Sin opiniones personales:** cualquier dato no contenido en el documento deberá declararse "No disponible".
+
+REQUERIMIENTOS DEL CONTENIDO HTML  
+• Dentro de \`html_response\` usa ÚNICAMENTE estas etiquetas: \`<h2>\`, \`<p>\`, \`<table>\`, \`<tr>\`, \`<th>\`, \`<td>\` y \`<b>\` donde resulte necesario.  
+• Estructura de salida:  
+  * \`<h2>Checklist de Cumplimiento</h2>\`  
+  * \`<p>Resumen ejecutivo</p>\` (máx. 100 palabras con nº total de obligaciones y fecha de entrada en vigor).  
+  * \`<table>\` con cinco columnas en este orden:  
+    1. Obligación / Acción a realizar (≤ 25 palabras)  
+    2. Artículo o disposición que la impone  
+    3. Departamento interno responsable (Compliance, RR.HH., IT, Dirección Financiera, etc.)  
+    4. Plazo exacto o frecuencia (fecha fija, "30 días", "trimestral"…).  
+    5. Sanción o consecuencia por incumplimiento (importe o referencia al art.).  
+  * Máximo 10 filas; si algún dato no aparece, escribe "No especificado".  
+• No utilices ninguna otra etiqueta HTML ni Markdown.
+
+**RECUERDA:** Tu salida debe ser únicamente el objeto JSON como el del ejemplo anterior, sin nada antes ni después. El string HTML dentro de \`html_response\` no debe contener saltos de línea innecesarios, solo el HTML puro.`;
+            } else if (promptType === 'risks') {
+                userPrompt = `Eres un socio de un despacho de abogados en España. Analiza la norma dentro de <PDF></PDF> y extrae riesgos, oportunidades para la empresa y servicios que el despacho puede ofrecer.
+
+=== Formato de salida ===
+• Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
+• El string HTML solo puede incluir <h2>, <p>, <ul>, <li>, <b>. Nada más.  
+• Sin saltos de línea innecesarios ni Markdown.  
+
+=== Contenido HTML requerido (≤ 300 palabras) ===
+<h2>Riesgos y Oportunidades de la Norma</h2>
+<p>Introducción (≤ 60 palabras) situando la relevancia de la norma.</p>
+<ul>
+<li><b>Riesgo:</b> … <b>Artículo:</b> … <b>Probabilidad:</b> Alta/Media/Baja <b>Impacto:</b> … <b>Mitigación:</b> …</li>
+<!-- hasta 6 riesgos -->
+</ul>
+<ul>
+<li><b>Oportunidad Empresarial:</b> … <b>Sector:</b> … <b>Beneficio:</b> …</li>
+<!-- hasta 4 oportunidades -->
+</ul>
+<ul>
+<li><b>Servicio del Despacho:</b> … <b>Etapa:</b> Diagnóstico/Implementación/Litigios <b>Valor para el cliente:</b> …</li>
+<!-- 4-6 servicios -->
+</ul>
+<p><b>Conclusión:</b> Prioriza los 3 principales riesgos y 2 oportunidades.</p>
+<p>Indica "No especificado" si el PDF carece de información necesaria.</p>
+
+=== Criterios analíticos ===
+• Basado únicamente en el PDF; cita artículos concretos.  
+• Estilo claro y preciso, sin opiniones personales ni especulación.`;
+            } else if (promptType === 'summary') {
+                // Fixed summary prompt (no longer using user input)
+                userPrompt = `Eres un abogado experto. Analiza el documento PDF y genera un resumen claro y conciso.
+
+=== Formato de salida ===
+• Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
+• El string HTML solo puede incluir <h2>, <p>, <ul>, <li>, <b>. Nada más.  
+• Sin saltos de línea innecesarios ni Markdown.
+
+=== Contenido HTML requerido (≤ 300 palabras) ===
+<h2>Resumen de la Norma</h2>
+<p>Introducción (≤ 50 palabras) con el título completo, fecha de publicación y entrada en vigor.</p>
+<p>Propósito principal de la norma y su alcance.</p>
+<p>Aspectos clave y puntos importantes a considerar.</p>
+<ul>
+<li>Principales disposiciones (máximo 5 puntos)</li>
+</ul>
+<p>Ámbito de aplicación y sujetos afectados.</p>
+<p>Conclusión con implicaciones generales.</p>
+
+=== Criterios analíticos ===
+• Basado únicamente en el PDF; cita artículos concretos.
+• Estilo claro y preciso, sin opiniones personales ni especulación.`;
+            }
+
+            fetch('/api/analyze-norma', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'text/html; charset=utf-8'
+                },
+                body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt, collectionName: collectionName })
+            })
+            .then(response => {
+                // Ensure we're properly handling the UTF-8 encoding
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('charset=utf-8')) {
+                    return response.text();
+                }
+                // Explicitly decode as UTF-8 if charset not specified
+                return response.arrayBuffer().then(buffer => {
+                    const decoder = new TextDecoder('utf-8');
+                    return decoder.decode(buffer);
+                });
+            })
+            .then(data => {
+                // Process the response
+                const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                buttonElement.innerHTML = originalButtonText; // Restore original button text
+                buttonElement.style.backgroundColor = ''; // Remove inline style
+                analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                showFeedbackSection();
+            })
+            .catch(error => {
+                console.error('Error analyzing norma:', error);
+                buttonElement.innerHTML = originalButtonText; // Restore original button text
+                buttonElement.classList.remove('active'); // Remove active state on error
+                analysisResultDiv.textContent = 'Error analyzing norma.';
+                analysisResultDiv.style.display = 'block'; // Show the analysis result div
+            });
         }
 
         // Fetch the document details (only the short_name for this example)
@@ -278,49 +561,18 @@
                     pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
                 });
 
-                analyzeButton.addEventListener('click', () => {
-                analysisResultDiv.textContent = ''; // Clear previous results
-                //loaderDiv.style.display = 'block'; // Show the loader
-                analyzeButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
-                //analyzeButton.style.backgroundColor = 'transparent';
+        // Add click handlers for each button
+        analyzeButton.addEventListener('click', () => {
+            performAnalysis('summary', analyzeButton);
+        });
 
-                const userPrompt = userPromptInput.value;
+        checklistButton.addEventListener('click', () => {
+            performAnalysis('checklist', checklistButton);
+        });
 
-                fetch('/api/analyze-norma', { // New endpoint in app.js
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'text/html; charset=utf-8'
-                    },
-                    body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt , collectionName:collectionName})
-                })
-                .then(response => {
-                    // Ensure we're properly handling the UTF-8 encoding
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('charset=utf-8')) {
-                        return response.text();
-                    }
-                    // Explicitly decode as UTF-8 if charset not specified
-                    return response.arrayBuffer().then(buffer => {
-                        const decoder = new TextDecoder('utf-8');
-                        return decoder.decode(buffer);
-                    });
-                })
-                .then(data => {
-                    // Process the response (unchanged)
-                    const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                    analyzeButton.innerHTML = 'Impacto Analizado'; // Change button text
-                    analyzeButton.style.backgroundColor = 'var(--primary-color)';
-                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-                    showFeedbackSection()
-                })
-                .catch(error => {
-                    console.error('Error analyzing norma:', error);
-                    analyzeButton.innerHTML = 'Analisis Impacto'; // Revert button text
-                      analyzeButton.style.backgroundColor = 'var(--text-color)';
-                    analysisResultDiv.textContent = 'Error analyzing norma.';
-                });
-                });
+        risksButton.addEventListener('click', () => {
+            performAnalysis('risks', risksButton);
+        });
             
 
             // Configurar los listeners para el feedback
