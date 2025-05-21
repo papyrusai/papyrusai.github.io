@@ -73,6 +73,26 @@ function buildDocumentHTML(doc, isLastDoc) {
     ).join('');
   }
 
+  // Nueva sección: Impacto en agentes
+  let impactoAgentesHTML = '';
+  if (doc.matched_etiquetas_personalizadas && doc.matched_etiquetas_personalizadas.length && doc.matched_etiquetas_descriptions) {
+    impactoAgentesHTML = `
+      <div style="
+        margin-top: 15px;
+        margin-bottom: 20px;
+        padding-left: 15px;
+        border-left: 4px solid #4ce3a7;
+        background-color: rgba(76, 227, 167, 0.05);
+      ">
+        <h4 style="margin-bottom: 8px; color: #0c2532;">Impacto en agentes</h4>
+        ${doc.matched_etiquetas_personalizadas.map((etiqueta, index) => {
+          const description = doc.matched_etiquetas_descriptions[index] || '';
+          return `<p style="margin: 5px 0; font-size: 0.9em;"><strong>${etiqueta}:</strong> ${description}</p>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
   const hrOrNot = isLastDoc
     ? ''
     : `
@@ -88,7 +108,8 @@ function buildDocumentHTML(doc, isLastDoc) {
     <div class="document">
       <h2>${doc.short_name}</h2>
       <p>${etiquetasPersonalizadasHTML}</p>
-      <p>${doc.resumen}</p>
+      <p style="color: black;">${doc.resumen}</p>
+      ${impactoAgentesHTML}
       <p>
         <div class="margin-impacto">
           <a class="button-impacto"
@@ -151,7 +172,7 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
   <div class="document">
     <h2>${doc.short_name}</h2>
     <p>${industriasHTML} ${ramaHTML}</p>
-    <p>${doc.resumen}</p>
+    <p style="color: black;">${doc.resumen}</p>
     <p>
       <div class="margin-impacto">
         <a class="button-impacto"
@@ -856,7 +877,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       });
     }
 
-    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'papyrus.info.ai@gmail.com');//filterUniqueEmails(allUsers);
+    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
 
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
@@ -922,18 +943,23 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         // FILTER 2: Check for etiquetas personalizadas match
         let hasEtiquetasMatch = false;
         let matchedEtiquetas = [];
+        let matchedEtiquetasDescriptions = [];
         
         // Verificar si el documento tiene etiquetas personalizadas y el usuario tiene un ID
         if (doc.etiquetas_personalizadas && user._id) {
           const userId = user._id.toString();
           
           // Verificar si hay etiquetas personalizadas para este usuario en el documento
-          if (doc.etiquetas_personalizadas[userId] && Array.isArray(doc.etiquetas_personalizadas[userId])) {
+          if (doc.etiquetas_personalizadas[userId]) {
+            // En la nueva estructura, doc.etiquetas_personalizadas[userId] es un objeto donde las claves son los nombres de las etiquetas
+            const docEtiquetasObj = doc.etiquetas_personalizadas[userId] || {};
+            
             // Verificar coincidencias entre las etiquetas del documento para este usuario y las etiquetas del usuario
             for (const etiquetaKey of userEtiquetasKeys) {
-              if (doc.etiquetas_personalizadas[userId].includes(etiquetaKey)) {
+              if (etiquetaKey in docEtiquetasObj) {
                 hasEtiquetasMatch = true;
                 matchedEtiquetas.push(etiquetaKey);
+                matchedEtiquetasDescriptions.push(docEtiquetasObj[etiquetaKey] || '');
               }
             }
           }
@@ -946,7 +972,8 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
             collectionName: collectionName,
             doc: {
               ...doc,
-              matched_etiquetas_personalizadas: matchedEtiquetas
+              matched_etiquetas_personalizadas: matchedEtiquetas,
+              matched_etiquetas_descriptions: matchedEtiquetasDescriptions
             }
           });
         }
@@ -1025,7 +1052,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
 
       // 5) Build HTML
 
-          // if it’s our special email and there are NO alerts today, skip entirely
+          // if it's our special email and there are NO alerts today, skip entirely
         const isEaz = user.email.toLowerCase() === 'eaz@ayuelajimenez.es';
         if (isEaz && finalGroups.length === 0) {
           console.log(`Skipping email for ${user.email} – no matches today.`);
