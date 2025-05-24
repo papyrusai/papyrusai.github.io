@@ -23,9 +23,13 @@ const DB_NAME = 'papyrus';
 
 // Take today's date in real time
 const TODAY = moment().utc();
+//const TOMORROW = TODAY.clone().add(1, 'day');
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
 const diaToday  = TODAY.date();
+
+// Format current date as YYYY-MM-DD for logs
+const currentDateString = TODAY.format('YYYY-MM-DD');
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -37,22 +41,134 @@ const transporter = nodemailer.createTransport(
   })
 );
 
+/**
+ * Check if webscraping ran today by looking for a log entry
+ */
+async function checkWebscrapingRanToday(db) {
+  try {
+    const logsCollection = db.collection('logs');
+    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    return logEntry !== null;
+  } catch (err) {
+    console.error('Error checking webscraping logs:', err);
+    return false;
+  }
+}
+
+/**
+ * Send warning email to info@reversa.ai
+ */
+async function sendWarningEmail() {
+  const warningMailOptions = {
+    from: 'Reversa <info@reversa.ai>',
+    to: 'info@reversa.ai',
+    subject: `WARNING - Webscraping no ejecutado - ${currentDateString}`,
+    html: `
+      <h2>WARNING</h2>
+      <p>No se ha corrido el código webscraping hoy (${currentDateString}).</p>
+      <p>Por favor, verificar el sistema de webscraping.</p>
+      <p>Timestamp: ${moment().format('YYYY-MM-DD HH:mm:ss')} UTC</p>
+    `
+  };
+
+  try {
+    await transporter.sendMail(warningMailOptions);
+    console.log('Warning email sent to info@reversa.ai');
+  } catch (err) {
+    console.error('Error sending warning email:', err);
+  }
+}
+
+/**
+ * Get all collections that have documents for today
+ */
+async function getAvailableCollectionsToday(db) {
+  // Get all collections from the database
+  const allCollections = await db.listCollections().toArray();
+  const excludedCollections = ['logs', 'Feedback', 'Ramas boja', 'Ramas UE', 'users'];
+  
+  // Filter out excluded collections
+  const availableCollections = [];
+  for (const collection of allCollections) {
+    const collectionName = collection.name;
+    if (!excludedCollections.includes(collectionName)) {
+      try {
+        const coll = db.collection(collectionName);
+        const query = {
+          anio: anioToday,
+          mes: mesToday,
+          dia: diaToday
+        };
+        
+        const count = await coll.countDocuments(query);
+        if (count > 0) {
+          availableCollections.push(collectionName);
+        }
+      } catch (err) {
+        console.warn(`Error checking collection ${collectionName}:`, err);
+      }
+    }
+  }
+
+  return availableCollections;
+}
+
+/**
+ * Log the first shipment information
+ */
+async function logFirstShipment(db, availableCollections) {
+  try {
+    const logsCollection = db.collection('logs');
+    const currentTimestamp = moment().toDate();
+    
+    const updateResult = await logsCollection.updateOne(
+      { "date_range.start": currentDateString },
+      {
+        $set: {
+          first_shipment: {
+            time_stamp: currentTimestamp,
+            collections: availableCollections
+          }
+        }
+      },
+      { upsert: true }
+    );
+
+    console.log('First shipment logged successfully:', {
+      date: currentDateString,
+      timestamp: currentTimestamp,
+      collections: availableCollections
+    });
+  } catch (err) {
+    console.error('Error logging first shipment:', err);
+  }
+}
+
 /** Mapea ciertos nombres de colección a textos más descriptivos */
 function mapCollectionNameToDisplay(cName) {
   const upper = (cName || '').toUpperCase();
   switch (upper) {
+    // Fuentes de Gobierno
     case 'BOE':   return 'Boletín Oficial del Estado';
     case 'DOUE':  return 'Diario Oficial de la Unión Europea';
-    case 'DOG':   return 'Diario Oficial de Galicia';
-    case 'BOA':   return 'Boletín Oficial de Aragón';
-    case 'BOCM':  return 'Boletín Oficial de la Comunidad de Madrid';
-    case 'BOCYL': return 'Boletín Oficial de Castilla y León';
     case 'BOCG':  return 'Boletín Oficial de las Cortes Generales';
+    case 'BOA':   return 'Boletín Oficial de Aragón';
+    case 'BOCYL': return 'Boletín Oficial de Castilla y León';
+    case 'BOCM':  return 'Boletín Oficial de la Comunidad de Madrid';
+    case 'BORM':  return 'Boletín Oficial de la Región de Murcia';
     case 'DOGC':  return 'Diario Oficial de la Generalitat Catalana';
+    case 'DOG':   return 'Diario Oficial de Galicia';
     case 'BOJA':  return 'Boletín Oficial de la Junta de Andalucía';
     case 'BOPV':  return 'Boletín Oficial del País Vasco';
+    
+    // Fuentes de Reguladores
+    case 'AEPD':  return 'Agencia Española de Protección de Datos';
+    case 'EBA':   return 'Autoridad Bancaria Europea';
+    case 'ESMA':  return 'Autoridad Europea de Valores y Mercados';
     case 'CNMV':  return 'Comisión Nacional del Mercado de Valores';
-    case 'AEPD': return 'Agencia Española de Protección de Datos'
+    case 'CNMC':  return 'Comisión Nacional de los Mercados y la Competencia';
+    
+    // Default case
     default:      return upper;
   }
 }
@@ -199,7 +315,7 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
  * buildNewsletterHTML:
  * Construye el newsletter con matches para un usuario.
  */
-function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
+function buildNewsletterHTML(userName, userId, dateString, rangoGroups, isExtraVersion = false) {
   // Create summary section by ranges instead of CNAE/juridical categories
   console.log("Normal html is triggered");
   const rangoSummaryHTML = rangoGroups.map(rango => {
@@ -268,6 +384,15 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
 
     return rangoHeading + collectionBlocks;
   }).join('');
+  
+  // Extra version message
+  const extraVersionMessage = isExtraVersion ? `
+    <div style="text-align: center; margin: 10px 0 20px 0;">
+      <p style="font-style: italic; color: #666; font-size: 14px; margin: 0;">
+        Versión Extra: para cubrir boletines emitidos con retraso
+      </p>
+    </div>
+  ` : '';
   
   // HTML final
   return `
@@ -384,6 +509,8 @@ function buildNewsletterHTML(userName, userId, dateString, rangoGroups) {
         <img src="cid:reversaLogo" alt="Reversa Logo" style="max-width:250px; height:auto;" />
       </div>
 
+      ${extraVersionMessage}
+
       <p>Hola ${userName}, a continuación te resumimos las novedades normativas de tu interés del día <strong>${dateString}</strong>:</p>
 
       ${summarySection}
@@ -494,7 +621,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   // Intro text based on document count
   let introText = '';
   if (boeGeneralDocs.length === 0) {
-    introText = `<p>No se han publicado disposiciones generales en el BOE hoy</p>`;
+    introText = `<p>Hoy no hay nada que te afecte directamente, puedes estar tranquilo</p>`;
   } else {
     introText = `<p>Hoy no hay nada que te afecte directamente, pero por si te pica la curiosidad, aquí tienes un resumen de 5 minutos de las disposiciones generales del BOE:</p>`;
   }
@@ -835,6 +962,385 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
   `;
 }
 
+/**
+ * Check if first shipment already exists for today and get previously shipped collections
+ */
+async function getFirstShipmentInfo(db) {
+  try {
+    const logsCollection = db.collection('logs');
+    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    
+    if (logEntry && logEntry.first_shipment) {
+      return {
+        exists: true,
+        previousCollections: logEntry.first_shipment.collections || [],
+        timestamp: logEntry.first_shipment.time_stamp
+      };
+    }
+    
+    return {
+      exists: false,
+      previousCollections: [],
+      timestamp: null
+    };
+  } catch (err) {
+    console.error('Error checking first shipment info:', err);
+    return {
+      exists: false,
+      previousCollections: [],
+      timestamp: null
+    };
+  }
+}
+
+/**
+ * Get collections that are new (not in previous shipment)
+ */
+function getNewCollections(availableCollections, previousCollections) {
+  return availableCollections.filter(collection => 
+    !previousCollections.includes(collection)
+  );
+}
+
+/**
+ * Check if any collections have documents with doc_count > 0
+ */
+async function checkCollectionsHaveDocuments(db) {
+  try {
+    const logsCollection = db.collection('logs');
+    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    
+    if (!logEntry || !logEntry.collections) {
+      return false;
+    }
+    
+    // Check if any collection has doc_count > 0
+    for (const [collectionName, collectionData] of Object.entries(logEntry.collections)) {
+      if (collectionData.doc_count && collectionData.doc_count > 0) {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (err) {
+    console.error('Error checking collections document count:', err);
+    return false;
+  }
+}
+
+/**
+ * Send warning email for no documents processed
+ */
+async function sendNoDocumentsWarningEmail() {
+  const warningMailOptions = {
+    from: 'Reversa <info@reversa.ai>',
+    to: 'info@reversa.ai',
+    subject: `WARNING - Webscraping procesado sin documentos - ${currentDateString}`,
+    html: `
+      <h2>WARNING</h2>
+      <p>El webscraping se ha procesado hoy pero no se ha guardado ningún documento en la bbdd (${currentDateString}).</p>
+      <p>Por favor, verificar el sistema de procesamiento de documentos.</p>
+      <p>Timestamp: ${moment().format('YYYY-MM-DD HH:mm:ss')} UTC</p>
+    `
+  };
+
+  try {
+    await transporter.sendMail(warningMailOptions);
+    console.log('No documents warning email sent to info@reversa.ai');
+  } catch (err) {
+    console.error('Error sending no documents warning email:', err);
+  }
+}
+
+/**
+ * Send comprehensive report email with statistics
+ */
+async function sendReportEmail(db, userStats) {
+  try {
+    const logsCollection = db.collection('logs');
+    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    
+    if (!logEntry || !logEntry.collections) {
+      console.warn('No log entry found for report email');
+      return;
+    }
+    
+    // 1. Build collections table
+    let collectionsTableHTML = '';
+    let totalBoletines = 0;
+    let totalDocs = 0;
+    let totalPages = 0;
+    
+    for (const [collectionName, collectionData] of Object.entries(logEntry.collections)) {
+      const docCount = collectionData.doc_count || 0;
+      const pageCount = collectionData.page_count || 0;
+      
+      if (docCount > 0) {
+        totalBoletines++;
+        totalDocs += docCount;
+        totalPages += pageCount;
+        
+        collectionsTableHTML += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${collectionName}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${docCount}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${pageCount}</td>
+          </tr>
+        `;
+      }
+    }
+    
+    collectionsTableHTML += `
+      <tr style="background-color: #f2f2f2; font-weight: bold;">
+        <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalDocs}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalPages}</td>
+      </tr>
+    `;
+    
+    // 2.1. Build users with matches summary table
+    let usersWithMatchesSummaryHTML = '';
+    let totalEmailsWithMatches = 0;
+    let totalEtiquetasWithMatches = 0;
+    
+    for (const userStat of userStats.withMatches) {
+      totalEmailsWithMatches++;
+      
+      // Count unique etiquetas for this user
+      const etiquetaGroups = new Map();
+      for (const docInfo of userStat.detailedMatches) {
+        for (const etiqueta of docInfo.matchedEtiquetas) {
+          etiquetaGroups.set(etiqueta, true);
+        }
+      }
+      const userEtiquetasCount = etiquetaGroups.size;
+      totalEtiquetasWithMatches += userEtiquetasCount;
+      
+      usersWithMatchesSummaryHTML += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${userStat.email}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userEtiquetasCount}</td>
+        </tr>
+      `;
+    }
+    
+    usersWithMatchesSummaryHTML += `
+      <tr style="background-color: #f2f2f2; font-weight: bold;">
+        <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalEtiquetasWithMatches}</td>
+      </tr>
+    `;
+    
+    // 2.2. Build users without matches table
+    let usersWithoutMatchesHTML = '';
+    let totalEmailsWithoutMatches = 0;
+    let totalEtiquetasWithoutMatches = 0;
+    
+    for (const userStat of userStats.withoutMatches) {
+      totalEmailsWithoutMatches++;
+      totalEtiquetasWithoutMatches += userStat.etiquetasCount;
+      
+      usersWithoutMatchesHTML += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${userStat.email}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userStat.etiquetasCount}</td>
+        </tr>
+      `;
+    }
+    
+    usersWithoutMatchesHTML += `
+      <tr style="background-color: #f2f2f2; font-weight: bold;">
+        <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalEtiquetasWithoutMatches}</td>
+      </tr>
+    `;
+    
+    // 3. Build detailed users with matches table
+    let usersWithMatchesDetailHTML = '';
+    
+    for (const userStat of userStats.withMatches) {
+      // Parse the detailed match information to create separate rows
+      const etiquetaGroups = new Map(); // etiqueta -> { collections: Set, docs: Array }
+      
+      // Group documents by etiqueta
+      for (const docInfo of userStat.detailedMatches) {
+        for (const etiqueta of docInfo.matchedEtiquetas) {
+          if (!etiquetaGroups.has(etiqueta)) {
+            etiquetaGroups.set(etiqueta, { collections: new Set(), docs: [] });
+          }
+          etiquetaGroups.get(etiqueta).collections.add(docInfo.collectionName);
+          etiquetaGroups.get(etiqueta).docs.push({
+            collection: docInfo.collectionName,
+            shortName: docInfo.shortName,
+            urlPdf: docInfo.urlPdf
+          });
+        }
+      }
+      
+      // Create rows for each etiqueta
+      let isFirstRow = true;
+      let userTotalEtiquetas = etiquetaGroups.size;
+      let userTotalDocs = 0;
+      let userTotalDocsCount = 0;
+      
+      for (const [etiqueta, groupData] of etiquetaGroups.entries()) {
+        userTotalDocs += groupData.docs.length;
+        userTotalDocsCount += groupData.docs.length;
+        
+        // Build docs column with bullet points and clickable links
+        const docsHTML = groupData.docs.map(doc => 
+          `• <a href="${doc.urlPdf}" target="_blank" style="color: #0066cc; text-decoration: none;">${doc.collection}-${doc.shortName}</a>`
+        ).join('<br>');
+        
+        const emailCell = isFirstRow ? 
+          `<td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;" rowspan="${etiquetaGroups.size + 1}">${userStat.email}</td>` : 
+          '';
+        
+        usersWithMatchesDetailHTML += `
+          <tr>
+            ${emailCell}
+            <td style="border: 1px solid #ddd; padding: 8px;">${etiqueta}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${groupData.docs.length}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; line-height: 1.6;">${docsHTML}</td>
+          </tr>
+        `;
+        
+        isFirstRow = false;
+      }
+      
+      // Add subtotal row for this user
+      usersWithMatchesDetailHTML += `
+        <tr style="background-color: #f9f9f9; font-weight: bold;">
+          <td style="border: 1px solid #ddd; padding: 8px; font-style: italic;">Subtotal ${userStat.email}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userTotalEtiquetas}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userTotalDocs}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;"></td>
+        </tr>
+      `;
+    }
+    
+    // Calculate totals for detailed table
+    let grandTotalEtiquetas = 0;
+    let grandTotalDocs = 0;
+    
+    for (const userStat of userStats.withMatches) {
+      const etiquetaGroups = new Map();
+      for (const docInfo of userStat.detailedMatches) {
+        for (const etiqueta of docInfo.matchedEtiquetas) {
+          if (!etiquetaGroups.has(etiqueta)) {
+            etiquetaGroups.set(etiqueta, { docs: [] });
+          }
+          etiquetaGroups.get(etiqueta).docs.push(docInfo);
+        }
+      }
+      grandTotalEtiquetas += etiquetaGroups.size;
+      for (const [, groupData] of etiquetaGroups.entries()) {
+        grandTotalDocs += groupData.docs.length;
+      }
+    }
+    
+    usersWithMatchesDetailHTML += `
+      <tr style="background-color: #f2f2f2; font-weight: bold;">
+        <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${grandTotalEtiquetas}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${grandTotalDocs}</td>
+        <td style="border: 1px solid #ddd; padding: 8px;"></td>
+      </tr>
+    `;
+    
+    const reportHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte Diario Newsletter</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; margin: 20px;">
+        <h1>Reporte Diario Newsletter - ${currentDateString}</h1>
+        
+        <h2>1. Documentos procesados hoy</h2>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Boletín</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Documentos</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Páginas</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${collectionsTableHTML}
+          </tbody>
+        </table>
+        <p><strong>Resumen:</strong> ${totalBoletines} boletines, ${totalDocs} documentos, ${totalPages} páginas</p>
+        
+        <h2>2. Resumen usuarios</h2>
+        
+        <h3>2.1. Usuarios con match</h3>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Número de Etiquetas</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usersWithMatchesSummaryHTML}
+          </tbody>
+        </table>
+        <p><strong>Total:</strong> ${totalEmailsWithMatches} emails, ${totalEtiquetasWithMatches} etiquetas personalizadas con match</p>
+        
+        <h3>2.2. Usuarios sin match</h3>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Número de Etiquetas</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usersWithoutMatchesHTML}
+          </tbody>
+        </table>
+        <p><strong>Total:</strong> ${totalEmailsWithoutMatches} usuarios, ${totalEtiquetasWithoutMatches} etiquetas</p>
+        
+        <h2>3. Detalle usuarios con match agentes</h2>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiqueta Personalizada</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Docs con Match</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Docs</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${usersWithMatchesDetailHTML}
+          </tbody>
+        </table>
+        
+        <hr>
+        <p style="font-size: 12px; color: #666;">
+          Generado automáticamente el ${moment().format('YYYY-MM-DD HH:mm:ss')} UTC
+        </p>
+      </body>
+      </html>
+    `;
+    
+    const reportMailOptions = {
+      from: 'Reversa <info@reversa.ai>',
+      to: 'info@reversa.ai',
+      subject: `Reporte Diario Newsletter - ${currentDateString}`,
+      html: reportHTML
+    };
+    
+    await transporter.sendMail(reportMailOptions);
+    console.log('Daily report email sent to info@reversa.ai');
+    
+  } catch (err) {
+    console.error('Error sending report email:', err);
+  }
+}
+
 // MAIN EXECUTION
 
 (async () => {
@@ -845,6 +1351,61 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
     console.log('Connected to MongoDB');
 
     const db = client.db(DB_NAME);
+    
+    // Check if webscraping ran today
+    console.log(`Checking if webscraping ran today (${currentDateString})...`);
+    const webscrapingRanToday = await checkWebscrapingRanToday(db);
+    
+    if (!webscrapingRanToday) {
+      console.log('Webscraping did not run today. Sending warning email and exiting.');
+      await sendWarningEmail();
+      await client.close();
+      return;
+    }
+    
+    console.log('Webscraping ran today. Checking if any documents were processed...');
+    
+    // Check if any collections have documents with doc_count > 0
+    const hasDocuments = await checkCollectionsHaveDocuments(db);
+    
+    if (!hasDocuments) {
+      console.log('No documents were processed today. Sending warning email and exiting.');
+      await sendNoDocumentsWarningEmail();
+      await client.close();
+      return;
+    }
+    
+    console.log('Documents were processed today. Proceeding with newsletter sending...');
+    
+    // Get available collections for today
+    const availableCollections = await getAvailableCollectionsToday(db);
+    console.log('Available collections today:', availableCollections);
+    
+    // Check if first shipment already exists
+    const firstShipmentInfo = await getFirstShipmentInfo(db);
+    console.log('First shipment info:', firstShipmentInfo);
+    
+    let collectionsToProcess = availableCollections;
+    let isExtraVersion = false;
+    
+    if (firstShipmentInfo.exists) {
+      const newCollections = getNewCollections(availableCollections, firstShipmentInfo.previousCollections);
+      console.log('New collections since first shipment:', newCollections);
+      
+      if (newCollections.length === 0) {
+        console.log('No new collections found. All collections were already processed in first shipment. Exiting.');
+        await client.close();
+        return;
+      }
+      
+      // Only process new collections for extra version
+      collectionsToProcess = newCollections;
+      isExtraVersion = true;
+      console.log('This will be an extra version covering delayed bulletins.');
+    }
+    
+    console.log('Collections to process:', collectionsToProcess);
+    
     const usersCollection = db.collection('users');
 
     // 1) Cargamos todos los usuarios
@@ -879,6 +1440,12 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
 
     const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
 
+    // Initialize user statistics for report
+    const userStats = {
+      withMatches: [],
+      withoutMatches: []
+    };
+
     for (const user of filteredUsers) {
       // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
       const coverageObj = user.cobertura_legal || {}; // ejemplo => {"Nacional y Europeo":["BOE"],"Autonomico":["BOA","BOJA"],"Reguladores":["CNMV"]}
@@ -894,7 +1461,17 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       const userMatchingDocs = [];
 
       // Get today's documents from each collection the user has subscribed to
-      for (const collectionName of coverageCollections) {
+      // Filter to only process collections that should be included (new collections for extra version)
+      const userCollectionsToProcess = coverageCollections.filter(collection => 
+        collectionsToProcess.includes(collection)
+      );
+      
+      if (userCollectionsToProcess.length === 0) {
+        console.log(`User ${user.email} has no subscriptions to new collections. Skipping.`);
+        continue;
+      }
+      
+      for (const collectionName of userCollectionsToProcess) {
         try {
           const coll = db.collection(collectionName);
           const query = {
@@ -930,6 +1507,9 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       // Filtrar documentos que coincidan con etiquetas personalizadas
       const filteredMatchingDocs = [];
       
+      // Track matches for statistics
+      const userMatchStats = new Map(); // etiqueta -> { collections: Set, totalMatches: number }
+      
       for (const docObj of userMatchingDocs) {
         const doc = docObj.doc;
         const collectionName = docObj.collectionName;
@@ -960,6 +1540,13 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
                 hasEtiquetasMatch = true;
                 matchedEtiquetas.push(etiquetaKey);
                 matchedEtiquetasDescriptions.push(docEtiquetasObj[etiquetaKey] || '');
+                
+                // Track for statistics
+                if (!userMatchStats.has(etiquetaKey)) {
+                  userMatchStats.set(etiquetaKey, { collections: new Set(), totalMatches: 0 });
+                }
+                userMatchStats.get(etiquetaKey).collections.add(collectionName);
+                userMatchStats.get(etiquetaKey).totalMatches++;
               }
             }
           }
@@ -1060,7 +1647,9 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
         }
 
       let htmlBody = '';
-      if (!finalGroups.length) {
+      let hasMatches = finalGroups.length > 0;
+      
+      if (!hasMatches) {
         // No matches => get BOE documents with seccion = "Disposiciones generales"
         const queryBoeGeneral = { 
           anio: anioToday, 
@@ -1095,13 +1684,44 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
             []
           );
         }
+        
+        // Add to statistics - users without matches
+        userStats.withoutMatches.push({
+          email: user.email,
+          etiquetasCount: userEtiquetasKeys.length
+        });
       } else {
         htmlBody = buildNewsletterHTML(
           user.name || '',
           user._id.toString(),
           moment().format('YYYY-MM-DD'),
-          finalGroups
+          finalGroups,
+          isExtraVersion
         );
+        
+        // Add to statistics - users with matches
+        const matchDetails = [];
+        for (const [etiqueta, stats] of userMatchStats.entries()) {
+          for (const collection of stats.collections) {
+            const matchCount = Array.from(userMatchStats.entries())
+              .filter(([e, s]) => e === etiqueta && s.collections.has(collection))
+              .reduce((sum, [, s]) => sum + s.totalMatches, 0);
+            matchDetails.push(`${etiqueta}-${collection}-${matchCount}`);
+          }
+        }
+        
+        userStats.withMatches.push({
+          email: user.email,
+          totalDocs: userMatchingDocsFiltered.length,
+          uniqueEtiquetas: userMatchStats.size,
+          matchDetails: matchDetails.join(' ; '),
+          detailedMatches: userMatchingDocsFiltered.map(docObj => ({
+            collectionName: docObj.collectionName,
+            shortName: docObj.doc.short_name,
+            urlPdf: docObj.doc.url_pdf,
+            matchedEtiquetas: docObj.doc.matched_etiquetas_personalizadas || []
+          }))
+        });
       }
 
       // 6) Send email
@@ -1111,7 +1731,7 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       const mailOptions = {
         from: 'Reversa <info@reversa.ai>',
         to: user.email,
-        subject: `Reversa Alertas Normativas — ${moment().format('YYYY-MM-DD')}`,
+        subject: `Reversa Alertas Normativas${isExtraVersion ? ' - Extra' : ''} — ${moment().format('YYYY-MM-DD')}`,
         html: htmlBody,
         attachments: [
           {
@@ -1129,6 +1749,51 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
       } catch(err) {
         console.error(`Error sending email to ${user.email}:`, err);
       }
+    }
+
+    console.log('All emails processed. Sending daily report...');
+    
+    // Send daily report email
+    await sendReportEmail(db, userStats);
+
+    console.log('Logging first shipment information...');
+    
+    // Log the first shipment information
+    if (isExtraVersion) {
+      // For extra versions, update the existing first_shipment to include new collections
+      try {
+        const logsCollection = db.collection('logs');
+        const currentTimestamp = moment().toDate();
+        
+        // Get current first_shipment info
+        const currentLog = await logsCollection.findOne({ "date_range.start": currentDateString });
+        const existingCollections = currentLog?.first_shipment?.collections || [];
+        
+        // Merge existing collections with new ones
+        const updatedCollections = [...new Set([...existingCollections, ...collectionsToProcess])];
+        
+        await logsCollection.updateOne(
+          { "date_range.start": currentDateString },
+          {
+            $set: {
+              "first_shipment.collections": updatedCollections,
+              "first_shipment.last_update": currentTimestamp
+            }
+          }
+        );
+        
+        console.log('Extra shipment logged successfully:', {
+          date: currentDateString,
+          newCollections: collectionsToProcess,
+          allCollections: updatedCollections,
+          timestamp: currentTimestamp
+        });
+      } catch (err) {
+        console.error('Error logging extra shipment:', err);
+      }
+    } else {
+      // For first shipment, use the original logic
+      await logFirstShipment(db, availableCollections);
     }
 
     console.log('All done. Closing DB.');
