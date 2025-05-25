@@ -4181,6 +4181,7 @@ document.head.appendChild(styleSheet);
               </div>
               ${doc.resumen ? `<div class="documento-resumen">${doc.resumen}</div>` : ''}
               ${etiquetasHtml ? `<div class="documento-tags">${etiquetasHtml}</div>` : ''}
+              ${doc.url_pdf ? `<a href="${doc.url_pdf}" class="leer-mas" style="display: none;" target="_blank">PDF</a>` : ''}
               <input type="checkbox" class="documento-checkbox" data-doc-index="${index}" onclick="event.stopPropagation(); toggleDocumentSelection(${index})">
             </div>
           `;
@@ -4600,7 +4601,8 @@ document.head.appendChild(styleSheet);
             resumen: documentItem.querySelector('.documento-resumen')?.textContent?.trim() || '',
             fecha: extractDateFromDocument(documentItem),
             rango: extractRangoFromDocument(documentItem),
-            etiquetas: extractEtiquetasFromDocument(documentItem)
+            etiquetas: extractEtiquetasFromDocument(documentItem),
+            url_pdf: extractUrlFromDocument(documentItem)
           };
           
           console.log(`Document ${index + 1} data:`, documentData);
@@ -4657,6 +4659,14 @@ document.head.appendChild(styleSheet);
         }
       });
       return etiquetas;
+    }
+
+    function extractUrlFromDocument(documentItem) {
+      const urlElement = documentItem.querySelector('.leer-mas, a[href*=".pdf"], a[target="_blank"]');
+      if (urlElement) {
+        return urlElement.getAttribute('href');
+      }
+      return '';
     }
 
     // Función para llamar al backend y generar contenido con IA

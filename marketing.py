@@ -83,6 +83,7 @@ def build_marketing_prompt(documents, instructions, language, document_type):
     # Prepare document information
     documents_info = ""
     for i, doc in enumerate(documents, 1):
+        url_pdf = doc.get('url_pdf', 'URL no disponible')
         documents_info += f"""
 Documento {i}:
 - Título: {doc.get('short_name', 'Sin título')}
@@ -91,6 +92,7 @@ Documento {i}:
 - Rango: {doc.get('rango', 'Rango no especificado')}
 - Resumen: {doc.get('resumen', 'Resumen no disponible')}
 - Etiquetas: {', '.join(doc.get('etiquetas', [])) if doc.get('etiquetas') else 'Sin etiquetas'}
+- URL del PDF: {url_pdf}
 
 """
 
@@ -108,6 +110,7 @@ Documento {i}:
 El contenido debe estructurarse como un newsletter con:
 - Un título principal atractivo usando <h2>
 - Secciones claramente diferenciadas para cada documento o tema
+- Entre cada documento, incluir "Fuente: {url_pdf del documento}" como párrafo separado
 - Párrafos concisos y fáciles de leer
 - Uso de listas con viñetas para destacar puntos clave
 - Un tono informativo pero engaging
@@ -117,6 +120,7 @@ El contenido debe estructurarse como un newsletter con:
 El contenido debe estructurarse como un mensaje corto de WhatsApp con:
 - Un título principal breve usando <h2> con el short_name y collection name
 - Máximo 2-3 párrafos muy concisos (1-2 oraciones cada uno)
+- Si hay múltiples documentos, incluir "Fuente: {url_pdf del documento}" entre cada uno
 - Mensaje directo al punto explicando por qué el documento es relevante
 - Tono profesional pero accesible
 - Máximo 150 palabras total
@@ -127,6 +131,7 @@ El contenido debe estructurarse como un mensaje corto de WhatsApp con:
 El contenido debe estructurarse como un post de LinkedIn viral e informativo con:
 - Un título principal atractivo usando <h2> con emojis relevantes
 - Párrafos cortos y directos (máximo 2-3 oraciones cada uno)
+- Entre cada documento mencionado, incluir "Fuente: {url_pdf del documento}" como párrafo separado
 - Uso estratégico de emojis/iconos para mejorar la legibilidad (📊, ⚖️, 🔍, 💼, etc.)
 - Tono profesional pero engaging, optimizado para viralidad
 - Uso de listas con viñetas para destacar puntos clave
@@ -140,6 +145,7 @@ El contenido debe estructurarse como un post de LinkedIn viral e informativo con
 El contenido debe estructurarse como un mensaje corto de WhatsApp con:
 - Un título principal breve usando <h2> con el short_name y collection name
 - Máximo 2-3 párrafos muy concisos (1-2 oraciones cada uno)
+- Si hay múltiples documentos, incluir "Fuente: {url_pdf del documento}" entre cada uno
 - Mensaje directo al punto explicando por qué el documento es relevante
 - Tono profesional pero accesible
 - Máximo 150 palabras total
@@ -181,6 +187,13 @@ El contenido debe estructurarse como un mensaje corto de WhatsApp con:
 **DOCUMENTOS A ANALIZAR:**
 {documents_info}
 
+**INSTRUCCIONES IMPORTANTES SOBRE FUENTES:**
+- Cuando menciones o analices cada documento, DEBES incluir después del contenido del documento un párrafo con "Fuente: [URL del PDF]"
+- Usa la URL exacta proporcionada en la información de cada documento (campo "URL del PDF")
+- El formato debe ser: <p><b><i>Fuente:</i></b> <a href="[URL_EXACTA_DEL_DOCUMENTO]" target="_blank"><i>[URL_EXACTA_DEL_DOCUMENTO]</i></a></p>
+- Si hay múltiples documentos, incluye la fuente correspondiente después de cada uno
+- Los enlaces deben ser clickables y abrirse en una nueva pestaña
+
 **FORMATO DE SALIDA OBLIGATORIO:**
 Tu respuesta DEBE ser ÚNICAMENTE un objeto JSON válido con la siguiente estructura:
 {{
@@ -190,14 +203,17 @@ Tu respuesta DEBE ser ÚNICAMENTE un objeto JSON válido con la siguiente estruc
 **REGLAS PARA EL CONTENIDO HTML:**
 1. **Etiquetas HTML permitidas:**
    - <h2> para el título principal (solo UNO)
-   - <p> para párrafos
+   - <p> para párrafos (incluyendo las líneas de "Fuente:")
    - <ul> y <li> para listas con viñetas
    - <b> para texto en negrita (palabras clave importantes)
+   - <i> para texto en cursiva (especialmente para "Fuente:" y enlaces)
+   - <a> para enlaces clickables (con href y target="_blank")
    - <table>, <tr>, <th>, <td> para tablas si es necesario
 
 2. **Estructura recomendada:**
 {structure_rec}
    - Máximo {word_limit}
+   - OBLIGATORIO: Incluir "Fuente: [URL]" después de cada documento mencionado
 
 3. **NO uses:**
    - Markdown (*, _, #, etc.)
@@ -206,7 +222,7 @@ Tu respuesta DEBE ser ÚNICAMENTE un objeto JSON válido con la siguiente estruc
 
 **EJEMPLO DE RESPUESTA:**
 {{
-  "html_content": "<h2>Actualización Normativa Semanal</h2><p>Esta semana se han publicado <b>importantes cambios normativos</b> que afectan a diversos sectores.</p><ul><li>Nueva regulación en materia fiscal.</li><li>Modificaciones en el ámbito laboral.</li></ul><p>Estos cambios requieren <b>atención inmediata</b> por parte de las empresas afectadas.</p>"
+  "html_content": "<h2>Actualización Normativa Semanal</h2><p>Esta semana se han publicado <b>importantes cambios normativos</b> que afectan a diversos sectores.</p><p><b><i>Fuente:</i></b> <a href=\"https://ejemplo.com/documento1.pdf\" target=\"_blank\"><i>https://ejemplo.com/documento1.pdf</i></a></p><ul><li>Nueva regulación en materia fiscal.</li><li>Modificaciones en el ámbito laboral.</li></ul><p><b><i>Fuente:</i></b> <a href=\"https://ejemplo.com/documento2.pdf\" target=\"_blank\"><i>https://ejemplo.com/documento2.pdf</i></a></p><p>Estos cambios requieren <b>atención inmediata</b> por parte de las empresas afectadas.</p>"
 }}
 
 Genera el contenido siguiendo exactamente estas instrucciones."""
