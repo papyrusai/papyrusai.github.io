@@ -161,7 +161,8 @@ TAREAS:
    - Genera hasta 5 etiquetas que ayuden a clasificar documentos legales y cumplan TODAS estas reglas:
      • En los casos en que la etiqueta sea muy general, ajusta al área jurídica al sector o actividad del usuario, pero asegurate que en la definicion se incluyen tanto disposiciones generales como específicas que afecten al usuario.  
        Ej.: «Riesgos legales para un fondo de inversión» (no genérico «Riesgos Legales»).  
-     • No incluyas referencias a fuentes, boletines ni jurisdicciones (BOE, DOUE, UE, etc.).   
+     • No incluyas referencias a fuentes, boletines ni jurisdicciones (BOE, DOUE, UE, etc.). 
+     • Es muy importante que las etiquetas sean MECE entre ellas (Mutually Exclusive Collectively Exhaustive). No crees etiqeutas repetitivas, deben permitir poder llegar a información diferente, pero evita que sean muy generales
 
 2. RANGOS (CATÁLOGO CERRADO):
    - Selecciona únicamente de la lista oficial:
@@ -194,7 +195,7 @@ Devolver SOLO un objeto JSON con la siguiente estructura exacta (sin explicacion
 }
 
 LÍMITES:
-- Hasta 5 etiquetas personalizadas
+- Hasta 5 etiquetas personalizadas. Pueden ser menos, mientas sean MECE y cubran todo el espectro de la información del usuario.
 - Hasta 5 rangos normativos
 
 No incluyas texto adicional fuera del objeto JSON.

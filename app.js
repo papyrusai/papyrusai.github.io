@@ -21,14 +21,18 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY); // Asegúrate de tener esta vari
 
 //to avoid deprecation error
 const mongodbOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-  }
+  // Removidas las opciones deprecadas useNewUrlParser y useUnifiedTopology
+}
 
 require('./auth'); // Ensure this file is configured correctly
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 0;
+const server = app.listen(port, () => {
+  const actualPort = server.address().port;
+  console.log(`Server is running on port ${actualPort}`);
+  console.log(`Access the app at http://localhost:${actualPort}/profile`);
+});
 
 app.use(cors());
 app.use(express.json());
@@ -565,7 +569,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
           <div class="resumen-content">${doc.resumen}</div>
           <div class="margin-impacto">
             <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
-              Análisis impacto normativo
+              Analizar documento
             </a>
           </div>
           <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
@@ -724,7 +728,7 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
           <div class="resumen-content">${doc.resumen}</div>
           <div class="margin-impacto">
             <a class="button-impacto" href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
-              Análisis impacto normativo
+              Analizar documento
             </a>
           </div>
           <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
@@ -1136,7 +1140,7 @@ console.log(`Query:`, query);
             <div class="margin-impacto">
               <a class="button-impacto" 
                  href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
-                 Análisis impacto normativo
+                 Analizar documento
               </a>
             </div>
             <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
@@ -1145,6 +1149,32 @@ console.log(`Query:`, query);
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+
+            <!-- Botón de Guardar -->
+            <div class="guardar-button">
+              <button class="save-btn" onclick="toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')">
+                <i class="fas fa-bookmark"></i>
+                Guardar
+              </button>
+              <div class="lists-dropdown">
+                <div class="lists-dropdown-header">Guardar en lista</div>
+                <div class="lists-container">
+                  <!-- Las listas se cargarán dinámicamente -->
+                </div>
+                <div class="add-new-list" onclick="showNewListForm(this)">
+                  <i class="fas fa-plus"></i>
+                  Añadir nueva
+                </div>
+                <div class="new-list-form">
+                  <input type="text" class="new-list-input" placeholder="Nombre de la nueva lista" maxlength="50">
+                  <div class="new-list-buttons">
+                    <button class="new-list-btn cancel" onclick="hideNewListForm(this)">Cancelar</button>
+                    <button class="new-list-btn save" onclick="createNewList(this, '${doc._id}', '${doc.collectionName}')">OK</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
             <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
@@ -1591,7 +1621,7 @@ if (etiquetasKeys.length === 0) {
             <div class="margin-impacto">
               <a class="button-impacto" 
                  href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
-                 Análisis impacto normativo
+                 Analizar documento
               </a>
             </div>
             <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
@@ -1600,6 +1630,37 @@ if (etiquetasKeys.length === 0) {
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+            
+            <!-- Botón de Guardar -->
+            <div class="guardar-button">
+              <button class="save-btn" onclick="toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')">
+                <i class="fas fa-bookmark"></i>
+                Guardar
+              </button>
+              <div class="lists-dropdown">
+                <div class="lists-dropdown-header">
+                  <span>Guardar en...</span>
+                  <button class="save-ok-btn" onclick="saveToSelectedLists(this)">OK</button>
+                </div>
+                <div class="lists-content">
+                  <div class="lists-container">
+                    <!-- Las listas se cargarán dinámicamente -->
+                  </div>
+                  <div class="add-new-list" onclick="showNewListForm(this)">
+                    <i class="fas fa-plus"></i>
+                    Añadir nueva
+                  </div>
+                  <div class="new-list-form">
+                    <input type="text" class="new-list-input" placeholder="Nombre de la nueva lista" maxlength="50">
+                    <div class="new-list-buttons">
+                      <button class="new-list-btn cancel" onclick="hideNewListForm(this)">Cancelar</button>
+                      <button class="new-list-btn save" onclick="createNewList(this, '${doc._id}', '${doc.collectionName}')">OK</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
             <span class="doc-rango" style="display:none;">${rangoToShow}</span>
           </div>
@@ -2178,7 +2239,7 @@ const queryWithoutEtiquetas = {
           <div class="margin-impacto">
             <a class="button-impacto" 
                href="/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">
-               Análisis impacto normativo
+               Analizar documento
             </a>
           </div>
           <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
@@ -2187,6 +2248,37 @@ const queryWithoutEtiquetas = {
           <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
           <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
              onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
+          
+          <!-- Botón de Guardar -->
+          <div class="guardar-button">
+            <button class="save-btn" onclick="toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')">
+              <i class="fas fa-bookmark"></i>
+              Guardar
+            </button>
+            <div class="lists-dropdown">
+              <div class="lists-dropdown-header">
+                <span>Guardar en...</span>
+                <button class="save-ok-btn" onclick="saveToSelectedLists(this)">OK</button>
+              </div>
+              <div class="lists-content">
+                <div class="lists-container">
+                  <!-- Las listas se cargarán dinámicamente -->
+                </div>
+                <div class="add-new-list" onclick="showNewListForm(this)">
+                  <i class="fas fa-plus"></i>
+                  Añadir nueva
+                </div>
+                <div class="new-list-form">
+                  <input type="text" class="new-list-input" placeholder="Nombre de la nueva lista" maxlength="50">
+                  <div class="new-list-buttons">
+                    <button class="new-list-btn cancel" onclick="hideNewListForm(this)">Cancelar</button>
+                    <button class="new-list-btn save" onclick="createNewList(this, '${doc._id}', '${doc.collectionName}')">OK</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
           <span class="doc-rango" style="display:none;">${rangoToShow}</span>
         </div>
@@ -3980,5 +4072,464 @@ app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
   } finally {
     await client.close();
   }
+});
+
+// ==================== RUTAS PARA MANEJO DE LISTAS DE USUARIO ====================
+
+// Ruta para obtener las listas del usuario
+app.get('/api/get-user-lists', ensureAuthenticated, async (req, res) => {
+  try {
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Obtener las listas del usuario desde el campo 'guardados'
+    const guardados = user.guardados || {};
+    const lists = Object.keys(guardados).map(listName => ({
+      id: listName.replace(/\s+/g, '_').toLowerCase(), // Usar el nombre como ID simplificado
+      name: listName
+    }));
+
+    await client.close();
+    res.json({ 
+      lists: lists,
+      guardados: guardados // Incluir los datos completos de guardados
+    });
+  } catch (error) {
+    console.error('Error getting user lists:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Ruta para crear una nueva lista
+app.post('/api/create-user-list', ensureAuthenticated, async (req, res) => {
+  try {
+    const { listName } = req.body;
+    
+    if (!listName || !listName.trim()) {
+      return res.status(400).json({ error: 'El nombre de la lista es requerido' });
+    }
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verificar si ya existe una lista con ese nombre
+    const guardados = user.guardados || {};
+    if (guardados[listName]) {
+      return res.status(400).json({ error: 'Ya existe una lista con ese nombre' });
+    }
+
+    // Crear la nueva lista vacía
+    const updateField = `guardados.${listName}`;
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { [updateField]: {} } } // Cambiar de [] a {} para inicializar como objeto
+    );
+
+    await client.close();
+    
+    const listId = listName.replace(/\s+/g, '_').toLowerCase();
+    res.json({ 
+      success: true, 
+      message: 'Lista creada exitosamente',
+      listId: listId,
+      listName: listName
+    });
+  } catch (error) {
+    console.error('Error creating user list:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Ruta para guardar un documento en listas seleccionadas
+app.post('/api/save-document-to-lists', ensureAuthenticated, async (req, res) => {
+  try {
+    const { documentId, collectionName, listIds, documentData } = req.body;
+    
+    if (!documentId || !collectionName || !listIds || !Array.isArray(listIds)) {
+      return res.status(400).json({ error: 'Parámetros requeridos: documentId, collectionName, listIds' });
+    }
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const guardados = user.guardados || {};
+    
+    // Obtener las etiquetas personalizadas del usuario
+    const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
+    
+    // Encontrar etiquetas que coincidan con el documento
+    let matchingEtiquetas = [];
+    if (documentData && documentData.etiquetas_personalizadas && Array.isArray(documentData.etiquetas_personalizadas)) {
+      matchingEtiquetas = documentData.etiquetas_personalizadas.filter(etiqueta => 
+        Object.keys(userEtiquetasPersonalizadas).some(userEtiqueta => 
+          userEtiqueta.toLowerCase() === etiqueta.toLowerCase()
+        )
+      );
+    }
+    
+    // Crear el objeto del documento a guardar con información completa
+    const documentToSave = {
+      documentId: documentId,
+      collectionName: collectionName,
+      savedAt: new Date(),
+      // Información adicional del documento
+      url_pdf: documentData?.url_pdf || null,
+      short_name: documentData?.short_name || null,
+      resumen: documentData?.resumen || null,
+      rango_titulo: documentData?.rango_titulo || null,
+      dia: documentData?.dia || null,
+      mes: documentData?.mes || null,
+      anio: documentData?.anio || null,
+      etiquetas_personalizadas: matchingEtiquetas
+    };
+
+    // Procesar cada lista seleccionada
+    for (const listId of listIds) {
+      // Convertir listId de vuelta al nombre de la lista
+      const listName = Object.keys(guardados).find(name => 
+        name.replace(/\s+/g, '_').toLowerCase() === listId
+      );
+      
+      if (listName) {
+        const existingList = guardados[listName];
+        
+        // Si la lista es un array, convertirla a objeto primero
+        if (Array.isArray(existingList)) {
+          console.log(`Converting list "${listName}" from array to object`);
+          
+          // Crear un objeto con los documentos existentes usando sus IDs como claves
+          const convertedList = {};
+          existingList.forEach((doc, index) => {
+            const docId = doc.documentId || doc._id || `doc_${index}`;
+            convertedList[docId] = doc;
+          });
+          
+          // Actualizar la lista completa a formato objeto
+          await usersCollection.updateOne(
+            { _id: new ObjectId(req.user._id) },
+            { $set: { [`guardados.${listName}`]: convertedList } }
+          );
+        }
+        
+        // Ahora añadir el nuevo documento usando su ID como clave
+        await usersCollection.updateOne(
+          { _id: new ObjectId(req.user._id) },
+          { $set: { [`guardados.${listName}.${documentId}`]: documentToSave } }
+        );
+      }
+    }
+
+    await client.close();
+    
+    res.json({ 
+      success: true, 
+      message: 'Documento guardado exitosamente en las listas seleccionadas',
+      savedToLists: listIds.length,
+      documentData: documentToSave
+    });
+  } catch (error) {
+    console.error('Error saving document to lists:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Ruta para eliminar una lista de usuario
+app.delete('/api/delete-user-list', ensureAuthenticated, async (req, res) => {
+  try {
+    const { listName } = req.body;
+    
+    if (!listName || !listName.trim()) {
+      return res.status(400).json({ error: 'El nombre de la lista es requerido' });
+    }
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verificar si la lista existe
+    const guardados = user.guardados || {};
+    if (!guardados[listName]) {
+      return res.status(404).json({ error: 'La lista no existe' });
+    }
+
+    // Eliminar la lista
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $unset: { [`guardados.${listName}`]: "" } }
+    );
+
+    await client.close();
+    
+    res.json({ 
+      success: true, 
+      message: 'Lista eliminada exitosamente',
+      deletedList: listName
+    });
+  } catch (error) {
+    console.error('Error deleting user list:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
+});
+
+// API para guardar configuraciones de generación
+app.post('/api/save-generation-settings', ensureAuthenticated, async (req, res) => {
+  try {
+    const { listName, instrucciones_generales, color_palette, language, documentType, logo } = req.body;
+    const userEmail = req.user.email;
+    
+    if (!listName) {
+      return res.status(400).json({ error: 'El nombre de la lista es requerido' });
+    }
+    
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    const db = client.db('papyrus');
+    const usersCollection = db.collection('users');
+    
+    // Buscar el usuario
+    const user = await usersCollection.findOne({ email: userEmail });
+    if (!user) {
+      await client.close();
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    // Preparar los datos de configuración
+    const settingsData = {
+      instrucciones_generales: instrucciones_generales || '',
+      color_palette: color_palette || {
+        primary: '#04db8d',
+        secondary: '#0b2431',
+        text: '#455862'
+      },
+      language: language || 'juridico',
+      documentType: documentType || 'mensaje',
+      updatedAt: new Date()
+    };
+    
+    // Añadir logo si existe
+    if (logo) {
+      settingsData.logo = logo;
+    }
+    
+    // Actualizar o crear la estructura guardados_ajustes
+    const updateQuery = {
+      $set: {
+        [`guardados_ajustes.${listName}`]: settingsData
+      }
+    };
+    
+    const result = await usersCollection.updateOne(
+      { email: userEmail },
+      updateQuery
+    );
+    
+    await client.close();
+    
+    if (result.modifiedCount > 0) {
+      res.json({ 
+        success: true, 
+        message: 'Configuraciones guardadas exitosamente',
+        settings: settingsData
+      });
+    } else {
+      res.status(500).json({ error: 'No se pudieron guardar las configuraciones' });
+    }
+    
+  } catch (error) {
+    console.error('Error saving generation settings:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// API para obtener configuraciones de generación
+app.post('/api/get-generation-settings', ensureAuthenticated, async (req, res) => {
+  try {
+    const { listName } = req.body;
+    const userEmail = req.user.email;
+    
+    if (!listName) {
+      return res.status(400).json({ error: 'El nombre de la lista es requerido' });
+    }
+    
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    const db = client.db('papyrus');
+    const usersCollection = db.collection('users');
+    
+    // Buscar el usuario y sus configuraciones
+    const user = await usersCollection.findOne(
+      { email: userEmail },
+      { projection: { guardados_ajustes: 1 } }
+    );
+    
+    await client.close();
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    // Obtener las configuraciones para la lista específica
+    const settings = user.guardados_ajustes && user.guardados_ajustes[listName] 
+      ? user.guardados_ajustes[listName] 
+      : null;
+    
+    res.json({ 
+      success: true,
+      settings: settings
+    });
+    
+  } catch (error) {
+    console.error('Error getting generation settings:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Endpoint para generar contenido de marketing con IA
+app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+    const { 
+      selectedDocuments, 
+      instructions, 
+      language, 
+      documentType,
+      colorPalette 
+    } = req.body;
+
+    // Validar datos de entrada
+    if (!selectedDocuments || !Array.isArray(selectedDocuments) || selectedDocuments.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No se proporcionaron documentos válidos' 
+      });
+    }
+
+    if (!instructions || typeof instructions !== 'string' || instructions.trim().length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Las instrucciones son requeridas' 
+      });
+    }
+
+    console.log(`Generating marketing content for user: ${userEmail}`);
+    console.log(`Documents count: ${selectedDocuments.length}`);
+    console.log(`Instructions: ${instructions.substring(0, 100)}...`);
+
+    // Preparar los datos para el script de Python
+    const pythonInput = {
+      documents: selectedDocuments,
+      instructions: instructions.trim(),
+      language: language || 'juridico',
+      documentType: documentType || 'mensaje'
+    };
+
+    // Llamar al script de Python
+    const { spawn } = require('child_process');
+    const pythonProcess = spawn('python', ['marketing.py', JSON.stringify(pythonInput)], {
+      encoding: 'utf8',
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    });
+
+    let pythonOutput = '';
+    let pythonError = '';
+
+    pythonProcess.stdout.setEncoding('utf8');
+    pythonProcess.stderr.setEncoding('utf8');
+
+    pythonProcess.stdout.on('data', (data) => {
+      pythonOutput += data.toString('utf8');
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      pythonError += data.toString('utf8');
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error(`Python script exited with code ${code}`);
+        console.error(`Python error: ${pythonError}`);
+        return res.status(500).json({ 
+          success: false, 
+          error: 'Error interno al generar el contenido' 
+        });
+      }
+
+      try {
+        // Parsear la respuesta del script de Python
+        const result = JSON.parse(pythonOutput.trim());
+        
+        if (result.success) {
+          console.log('Marketing content generated successfully');
+          res.json({
+            success: true,
+            content: result.content
+          });
+        } else {
+          console.error('Python script returned error:', result.error);
+          res.status(400).json({
+            success: false,
+            error: result.error || 'Error al generar el contenido'
+          });
+        }
+      } catch (parseError) {
+        console.error('Error parsing Python output:', parseError);
+        console.error('Raw Python output:', pythonOutput);
+        res.status(500).json({ 
+          success: false, 
+          error: 'Error al procesar la respuesta del generador de contenido' 
+        });
+      }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Error spawning Python process:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Error al iniciar el generador de contenido' 
+      });
+    });
+
+  } catch (error) {
+    console.error('Error in generate-marketing-content endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Error interno del servidor' 
+    });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
 

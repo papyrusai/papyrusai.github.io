@@ -1424,8 +1424,8 @@ async function sendReportEmail(db, userStats) {
         }
         const emailLower = user.email.toLowerCase();
         
-        // Exclude emails that end with "@cuatrecasas.com"
-        if (emailLower.endsWith('@cuatrecasas.com')) {
+        // Exclude specific emails
+        if (emailLower.endsWith('@cuatrecasas.com') || emailLower === 'pmolina@perezllorca.com') {
           return false;
         }
         

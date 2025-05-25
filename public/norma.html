@@ -80,7 +80,7 @@
           }
           /* Style the input field */
           .user-prompt {
-            width: 80%;
+            width: 100%;
             padding: 10px 15px;
             border: 1px solid #ccc;
             border-radius: 20px;
@@ -123,7 +123,7 @@
         #sendCustomPrompt {
             position: absolute;
             bottom: 50px;
-            right: 11%;
+            right: 1%;
             background-color: var(--text-color);
             color: white;
             border: none;
@@ -439,30 +439,50 @@ REQUERIMIENTOS DEL CONTENIDO HTML
 
 === Formato de salida ===
 • Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
-• El string HTML solo puede incluir <h2>, <p>, <ul>, <li>, <b>. Nada más.  
+• El string HTML solo puede incluir <h2>, <p>, <table>, <tr>, <th>, <td>, <b>. Nada más.  
 • Sin saltos de línea innecesarios ni Markdown.  
 
-=== Contenido HTML requerido (≤ 300 palabras) ===
-<h2>Riesgos y Oportunidades de la Norma</h2>
+=== Contenido HTML requerido (≤ 400 palabras) ===
 <p>Introducción (≤ 60 palabras) situando la relevancia de la norma.</p>
-<ul>
-<li><b>Riesgo:</b> … <b>Artículo:</b> … <b>Probabilidad:</b> Alta/Media/Baja <b>Impacto:</b> … <b>Mitigación:</b> …</li>
-<!-- hasta 6 riesgos -->
-</ul>
-<ul>
-<li><b>Oportunidad Empresarial:</b> … <b>Sector:</b> … <b>Beneficio:</b> …</li>
-<!-- hasta 4 oportunidades -->
-</ul>
-<ul>
-<li><b>Servicio del Despacho:</b> … <b>Etapa:</b> Diagnóstico/Implementación/Litigios <b>Valor para el cliente:</b> …</li>
-<!-- 4-6 servicios -->
-</ul>
-<p><b>Conclusión:</b> Prioriza los 3 principales riesgos y 2 oportunidades.</p>
-<p>Indica "No especificado" si el PDF carece de información necesaria.</p>
+
+<h2>1. Riesgos</h2>
+<table>
+<tr><th>Riesgo</th><th>Artículo</th><th>Probabilidad</th><th>Impacto</th><th>Mitigación</th></tr>
+<!-- hasta 6 filas de riesgos -->
+</table>
+
+<!-- SOLO si hay oportunidades empresariales reales -->
+<h2>[NÚMERO]. Oportunidades para empresas</h2>
+<table>
+<tr><th>Oportunidad Empresarial</th><th>Sector</th><th>Beneficio</th></tr>
+<!-- hasta 4 filas de oportunidades empresariales -->
+</table>
+
+<!-- SOLO si hay oportunidades para servicios legales -->
+<h2>[NÚMERO]. Oportunidades para servicios legales</h2>
+<table>
+<tr><th>Oportunidad de servicio legal</th><th>Etapa</th><th>Valor para el cliente</th></tr>
+<!-- hasta 6 filas de servicios legales -->
+</table>
+
+<p><b>Conclusión:</b> Prioriza los 3 principales riesgos y las oportunidades más relevantes.</p>
+
+=== Instrucciones específicas ===
+• **Riesgos:** Siempre incluye la tabla de riesgos si existen en la norma (siempre será "1. Riesgos").
+• **Numeración dinámica:** Los números de los títulos deben ajustarse según las tablas que realmente se muestren:
+  - Si solo hay riesgos: solo "1. Riesgos"
+  - Si hay riesgos + oportunidades empresariales: "1. Riesgos" y "2. Oportunidades para empresas"
+  - Si hay riesgos + servicios legales: "1. Riesgos" y "2. Oportunidades para servicios legales"
+  - Si hay las tres tablas: "1. Riesgos", "2. Oportunidades para empresas", "3. Oportunidades para servicios legales"
+• **Oportunidades empresariales:** SOLO incluye esta tabla si la norma genera oportunidades reales para empresas (nuevos mercados, cambios regulatorios favorables, etc.). Si no hay oportunidades empresariales claras, omite completamente esta sección.
+• **Oportunidades para servicios legales:** SOLO incluye esta tabla si la norma genera oportunidades de servicios para despachos de abogados (asesoramiento, implementación, compliance, litigios, etc.). Si no hay oportunidades para servicios legales, omite completamente esta sección.
+• Si no hay ningún tipo de oportunidades, indica: <p>Esta norma no presenta oportunidades empresariales o de servicios legales evidentes.</p>
+• Indica "No especificado" en las celdas donde el PDF carece de información necesaria.
 
 === Criterios analíticos ===
 • Basado únicamente en el PDF; cita artículos concretos.  
-• Estilo claro y preciso, sin opiniones personales ni especulación.`;
+• Estilo claro y preciso, sin opiniones personales ni especulación.
+• Evalúa de forma realista si existen verdaderas oportunidades antes de incluir las tablas correspondientes.`;
             } else if (promptType === 'summary') {
                 // Fixed summary prompt (no longer using user input)
                 userPrompt = `Eres un abogado experto. Analiza el documento PDF y genera un resumen claro y conciso.

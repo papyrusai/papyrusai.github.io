@@ -175,7 +175,7 @@ body {
   display: flex;
   justify-content: space-between; /* Space between the id and date */
   align-items: center; /* Vertically align items in the center */
-  margin-bottom: 10px; /* Add some space below the row if needed */
+   /* Add some space below the row if needed */
 }
 
 .date{
@@ -327,7 +327,7 @@ a {
 
 .data-item {
   margin-bottom: 15px;
-  padding: 2vw;
+  padding: 1vw 2vw;
  /* background-color: #ffffff; */
   border: 1px solid var(--text-color);
   border-radius: 10px;
@@ -338,7 +338,7 @@ a {
 /*Id section*/
 
 .id-values {
-  font-size: 30px;
+  font-size: 24px;
   font-weight: 600;
   /*text-align: center; */
   font-family: Arial, sans-serif;
