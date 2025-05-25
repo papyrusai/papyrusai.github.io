@@ -2618,9 +2618,6 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
 
 /*fetch api_perplixity*/
 app.get('/api-key', (req, res) => {
@@ -4297,10 +4294,6 @@ app.delete('/api/delete-user-list', ensureAuthenticated, async (req, res) => {
     console.error('Error deleting user list:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
-});
-
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
 });
 
 // API para guardar configuraciones de generación
