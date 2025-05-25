@@ -27,13 +27,14 @@ const mongodbOptions = {
 require('./auth'); // Ensure this file is configured correctly
 
 const app = express();
-const port = process.env.PORT || 0;
+const port = process.env.PORT || 5000;
+/*const port = process.env.PORT || 0;
 const server = app.listen(port, () => {
   const actualPort = server.address().port;
   console.log(`Server is running on port ${actualPort}`);
   console.log(`Access the app at http://localhost:${actualPort}/profile`);
 });
-
+*/
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
