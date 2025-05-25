@@ -4333,7 +4333,7 @@ app.post('/api/save-generation-settings', ensureAuthenticated, async (req, res) 
         text: '#455862'
       },
       language: language || 'juridico',
-      documentType: documentType || 'mensaje',
+      documentType: documentType || 'whatsapp',
       updatedAt: new Date()
     };
     
@@ -4451,7 +4451,7 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
       documents: selectedDocuments,
       instructions: instructions.trim(),
       language: language || 'juridico',
-      documentType: documentType || 'mensaje'
+      documentType: documentType || 'whatsapp'
     };
 
     // Llamar al script de Python

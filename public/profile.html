@@ -1862,9 +1862,9 @@
                 <div class="subsection-item">
                   <label for="tipo-documento-select" style="display: block; margin-bottom: 5px; font-size: 13px; color: #6c757d;">Tipo de documento:</label>
                   <select id="tipo-documento-select" class="ajuste-select" onchange="showSaveButton()">
-                    <option value="mensaje">Mensaje</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="linkedin">LinkedIn</option>
                     <option value="newsletter">Newsletter</option>
-                    <option value="pdf">PDF</option>
                   </select>
                 </div>
               </div>
@@ -4428,7 +4428,7 @@ document.head.appendChild(styleSheet);
           text: document.getElementById('tertiary-color-hex')?.value || '#455862'
         },
         language: document.getElementById('lenguaje-select')?.value || 'juridico',
-        documentType: document.getElementById('tipo-documento-select')?.value || 'mensaje'
+        documentType: document.getElementById('tipo-documento-select')?.value || 'whatsapp'
       };
       
       // Añadir logo si existe
@@ -4500,7 +4500,7 @@ document.head.appendChild(styleSheet);
         selectedDocuments: selectedDocuments,
         instructions: document.getElementById('instrucciones-input')?.value?.trim() || '',
         language: document.getElementById('lenguaje-select')?.value || 'juridico',
-        documentType: document.getElementById('tipo-documento-select')?.value || 'mensaje',
+        documentType: document.getElementById('tipo-documento-select')?.value || 'whatsapp',
         colorPalette: {
           primary: document.getElementById('primary-color-hex')?.value || '#04db8d',
           secondary: document.getElementById('secondary-color-hex')?.value || '#0b2431',

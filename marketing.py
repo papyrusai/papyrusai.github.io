@@ -112,24 +112,59 @@ El contenido debe estructurarse como un newsletter con:
 - Uso de listas con viñetas para destacar puntos clave
 - Un tono informativo pero engaging
 """
-    elif document_type == "pdf":
+    elif document_type == "whatsapp":
         document_structure = """
-El contenido debe estructurarse como un documento formal con:
-- Un título principal profesional usando <h2>
-- Estructura jerárquica clara con subtítulos
-- Párrafos bien desarrollados y argumentados
-- Uso de listas para organizar información compleja
-- Tono formal y profesional
-"""
-    else:  # mensaje
-        document_structure = """
-El contenido debe estructurarse como un mensaje ejecutivo con:
-- Un título principal claro usando <h2>
-- Información presentada de manera concisa
-- Párrafos breves y directos
-- Puntos clave destacados con listas
+El contenido debe estructurarse como un mensaje corto de WhatsApp con:
+- Un título principal breve usando <h2> con el short_name y collection name
+- Máximo 2-3 párrafos muy concisos (1-2 oraciones cada uno)
+- Mensaje directo al punto explicando por qué el documento es relevante
 - Tono profesional pero accesible
+- Máximo 150 palabras total
+- Enfoque en la relevancia inmediata y práctica
 """
+    elif document_type == "linkedin":
+        document_structure = """
+El contenido debe estructurarse como un post de LinkedIn viral e informativo con:
+- Un título principal atractivo usando <h2> con emojis relevantes
+- Párrafos cortos y directos (máximo 2-3 oraciones cada uno)
+- Uso estratégico de emojis/iconos para mejorar la legibilidad (📊, ⚖️, 🔍, 💼, etc.)
+- Tono profesional pero engaging, optimizado para viralidad
+- Uso de listas con viñetas para destacar puntos clave
+- Llamadas a la acción sutiles
+- Hashtags relevantes al final si es apropiado
+- Máximo 300 palabras
+- Enfoque en insights valiosos y aplicabilidad práctica
+"""
+    else:  # fallback to whatsapp
+        document_structure = """
+El contenido debe estructurarse como un mensaje corto de WhatsApp con:
+- Un título principal breve usando <h2> con el short_name y collection name
+- Máximo 2-3 párrafos muy concisos (1-2 oraciones cada uno)
+- Mensaje directo al punto explicando por qué el documento es relevante
+- Tono profesional pero accesible
+- Máximo 150 palabras total
+- Enfoque en la relevancia inmediata y práctica
+"""
+
+    # Set word limit and structure based on document type
+    if document_type == "whatsapp":
+        word_limit = "150 palabras total"
+        structure_rec = """   - Título principal con <h2> (incluir short_name y collection name)
+   - Máximo 2-3 párrafos muy breves
+   - Enfoque directo en la relevancia práctica"""
+    elif document_type == "linkedin":
+        word_limit = "300 palabras total"
+        structure_rec = """   - Título principal con <h2> (incluir emojis relevantes)
+   - Párrafos cortos y engaging
+   - Uso estratégico de emojis en el contenido
+   - Lista de puntos clave si es necesario
+   - Enfoque en insights valiosos"""
+    else:  # newsletter
+        word_limit = "500 palabras total"
+        structure_rec = """   - Título principal con <h2>
+   - Introducción en 1-2 párrafos
+   - Análisis de cada documento relevante
+   - Conclusiones o puntos clave en lista"""
 
     # Build the complete prompt
     prompt = f"""Eres un experto en comunicación legal y marketing de contenidos. Tu tarea es generar contenido de alta calidad basándote en los siguientes documentos normativos.
@@ -161,11 +196,8 @@ Tu respuesta DEBE ser ÚNICAMENTE un objeto JSON válido con la siguiente estruc
    - <table>, <tr>, <th>, <td> para tablas si es necesario
 
 2. **Estructura recomendada:**
-   - Título principal con <h2>
-   - Introducción en 1-2 párrafos
-   - Análisis de cada documento relevante
-   - Conclusiones o puntos clave en lista
-   - Máximo 500 palabras total
+{structure_rec}
+   - Máximo {word_limit}
 
 3. **NO uses:**
    - Markdown (*, _, #, etc.)
@@ -269,7 +301,7 @@ if __name__ == "__main__":
                 test_data.get('documents', []),
                 test_data.get('instructions', ''),
                 test_data.get('language', 'juridico'),
-                test_data.get('documentType', 'mensaje')
+                test_data.get('documentType', 'whatsapp')
             )
             # Print with UTF-8 encoding and ensure_ascii=False for Spanish characters
             print(json.dumps(result, ensure_ascii=False, separators=(',', ':')))
