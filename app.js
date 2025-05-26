@@ -1296,6 +1296,40 @@ function buildDateFilter(start, end) {
 
   return filters;    // <- se inyecta con el spread operator …
 }
+
+/**
+ * Expande una lista de colecciones para incluir sus versiones de test
+ * @param {string[]} collections - Array de nombres de colecciones
+ * @returns {string[]} - Array expandido que incluye colecciones originales y sus versiones _test
+ */
+function expandCollectionsWithTest(collections) {
+  const expandedCollections = [];
+  
+  for (const collection of collections) {
+    // Añadir la colección original
+    expandedCollections.push(collection);
+    // Añadir la versión de test
+    expandedCollections.push(`${collection}_test`);
+  }
+  
+  return expandedCollections;
+}
+
+/**
+ * Verifica si una colección existe en la base de datos
+ * @param {Object} database - Instancia de la base de datos MongoDB
+ * @param {string} collectionName - Nombre de la colección a verificar
+ * @returns {Promise<boolean>} - True si la colección existe, false en caso contrario
+ */
+async function collectionExists(database, collectionName) {
+  try {
+    const collections = await database.listCollections({ name: collectionName }).toArray();
+    return collections.length > 0;
+  } catch (error) {
+    console.warn(`Error checking if collection ${collectionName} exists:`, error.message);
+    return false;
+  }
+}
 // ──────────────────────────── /FUNCIÓN COMÚN ────────────────────────────
 // Helper function to get the latest date with documents in a collection
 async function getLatestDateForCollection(db, collectionName) {
@@ -1472,14 +1506,30 @@ if (etiquetasKeys.length === 0) {
     };
 
     let allDocuments = [];
-    // For each chosen collection => gather docs
-    for (const collectionName of selectedBoletines) {
-      const coll = database.collection(collectionName);
-      const docs = await coll.find(query).project(projection).toArray();
-      docs.forEach(doc => {
-        doc.collectionName = collectionName;
-      });
-      allDocuments = allDocuments.concat(docs);
+    // Expand collections to include test versions
+    const expandedBoletines = expandCollectionsWithTest(selectedBoletines);
+    
+    // For each chosen collection (including test versions) => gather docs
+    for (const collectionName of expandedBoletines) {
+      try {
+        // Check if collection exists before querying
+        const exists = await collectionExists(database, collectionName);
+        if (!exists) {
+          console.log(`Collection ${collectionName} does not exist, skipping...`);
+          continue;
+        }
+        
+        const coll = database.collection(collectionName);
+        const docs = await coll.find(query).project(projection).toArray();
+        docs.forEach(doc => {
+          doc.collectionName = collectionName;
+        });
+        allDocuments = allDocuments.concat(docs);
+      } catch (error) {
+        console.error(`Error querying collection ${collectionName}:`, error.message);
+        // Continue with other collections even if one fails
+        continue;
+      }
     }
 
     // Sort descending by date
@@ -1517,15 +1567,26 @@ if (etiquetasKeys.length === 0) {
         // Si no hay documentos que coincidan con las etiquetas, buscar documentos que cumplan con otros filtros
         let totalPages = 0;
         
-        // Para cada colección seleccionada, contar el número total de páginas
-        for (const collectionName of selectedBoletines) {
-          const coll = database.collection(collectionName);
-          const docs = await coll.find(queryWithoutEtiquetas).project(projectionWithPages).toArray();
-          
-          // Sumar el número de páginas de todos los documentos
-          docs.forEach(doc => {
-            totalPages += doc.num_paginas || 0;
-          });
+        // Para cada colección seleccionada (incluyendo versiones de test), contar el número total de páginas
+        for (const collectionName of expandedBoletines) {
+          try {
+            // Check if collection exists before querying
+            const exists = await collectionExists(database, collectionName);
+            if (!exists) {
+              continue;
+            }
+            
+            const coll = database.collection(collectionName);
+            const docs = await coll.find(queryWithoutEtiquetas).project(projectionWithPages).toArray();
+            
+            // Sumar el número de páginas de todos los documentos
+            docs.forEach(doc => {
+              totalPages += doc.num_paginas || 0;
+            });
+          } catch (error) {
+            console.error(`Error counting pages for collection ${collectionName}:`, error.message);
+            continue;
+          }
         }
         
         // Generar mensaje personalizado con el número total de páginas
@@ -1813,10 +1874,19 @@ app.get('/api/boletin-diario', async (req, res) => {
       
       console.log(`Checking date: ${checkDate.getDate()}/${checkDate.getMonth() + 1}/${checkDate.getFullYear()}`);
       
-      // Search for documents on this date across all selected boletines
+      // Search for documents on this date across all selected boletines (including test versions)
       let documentsOnDate = [];
-      for (const collectionName of selectedBoletines) {
+      // Expand collections to include test versions
+      const expandedBoletines = expandCollectionsWithTest(selectedBoletines);
+      
+      for (const collectionName of expandedBoletines) {
         try {
+          // Check if collection exists before querying
+          const exists = await collectionExists(database, collectionName);
+          if (!exists) {
+            continue;
+          }
+          
           const coll = database.collection(collectionName);
           const docs = await coll.find(dateQuery).project(todayProjection).toArray();
           
@@ -1989,15 +2059,31 @@ app.get('/data', async (req, res) => {
       _id: 1
     };
 
-    // 5) Collect documents from each chosen bulletin
+    // 5) Collect documents from each chosen bulletin (including test versions)
     let allDocuments = [];
-    for (const cName of collections) {
-      const coll = database.collection(cName);
-      const docs = await coll.find(query).project(projection).toArray();
-      docs.forEach(d => {
-        d.collectionName = cName;
-      });
-      allDocuments = allDocuments.concat(docs);
+    // Expand collections to include test versions
+    const expandedCollections = expandCollectionsWithTest(collections);
+    
+    for (const cName of expandedCollections) {
+      try {
+        // Check if collection exists before querying
+        const exists = await collectionExists(database, cName);
+        if (!exists) {
+          console.log(`Collection ${cName} does not exist, skipping...`);
+          continue;
+        }
+        
+        const coll = database.collection(cName);
+        const docs = await coll.find(query).project(projection).toArray();
+        docs.forEach(d => {
+          d.collectionName = cName;
+        });
+        allDocuments = allDocuments.concat(docs);
+      } catch (error) {
+        console.error(`Error querying collection ${cName}:`, error.message);
+        // Continue with other collections even if one fails
+        continue;
+      }
     }
 
     // Sort all docs descending by date
@@ -2103,13 +2189,24 @@ const queryWithoutEtiquetas = {
 
     //recuento paginas
     let totalPages = 0;
-    for (const cName of collections) {
-      const docs = await database
-        .collection(cName)
-        .find(queryWithoutEtiquetas)
-        .project({ num_paginas: 1 })
-        .toArray();
-      totalPages += docs.reduce((sum, d) => sum + (d.num_paginas||0), 0);
+    for (const cName of expandedCollections) {
+      try {
+        // Check if collection exists before querying
+        const exists = await collectionExists(database, cName);
+        if (!exists) {
+          continue;
+        }
+        
+        const docs = await database
+          .collection(cName)
+          .find(queryWithoutEtiquetas)
+          .project({ num_paginas: 1 })
+          .toArray();
+        totalPages += docs.reduce((sum, d) => sum + (d.num_paginas||0), 0);
+      } catch (error) {
+        console.error(`Error counting pages for collection ${cName}:`, error.message);
+        continue;
+      }
     }
 
 
