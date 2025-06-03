@@ -7,9 +7,8 @@ const LocalStrategy = require('passport-local').Strategy;
 
 //to avoid deprecation error
 const mongodbOptions = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-  }
+  // Removidas las opciones deprecadas useNewUrlParser y useUnifiedTopology
+}
 
 
 /*GOOGLE*/
@@ -23,8 +22,7 @@ async function upsertUser(profile) {
     const user = {
       googleId: profile.id,
       name: profile.displayName,
-      email: profile.emails[0].value,
-      first_date_registration: new Date()
+      email: profile.emails[0].value
     };
 
     // Upsert the user document
