@@ -371,7 +371,8 @@ app.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = {
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      first_date_registration: new Date(),  // Añadir fecha y hora exacta de registro
       // subscription_plan remains undefined for new users
     };
 

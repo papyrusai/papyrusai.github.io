@@ -23,13 +23,17 @@ async function upsertUser(profile) {
     const user = {
       googleId: profile.id,
       name: profile.displayName,
-      email: profile.emails[0].value
+      email: profile.emails[0].value,
+      first_date_registration: new Date()
     };
 
     // Upsert the user document
     await usersCollection.updateOne(
       { googleId: user.googleId },
-      { $set: user },
+      { 
+        $set: user,
+        $setOnInsert: { first_date_registration: new Date() }
+      },
       { upsert: true }
     );
 
