@@ -4795,8 +4795,10 @@ async function sendPasswordResetEmail(email, resetToken) {
       text-align: center;
     }
     
-    .header img {
-      height: 48px;
+    .header h2 {
+      color: #ffffff;
+      margin: 0;
+      font-size: 24px;
     }
     
     .content {
@@ -4858,7 +4860,7 @@ async function sendPasswordResetEmail(email, resetToken) {
 <body>
   <div class="container">
     <div class="header">
-      <img src="cid:reversaLogo" alt="Reversa Logo">
+      <h2>Reversa</h2>
     </div>
     
     <div class="content">
@@ -4897,31 +4899,17 @@ async function sendPasswordResetEmail(email, resetToken) {
     subject: 'Recuperación de Contraseña - Reversa',
     html: emailHtml
   };
-
-  // Read the logo file and convert to base64
-  let logoAttachment = null;
+  
   try {
-    const logoPath = path.join(__dirname, 'public', 'assets', 'reversa_white.png');
-    const logoBuffer = fs.readFileSync(logoPath);
-    const logoBase64 = logoBuffer.toString('base64');
-    
-    logoAttachment = {
-      filename: 'reversa_white.png',
-      content: logoBase64,
-      type: 'image/png',
-      disposition: 'inline',
-      cid: 'reversaLogo'
-    };
+    await sgMail.send(msg);
+    console.log(`Password reset email sent successfully to ${email}`);
   } catch (error) {
-    console.log('Logo file not found, sending email without logo attachment');
+    console.error('Error sending password reset email:', error);
+    if (error.response && error.response.body && error.response.body.errors) {
+      console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
+    }
+    throw error;
   }
-  
-  // Only add attachments if logo was successfully loaded
-  if (logoAttachment) {
-    msg.attachments = [logoAttachment];
-  }
-  
-  await sgMail.send(msg);
 }
 
 // Serve reset password page
