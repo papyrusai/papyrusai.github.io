@@ -10,6 +10,7 @@ const fs = require('fs');
 const { spawn } = require('child_process'); // Import the spawn function
 const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
+const crypto = require('crypto'); // Add crypto import for password reset tokens
 
 const SPECIAL_DOMAIN = "@cuatrecasas.com";
 const SPECIAL_ADDRESS = "xx";
@@ -4624,4 +4625,310 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
+
+// Password reset request route
+app.post('/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  
+  if (!email) {
+    return res.status(400).json({ error: "Email es requerido" });
+  }
+  
+  const client = new MongoClient(uri, mongodbOptions);
+  
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+    
+    // Find user by email
+    const user = await usersCollection.findOne({ email: email.toLowerCase() });
+    
+    // Always return success message for security (don't reveal if email exists)
+    const successMessage = "Si el correo existe en nuestro sistema, recibirás un enlace de recuperación";
+    
+    if (!user) {
+      return res.status(200).json({ message: successMessage });
+    }
+    
+    // Only proceed if user has a password (not Google-only users)
+    if (!user.password) {
+      return res.status(200).json({ message: successMessage });
+    }
+    
+    // Generate secure reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+    
+    // Save reset token to user
+    await usersCollection.updateOne(
+      { email: email.toLowerCase() },
+      { 
+        $set: { 
+          resetPasswordToken: resetToken,
+          resetPasswordExpires: resetTokenExpiry
+        }
+      }
+    );
+    
+    // Send reset email
+    try {
+      await sendPasswordResetEmail(user.email, resetToken);
+      console.log(`Password reset email sent to ${user.email}`);
+    } catch (emailError) {
+      console.error('Error sending password reset email:', emailError);
+      // Don't reveal email sending errors to user
+    }
+    
+    res.status(200).json({ message: successMessage });
+    
+  } catch (err) {
+    console.error("Error in forgot password:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  } finally {
+    await client.close();
+  }
+});
+
+// Password reset route
+app.post('/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  if (!token || !newPassword) {
+    return res.status(400).json({ error: "Token y nueva contraseña son requeridos" });
+  }
+  
+  const bcrypt = require('bcryptjs');
+  const client = new MongoClient(uri, mongodbOptions);
+  
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+    
+    // Find user with valid reset token
+    const user = await usersCollection.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ 
+        error: "Token inválido o expirado. Solicita un nuevo enlace de recuperación." 
+      });
+    }
+    
+    // Validate new password (same validation as registration)
+    if (newPassword.length < 7) {
+      return res.status(400).json({
+        error: "La contraseña debe tener al menos 7 caracteres."
+      });
+    }
+    
+    const specialCharRegex = /[^\p{L}\p{N}]/u;
+    if (!specialCharRegex.test(newPassword)) {
+      return res.status(400).json({
+        error: "La contraseña debe contener al menos un carácter especial."
+      });
+    }
+    
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Update user password and remove reset token
+    await usersCollection.updateOne(
+      { _id: user._id },
+      { 
+        $set: { password: hashedPassword },
+        $unset: { 
+          resetPasswordToken: "",
+          resetPasswordExpires: ""
+        }
+      }
+    );
+    
+    console.log(`Password reset successful for user: ${user.email}`);
+    res.status(200).json({ 
+      message: "Contraseña actualizada correctamente. Ya puedes iniciar sesión." 
+    });
+    
+  } catch (err) {
+    console.error("Error in reset password:", err);
+    res.status(500).json({ error: "Error interno del servidor" });
+  } finally {
+    await client.close();
+  }
+});
+
+// Email sending function for password reset
+async function sendPasswordResetEmail(email, resetToken) {
+  const resetUrl = `https://app.reversa.ai/reset-password.html?token=${resetToken}`;
+  
+  const emailHtml = `
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperación de Contraseña - Reversa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      margin: 0;
+      padding: 20px;
+      color: #0b2431;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header {
+      background-color: #0b2431;
+      padding: 24px;
+      text-align: center;
+    }
+    
+    .header img {
+      height: 48px;
+    }
+    
+    .content {
+      padding: 32px;
+    }
+    
+    h1 {
+      color: #04db8d;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    
+    p {
+      line-height: 1.6;
+      margin-bottom: 16px;
+      color: #0b2431;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: #04db8d;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      font-weight: 500;
+      text-align: center;
+      margin: 20px 0;
+    }
+    
+    .btn:hover {
+      background-color: #03c57f;
+    }
+    
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      font-size: 14px;
+      color: #455862;
+    }
+    
+    .footer a {
+      color: #04db8d;
+      text-decoration: none;
+    }
+    
+    .warning {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 4px;
+      padding: 12px;
+      margin: 16px 0;
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="cid:reversaLogo" alt="Reversa Logo">
+    </div>
+    
+    <div class="content">
+      <h1>Recuperación de Contraseña</h1>
+      
+      <p>Has solicitado restablecer tu contraseña de Reversa. Para crear una nueva contraseña, haz clic en el siguiente botón:</p>
+      
+      <div style="text-align: center;">
+        <a href="${resetUrl}" class="btn">Restablecer Contraseña</a>
+      </div>
+      
+      <div class="warning">
+        <strong>Importante:</strong> Este enlace expirará en 1 hora por motivos de seguridad.
+      </div>
+      
+      <p>Si no solicitaste este cambio de contraseña, puedes ignorar este correo de forma segura. Tu contraseña actual seguirá siendo válida.</p>
+      
+      <p>Por tu seguridad, nunca compartas este enlace con nadie.</p>
+      
+      <div class="footer">
+        <p>© Reversa Legal, ${new Date().getFullYear()}. Todos los derechos reservados.</p>
+        <p>
+          Si tienes alguna pregunta, puedes contactarnos en
+          <a href="mailto:info@reversa.ai">info@reversa.ai</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+  
+  const msg = {
+    to: email,
+    from: 'info@reversa.ai',
+    subject: 'Recuperación de Contraseña - Reversa',
+    html: emailHtml
+  };
+
+  // Read the logo file and convert to base64
+  let logoAttachment = null;
+  try {
+    const logoPath = path.join(__dirname, 'assets', 'reversa_white.png');
+    const logoBuffer = fs.readFileSync(logoPath);
+    const logoBase64 = logoBuffer.toString('base64');
+    
+    logoAttachment = {
+      filename: 'reversa_white.png',
+      content: logoBase64,
+      type: 'image/png',
+      disposition: 'inline',
+      cid: 'reversaLogo'
+    };
+  } catch (error) {
+    console.log('Logo file not found, sending email without logo attachment');
+  }
+  
+  // Only add attachments if logo was successfully loaded
+  if (logoAttachment) {
+    msg.attachments = [logoAttachment];
+  }
+  
+  await sgMail.send(msg);
+}
+
+// Serve reset password page
+app.get('/reset-password.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
+});
+
+
+app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 

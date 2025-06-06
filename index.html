@@ -100,6 +100,7 @@
             <button type="submit" id="loginSubmitBtn">Iniciar Sesión</button>
           </form>          
           <div id="loginError" class="error-message"></div>
+          <p><a href="#" onclick="showForgotPassword()" class="toggle-link">¿Olvidaste tu contraseña?</a></p>
           <p>¿No tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Regístrate</span></p>
         </div>
         
@@ -117,6 +118,20 @@
           
           <div id="registrationError" class="error-message"></div>
           <p>¿Ya tienes cuenta? <span class="toggle-link" onclick="toggleForm()">Inicia Sesión</span></p>
+        </div>
+
+        <!-- Forgot Password Form -->
+        <div id="forgot-password-form" class="hidden">
+          <div class="divider">
+            <span>Recuperar contraseña</span>
+          </div>
+          <form id="forgotPasswordForm">
+            <input type="email" name="email" placeholder="Tu email" required>
+            <button type="submit" id="forgotSubmitBtn">Enviar enlace de recuperación</button>
+          </form>
+          <div id="forgotPasswordError" class="error-message"></div>
+          <div id="forgotPasswordSuccess" class="success-message" style="display: none;"></div>
+          <p><span class="toggle-link" onclick="showLogin()">Volver al inicio de sesión</span></p>
         </div>
       </div>
 
@@ -161,6 +176,89 @@
       // Clear error messages when toggling
       document.getElementById('loginError').textContent = "";
       document.getElementById('registrationError').textContent = "";
+    }
+
+    // Show forgot password form
+    function showForgotPassword() {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const forgotPasswordForm = document.getElementById('forgot-password-form');
+      const formTitle = document.getElementById('form-title');
+      
+      loginForm.classList.add('hidden');
+      registerForm.classList.add('hidden');
+      forgotPasswordForm.classList.remove('hidden');
+      formTitle.textContent = "Recuperar contraseña";
+      
+      // Clear error messages
+      document.getElementById('loginError').textContent = "";
+      document.getElementById('registrationError').textContent = "";
+      document.getElementById('forgotPasswordError').textContent = "";
+      document.getElementById('forgotPasswordSuccess').textContent = "";
+    }
+
+    // Show login form (return from forgot password)
+    function showLogin() {
+      const loginForm = document.getElementById('login-form');
+      const registerForm = document.getElementById('register-form');
+      const forgotPasswordForm = document.getElementById('forgot-password-form');
+      const formTitle = document.getElementById('form-title');
+      
+      loginForm.classList.remove('hidden');
+      registerForm.classList.add('hidden');
+      forgotPasswordForm.classList.add('hidden');
+      formTitle.textContent = "Inicia Sesión";
+      
+      // Clear error messages
+      document.getElementById('loginError').textContent = "";
+      document.getElementById('registrationError').textContent = "";
+      document.getElementById('forgotPasswordError').textContent = "";
+      document.getElementById('forgotPasswordSuccess').textContent = "";
+    }
+
+    // Handle forgot password form submission
+    async function handleForgotPasswordSubmit(event) {
+      event.preventDefault();
+      
+      const errorDiv = document.getElementById('forgotPasswordError');
+      const successDiv = document.getElementById('forgotPasswordSuccess');
+      errorDiv.textContent = "";
+      successDiv.textContent = "";
+      
+      const form = document.getElementById('forgotPasswordForm');
+      const formData = new FormData(form);
+      const data = {};
+      formData.forEach((value, key) => data[key] = value);
+
+      // Show loader in the button
+      const submitBtn = document.getElementById('forgotSubmitBtn');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<div class="loader"></div>';
+
+      try {
+        const response = await fetch('/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          successDiv.textContent = "Se ha enviado un enlace de recuperación a tu correo electrónico.";
+          form.reset();
+        } else {
+          const errorData = await response.json();
+          errorDiv.textContent = errorData.error || "Error al enviar el enlace de recuperación.";
+        }
+      } catch (err) {
+        errorDiv.textContent = "Error al enviar el enlace de recuperación. Inténtalo de nuevo.";
+        console.error(err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+      
+      return false;
     }
 
     // Client-side validation for registration form
@@ -318,6 +416,7 @@
     // Attach event listeners to the forms
     document.getElementById('registrationForm').addEventListener('submit', handleRegistrationSubmit);
     document.getElementById('loginForm').addEventListener('submit', handleLoginSubmit);
+    document.getElementById('forgotPasswordForm').addEventListener('submit', handleForgotPasswordSubmit);
 
     // Functions for Google login and loading indicator
     function resetLoginButton() {
