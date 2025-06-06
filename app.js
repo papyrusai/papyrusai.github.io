@@ -4901,7 +4901,7 @@ async function sendPasswordResetEmail(email, resetToken) {
   // Read the logo file and convert to base64
   let logoAttachment = null;
   try {
-    const logoPath = path.join(__dirname, 'assets', 'reversa_white.png');
+    const logoPath = path.join(__dirname, 'public', 'assets', 'reversa_white.png');
     const logoBuffer = fs.readFileSync(logoPath);
     const logoBase64 = logoBuffer.toString('base64');
     
