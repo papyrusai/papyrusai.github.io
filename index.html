@@ -25,6 +25,54 @@
     select {
       font-size: 16px !important; /* Minimum font size to prevent zoom on iOS */
     }
+
+    /* Success message styling */
+    .success-message {
+      color: #04db8d;
+      background-color: #f0fdf4;
+      border: 1px solid #04db8d;
+      border-radius: 4px;
+      padding: 12px;
+      margin: 16px 0;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    /* Mobile-specific improvements for forgot password form */
+    @media (max-width: 768px) {
+      #forgot-password-form .divider span {
+        margin: 0 10px;
+        padding: 0 10px;
+      }
+      
+      #forgotSubmitBtn {
+        margin: 0 10px;
+        width: calc(100% - 20px);
+      }
+      
+      #forgot-password-form {
+        padding: 0 10px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      #forgot-password-form .divider span {
+        margin: 0 15px;
+        padding: 0 15px;
+      }
+      
+      #forgotSubmitBtn {
+        margin: 0 15px;
+        width: calc(100% - 30px);
+      }
+      
+      #forgot-password-form {
+        padding: 0 15px;
+      }
+    }
   </style>
   <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17141429101"></script>
@@ -224,6 +272,7 @@
       const successDiv = document.getElementById('forgotPasswordSuccess');
       errorDiv.textContent = "";
       successDiv.textContent = "";
+      successDiv.style.display = "none";
       
       const form = document.getElementById('forgotPasswordForm');
       const formData = new FormData(form);
@@ -244,14 +293,15 @@
         });
         
         if (response.ok) {
-          successDiv.textContent = "Se ha enviado un enlace de recuperación a tu correo electrónico.";
+          successDiv.innerHTML = "✓ Correo de recuperación enviado";
+          successDiv.style.display = "block";
           form.reset();
         } else {
           const errorData = await response.json();
-          errorDiv.textContent = errorData.error || "Error al enviar el enlace de recuperación.";
+          errorDiv.textContent = errorData.error || "Error enviando correo de recuperación. Inténtelo de nuevo por favor";
         }
       } catch (err) {
-        errorDiv.textContent = "Error al enviar el enlace de recuperación. Inténtalo de nuevo.";
+        errorDiv.textContent = "Error enviando correo de recuperación. Inténtelo de nuevo por favor";
         console.error(err);
       } finally {
         submitBtn.disabled = false;
