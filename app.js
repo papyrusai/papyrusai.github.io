@@ -1452,13 +1452,24 @@ app.get('/profile', async (req, res) => {
     const userRamas = user.rama_juridicas || [];
     const userRangos = user.rangos || [];
     
-    // Extraer boletines de cobertura_legal
+    // Extraer boletines de cobertura_legal (con compatibilidad para formatos antiguos)
     let userBoletines = [];
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    
+    // Fuentes gobierno - compatible con múltiples formatos
+    const fuentesGobierno = user.cobertura_legal?.['fuentes-gobierno'] || 
+                           user.cobertura_legal?.fuentes_gobierno || 
+                           user.cobertura_legal?.fuentes || [];
+    if (fuentesGobierno.length > 0) {
+      userBoletines = userBoletines.concat(fuentesGobierno);
     }
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    
+    // Fuentes reguladores - compatible con múltiples formatos
+    const fuentesReguladores = user.cobertura_legal?.['fuentes-reguladores'] || 
+                              user.cobertura_legal?.fuentes_reguladores ||
+                              user.cobertura_legal?.['fuentes-regulador'] ||  // Para usuarios muy antiguos
+                              user.cobertura_legal?.reguladores || [];
+    if (fuentesReguladores.length > 0) {
+      userBoletines = userBoletines.concat(fuentesReguladores);
     }
     userBoletines = userBoletines.map(b => b.toUpperCase());
     if (userBoletines.length === 0) {
@@ -1857,13 +1868,24 @@ app.get('/api/boletin-diario', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Get user's subscribed collections (boletines)
+    // Get user's subscribed collections (boletines) - compatible con múltiples formatos
     let userBoletines = [];
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    
+    // Fuentes gobierno - compatible con múltiples formatos
+    const fuentesGobierno = user.cobertura_legal?.['fuentes-gobierno'] || 
+                           user.cobertura_legal?.fuentes_gobierno || 
+                           user.cobertura_legal?.fuentes || [];
+    if (fuentesGobierno.length > 0) {
+      userBoletines = userBoletines.concat(fuentesGobierno);
     }
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    
+    // Fuentes reguladores - compatible con múltiples formatos
+    const fuentesReguladores = user.cobertura_legal?.['fuentes-reguladores'] || 
+                              user.cobertura_legal?.fuentes_reguladores ||
+                              user.cobertura_legal?.['fuentes-regulador'] ||  // Para usuarios muy antiguos
+                              user.cobertura_legal?.reguladores || [];
+    if (fuentesReguladores.length > 0) {
+      userBoletines = userBoletines.concat(fuentesReguladores);
     }
     userBoletines = userBoletines.map(b => b.toUpperCase());
     if (userBoletines.length === 0) {
@@ -2031,12 +2053,24 @@ app.get('/data', async (req, res) => {
     }
 
     let userBoletines = [];
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-gobierno']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-gobierno']);
+    
+    // Fuentes gobierno - compatible con múltiples formatos
+    const fuentesGobierno = user.cobertura_legal?.['fuentes-gobierno'] || 
+                           user.cobertura_legal?.fuentes_gobierno || 
+                           user.cobertura_legal?.fuentes || [];
+    if (fuentesGobierno.length > 0) {
+      userBoletines = userBoletines.concat(fuentesGobierno);
     }
-    if (user.cobertura_legal && user.cobertura_legal['fuentes-reguladores']) {
-      userBoletines = userBoletines.concat(user.cobertura_legal['fuentes-reguladores']);
+    
+    // Fuentes reguladores - compatible con múltiples formatos
+    const fuentesReguladores = user.cobertura_legal?.['fuentes-reguladores'] || 
+                              user.cobertura_legal?.fuentes_reguladores ||
+                              user.cobertura_legal?.['fuentes-regulador'] ||  // Para usuarios muy antiguos
+                              user.cobertura_legal?.reguladores || [];
+    if (fuentesReguladores.length > 0) {
+      userBoletines = userBoletines.concat(fuentesReguladores);
     }
+    
     userBoletines = userBoletines.map(b => b.toUpperCase());
     if (userBoletines.length === 0) {
       userBoletines = ["BOE"];
@@ -2828,16 +2862,28 @@ async function sendSubscriptionEmail(user, userData) {
       etiquetasList.push('No especificadas');
     }
     
-    // Preparar la cobertura legal con manejo seguro de valores nulos
+    // Preparar la cobertura legal con manejo seguro de valores nulos y compatibilidad con múltiples formatos
     let coberturaLegal = 'No especificada';
     if (userData.cobertura_legal && typeof userData.cobertura_legal === 'object') {
       const fuentes = [];
-      if (Array.isArray(userData.cobertura_legal['fuentes-gobierno'])) {
-        fuentes.push(...userData.cobertura_legal['fuentes-gobierno']);
+      
+      // Fuentes gobierno - compatible con múltiples formatos
+      const fuentesGobierno = userData.cobertura_legal['fuentes-gobierno'] || 
+                             userData.cobertura_legal.fuentes_gobierno || 
+                             userData.cobertura_legal.fuentes || [];
+      if (Array.isArray(fuentesGobierno) && fuentesGobierno.length > 0) {
+        fuentes.push(...fuentesGobierno);
       }
-      if (Array.isArray(userData.cobertura_legal['fuentes-reguladores'])) {
-        fuentes.push(...userData.cobertura_legal['fuentes-reguladores']);
+      
+      // Fuentes reguladores - compatible con múltiples formatos
+      const fuentesReguladores = userData.cobertura_legal['fuentes-reguladores'] || 
+                                userData.cobertura_legal.fuentes_reguladores ||
+                                userData.cobertura_legal['fuentes-regulador'] ||  // Para usuarios muy antiguos
+                                userData.cobertura_legal.reguladores || [];
+      if (Array.isArray(fuentesReguladores) && fuentesReguladores.length > 0) {
+        fuentes.push(...fuentesReguladores);
       }
+      
       if (fuentes.length > 0) {
         coberturaLegal = fuentes.join(', ');
       }
@@ -5612,11 +5658,12 @@ TAREAS:
      • La definición debe cubrir tanto disposiciones generales como específicas que puedan afectar al sector y a los subtemas indicados.
 
 OBJETIVO DE SALIDA:
-Devuelve **SOLO** un objeto JSON con la siguiente estructura exacta (sin explicaciones adicionales):
+Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
 
+Ejemplo de estructura exacta (sin usar estos valores literales):
 {
   "etiqueta_personalizada": {
-    "nombre_etiqueta": "definicion_etiqueta"
+    "Nombre descriptivo de la etiqueta jurídica": "Definición completa y precisa de qué abarca esta etiqueta en el contexto regulatorio"
   }
 }`;
 
@@ -5781,11 +5828,12 @@ TAREAS:
      • La definición debe cubrir tanto disposiciones generales como específicas que puedan afectar al contenido que se quiere rastrear.
 
 OBJETIVO DE SALIDA:
-Devuelve **SOLO** un objeto JSON con la siguiente estructura exacta (sin explicaciones adicionales):
+Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
 
+Ejemplo de estructura exacta (sin usar estos valores literales):
 {
   "etiqueta_personalizada": {
-    "nombre_etiqueta": "definicion_etiqueta"
+    "Nombre descriptivo de la etiqueta jurídica": "Definición completa y precisa de qué abarca esta etiqueta en el contexto regulatorio"
   }
 }`;
 

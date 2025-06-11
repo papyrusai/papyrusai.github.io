@@ -2346,7 +2346,10 @@
             data.cobertura_legal.fuentes?.length > 0 || 
             data.cobertura_legal.reguladores?.length > 0 ||
             data.cobertura_legal.fuentes_gobierno?.length > 0 || 
-            data.cobertura_legal.fuentes_reguladores?.length > 0
+            data.cobertura_legal.fuentes_reguladores?.length > 0 ||
+            data.cobertura_legal['fuentes-gobierno']?.length > 0 ||
+            data.cobertura_legal['fuentes-reguladores']?.length > 0 ||
+            data.cobertura_legal['fuentes-regulador']?.length > 0
         );
         
         if (hasCoverage) {
@@ -2554,8 +2557,13 @@
         }
 
         // Add click listeners and pre-select
-        const selectedFuentes = cobertura_legal?.fuentes_gobierno || cobertura_legal?.fuentes || [];
-        const selectedReguladores = cobertura_legal?.fuentes_reguladores || cobertura_legal?.reguladores || [];
+        const selectedFuentes = cobertura_legal?.fuentes_gobierno || 
+                               cobertura_legal?.['fuentes-gobierno'] || 
+                               cobertura_legal?.fuentes || [];
+        const selectedReguladores = cobertura_legal?.fuentes_reguladores || 
+                                   cobertura_legal?.['fuentes-reguladores'] || 
+                                   cobertura_legal?.['fuentes-regulador'] ||  // Para usuarios muy antiguos
+                                   cobertura_legal?.reguladores || [];
         const allSelections = [...selectedFuentes, ...selectedReguladores];
 
         document.querySelectorAll('.fuente-box').forEach(box => {
