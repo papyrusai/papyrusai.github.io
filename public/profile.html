@@ -1523,6 +1523,9 @@
       <a href="#" class="sidebar-item" data-target="content-listas">
         <i class="fas fa-list"></i> Tus listas
       </a>
+      <a href="#" class="sidebar-item" data-target="content-configuracion">
+        <i class="fas fa-cog"></i> Configuración
+      </a>
       <a href="#" class="sidebar-item" id="editSuscription">
         <i class="fas fa-user-circle"></i> Cuenta
       </a>
@@ -1539,8 +1542,8 @@
          <div id="data-container">
             <!-- Plan1 User Upsell Banner - Hidden by default -->
             <div id="radar-normativo-banner" style="display: none; margin-bottom: 25px; padding: 20px; border-radius: 10px; background-color: rgba(4, 219, 141, 0.1); border: 1px solid #04db8d;">
-              <h2 style="color: #0b2431; margin-top: 0; font-size: 22px;">Búsqueda y análisis normativo personalizado por agentes</h2>
-              <p style="color: #455862; margin-bottom: 15px;">Mejora tu plan para poder filtrar y analizar de manera automática la normativa que te afecta a través de nuestros agentes</p>
+              <h2 id="radar-banner-title" style="color: #0b2431; margin-top: 0; font-size: 22px;">Búsqueda y análisis normativo personalizado por agentes</h2>
+              <p id="radar-banner-description" style="color: #455862; margin-bottom: 15px;">Mejora tu plan para poder filtrar y analizar de manera automática la normativa que te afecta a través de nuestros agentes</p>
               
               <p style="color: #455862; margin-bottom: 20px; font-style: italic;">Ejemplos de agentes</p>
               
@@ -1560,7 +1563,7 @@
                   <p style="color: #455862; font-size: 14px;">Este agente supervisa normativas sobre alquileres temporales, limitaciones de precio, requisitos para propietarios y cualquier otra regulación que afecte al mercado inmobiliario en Barcelona.</p>
                 </div>
               </div>
-              <a href="#" id="editSuscription3" class="change-subscription" style="display: inline-block; margin-top: 15px; padding: 8px 16px; background-color: #0b2431; color: white; text-decoration: none; border-radius: 20px; font-weight: 500;">Mejora tu plan</a>
+              <a href="#" id="radar-banner-button" class="change-subscription" style="display: inline-block; margin-top: 15px; padding: 8px 16px; background-color: #0b2431; color: white; text-decoration: none; border-radius: 20px; font-weight: 500;">Mejora tu plan</a>
             </div>
 
             <!-- Sección de Agentes Suscritos -->
@@ -1907,6 +1910,13 @@
         </div>
       </div>
 
+      <!-- Sección Configuración -->
+      <div id="content-configuracion" class="vision-section">
+        <div id="configuracion-iframe-container" style="width: 100%; height: 100vh; border: none;">
+          <!-- The configuration content will be loaded here -->
+        </div>
+      </div>
+
       <!-- Sección Cuenta (Contenido de marcador de posición) -->
       <div id="content-cuenta" class="vision-section">
         <h2>Cuenta</h2>
@@ -1972,50 +1982,91 @@
         console.error('Error cargando listas al inicio:', error);
       });
 
-      // Handle plan1 specific UI in agentes view
-      if (window.userPlan === 'plan1') {
+      // Handle plan-specific UI in agentes view
+      const userEtiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
+      const hasEtiquetasPersonalizadas = userEtiquetasPersonalizadas && Object.keys(userEtiquetasPersonalizadas).length > 0;
+      
+      // Expose globally for later checks
+      window.hasEtiquetasPersonalizadas = hasEtiquetasPersonalizadas;
+      // Apply visibility rules for agentes view (plan2/3 with no tags)
+      if (typeof applyAgentesAdvancedVisibility === 'function') {
+        applyAgentesAdvancedVisibility();
+      }
+      
+      // Show radar banner for plan1 users OR plan2/plan3 users without etiquetas_personalizadas
+      if (window.userPlan === 'plan1' || ((window.userPlan === 'plan2' || window.userPlan === 'plan3') && !hasEtiquetasPersonalizadas)) {
         const radarBanner = document.getElementById('radar-normativo-banner');
         const betaBanner = document.querySelector('.beta-banner');
+        const bannerTitle = document.getElementById('radar-banner-title');
+        const bannerDescription = document.getElementById('radar-banner-description');
+        const bannerButton = document.getElementById('radar-banner-button');
         
         if (radarBanner) radarBanner.style.display = 'block';
         if (betaBanner) betaBanner.style.display = 'none';
         
+        // Update banner content based on plan
+        if (window.userPlan === 'plan2' || window.userPlan === 'plan3') {
+          // Change content for plan2/plan3 users
+          if (bannerTitle) bannerTitle.textContent = 'Configura tu cuenta';
+          if (bannerDescription) bannerDescription.textContent = 'Configura tu cuenta para poder filtrar y analizar de manera automática la normativa que te afecta a través de nuestros agentes';
+          if (bannerButton) {
+            bannerButton.textContent = 'Configura tu cuenta';
+            bannerButton.onclick = function(e) {
+              e.preventDefault();
+              showConfiguracionSection();
+              return false;
+            };
+          }
+        } else {
+          // Keep original content for plan1 users
+          if (bannerButton) {
+            bannerButton.onclick = function(e) {
+              e.preventDefault();
+              // Original plan1 behavior - you can add the subscription upgrade logic here
+              window.location.href = 'https://reversa.ai/prices';
+              return false;
+            };
+          }
+        }
+        
         // Modify the handleBuscar function for plan1 users
-        const originalHandleBuscar = window.handleBuscar;
-        window.handleBuscar = function() {
-          if (window.userPlan === 'plan1') {
-            // Show upgrade message instead of search results
-            document.querySelector('.collectionDocs').innerHTML = `
-              <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h3 style="color: #0b2431;">¡Mejora tu plan para acceder a esta funcionalidad!</h3>
-                <p style="color: #455862;">Nuestros planes de pago te permiten realizar búsquedas avanzadas y filtrar normativa según tus necesidades específicas.</p>
-                <button onclick="window.location.href='https://reversa.ai/prices'" style="background-color: #04db8d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Ver planes</button>
-              </div>
-            `;
-            
-            // Hide the analytics sections
-            document.querySelectorAll('.analytics-label').forEach(label => {
-              if (!label.classList.contains('busqueda')) {
-                label.style.display = 'none';
+        if (window.userPlan === 'plan1') {
+          const originalHandleBuscar = window.handleBuscar;
+          window.handleBuscar = function() {
+            if (window.userPlan === 'plan1') {
+              // Show upgrade message instead of search results
+              document.querySelector('.collectionDocs').innerHTML = `
+                <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                  <h3 style="color: #0b2431;">¡Mejora tu plan para acceder a esta funcionalidad!</h3>
+                  <p style="color: #455862;">Nuestros planes de pago te permiten realizar búsquedas avanzadas y filtrar normativa según tus necesidades específicas.</p>
+                  <button onclick="window.location.href='https://reversa.ai/prices'" style="background-color: #04db8d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">Ver planes</button>
+                </div>
+              `;
+              
+              // Hide the analytics sections
+              document.querySelectorAll('.analytics-label').forEach(label => {
+                if (!label.classList.contains('busqueda')) {
+                  label.style.display = 'none';
+                }
+              });
+              const chartContainer = document.getElementById('chartContainer');
+              if (chartContainer) {
+                chartContainer.style.display = 'none';
               }
-            });
-            const chartContainer = document.getElementById('chartContainer');
-            if (chartContainer) {
-              chartContainer.style.display = 'none';
+              
+              // Hide loading indicators
+              document.getElementById('loading-icon').style.display = 'none';
+              document.getElementById('loading-icon-chart').style.display = 'none';
+              
+              return; // Stop execution here for plan1 users
             }
             
-            // Hide loading indicators
-            document.getElementById('loading-icon').style.display = 'none';
-            document.getElementById('loading-icon-chart').style.display = 'none';
-            
-            return; // Stop execution here for plan1 users
-          }
-          
-          // Call the original function for non-plan1 users
-          if (typeof originalHandleBuscar === 'function') {
-            originalHandleBuscar();
-          }
-        };
+            // Call the original function for non-plan1 users
+            if (typeof originalHandleBuscar === 'function') {
+              originalHandleBuscar();
+            }
+          };
+        }
       }
 
       // Fill default date from server
@@ -2115,6 +2166,9 @@
            fetchBoletinDiario();
            boletinDiarioLoaded = true;
          }
+       } else if (viewParam === 'configuracion') {
+         // Show configuration section by default
+         showConfiguracionSection();
        } else {
          // *** EXISTENTE: Lógica para mostrar la sección por defecto (Agentes) ***
          // Asegurarse de que solo la sección activa sea visible al cargar
@@ -2164,6 +2218,30 @@
           }
         }
       });
+    }
+
+    // --------------------- AGENTES ADVANCED SEARCH VISIBILITY ---------------------
+    function applyAgentesAdvancedVisibility() {
+      const noCustomTags = !window.hasEtiquetasPersonalizadas;
+      // Hide advanced search (plan2/3 without tags)
+      const hideAdvancedSearch = (window.userPlan === 'plan2' || window.userPlan === 'plan3') && noCustomTags;
+
+      const advancedElements = [
+        document.querySelector('.analytics-label.busqueda'),
+        document.querySelector('.filter-banner-container'),
+        document.getElementById('Filtrar'),
+        (function(){ const btn=document.getElementById('buscarBtn'); return btn ? btn.parentElement : null; })()
+      ];
+
+      advancedElements.forEach(el => {
+        if (el) el.style.display = hideAdvancedSearch ? 'none' : '';
+      });
+
+      // Hide "Editar Agentes" button when no custom tags regardless of plan
+      const editBtn = document.getElementById('editSuscription2');
+      if (editBtn) {
+        editBtn.style.display = noCustomTags ? 'none' : '';
+      }
     }
 
     // --------------------- DROPDOWN FUNCTIONS ---------------------
@@ -3137,6 +3215,18 @@ document.head.appendChild(styleSheet);
                 loadDetailedUserLists();
             }
             
+            // *** NUEVO: Aplicar visibilidad condicional si es la sección Agentes ***
+            if (targetId === 'content-agentes') {
+                if (typeof applyAgentesAdvancedVisibility === 'function') {
+                    applyAgentesAdvancedVisibility();
+                }
+            }
+            
+            // *** NUEVO: Cargar configuración si es la sección de configuración ***
+            if (targetId === 'content-configuracion') {
+                loadConfiguracionContent();
+            }
+            
             // Update URL with view parameter for navigation history
             if (targetId === 'content-boletin') {
                 // If this is the boletín view, update URL to include view=boletin
@@ -3351,8 +3441,15 @@ document.head.appendChild(styleSheet);
         try {
           // Get accepted_email value, default to null if there are any issues
           const acceptedEmailElement = document.getElementById('userAcceptedEmail');
-          const acceptedEmail = acceptedEmailElement ? 
-            JSON.parse(acceptedEmailElement.textContent || 'null') : null;
+          let acceptedEmail = null;
+          if (acceptedEmailElement) {
+            const rawVal = acceptedEmailElement.textContent && acceptedEmailElement.textContent.trim();
+            try {
+              acceptedEmail = rawVal ? JSON.parse(rawVal) : null;
+            } catch (e) {
+              acceptedEmail = null;
+            }
+          }
           
           // Check if this is a plan1 user who hasn't set email preference and is in the appropriate view
           if (window.userPlan === 'plan1') {
@@ -5170,5 +5267,95 @@ document.head.appendChild(styleSheet);
     }
 
       </script>
+    <script>
+    // Function to show the configuration section
+    function showConfiguracionSection() {
+      // Remove active class from all sidebar items
+      document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+      
+      // Add active class to configuration sidebar item
+      const configItem = document.querySelector('.sidebar-item[data-target="content-configuracion"]');
+      if (configItem) {
+        configItem.classList.add('active');
+      }
+      
+      // Hide all content sections
+      document.querySelectorAll('.vision-section').forEach(section => section.style.display = 'none');
+      
+      // Show configuration section
+      const configSection = document.getElementById('content-configuracion');
+      if (configSection) {
+        configSection.style.display = 'block';
+        loadConfiguracionContent();
+      }
+    }
+    
+    // Function to load configuration content
+    function loadConfiguracionContent() {
+      const container = document.getElementById('configuracion-iframe-container');
+      if (!container) return;
+      
+      // Check if content is already loaded
+      if (container.innerHTML.trim() !== '<!-- The configuration content will be loaded here -->') {
+        // Content already loaded, just initialize the menu
+        if (window.initializeConfigurationMenu) {
+          window.initializeConfigurationMenu();
+        }
+        return;
+      }
+      
+      // Load the configuration content
+      fetch('configuracion_cuenta.html')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          return response.text();
+        })
+        .then(html => {
+          // Extract the body content from the HTML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const bodyContent = doc.body.innerHTML;
+          
+          container.innerHTML = bodyContent;
+          
+          // Append styles from the loaded document head to the main document head
+          const headStyles = doc.head.querySelectorAll('style, link[rel="stylesheet"]');
+          headStyles.forEach(styleEl => {
+            document.head.appendChild(styleEl.cloneNode(true));
+          });
+          
+          // Re-execute any scripts in the loaded content
+          const scripts = container.querySelectorAll('script');
+          scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            if (script.src) {
+              newScript.src = script.src;
+            } else {
+              newScript.textContent = script.textContent;
+            }
+            document.head.appendChild(newScript);
+            script.remove();
+          });
+          
+          // Initialize the configuration menu after a short delay to ensure DOM is ready
+          setTimeout(() => {
+            if (window.initializeConfigurationMenu) {
+              window.initializeConfigurationMenu();
+            }
+          }, 200);
+        })
+        .catch(error => {
+          console.error('Error loading configuration content:', error);
+          container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666;">
+              <h3>Error al cargar la configuración</h3>
+              <p>Por favor, inténtalo de nuevo más tarde.</p>
+            </div>
+          `;
+        });
+    }
+    </script>
 </body>
 </html>

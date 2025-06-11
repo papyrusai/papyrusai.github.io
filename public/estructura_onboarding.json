@@ -1,0 +1,182 @@
+{
+    "tipo_empresa": {
+      "consultora": {
+        "pregunta_especializacion": [
+          "Seguimiento regulatorio",
+          "Regulatorio financiero",
+          "Asuntos públicos",
+          "Compliance corporativo",
+          "ESG sostenibilidad",
+          "Risk management",
+          "Tecnología regtech",
+          "Transformación digital legal",
+          "Protección datos privacidad",
+          "Fiscalidad internacional",
+          "Legal tech",
+          "Otro"
+        ]
+      },
+      "despacho": {
+        
+        "pregunta_origen_interes": [
+          "Departamento conocimiento",
+          "Departamento comercial",
+          "Área práctica concreta",
+          "Comité innovación",
+          "Alta dirección",
+          "Otro"
+        ],
+        "pregunta_area_practica": [
+          "Mercantil M&A",
+          "Bancario financiero",
+          "Fiscal",
+          "Laboral",
+          "Procesal arbitraje",
+          "Regulatorio administrativo",
+          "Energía y recursos",
+          "TMT",
+          "Protección datos privacidad",
+          "Propiedad intelectual",
+          "Penal económico",
+          "Concursal reestructuraciones",
+          "Inmobiliario",
+          "Compliance",
+          "ESG",
+          "Otro"
+        ]
+      },
+      "empresa_regulada": {
+        "pregunta_sector": {
+          "energia": {
+            "pregunta_actividad": [
+              "Renovables solar",
+              "Renovables eólica",
+              "Renovables hidráulica",
+              "Hidrógeno",
+              "Nuclear",
+              "Oil | Gas",
+              "Distribución transporte eléctrico",
+              "Otro"
+            ]
+          },
+          "financiero": {
+            "pregunta_actividad": [
+              "Banco universal",
+              "Neobanco",
+              "Cooperativa crédito",
+              "Gestora fondos inversión",
+              "Gestora pensiones",
+              "Broker sociedad valores",
+              "Fintech pagos",
+              "Insurtech | Aseguradora",
+              "Criptoactivos exchange",
+              "Crowdfunding lending",
+              "Otro"
+            ]
+          },
+          "construccion_infraestructura": {
+            "pregunta_actividad": [
+              "Constructora general",
+              "Promotora inmobiliaria",
+              "Centros datos",
+              "Obra civil transporte",
+              "Concesionaria PPP",
+              "Facility management",
+              "Otro"
+            ]
+          },
+          "agricola_alimentario": {
+            "pregunta_actividad": [
+              "Producción agrícola",
+              "Ganadería",
+              "Procesado alimentos",
+              "Bebidas",
+              "Pesca | Acuicultura",
+              "Exportación agroalimentaria",
+              "Agritech",
+              "Otro"
+            ]
+          },
+          "salud_farma": {
+            "pregunta_actividad": [
+              "Farmacéutica",
+              "Fabricante genéricos",
+              "Biotecnología",
+              "Medtech",
+              "Distribución farmaceútica",
+              "Hospital clínica",
+              "Telemedicina",
+              "Otro"
+            ]
+          },
+          "telecom_tecnologia": {
+            "pregunta_actividad": [
+              "Operador telecom",
+              "Proveedor infraestructuras",
+              "Proveedor cloud",
+              "Centro datos",
+              "Saas",
+              "IOT 5G",
+              "Ciberseguridad",
+              "Otro"
+            ]
+          },
+          "transporte_logistica": {
+            "pregunta_actividad": [
+              "Aerolínea",
+              "Operador ferroviario",
+              "Naviera",
+              "Logística paquetería",
+              "Plataforma movilidad",
+              "Operador última milla",
+              "Otro"
+            ]
+          },
+          "medio_ambiente_residuos": {
+            "pregunta_actividad": [
+              "Gestión residuos urbanos",
+              "Residuos industriales",
+              "Gestión agua",
+              "Economía circular",
+              "Captura almacenamiento CO2",
+              "Otro"
+            ]
+          },
+          "turismo_ocio": {
+            "pregunta_actividad": [
+              "Cadena hoteles",
+              "Operador agencias viaje",
+              "Parque temático",
+              "Cruceros",
+              "Plataforma reservas",
+              "Otro"
+            ]
+          },
+          "mineria_materias_primas": {
+            "pregunta_actividad": [
+              "Minería metálica",
+              "Minería no metálica",
+              "Extracción carbón",
+              "Canteras",
+              "Reciclaje materiales",
+              "Otro"
+            ]
+          },
+          "otro": {
+            "pregunta_actividad": [
+              "Otro"
+            ]
+          }
+        }
+      }
+    },
+    "motivacion_principal": [
+      "Normativa en tramitación",
+      "Seguimiento regulatorio general",
+      "Captación de clientes | Marketing",
+      "Subvenciones",
+      "Licitaciones",
+      "Otro"
+    ]
+  }
+  

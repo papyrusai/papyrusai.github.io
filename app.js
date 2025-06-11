@@ -11,6 +11,12 @@ const { spawn } = require('child_process'); // Import the spawn function
 const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
 const crypto = require('crypto'); // Add crypto import for password reset tokens
+const MongoStore = require('connect-mongo');
+
+// Ensure fetch is available (Node < 18 compatibility)
+if (typeof fetch === 'undefined') {
+  global.fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+}
 
 const SPECIAL_DOMAIN = "@cuatrecasas.com";
 const SPECIAL_ADDRESS = "xx";
@@ -18,6 +24,37 @@ const SPECIAL_ADDRESS = "xx";
 // Añadir al inicio del archivo, junto con otros imports
 const sgMail = require('@sendgrid/mail');
 sgMail.setApiKey(process.env.SENDGRID_API_KEY); // Asegúrate de tener esta variable en tu .env
+
+// Helper function to determine user limits based on subscription plan
+function getUserLimits(subscriptionPlan) {
+  switch (subscriptionPlan) {
+    case 'plan1':
+      return {
+        limit_agentes: 0,
+        limit_fuentes: 0
+      };
+    case 'plan2':
+      return {
+        limit_agentes: 5,
+        limit_fuentes: 3
+      };
+    case 'plan3':
+      return {
+        limit_agentes: 12,
+        limit_fuentes: 10
+      };
+    case 'plan4':
+      return {
+        limit_agentes: null, // null means unlimited
+        limit_fuentes: null  // null means unlimited
+      };
+    default:
+      return {
+        limit_agentes: 0,
+        limit_fuentes: 0
+      };
+  }
+}
 
 
 //to avoid deprecation error
@@ -29,6 +66,11 @@ require('./auth'); // Ensure this file is configured correctly
 
 const app = express();
 const port = process.env.PORT || 5000;
+const uri = process.env.DB_URI;
+
+// Define a base URL for development and production
+const BASE_URL = process.env.BASE_URL || 'https://app.reversa.ai';
+
 /*const port = process.env.PORT || 0;
 const server = app.listen(port, () => {
   const actualPort = server.address().port;
@@ -55,15 +97,19 @@ app.use(session({
   }
 }));
 */
-app.use(session({ 
-  secret: process.env.SESSION_SECRET || 'default_session_secret', 
-  resave: false, 
-  saveUninitialized: false, 
-  cookie: { 
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'default_session_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
     secure: process.env.NODE_ENV === 'production', // Only use secure in production
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-    httpOnly: true 
-  } 
+    httpOnly: true
+  },
+  store: MongoStore.create({
+    mongoUrl: uri,
+    ttl: 14 * 24 * 60 * 60 // 14 days
+  })
 }));
 
 
@@ -147,8 +193,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve static files from the "public/dist" directory for the built files
 app.use('/dist', express.static(path.join(__dirname, 'public/dist')));
 
-const uri = process.env.DB_URI;
-
 app.post('/save-industries', async (req, res) => {
   const client = new MongoClient(uri, mongodbOptions);
   try {
@@ -184,6 +228,9 @@ async function processSpecialDomainUser(user) {
     if (specialUser) {
       return specialUser;
     } else {
+      // Get user limits for plan2
+      const userLimits = getUserLimits("plan2");
+
       // Create a new user with the special defaults.
       const specialDefaults = {
         email: user.email,
@@ -195,6 +242,8 @@ async function processSpecialDomainUser(user) {
         profile_type: "Departamento conocimiento",
         company_name: "Cuatrecasas",
         subscription_plan: "plan2",
+        limit_agentes: userLimits.limit_agentes,
+        limit_fuentes: userLimits.limit_fuentes,
         etiquetas_cuatrecasas: [
           "Arbitraje Internacional",
           "Competencia",
@@ -249,6 +298,9 @@ async function processAODomainUser(user) {
     if (aoUser) {
       return aoUser;
     } else {
+      // Get user limits for plan2
+      const userLimits = getUserLimits("plan2");
+
       // Create a new user with A&O defaults
       // Notice how the property name in the DB is "etiquetas_ao"
       const specialDefaults = {
@@ -261,6 +313,8 @@ async function processAODomainUser(user) {
         profile_type: "Departamento conocimiento",
         company_name: "A&O", // or "Allen & Overy"
         subscription_plan: "plan2",
+        limit_agentes: userLimits.limit_agentes,
+        limit_fuentes: userLimits.limit_fuentes,
         etiquetas_ao: etiquetasAandO
       };
 
@@ -1428,7 +1482,7 @@ if (etiquetasKeys.length === 0) {
     .replace('{{industry_tags_json}}', JSON.stringify(userIndustries))
     .replace('{{rama_juridicas_json}}', JSON.stringify(userRamas))
     .replace('{{subrama_juridicas_json}}', JSON.stringify(userSubRamaMap))
-    .replace('{{boeDocuments}}', `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Hemos lanzado una nueva versión del producto para poder personalizar más las alertas del usuario. Por favor, configura de nuevo tu perfil en menos de 5mins.</div>`)
+    .replace('{{boeDocuments}}', `<div class="no-results" style="color: #04db8d; display:none;font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Hemos lanzado una nueva versión del producto para poder personalizar más las alertas del usuario. Por favor, configura de nuevo tu perfil en menos de 5mins.</div>`)
     .replace('{{months_json}}', JSON.stringify([]))
     .replace('{{counts_json}}', JSON.stringify([]))
     .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
@@ -2573,6 +2627,9 @@ app.post('/api/cancel-subscription', ensureAuthenticated, async (req, res) => {
     const dd = String(currentDate.getDate()).padStart(2, '0');
     const formattedDate = `${yyyy}-${mm}-${dd}`;
 
+    // Get user limits for plan1 (free plan)
+    const userLimits = getUserLimits('plan1');
+
     // Datos a actualizar en la base de datos
     const updateData = {
       subscription_plan: 'plan1', // Cambiar a plan gratuito
@@ -2589,7 +2646,10 @@ app.post('/api/cancel-subscription', ensureAuthenticated, async (req, res) => {
       // Resetear los extras
       extra_agentes: 0,
       extra_fuentes: 0,
-      impact_analysis_limit: 0
+      impact_analysis_limit: 0,
+      // Resetear los límites según plan1
+      limit_agentes: userLimits.limit_agentes,
+      limit_fuentes: userLimits.limit_fuentes
     };
 
     // Actualizar el usuario en la base de datos
@@ -3050,93 +3110,12 @@ async function sendSubscriptionEmail(user, userData) {
 }
 
 
-/*Stripe*/
-/*
-app.post('/create-checkout-session', async (req, res) => {
-  const {
-    plan,
-    industry_tags,
-    sub_industria_map,
-    rama_juridicas,
-    profile_type,
-    sub_rama_map,
-    cobertura_legal,
-    company_name,
-    name,
-    web,
-    linkedin,
-    perfil_profesional,
-    rangos,
-    feedback,
-    etiquetas_personalizadas,
-    isTrial
-  } = req.body;
-
-  try {
-    const priceIdMap = {
-      plan1: 'price_dummy_for_plan1', // Añadir ID de precio dummy para plan1
-      plan2: 'price_1QOlhEEpe9srfTKESkjGMFvI', //live
-      plan3: 'price_1QOlwZEpe9srfTKEBRzcNR8A', //test
-    };
-
-    if (!priceIdMap[plan]) {
-      return res.status(400).json({ error: 'Invalid plan selected' });
-    }
-
-    // Encode your data for the success_url
-    const encodedIndustryTags  = encodeURIComponent(JSON.stringify(industry_tags));
-    const encodedRamaJuridicas = encodeURIComponent(JSON.stringify(rama_juridicas));
-    const encodedPlan          = encodeURIComponent(plan);
-    const encodedProfileType   = encodeURIComponent(profile_type);
-    const encodedSubRamaMap    = encodeURIComponent(JSON.stringify(sub_rama_map));
-   // Añadir los parámetros adicionales a la URL de éxito:
-    const encodedSubIndustriaMap = encodeURIComponent(JSON.stringify(sub_industria_map));
-    const encodedCoberturaLegal = encodeURIComponent(JSON.stringify(cobertura_legal));
-    const encodedCompanyName = encodeURIComponent(company_name);
-    const encodedName = encodeURIComponent(name);
-    const encodedWeb = encodeURIComponent(web);
-    const encodedLinkedin = encodeURIComponent(linkedin);
-    const encodedPerfilProfesional = encodeURIComponent(perfil_profesional);
-    const encodedRangos = encodeURIComponent(JSON.stringify(rangos));
-    const encodedFeedback = encodeURIComponent(JSON.stringify(feedback));
-    const encodedEtiquetasPersonalizadas = encodeURIComponent(JSON.stringify(etiquetas_personalizadas));
-
-    // Build base subscription data
-    let subscriptionData = {};
-    // If plan2, set trial_period_days: 60
-    if ((plan === 'plan1' || plan === 'plan2' || plan === 'plan3') && isTrial) {
-      subscriptionData = {
-        trial_period_days: 15,  // 15 días de prueba para todos los planes
-      };
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        { 
-          price: priceIdMap[plan],
-          quantity: 1 
-        }
-      ],
-      mode: 'subscription',
-
-      // If plan2 is in trial:
-      subscription_data: subscriptionData,
-      locale: 'es', // 'es' for Spanish
-
-      // Y luego añadirlos a la URL:
-    success_url: `https://app.reversa.ai/save-user?session_id={CHECKOUT_SESSION_ID}&industry_tags=${encodedIndustryTags}&rama_juridicas=${encodedRamaJuridicas}&plan=${encodedPlan}&profile_type=${encodedProfileType}&sub_rama_map=${encodedSubRamaMap}&sub_industria_map=${encodedSubIndustriaMap}&cobertura_legal=${encodedCoberturaLegal}&company_name=${encodedCompanyName}&name=${encodedName}&web=${encodedWeb}&linkedin=${encodedLinkedin}&perfil_profesional=${encodedPerfilProfesional}&rangos=${encodedRangos}&feedback=${encodedFeedback}&etiquetas_personalizadas=${encodedEtiquetasPersonalizadas}`,
-    cancel_url: 'https://app.reversa.ai/paso1.html',
-    });
-
-    res.json({ sessionId: session.id });
-  } catch (error) {
-    console.error('Error creating Checkout Session:', error);
-    res.status(500).json({ error: 'Failed to create Checkout Session' });
-  }
-});
-*/
-app.post('/create-checkout-session', async (req, res) => {
+app.post('/create-checkout-session', ensureAuthenticated, async (req, res) => {
+  console.log('[create-checkout-session] Starting session creation...');
+  console.log('[create-checkout-session] User authenticated:', !!req.user);
+  console.log('[create-checkout-session] User ID:', req.user ? req.user._id : 'NO USER');
+  console.log('[create-checkout-session] User email:', req.user ? req.user.email : 'NO EMAIL');
+  
   const {
     plan,
     billingInterval,
@@ -3159,6 +3138,9 @@ app.post('/create-checkout-session', async (req, res) => {
     etiquetas_personalizadas,
     isTrial
   } = req.body;
+
+  console.log('[create-checkout-session] Request body plan:', plan);
+  console.log('[create-checkout-session] Request body billingInterval:', billingInterval);
 
   try {
     // Definir precios base según el plan y el intervalo (en céntimos)
@@ -3373,6 +3355,12 @@ if (numExtraFuentes > 0) {
     // Guardar el ID del usuario si está disponible
     if (req.user && req.user._id) {
       metadataChunks.user_id = req.user._id.toString();
+      console.log('[create-checkout-session] User ID saved to metadata:', metadataChunks.user_id);
+    } else {
+      console.error('[create-checkout-session] ERROR: No user or user._id available to save to metadata!');
+      console.error('[create-checkout-session] req.user:', req.user);
+      // Return error if no user is available
+      return res.status(401).json({ error: 'User not authenticated' });
     }
     
     // Configuración de datos de suscripción
@@ -3382,6 +3370,12 @@ if (numExtraFuentes > 0) {
         trial_period_days: 15,
       };
     }
+    // Log metadata before creating session
+    console.log('[create-checkout-session] Metadata chunks to be saved:');
+    console.log('[create-checkout-session] user_id:', metadataChunks.user_id);
+    console.log('[create-checkout-session] plan:', metadataChunks.plan);
+    console.log('[create-checkout-session] Total metadata keys:', Object.keys(metadataChunks).length);
+
 // Crear la sesión de checkout con todos los metadatos
 const session = await stripe.checkout.sessions.create({
   payment_method_types: ['card'],
@@ -3395,15 +3389,14 @@ const session = await stripe.checkout.sessions.create({
   tax_id_collection: {
     enabled: true // Habilitar la recolección de ID fiscal para clientes empresariales
   },
- /* billing_address_collection: 'required', // Hacer obligatoria la dirección de facturación
-  shipping_address_collection: {
-    allowed_countries: ['ES', 'PT', 'FR', 'IT', 'DE'], // Países de la UE más relevantes
-  },
-  */
   metadata: metadataChunks,
-  success_url: `https://app.reversa.ai/save-user?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: 'https://app.reversa.ai/paso3.html',
+  success_url: `${BASE_URL}/save-user?session_id={CHECKOUT_SESSION_ID}`,
+  cancel_url: `${BASE_URL}/paso0.html`,
 });
+
+console.log('[create-checkout-session] Stripe session created successfully');
+console.log('[create-checkout-session] Session ID:', session.id);
+console.log('[create-checkout-session] Session metadata saved:', session.metadata ? 'YES' : 'NO');
 
 res.json({ sessionId: session.id });
 } catch (error) {
@@ -3413,97 +3406,127 @@ res.status(500).json({ error: 'Failed to create Checkout Session' });
 });
 
 
-/*
-app.get('/save-user', async (req, res) => {
-  const { session_id, ...userData } = req.query;
-  
-  try {
-    // Verificar la sesión de Stripe
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    
-    if (session.payment_status === 'paid') {
-      // Crear current date en formato yyyy-mm-dd
-      const currentDate = new Date();
-      const yyyy = currentDate.getFullYear();
-      const mm = String(currentDate.getMonth() + 1).padStart(2, '0'); // January is 0!
-      const dd = String(currentDate.getDate()).padStart(2, '0');
-      const formattedDate = `${yyyy}-${mm}-${dd}`;
-      
-      // Procesar los datos del usuario (decodificar los parámetros)
-      const decodedUserData = {
-        industry_tags: JSON.parse(decodeURIComponent(userData.industry_tags)),
-        sub_industria_map: JSON.parse(decodeURIComponent(userData.sub_industria_map)),
-        rama_juridicas: JSON.parse(decodeURIComponent(userData.rama_juridicas)),
-        subscription_plan: decodeURIComponent(userData.plan),
-        profile_type: decodeURIComponent(userData.profile_type),
-        sub_rama_map: JSON.parse(decodeURIComponent(userData.sub_rama_map)),
-        cobertura_legal: JSON.parse(decodeURIComponent(userData.cobertura_legal)),
-        company_name: decodeURIComponent(userData.company_name),
-        name: decodeURIComponent(userData.name),
-        web: decodeURIComponent(userData.web),
-        linkedin: decodeURIComponent(userData.linkedin),
-        perfil_profesional: decodeURIComponent(userData.perfil_profesional),
-        rangos: JSON.parse(decodeURIComponent(userData.rangos)),
-        feedback_login: JSON.parse(decodeURIComponent(userData.feedback)),
-        etiquetas_personalizadas: JSON.parse(decodeURIComponent(userData.etiquetas_personalizadas)),
-        registration_date: formattedDate,    // String format yyyy-mm-dd
-        registration_date_obj: currentDate,  // Also save native Date object for better querying
-        stripe_customer_id: session.customer,
-        stripe_subscription_id: session.subscription,
-        payment_status: session.payment_status
-      };
-      
-      // Guardar en la base de datos
-      const client = new MongoClient(uri, mongodbOptions);
-      await client.connect();
-      const db = client.db("papyrus");
-      const usersCollection = db.collection("users");
-      
-      // Obtener el usuario actual desde la sesión
-      const user = req.user;
-      if (!user) {
-        return res.status(401).redirect('/login.html');
-      }
-      
-      // Actualizar el usuario en la base de datos
-      await usersCollection.updateOne(
-        { _id: new ObjectId(user._id) },
-        { $set: decodedUserData },
-        { upsert: true }
-      );
-      
-      // Enviar correo de confirmación
-      await sendSubscriptionEmail(user, decodedUserData);
-      
-      await client.close();
-      
-      // Redirigir al usuario a su perfil
-      res.redirect('/profile');
-    } else {
-      // Si el pago no se completó correctamente
-      console.error('Payment not completed:', session.payment_status);
-      res.redirect('/payment-failed.html');
-    }
-  } catch (error) {
-    console.error('Error saving user after payment:', error);
-    res.redirect('/error.html');
-  }
-});
-*/
+
 app.get('/save-user', async (req, res) => {
   const { session_id } = req.query;
   
+  console.log('[save-user] =================================');
+  console.log('[save-user] Starting save-user process');
+  console.log('[save-user] Session ID:', session_id);
+  console.log('[save-user] req.user exists:', !!req.user);
+  console.log('[save-user] req.user._id:', req.user ? req.user._id : 'NO USER ID');
+  console.log('[save-user] req.session exists:', !!req.session);
+  console.log('[save-user] req.isAuthenticated():', req.isAuthenticated ? req.isAuthenticated() : 'NO AUTH FUNCTION');
+  
+  if (!session_id) {
+    console.error('[save-user] ERROR: No session_id provided in query params');
+    return res.redirect('/index.html?error=no_session_id');
+  }
+  
   try {
     // Verificar la sesión de Stripe con expansión de datos relacionados
-    const session = await stripe.checkout.sessions.retrieve(session_id, {
-      expand: ['subscription', 'line_items']
-    });
+    console.log('[save-user] Retrieving Stripe session...');
+    let session;
+    
+    try {
+      session = await stripe.checkout.sessions.retrieve(session_id, {
+        expand: ['subscription', 'line_items']
+      });
+    } catch (stripeError) {
+      console.error('[save-user] ERROR: Failed to retrieve Stripe session:', stripeError.message);
+      console.error('[save-user] Stripe error type:', stripeError.type);
+      console.error('[save-user] Session ID that failed:', session_id);
+      return res.redirect('/index.html?error=stripe_session_not_found&session_id=' + session_id);
+    }
+    
+    console.log('[save-user] Stripe session retrieved successfully');
+    console.log('[save-user] Session payment status:', session.payment_status);
+    console.log('[save-user] Session metadata exists:', !!session.metadata);
+    console.log('[save-user] Session metadata keys:', session.metadata ? Object.keys(session.metadata) : 'NO METADATA');
+    console.log('[save-user] Session metadata.user_id:', session.metadata ? session.metadata.user_id : 'NO USER_ID IN METADATA');
+    
+    // Check if payment was successful first
+    if (session.payment_status !== 'paid') {
+      console.error('[save-user] ERROR: Payment not completed. Status:', session.payment_status);
+      return res.redirect('/index.html?error=payment_not_completed&status=' + session.payment_status);
+    }
     
     // Obtener el usuario actual desde la sesión
-    const user = req.user;
+    let user = req.user;
     if (!user) {
-      console.error('No user found in session or through other means');
-      return res.redirect('/login.html?error=session_lost&redirect_to=' + encodeURIComponent('/save-user?session_id=' + session_id));
+      console.warn('[save-user] req.user is undefined. Attempting to recover using session metadata.user_id');
+      const metaUserId = session.metadata && session.metadata.user_id;
+      console.log('[save-user] metadata.user_id value:', metaUserId);
+      console.log('[save-user] metadata.user_id type:', typeof metaUserId);
+      
+      if (metaUserId) {
+        console.log('[save-user] Found metadata.user_id:', metaUserId);
+        try {
+          console.log('[save-user] Connecting to MongoDB to recover user...');
+          const tempClient = new MongoClient(uri, mongodbOptions);
+          await tempClient.connect();
+          console.log('[save-user] MongoDB connected, searching for user with ID:', metaUserId);
+          
+          // Try to find user by ID
+          let searchQuery;
+          try {
+            searchQuery = { _id: new ObjectId(metaUserId) };
+            console.log('[save-user] Search query:', JSON.stringify(searchQuery));
+          } catch (objectIdError) {
+            console.error('[save-user] ERROR: Invalid ObjectId format:', metaUserId);
+            console.error('[save-user] ObjectId error:', objectIdError.message);
+            await tempClient.close();
+            return;
+          }
+          
+          user = await tempClient.db('papyrus').collection('users').findOne(searchQuery);
+          console.log('[save-user] User found from DB:', !!user);
+          
+          if (user) {
+            console.log('[save-user] Successfully recovered user with email:', user.email);
+            console.log('[save-user] User ID from DB:', user._id.toString());
+          } else {
+            console.error('[save-user] ERROR: No user document matches metadata.user_id:', metaUserId);
+            
+            // Try to search by email as fallback if we have customer info
+            if (session.customer_details && session.customer_details.email) {
+              console.log('[save-user] Attempting to find user by email:', session.customer_details.email);
+              user = await tempClient.db('papyrus').collection('users').findOne({ 
+                email: session.customer_details.email.toLowerCase() 
+              });
+              
+              if (user) {
+                console.log('[save-user] Successfully recovered user by email:', user.email);
+              } else {
+                console.error('[save-user] No user found by email either:', session.customer_details.email);
+              }
+            }
+          }
+          
+          await tempClient.close();
+        } catch(recErr) {
+          console.error('[save-user] ERROR: Exception retrieving user via metadata.user_id:', recErr);
+          console.error('[save-user] Full error stack:', recErr.stack);
+          console.error('[save-user] Error name:', recErr.name);
+          console.error('[save-user] Error message:', recErr.message);
+        }
+      } else {
+        console.error('[save-user] ERROR: metadata.user_id not present in session metadata');
+        console.error('[save-user] Available metadata keys:', session.metadata ? Object.keys(session.metadata) : 'None');
+        if (session.metadata) {
+          console.error('[save-user] Full metadata object:', JSON.stringify(session.metadata, null, 2));
+        }
+      }
+    } else {
+      console.log('[save-user] req.user available with email:', user.email);
+    }
+
+    if (!user) {
+      console.error('[save-user] CRITICAL ERROR: Unable to identify user after all recovery attempts');
+      console.error('[save-user] Session metadata:', session.metadata);
+      console.error('[save-user] Customer details:', session.customer_details);
+      console.error('[save-user] Redirecting to login with session_lost error');
+      return res.redirect('/index.html?error=session_lost&redirect_to=' + encodeURIComponent('/save-user?session_id=' + session_id));
     }
     
     // Obtener todos los metadatos de la sesión
@@ -3554,6 +3577,11 @@ app.get('/save-user', async (req, res) => {
     reconstructedData.extra_fuentes = parseInt(metadata.extra_fuentes || '0');
     reconstructedData.impact_analysis_limit = parseInt(metadata.impact_analysis_limit || '0');
     
+    // Get user limits based on subscription plan
+    const userLimits = getUserLimits(reconstructedData.subscription_plan);
+    reconstructedData.limit_agentes = userLimits.limit_agentes;
+    reconstructedData.limit_fuentes = userLimits.limit_fuentes;
+    
     // Crear current date en formato yyyy-mm-dd
     const currentDate = new Date();
     const yyyy = currentDate.getFullYear();
@@ -3583,23 +3611,100 @@ app.get('/save-user', async (req, res) => {
     const db = client.db("papyrus");
     const usersCollection = db.collection("users");
     
+    console.log('[save-user] Attempting to update user in database');
+    console.log('[save-user] User ID for update:', user._id);
+    console.log('[save-user] Update data keys:', Object.keys(reconstructedData));
+    
     // Actualizar el usuario en la base de datos
-    await usersCollection.updateOne(
+    const updateResult = await usersCollection.updateOne(
       { _id: new ObjectId(user._id) },
       { $set: reconstructedData },
       { upsert: true }
     );
     
+    console.log('[save-user] Update result:', updateResult);
+    console.log('[save-user] Matched count:', updateResult.matchedCount);
+    console.log('[save-user] Modified count:', updateResult.modifiedCount);
+    console.log('[save-user] User data updated successfully in database');
+    console.log('[save-user] User email:', user.email);
+    console.log('[save-user] Final subscription plan:', reconstructedData.subscription_plan);
+    
     // Enviar correo de confirmación
-    await sendSubscriptionEmail(user, reconstructedData);
+    console.log('[save-user] Sending confirmation email...');
+    try {
+      await sendSubscriptionEmail(user, reconstructedData);
+      console.log('[save-user] Confirmation email sent successfully');
+    } catch (emailError) {
+      console.error('[save-user] Error sending confirmation email:', emailError);
+      // Continue even if email fails
+    }
     
     await client.close();
+    console.log('[save-user] Database connection closed');
     
-    // Redirigir al usuario a su perfil
-    res.redirect('/profile');
+    // Manually log in the user to ensure they're authenticated for the profile page
+    if (!req.user || req.user._id.toString() !== user._id.toString()) {
+      console.log('[save-user] Manually logging in user for session');
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error('[save-user] Error during manual login:', loginErr);
+          // Continue anyway, the user data is saved
+        } else {
+          console.log('[save-user] User manually logged in successfully');
+        }
+        
+        // Set cookie for client-side access
+        if (user && user.email) {
+          res.cookie('userEmail', user.email, { 
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            httpOnly: false, // Allow JavaScript access
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+          });
+          console.log('[save-user] User email cookie set:', user.email);
+        }
+        
+        // Redirigir al usuario a su perfil
+        console.log('[save-user] Redirecting to profile page');
+        console.log('[save-user] =================================');
+        res.redirect('/profile?view=configuracion');
+      });
+    } else {
+      console.log('[save-user] User already authenticated, proceeding with redirect');
+      
+      // Set cookie for client-side access
+      if (user && user.email) {
+        res.cookie('userEmail', user.email, { 
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+          httpOnly: false, // Allow JavaScript access
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+        });
+        console.log('[save-user] User email cookie set:', user.email);
+      }
+      
+      // Redirigir al usuario a su perfil
+      console.log('[save-user] Redirecting to profile page');
+      console.log('[save-user] =================================');
+      res.redirect('/profile?view=configuracion');
+    }
   } catch (error) {
-    console.error('Error saving user after payment:', error);
-    res.status(500).redirect('/error.html');
+    console.error('[save-user] CRITICAL ERROR in save-user process:');
+    console.error('[save-user] Error message:', error.message);
+    console.error('[save-user] Error stack:', error.stack);
+    console.error('[save-user] Error name:', error.name);
+    console.error('[save-user] Session ID that caused error:', session_id);
+    console.error('[save-user] req.user at error time:', req.user ? req.user.email : 'NO USER');
+    console.error('[save-user] =================================');
+    
+    // Try to redirect with more detailed error information
+    const errorParams = new URLSearchParams({
+      error: 'save_user_failed',
+      message: error.message,
+      session_id: session_id || 'unknown'
+    });
+    
+    res.redirect('/index.html?' + errorParams.toString());
   }
 });
 
@@ -3653,6 +3758,9 @@ app.post('/save-free-plan', async (req, res) => {
       impactAnalysisLimit = -1; // -1 means unlimited
     }
 
+    // Get user limits based on subscription plan
+    const userLimits = getUserLimits(plan);
+
     // Crear un objeto con los datos del usuario para actualizar
     const userData = {
       industry_tags,
@@ -3676,7 +3784,9 @@ app.post('/save-free-plan', async (req, res) => {
       impact_analysis_limit: impactAnalysisLimit,
       extra_agentes: parseInt(extra_agentes || '0'),
       extra_fuentes: parseInt(extra_fuentes || '0'),
-      payment_status: promotion_code === 'yes' ? 'promotion_approved' : 'free_plan'
+      payment_status: promotion_code === 'yes' ? 'promotion_approved' : 'free_plan',
+      limit_agentes: userLimits.limit_agentes,
+      limit_fuentes: userLimits.limit_fuentes
     };
 
     await usersCollection.updateOne(
@@ -3689,7 +3799,7 @@ app.post('/save-free-plan', async (req, res) => {
     await sendSubscriptionEmail(req.user, userData);
     
     await client.close();
-    res.json({ redirectUrl: '/profile' });
+    res.json({ redirectUrl: '/profile?view=configuracion' });
   } catch (error) {
     console.error('Error saving free plan data:', error);
     res.status(500).send('Error saving user data');
@@ -3842,6 +3952,9 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
     const db = client.db("papyrus");
     const usersCollection = db.collection("users");
 
+    // Get user limits based on subscription plan
+    const userLimits = getUserLimits(plan);
+
     // Update the existing user
     await usersCollection.updateOne(
       { _id: new ObjectId(req.user._id) },
@@ -3864,13 +3977,15 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
           rangos,
           feedback_login: feedback,
           subscription_updated_at: new Date(),
-          etiquetas_personalizadas
+          etiquetas_personalizadas,
+          limit_agentes: userLimits.limit_agentes,
+          limit_fuentes: userLimits.limit_fuentes
         }
       }
     );
     
     await client.close();
-    res.json({ redirectUrl: '/profile', message: 'Subscription updated successfully' });
+    res.json({ redirectUrl: '/profile?view=configuracion', message: 'Subscription updated successfully' });
   } catch (error) {
     console.error('Error updating subscription:', error);
     res.status(500).send('Error updating subscription');
@@ -3987,7 +4102,16 @@ app.get('/api/get-user-data', ensureAuthenticated, async (req, res) => {
       stripe_subscription_id: user.stripe_subscription_id || '',
       billing_interval: user.billing_interval || 'monthly',
       registration_date: user.registration_date || '',
-      purchased_items: user.purchased_items || []
+      purchased_items: user.purchased_items || [],
+      // User limits for agentes and fuentes
+      limit_agentes: user.limit_agentes !== undefined ? user.limit_agentes : null, // null means unlimited
+      limit_fuentes: user.limit_fuentes !== undefined ? user.limit_fuentes : null, // null means unlimited
+      // ADDED ONBOARDING FIELDS
+      tipo_empresa: user.tipo_empresa || null,
+      detalle_empresa: user.detalle_empresa || null,
+      interes: user.interes || null,
+      tamaño_empresa: user.tamaño_empresa || null,
+      perfil_regulatorio: user.perfil_regulatorio || null
     });
     
     await client.close();
@@ -4015,7 +4139,9 @@ app.post('/api/update-user-data', ensureAuthenticated, async (req, res) => {
       'etiquetas_personalizadas',
       'cobertura_legal',
       'rangos',
-      'accepted_email'  // Add accepted_email as an allowed field
+      'accepted_email',  // Add accepted_email as an allowed field
+      'limit_agentes',
+      'limit_fuentes'
     ];
 
     // Filtrar solo los campos permitidos
@@ -4080,6 +4206,9 @@ app.post('/save-same-plan2', async (req, res) => {
     const db = client.db("papyrus");
     const usersCollection = db.collection("users");
 
+    // Get user limits based on subscription plan (should still be plan2)
+    const userLimits = getUserLimits(plan);
+
     await usersCollection.updateOne(
       { _id: new ObjectId(req.user._id) },
       {
@@ -4090,14 +4219,16 @@ app.post('/save-same-plan2', async (req, res) => {
           profile_type,
           sub_rama_map,
           cobertura_legal,
-          company_name
+          company_name,
+          limit_agentes: userLimits.limit_agentes,
+          limit_fuentes: userLimits.limit_fuentes
         }
       },
       { upsert: true }
     );
 
     // Return JSON with a redirect => /profile
-    res.json({ redirectUrl: '/profile' });
+    res.json({ redirectUrl: '/profile?view=configuracion' });
   } catch (error) {
     console.error('Error saving same plan2 data:', error);
     res.status(500).send('Error saving user data');
@@ -4145,6 +4276,9 @@ app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
       }
     }
 
+    // Get user limits for plan1 (free plan)
+    const userLimits = getUserLimits(plan);
+
     // 3) Now update user => switch to plan1, store new data
     await usersCollection.updateOne(
       { _id: new ObjectId(req.user._id) },
@@ -4155,7 +4289,10 @@ app.post('/cancel-plan2', ensureAuthenticated, async (req, res) => {
           rama_juridicas,
           sub_rama_map,
           // Possibly also remove subscription_id if you store it
-          stripe_subscription_id: null
+          stripe_subscription_id: null,
+          // Update limits according to plan1
+          limit_agentes: userLimits.limit_agentes,
+          limit_fuentes: userLimits.limit_fuentes
         }
       },
       { upsert: true }
@@ -4919,4 +5056,846 @@ app.get('/reset-password.html', (req, res) => {
 
 
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+app.post('/api/regulatory-profile', async (req, res) => {
+  try {
+    const answers = req.body.answers || {};
+    if (!answers || Object.keys(answers).length === 0) {
+      return res.status(400).json({ error: 'No answers provided' });
+    }
+
+    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'Google Gemini API key not configured' });
+    }
+
+    const companyWebsite = answers['web_empresa'] || '';
+
+    // Helper: Extract raw text from a website (basic & lightweight)
+    async function extractWebsiteText(url) {
+      try {
+        // Ensure URL has protocol
+        const fullUrl = /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
+        const resp = await fetch(fullUrl, { timeout: 10000 });
+        if (!resp.ok) return '';
+        const html = await resp.text();
+        // Remove script/style tags and collapse whitespace
+        const cleaned = html
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
+          .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
+          .replace(/<[^>]+>/g, ' ') // strip tags
+          .replace(/&[a-z]+;/gi, ' ') // basic entity removal
+          .replace(/\s+/g, ' ') // collapse whitespace
+          .trim();
+        return cleaned.slice(0, 5000); // limit to 5k chars
+      } catch (err) {
+        console.error('Error fetching website content', err);
+        return '';
+      }
+    }
+
+    const websiteExtract = companyWebsite ? await extractWebsiteText(companyWebsite) : '';
+
+    // Build user prompt
+    const infoPairs = Object.entries(answers).map(([k, v]) => `- ${k}: ${v}`).join('\n');
+    const userPrompt = `A continuación encontrarás la información recopilada de una empresa a través de un cuestionario breve. Con estos datos y la siguiente información adicional obtenida de su página web oficial '${companyWebsite}', genera un PERFIL REGULATORIO completo y conciso que pueda servir como contexto para modelos posteriores (agentes) que evaluarán el impacto de normativas en dicha empresa.\n\nInformación del cuestionario:\n${infoPairs}\n\nExtracto de la página web (texto plano):\n${websiteExtract}`;
+
+    const systemInstructions = `Eres un asistente experto en regulación y compliance. Debes devolver únicamente un objeto JSON VÁLIDO que contenga la clave 'html_response'. El valor de 'html_response' será un string HTML con exactamente 3 párrafos (<p>).\n1. Primer párrafo: contexto global de la empresa (sector, número de empleados, misión, fuente principal de ingresos, etc.).\n2. Segundo párrafo: descripción del departamento/sector, actividad económica o área práctica en la que opera la compañía.\n3. Tercer párrafo: principales necesidades regulatorias o preocupaciones detectadas.\nNo uses markdown, sólo HTML dentro del string. No incluyas ningún texto fuera del objeto JSON.`;
+
+    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const body = {
+      systemInstruction: {
+        parts: [{ text: systemInstructions }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: userPrompt }] }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 2048
+      }
+    };
+
+    const response = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const txt = await response.text();
+      console.error('Gemini API error:', txt);
+      return res.status(500).json({ error: 'Gemini API request failed' });
+    }
+
+    const data = await response.json();
+    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    let parsed;
+    try {
+      // The API is now requested to return JSON directly, so parsing should be direct.
+      parsed = JSON.parse(aiContent);
+    } catch (err) {
+      console.error('Failed to parse Gemini response:', err, aiContent);
+      return res.status(500).json({ error: 'Invalid AI response format' });
+    }
+
+    return res.json(parsed);
+  } catch (err) {
+    console.error('Error generating regulatory profile', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// New API to save initial onboarding data
+app.post('/api/save-onboarding-data', ensureAuthenticated, async (req, res) => {
+  try {
+    const { tipo_empresa, detalle_empresa, interes, tamaño_empresa, web } = req.body;
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const updateData = {
+      tipo_empresa,
+      detalle_empresa,
+      interes,
+      tamaño_empresa,
+      web
+    };
+
+    // Remove undefined fields
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    if (Object.keys(updateData).length > 0) {
+        await usersCollection.updateOne(
+          { _id: new ObjectId(req.user._id) },
+          { $set: updateData }
+        );
+    }
+
+    await client.close();
+    res.status(200).json({ success: true, message: 'Onboarding data saved.' });
+  } catch (error) {
+    console.error('Error saving onboarding data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// New API to save the generated regulatory profile
+app.post('/api/save-regulatory-profile', ensureAuthenticated, async (req, res) => {
+  try {
+    const { perfil_regulatorio } = req.body;
+    if (!perfil_regulatorio) {
+      return res.status(400).json({ error: 'perfil_regulatorio is required' });
+    }
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { perfil_regulatorio } }
+    );
+
+    await client.close();
+    res.status(200).json({ success: true, message: 'Regulatory profile saved.' });
+  } catch (error) {
+    console.error('Error saving regulatory profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Generate Agent endpoint
+app.post('/api/generate-agent', ensureAuthenticated, async (req, res) => {
+  try {
+    const { productData } = req.body;
+    
+    if (!productData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Product data is required' 
+      });
+    }
+
+    console.log(`Generating agent for user: ${req.user._id}`);
+    console.log(`Product data:`, productData);
+
+    /* ---------------- GET USER REGULATORY PROFILE ---------------- */
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Get current user data to access perfil_regulatorio
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      await client.close();
+      return res.status(404).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    const perfilRegulatorio = user.perfil_regulatorio || '';
+
+    /* ---------------- BUILD DETAILED PROMPT WITH TEMPLATE ---------------- */
+    const prompt = `INSTRUCCIÓN PRINCIPAL:
+Generar **una única etiqueta jurídica** junto a su definición para clasificar documentos legales según los intereses de "${perfilRegulatorio} para ${productData.description}".
+
+Eres un experto jurídico en derecho español y de la Unión Europea; tus respuestas serán específicas para la normativa aplicable al producto descrito.
+
+DATOS DEL PRODUCTO (proporcionados por el usuario):
+- Nombre / Descripción breve: ${productData.description}
+- Fase regulatoria o de mercado: ${productData.phase}
+- Características diferenciales relevantes: ${productData.characteristics}
+
+TAREAS:
+1. ETIQUETA PERSONALIZADA:
+   - Basándote en la información anterior, genera **solo una etiqueta** que cumpla TODAS estas reglas:
+     • Si la etiqueta pudiera resultar muy general, adáptala al contexto del producto (ej.: «Registros sanitarios para vacuna veterinaria»).  
+     • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, EMA, etc.).  
+     • La etiqueta debe ser precisa, sin solapamientos ni redundancias con categorías genéricas.  
+     • La definición debe abarcar tanto disposiciones generales como específicas que puedan afectar al producto.
+
+OBJETIVO DE SALIDA:
+Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
+
+Ejemplo de estructura exacta (sin usar estos valores literales):
+{
+  "etiqueta_personalizada": {
+    "Nombre descriptivo de la etiqueta jurídica": "Definición completa y precisa de qué abarca esta etiqueta en el contexto regulatorio"
+  }
+}`;
+
+    // Log the prompt being sent to the LLM
+    console.log('=== PROMPT SENT TO LLM ===');
+    console.log(prompt);
+    console.log('=== END PROMPT ===');
+
+    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Google Gemini API key not configured' 
+      });
+    }
+
+    const systemInstructions = `Eres un experto jurídico especializado en derecho español y de la Unión Europea. Tu tarea es generar etiquetas jurídicas precisas para clasificar documentos legales. Devuelve ÚNICAMENTE un objeto JSON válido con la estructura especificada en las instrucciones.`;
+
+    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const body = {
+      systemInstruction: {
+        parts: [{ text: systemInstructions }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 1024
+      }
+    };
+
+    const response = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', errorText);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error generating agent with AI' 
+      });
+    }
+
+    const data = await response.json();
+    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('=== LLM RESPONSE ===');
+    console.log(aiContent);
+    console.log('=== END LLM RESPONSE ===');
+
+    let parsedAgent;
+    try {
+      parsedAgent = JSON.parse(aiContent);
+    } catch (err) {
+      console.error('Failed to parse Gemini response:', err, aiContent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid AI response format' 
+      });
+    }
+
+    // Validate the response structure
+    if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') {
+      console.error('Invalid agent structure:', parsedAgent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid agent structure from AI' 
+      });
+    }
+
+    // Merge new agent with existing etiquetas_personalizadas
+    const existingEtiquetas = user.etiquetas_personalizadas || {};
+    const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
+
+    // Update user document
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { etiquetas_personalizadas: newEtiquetas } }
+    );
+
+    await client.close();
+
+    console.log('Agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
+
+    res.json({
+      success: true,
+      agent: parsedAgent,
+      message: 'Agent generated and saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in generate-agent endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Generate Client Agent endpoint
+app.post('/api/generate-client-agent', ensureAuthenticated, async (req, res) => {
+  try {
+    const { clientData } = req.body;
+    
+    if (!clientData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Client data is required' 
+      });
+    }
+
+    console.log(`Generating client agent for user: ${req.user._id}`);
+    console.log(`Client data:`, clientData);
+
+    /* ---------------- GET USER REGULATORY PROFILE ---------------- */
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Get current user data to access perfil_regulatorio
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      await client.close();
+      return res.status(404).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    const perfilRegulatorio = user.perfil_regulatorio || '';
+
+    /* ---------------- BUILD DETAILED PROMPT WITH CLIENT TEMPLATE ---------------- */
+    const prompt = `INSTRUCCIÓN PRINCIPAL:
+Generar **una única etiqueta jurídica** junto a su definición para clasificar documentos legales. Utiliza el contexto de la empresa: ${perfilRegulatorio}
+
+Eres un experto jurídico en derecho español y de la Unión Europea; tus respuestas serán específicas para la normativa aplicable al cliente descrito.
+
+DATOS DEL CLIENTE (proporcionados por el usuario):
+- Nombre / Descripción breve: ${clientData.description}
+- Página web: ${clientData.website}
+- Sectores / Jurisdicciones relevantes: ${clientData.scope}
+
+TAREAS:
+1. ETIQUETA PERSONALIZADA:
+   - Basándote en la información anterior, genera **solo una etiqueta** que cumpla TODAS estas reglas:
+     • Si la etiqueta pudiera resultar muy general, adáptala al contexto del cliente (ej.: «Regulaciones prudenciales para aseguradora digital»).  
+     • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, etc.).  
+     • La etiqueta debe ser precisa y reflejar el área normativa más crítica para el cliente, evitando redundancias con categorías genéricas.  
+     • La definición debe abarcar tanto disposiciones generales como específicas que puedan afectar al cliente (p. ej. requisitos de solvencia, protección de datos, comercialización, reporte).
+
+OBJETIVO DE SALIDA:
+Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
+
+Ejemplo de estructura exacta (sin usar estos valores literales):
+{
+  "etiqueta_personalizada": {
+    "Nombre descriptivo de la etiqueta jurídica": "Definición completa y precisa de qué abarca esta etiqueta en el contexto regulatorio"
+  }
+}`;
+
+    // Log the prompt being sent to the LLM
+    console.log('=== CLIENT PROMPT SENT TO LLM ===');
+    console.log(prompt);
+    console.log('=== END CLIENT PROMPT ===');
+
+    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Google Gemini API key not configured' 
+      });
+    }
+
+    const systemInstructions = `Eres un experto jurídico especializado en derecho español y de la Unión Europea. Tu tarea es generar etiquetas jurídicas precisas para clasificar documentos legales. Devuelve ÚNICAMENTE un objeto JSON válido con la estructura especificada en las instrucciones.`;
+
+    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const body = {
+      systemInstruction: {
+        parts: [{ text: systemInstructions }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 1024
+      }
+    };
+
+    const response = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', errorText);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error generating client agent with AI' 
+      });
+    }
+
+    const data = await response.json();
+    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('=== CLIENT LLM RESPONSE ===');
+    console.log(aiContent);
+    console.log('=== END CLIENT LLM RESPONSE ===');
+
+    let parsedAgent;
+    try {
+      parsedAgent = JSON.parse(aiContent);
+    } catch (err) {
+      console.error('Failed to parse Gemini response:', err, aiContent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid AI response format' 
+      });
+    }
+
+    // Validate the response structure
+    if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') {
+      console.error('Invalid agent structure:', parsedAgent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid agent structure from AI' 
+      });
+    }
+
+    // Merge new agent with existing etiquetas_personalizadas
+    const existingEtiquetas = user.etiquetas_personalizadas || {};
+    const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
+
+    // Update user document
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { etiquetas_personalizadas: newEtiquetas } }
+    );
+
+    await client.close();
+
+    console.log('Client agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
+
+    res.json({
+      success: true,
+      agent: parsedAgent,
+      message: 'Client agent generated and saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in generate-client-agent endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Generate Sector Agent endpoint
+app.post('/api/generate-sector-agent', ensureAuthenticated, async (req, res) => {
+  try {
+    const { sectorData } = req.body;
+    
+    if (!sectorData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Sector data is required' 
+      });
+    }
+
+    console.log(`Generating sector agent for user: ${req.user._id}`);
+    console.log(`Sector data:`, sectorData);
+
+    /* ---------------- GET USER REGULATORY PROFILE ---------------- */
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Get current user data to access perfil_regulatorio
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      await client.close();
+      return res.status(404).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    const perfilRegulatorio = user.perfil_regulatorio || '';
+
+    /* ---------------- BUILD DETAILED PROMPT WITH SECTOR TEMPLATE ---------------- */
+    const prompt = `INSTRUCCIÓN PRINCIPAL:
+Generar **una única etiqueta jurídica** junto a su definición para clasificar documentos legales. Ten en cuenta el contexto de la empresa usuaria de la plataforma: ${perfilRegulatorio}
+
+Eres un experto jurídico en derecho español y de la Unión Europea; tus respuestas serán específicas para la normativa aplicable al sector descrito.
+
+DATOS DEL SECTOR (proporcionados por el usuario):
+- Sector / Rama jurídica: ${sectorData.description}
+- Ámbito geográfico: ${sectorData.geographicScope}
+- Subtemas o procesos críticos: ${sectorData.subtopics}
+
+TAREAS:
+1. ETIQUETA PERSONALIZADA:
+   - Basándote en la información anterior, genera **solo una etiqueta** que cumpla TODAS estas reglas:
+     • Si la etiqueta pudiera resultar muy general, adáptala al contexto concreto del sector (ej.: «Licencias urbanísticas estratégicas en Comunidad de Madrid»).  
+     • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, etc.).  
+     • La etiqueta debe ser precisa y abarcar un área normativa crítica para el sector, evitando redundancias con categorías genéricas.  
+     • La definición debe cubrir tanto disposiciones generales como específicas que puedan afectar al sector y a los subtemas indicados.
+
+OBJETIVO DE SALIDA:
+Devuelve **SOLO** un objeto JSON con la siguiente estructura exacta (sin explicaciones adicionales):
+
+{
+  "etiqueta_personalizada": {
+    "nombre_etiqueta": "definicion_etiqueta"
+  }
+}`;
+
+    // Log the prompt being sent to the LLM
+    console.log('=== SECTOR PROMPT SENT TO LLM ===');
+    console.log(prompt);
+    console.log('=== END SECTOR PROMPT ===');
+
+    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Google Gemini API key not configured' 
+      });
+    }
+
+    const systemInstructions = `Eres un experto jurídico especializado en derecho español y de la Unión Europea. Tu tarea es generar etiquetas jurídicas precisas para clasificar documentos legales. Devuelve ÚNICAMENTE un objeto JSON válido con la estructura especificada en las instrucciones.`;
+
+    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const body = {
+      systemInstruction: {
+        parts: [{ text: systemInstructions }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 1024
+      }
+    };
+
+    const response = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', errorText);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error generating sector agent with AI' 
+      });
+    }
+
+    const data = await response.json();
+    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('=== SECTOR LLM RESPONSE ===');
+    console.log(aiContent);
+    console.log('=== END SECTOR LLM RESPONSE ===');
+
+    let parsedAgent;
+    try {
+      parsedAgent = JSON.parse(aiContent);
+    } catch (err) {
+      console.error('Failed to parse Gemini response:', err, aiContent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid AI response format' 
+      });
+    }
+
+    // Validate the response structure
+    if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') {
+      console.error('Invalid agent structure:', parsedAgent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid agent structure from AI' 
+      });
+    }
+
+    // Merge new agent with existing etiquetas_personalizadas
+    const existingEtiquetas = user.etiquetas_personalizadas || {};
+    const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
+
+    // Update user document
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { etiquetas_personalizadas: newEtiquetas } }
+    );
+
+    await client.close();
+
+    console.log('Sector agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
+
+    res.json({
+      success: true,
+      agent: parsedAgent,
+      message: 'Sector agent generated and saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in generate-sector-agent endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Generate Custom Agent endpoint
+app.post('/api/generate-custom-agent', ensureAuthenticated, async (req, res) => {
+  try {
+    const { customData } = req.body;
+    
+    if (!customData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Custom data is required' 
+      });
+    }
+
+    console.log(`Generating custom agent for user: ${req.user._id}`);
+    console.log(`Custom data:`, customData);
+
+    /* ---------------- GET USER REGULATORY PROFILE ---------------- */
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Get current user data to access perfil_regulatorio
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      await client.close();
+      return res.status(404).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    const perfilRegulatorio = user.perfil_regulatorio || '';
+
+    /* ---------------- BUILD DETAILED PROMPT WITH CUSTOM TEMPLATE ---------------- */
+    const prompt = `INSTRUCCIÓN PRINCIPAL:
+Generar **una única etiqueta jurídica** junto a su definición para clasificar documentos legales. Ten en cuenta el contexto de la empresa usuaria de la plataforma: ${perfilRegulatorio}
+
+Eres un experto jurídico en derecho español y de la Unión Europea; tus respuestas serán específicas para la normativa aplicable al contenido descrito.
+
+DESCRIPCIÓN DEL CONTENIDO A RASTREAR (proporcionado por el usuario):
+${customData.description}
+
+TAREAS:
+1. ETIQUETA PERSONALIZADA:
+   - Basándote en la información anterior, genera **solo una etiqueta** que cumpla TODAS estas reglas:
+     • Si la etiqueta pudiera resultar muy general, adáptala al contexto específico del contenido a rastrear.  
+     • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, etc.).  
+     • La etiqueta debe ser precisa y abarcar exactamente lo que el usuario quiere monitorizar, evitando redundancias con categorías genéricas.  
+     • La definición debe cubrir tanto disposiciones generales como específicas que puedan afectar al contenido que se quiere rastrear.
+
+OBJETIVO DE SALIDA:
+Devuelve **SOLO** un objeto JSON con la siguiente estructura exacta (sin explicaciones adicionales):
+
+{
+  "etiqueta_personalizada": {
+    "nombre_etiqueta": "definicion_etiqueta"
+  }
+}`;
+
+    // Log the prompt being sent to the LLM
+    console.log('=== CUSTOM PROMPT SENT TO LLM ===');
+    console.log(prompt);
+    console.log('=== END CUSTOM PROMPT ===');
+
+    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Google Gemini API key not configured' 
+      });
+    }
+
+    const systemInstructions = `Eres un experto jurídico especializado en derecho español y de la Unión Europea. Tu tarea es generar etiquetas jurídicas precisas para clasificar documentos legales. Devuelve ÚNICAMENTE un objeto JSON válido con la estructura especificada en las instrucciones.`;
+
+    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const body = {
+      systemInstruction: {
+        parts: [{ text: systemInstructions }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 1024
+      }
+    };
+
+    const response = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', errorText);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error generating custom agent with AI' 
+      });
+    }
+
+    const data = await response.json();
+    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('=== CUSTOM LLM RESPONSE ===');
+    console.log(aiContent);
+    console.log('=== END CUSTOM LLM RESPONSE ===');
+
+    let parsedAgent;
+    try {
+      parsedAgent = JSON.parse(aiContent);
+    } catch (err) {
+      console.error('Failed to parse Gemini response:', err, aiContent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid AI response format' 
+      });
+    }
+
+    // Validate the response structure
+    if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') {
+      console.error('Invalid agent structure:', parsedAgent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid agent structure from AI' 
+      });
+    }
+
+    // Merge new agent with existing etiquetas_personalizadas
+    const existingEtiquetas = user.etiquetas_personalizadas || {};
+    const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
+
+    // Update user document
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { etiquetas_personalizadas: newEtiquetas } }
+    );
+
+    await client.close();
+
+    console.log('Custom agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
+
+    res.json({
+      success: true,
+      agent: parsedAgent,
+      message: 'Custom agent generated and saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in generate-custom-agent endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    });
+  }
+});
 

@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <link rel="stylesheet" href="styles/menu.css">
   <link rel="stylesheet" href="styles/onboarding.css">
+  <script src="https://js.stripe.com/v3/"></script>
   <style>
     :root {
       --primary-color: #04db8d;
@@ -611,7 +612,7 @@
             <li><i class="fa fa-check feature-included"></i> Resúmenes y estadísticas</li>
             <li><i class="fa fa-times feature-excluded"></i> Agentes Personalizados </li>
             <li><i class="fa fa-times feature-excluded"></i> Alertas y notificaciones</li>
-            <li><i class="fa fa-times feature-excluded"></i> Análisis de impacto</li>
+            <li><i class="fa fa-times feature-excluded"></i> Análisis normativos</li>
           </ul>
         </div>
         
@@ -630,9 +631,9 @@
           
           <ul class="features-list">
             <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
-            <li><i class="fa fa-check feature-included"></i> Acceso a 1 fuente oficial </li>
+            <li><i class="fa fa-check feature-included"></i> Acceso a 3 fuentes oficiales </li>
             <li><i class="fa fa-check feature-included"></i> 5 Agentes Personalizados </li>
-            <li><i class="fa fa-check feature-included"></i> 50 análisis de impacto/mes</li>
+            <li><i class="fa fa-check feature-included"></i> 50 análisis normativos/mes</li>
             <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
           </ul>
         </div>
@@ -651,9 +652,9 @@
           
           <ul class="features-list">
             <li><i class="fa fa-check feature-included"></i> Usuarios: 1 usuario</li>
-            <li><i class="fa fa-check feature-included"></i> Acceso a 5 fuentes oficiales</li>
-            <li><i class="fa fa-check feature-included"></i> 12 Agentes Personalizados </li>
-            <li><i class="fa fa-check feature-included"></i> 500 análisis de impacto/mes</li>
+            <li><i class="fa fa-check feature-included"></i> Acceso a 10 fuentes oficiales</li>
+            <li><i class="fa fa-check feature-included"></i> 10 Agentes Personalizados </li>
+            <li><i class="fa fa-check feature-included"></i> 500 análisis normativos/mes</li>
             <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
           </ul>
         </div>
@@ -674,9 +675,9 @@
             <li><i class="fa fa-check feature-included"></i> Usuarios: bajo demanda</li>
             <li><i class="fa fa-check feature-included"></i> Fuentes oficiales ilimitadas</li>
             <li><i class="fa fa-check feature-included"></i> Agentes Personalizados ilimitados </li>
-            <li><i class="fa fa-check feature-included"></i> Consultas de impacto ilimitadas</li>
+            <li><i class="fa fa-check feature-included"></i> Análisis normativos ilimitados</li>
             <li><i class="fa fa-check feature-included"></i> Búsqueda y estadísticas</li>
-            <li><i class="fa fa-check feature-included"></i> Integración API y modelos predictivos</li>
+            <li><i class="fa fa-check feature-included"></i> Plataforma colaborativa e integraciones</li>
           </ul>
         </div>
       </div>
@@ -808,7 +809,14 @@
           // Extract plan type and billing period
           const [planType, billing] = selectedPlan.split('_');
           
-          // Check if promotion code is valid or empty
+          // Handle each plan
+          if (planType === 'plan4') {
+            // Enterprise plan: redirigir directamente al enlace de contacto
+            window.location.href = 'https://cal.com/tomasburgaleta/30min';
+            return;
+          }
+          
+          // Check promotion code validity
           if (promotionCode && promotionCode !== "ReversaTrial1620") {
             // Invalid promotion code
             promoCodeError.style.display = 'block';
@@ -828,36 +836,66 @@
           
           if (planType === 'plan1') {
             console.log('Procesando Plan Gratuito...');
-            // Simulación de guardado y redirección para plan1
-            // En un caso real, aquí llamarías a tu API /save-free-plan
             const response = await fetch('/save-free-plan', {
              method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plan: planType, billingPeriod: billing })
+            body: JSON.stringify({ plan: planType, billingInterval: billing })
             });
             if (!response.ok) throw new Error('Error al guardar plan gratuito');
             const result = await response.json();
-            window.location.href = (result.redirectUrl || '/profile') + '?view=boletin'; 
-            
-            // Simulación para este ejemplo:
-            setTimeout(() => {
-                console.log('Plan gratuito procesado, redirigiendo a /profile (simulado)');
-                alert('Redirigiendo a /profile (simulado para Plan Gratuito). Debes implementar la llamada a /save-free-plan.');
-                // window.location.href = '/profile?view=boletin'; // Descomenta cuando tengas el backend listo
-                nextButton.classList.remove('loading');
-                nextButton.disabled = false;
-                nextButton.innerHTML = 'Siguiente';
-            }, 1500);
-
+            window.location.href = result.redirectUrl || '/profile?view=configuracion';
+          
           } else if (planType === 'plan2' || planType === 'plan3') {
-            console.log('Guardando plan en sessionStorage y redirigiendo a paso1.html...');
-            sessionStorage.setItem('selectedPlan', planType);
-            sessionStorage.setItem('billingPeriod', billing);
-            window.location.href = 'paso1.html';
-
-          } else if (planType === 'plan4') {
-            console.log('Redirigiendo a contacto de ventas para Plan Empresa...');
-            window.location.href = 'https://cal.com/tomasburgaleta/30min'; // URL de ejemplo, reemplaza con tu URL real de contacto de ventas
+            const promoApplied = sessionStorage.getItem('promotion_code') === 'yes';
+            if (promoApplied) {
+              console.log('Código promocional aceptado. Activando plan sin pasar por Stripe...');
+              const response = await fetch('/save-free-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan: planType, billingInterval: billing, promo: true })
+              });
+              if (!response.ok) throw new Error('Error al guardar plan con promoción');
+              const result = await response.json();
+              window.location.href = result.redirectUrl || '/profile?view=configuracion';
+            } else {
+              // Build default payload with valores por defecto para evitar errores en backend
+              const payload = {
+                plan: planType,
+                billingInterval: billing,
+                extra_agentes: 0,
+                extra_fuentes: 0,
+                impact_analysis_limit: planType === 'plan2' ? 50 : 500,
+                industry_tags: [],
+                sub_industria_map: {},
+                rama_juridicas: [],
+                profile_type: '',
+                sub_rama_map: {},
+                cobertura_legal: { 'fuentes-gobierno': [], 'fuentes-reguladores': [] },
+                company_name: '',
+                name: '',
+                web: '',
+                linkedin: '',
+                perfil_profesional: '',
+                rangos: [],
+                feedback: {},
+                etiquetas_personalizadas: {},
+                isTrial: planType === 'plan2'
+              };
+              console.log('Creating Stripe session with payload:', payload);
+              const resp = await fetch('/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              if (!resp.ok) throw new Error('Error al crear sesión de pago');
+              const { sessionId, redirectUrl, isEnterprise } = await resp.json();
+              if (redirectUrl) {
+                window.location.href = redirectUrl;
+              } else {
+                const stripe = Stripe('pk_live_51REzuGDXdzt0y1c97cWOhKbTvduvuVI4w1fQsKM672HypXhGT0EtiLhjVTl3Hxyi7rW7RBbZ4xd4bhL7arcPljKt00Qrz892wG');
+                await stripe.redirectToCheckout({ sessionId });
+              }
+            }
           } else {
             alert('Plan no reconocido.');
             nextButton.classList.remove('loading');

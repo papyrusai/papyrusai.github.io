@@ -1,0 +1,3109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración de Cuenta</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    /* Configuration specific styles with higher specificity */
+    #configuracion-iframe-container {
+      --primary-color: #04db8d;
+      --text-color: #455862;
+      --dark-color: #0b2431;
+    }
+
+    #configuracion-iframe-container .config-body {
+      margin: 0;
+      padding: 20px;
+      font-family: 'Satoshi', sans-serif;
+    }
+    
+    #configuracion-iframe-container .config-menu {
+      display: flex !important;
+      justify-content: center;
+      align-items: center;
+      gap: 40px;
+      padding-bottom: 20px;
+      flex-direction: row !important;
+    }
+    
+    #configuracion-iframe-container .config-menu-item {
+      display: flex !important;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 500;
+      transition: color 0.3s ease;
+      user-select: none;
+      text-decoration: none;
+    }
+    
+    #configuracion-iframe-container .config-menu-item:hover {
+      color: var(--dark-color);
+    }
+    
+    #configuracion-iframe-container .config-menu-item.active {
+      color: var(--primary-color) !important;
+      border-bottom: 2px solid var(--primary-color) !important;
+      padding-bottom: 8px !important;
+    }
+    
+    #configuracion-iframe-container .config-menu-item i {
+      font-size: 18px;
+    }
+    
+    #configuracion-iframe-container .config-content {
+      display: none !important;
+      padding: 40px;
+      background: white;
+      border-radius: 8px;
+      text-align: center;
+      min-height: 300px;
+      justify-content: center;
+      flex-direction: column;
+    }
+    
+    #configuracion-iframe-container .config-content.active {
+      display: flex !important;
+    }
+    
+    #configuracion-iframe-container .content-text {
+      font-size: 24px;
+      color: var(--text-color);
+      font-weight: 500;
+    }
+
+    #configuracion-iframe-container .content-title {
+      font-size: 20px;
+      color: var(--dark-color);
+      font-weight: 600;
+      margin-bottom: 20px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* ---------- Onboarding form styles (scoped) ---------- */
+    #configuracion-iframe-container #onboarding-container {
+      width: 100%;
+      max-width: 660px;
+    }
+    #configuracion-iframe-container #summary-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+    #configuracion-iframe-container .summary-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-color);
+      color: #fff;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+      cursor: pointer;
+    }
+    #configuracion-iframe-container .summary-tag .tick { font-weight: 700; }
+    #configuracion-iframe-container .form-step { display:none; }
+    #configuracion-iframe-container .form-step.active { display:block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
+    #configuracion-iframe-container .step-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; }
+    #configuracion-iframe-container .question-text { font-size:20px; font-weight:700; }
+    #configuracion-iframe-container .step-tracker { font-size:14px; color: var(--secondary-color); }
+    #configuracion-iframe-container .options { display:flex; flex-wrap:wrap; gap:12px; }
+    #configuracion-iframe-container .option-box {
+      flex: 1 1 calc(50% - 12px);
+      background: transparent;
+      border: 2px solid var(--border-color, #e0e0e0);
+      border-radius: 12px;
+      padding: 14px 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      color: var(--text-color);
+      min-width: 120px;
+    }
+    #configuracion-iframe-container .option-box:hover { border-color: var(--primary-color); background: rgba(4,219,141,0.08); }
+    #configuracion-iframe-container .option-box.selected { background: var(--primary-color); border-color: var(--primary-color); color:#fff; }
+    #configuracion-iframe-container #completion-message { text-align:center; font-size:22px; font-weight:600; }
+
+
+
+    /* ---------- NEW STYLES ---------- */
+    #configuracion-iframe-container .main-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 8px;
+      background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: left;
+    }
+    #configuracion-iframe-container .main-title i {
+      font-size: 26px;
+      color: var(--text-color);
+    }
+    /* Content title consistent styling */
+    #configuracion-iframe-container .content-title {
+      font-size: 16px;
+      color: #7a8a93;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    /* Reduce top padding so title sits closer to the menu */
+    #configuracion-iframe-container .config-content {
+      padding-top: 30px;
+    }
+    /* Option box elevation style */
+    #configuracion-iframe-container .option-box {
+      border: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    #configuracion-iframe-container .option-box:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    #configuracion-iframe-container .option-box.selected {
+      border: 1px solid var(--text-color);
+      box-shadow: 0 4px 12px rgba(69,88,98,0.4);
+      color: var(--text-color) !important;
+      background:none;
+    }
+
+    /* Generic input style for onboarding */
+    #configuracion-iframe-container .input-field {
+      width: 100%;
+      max-width: 420px;
+      padding: 12px 16px;
+      font-size: 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      transition: border-color 0.2s ease;
+    }
+    #configuracion-iframe-container .input-field:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(4,219,141,0.15);
+    }
+
+    #configuracion-iframe-container .save-btn {
+      margin-top: 18px;
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.25s ease;
+    }
+    #configuracion-iframe-container .save-btn:hover {
+      background:#03c77d;
+    }
+
+    /* Web empresa button with gradient style */
+    #configuracion-iframe-container .web-empresa-btn {
+      background: linear-gradient(90deg, var(--dark-color), var(--primary-color)) !important;
+      color: white !important;
+      border: none !important;
+      border-radius: 10px !important;
+      padding: 12px 24px !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      cursor: pointer;
+      transition: all 0.3s ease !important;
+      margin: 20px auto 0 auto !important;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(69,88,98,0.3) !important;
+      width: fit-content;
+    }
+    #configuracion-iframe-container .web-empresa-btn:hover {
+      background: linear-gradient(90deg, var(--dark-color), var(--primary-color)) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 6px 16px rgba(69,88,98,0.4) !important;
+    }
+
+    /* Custom input container when user selects 'Otro' */
+    #configuracion-iframe-container .custom-input-container{
+      width:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+      margin-top:24px;
+    }
+    #configuracion-iframe-container .next-btn{
+      background:var(--dark-color);
+      color:#fff;
+      border:none;
+      padding:10px 40px;
+      border-radius:8px;
+      font-size:16px;
+      font-weight:600;
+      cursor:pointer;
+      transition:background .25s ease;
+    }
+    #configuracion-iframe-container .next-btn:hover{background:#03c77d;}
+
+    /* Custom tags inside custom input */
+    #configuracion-iframe-container .custom-tags-wrap{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      width:100%;
+    }
+    #configuracion-iframe-container .custom-tag{
+      background:#e5e5e5;
+      color:var(--dark-color);
+      border-radius:14px;
+      padding:4px 10px;
+      font-size:13px;
+      display:flex;
+      align-items:center;
+    }
+    #configuracion-iframe-container .custom-tag .remove-tag{
+      margin-left:6px;
+      cursor:pointer;
+      font-weight:700;
+      line-height:1;
+    }
+
+    /* Loader overlay */
+    #configuracion-iframe-container #config-loader{
+      position:absolute;
+      inset:0;
+      background:white;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:2000;
+    }
+    #configuracion-iframe-container .spinner{
+      width:40px;
+      height:40px;
+      border:4px solid #f3f3f3;
+      border-top:4px solid var(--primary-color);
+      border-radius:50%;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{transform:rotate(360deg);} }
+
+    /* Styles for the final summary view */
+    #configuracion-iframe-container #profile-summary-view {
+      animation: fadeIn 0.5s ease-in-out;
+    }
+    #configuracion-iframe-container .summary-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--dark-color);
+      margin-top: 30px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+    #configuracion-iframe-container .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    #configuracion-iframe-container .summary-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 15px;
+      color: var(--text-color);
+    }
+    #configuracion-iframe-container .summary-table td:first-child {
+      font-weight: 500;
+      width: 30%;
+      color: var(--dark-color);
+    }
+    #configuracion-iframe-container .regulatory-summary {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-color);
+    }
+    #configuracion-iframe-container .regulatory-summary p {
+      margin-bottom: 1em;
+      font-weight: normal !important;
+      text-align: left !important;
+    }
+    /* Animation for transition */
+    @keyframes slideUpAndFadeOut {
+      to {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+    }
+    #configuracion-iframe-container .fading-out {
+      animation: slideUpAndFadeOut 0.4s forwards;
+    }
+
+    /* --- Fuentes Section Carousel --- */
+    #configuracion-iframe-container .fuentes-subsection {
+        margin-top: 20px;
+    }
+    #configuracion-iframe-container .fuentes-subsection-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 15px;
+        border-bottom: 1px solid #f0f0f0;
+        padding-bottom: 8px;
+    }
+    #configuracion-iframe-container .fuentes-grid-container {
+        position: relative;
+        padding: 0 40px; /* space for arrows */
+        min-height: 120px; /* to avoid layout shifts */
+    }
+    #configuracion-iframe-container .grid-nav-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #f0f0f0;
+        color: var(--text-color);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 10;
+        user-select: none;
+    }
+    #configuracion-iframe-container .grid-nav-arrow:hover {
+        background: #e0e0e0;
+        transform: translateY(-50%) scale(1.1);
+    }
+    #configuracion-iframe-container .grid-nav-arrow.prev {
+        left: 0;
+    }
+    #configuracion-iframe-container .grid-nav-arrow.next {
+        right: 0;
+    }
+    #configuracion-iframe-container .grid-nav-arrow i {
+      font-size: 14px;
+    }
+
+    /* --- Fuentes Section Styles --- */
+    #configuracion-iframe-container .configura-cobertura-btn {
+        display: none; /* Hidden by default */
+        background: #e8f5e8;
+        color: var(--dark-color);
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 14px 20px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 20px 0;
+        width: 100%;
+        text-align: left;
+    }
+    #configuracion-iframe-container .configura-cobertura-btn:hover {
+        background: #d8f0d8;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    #configuracion-iframe-container .configura-agentes-btn {
+        display: none; /* Hidden by default */
+        background: #e8f5e8;
+        color: var(--dark-color);
+        border: 1px solid var(--primary-color);
+        border-radius: 8px;
+        padding: 14px 20px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin: 20px 0;
+        width: 100%;
+        text-align: left;
+    }
+    #configuracion-iframe-container .configura-agentes-btn:hover {
+        background: #d8f0d8;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    #configuracion-iframe-container .fuentes-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-top: 10px;
+        margin-bottom: 30px;
+    }
+    #configuracion-iframe-container .fuente-box {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 10px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        max-height: 80px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: flex-start;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    #configuracion-iframe-container .fuente-box:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #configuracion-iframe-container .fuente-box.selected {
+        background: rgba(4, 219, 141, 0.2);
+        border-color:rgba(4, 219, 141, 0.2);
+        color: var(--primary-color);
+    }
+    #configuracion-iframe-container .fuente-box strong {
+        font-size: 16px;
+        margin-bottom: 5px;
+        padding-bottom: 3px;
+        border-bottom: 1px solid #e0e0e0;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #configuracion-iframe-container .fuente-box span {
+        font-size: 12px;
+        color: #7a8a93;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        flex: 1;
+    }
+    #configuracion-iframe-container .fuente-box.selected span {
+        color: var(--primary-color);
+    }
+    #configuracion-iframe-container .fuente-box.selected strong {
+        border-bottom-color: rgba(4, 219, 141, 0.1);
+    }
+         #configuracion-iframe-container .save-fuentes-btn-inline {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: auto;
+    }
+     #configuracion-iframe-container .save-fuentes-btn-inline:hover {
+        background: #03c77d;
+     }
+     #configuracion-iframe-container .save-fuentes-btn-inline.success {
+        background: #28a745;
+     }
+     #configuracion-iframe-container .save-fuentes-btn-inline.loading {
+        background: #6c757d;
+        cursor: not-allowed;
+     }
+     #configuracion-iframe-container .button-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+     }
+     #configuracion-iframe-container .save-status {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 5px;
+        font-size: 12px;
+        color: #dc3545;
+        font-weight: 500;
+     }
+     
+           /* Selected tags styles */
+      #configuracion-iframe-container .section-header {
+         display: flex;
+         align-items: center;
+         gap: 15px;
+         margin-bottom: 15px;
+         flex-wrap: wrap;
+         position: relative;
+      }
+     #configuracion-iframe-container .selected-tags-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+     }
+           #configuracion-iframe-container .selected-tag {
+         background: var(--primary-color);
+         color: white;
+         padding: 4px 8px;
+         border-radius: 12px;
+         font-size: 11px;
+         font-weight: 500;
+      }
+      
+      /* Crear agente button styles */
+      #configuracion-iframe-container .crear-agente-btn {
+         background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+         color: white;
+         border: none;
+         border-radius: 10px;
+         padding: 10px 18px;
+         font-size: 14px;
+         font-weight: 600;
+         cursor: pointer;
+         transition: all 0.3s ease;
+         margin-bottom: 20px;
+         display: flex;
+         align-items: center;
+         gap: 6px;
+         box-shadow: 0 4px 12px rgba(69,88,98,0.3);
+         width: fit-content;
+      }
+      #configuracion-iframe-container .crear-agente-btn:hover {
+         transform: translateY(-2px);
+         box-shadow: 0 6px 16px rgba(69,88,98,0.4);
+      }
+             #configuracion-iframe-container .crear-agente-btn i {
+          font-size: 12px;
+       }
+
+       /* Agent template selection box */
+       #configuracion-iframe-container .agent-template-box {
+          width: 100%;
+          background: white;
+          border-radius: 12px;
+          padding: 25px;
+          margin-top: 30px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          animation: fadeInUp 0.3s ease-out;
+          position: relative;
+       }
+
+       #configuracion-iframe-container .close-template-box {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          background: transparent;
+          border: none;
+          color: #999;
+          font-size: 16px;
+          cursor: pointer;
+          width: 30px;
+          height: 30px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 50%;
+          transition: all 0.2s ease;
+       }
+
+       #configuracion-iframe-container .close-template-box:hover {
+          background: #f5f5f5;
+          color: var(--dark-color);
+       }
+
+               #configuracion-iframe-container .template-title {
+           font-size: 16px;
+           font-weight: 600;
+           color: var(--dark-color);
+           margin-bottom: 20px;
+           text-align: center;
+           line-height: 1.4;
+           padding-right: 40px;
+        }
+
+        /* Override text alignment for product details form */
+        #configuracion-iframe-container .product-details-form .template-title {
+           text-align: left;
+        }
+
+       #configuracion-iframe-container .template-options {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+       }
+
+       #configuracion-iframe-container .template-btn {
+          width: 100%;
+          background: transparent;
+          border: 2px solid var(--text-color);
+          border-radius: 10px;
+          padding: 16px 18px;
+          color: var(--text-color);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          text-align: left;
+       }
+
+       #configuracion-iframe-container .template-btn:hover {
+          border-color: var(--primary-color);
+          color: var(--primary-color);
+          transform: translateY(-1px);
+          box-shadow: 0 3px 8px rgba(4,219,141,0.2);
+       }
+
+       #configuracion-iframe-container .template-btn-content {
+          width: 100%;
+       }
+
+       #configuracion-iframe-container .template-btn-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 8px;
+       }
+
+       #configuracion-iframe-container .template-btn-header i {
+          font-size: 16px;
+          width: 20px;
+          text-align: center;
+       }
+
+       #configuracion-iframe-container .template-btn-title {
+          font-size: 14px;
+          font-weight: 600;
+       }
+
+       #configuracion-iframe-container .template-btn-description {
+          font-size: 12px;
+          color: #7a8a93;
+          line-height: 1.4;
+          margin: 0;
+          text-align: left;
+       }
+
+       #configuracion-iframe-container .template-btn-description em {
+          font-style: italic;
+          color: #999;
+       }
+
+       #configuracion-iframe-container .template-btn:hover .template-btn-description {
+          color: #7a8a93;
+       }
+
+               @keyframes fadeInUp {
+           from {
+               opacity: 0;
+               transform: translateY(20px);
+           }
+           to {
+               opacity: 1;
+               transform: translateY(0);
+           }
+        }
+
+        /* Product details form styles */
+        #configuracion-iframe-container .product-details-form {
+           width: 100%;
+           background: white;
+           border-radius: 12px;
+           padding: 25px;
+           margin-top: 30px;
+           box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+           animation: fadeInUp 0.3s ease-out;
+           position: relative;
+        }
+
+        #configuracion-iframe-container .product-form-fields {
+           margin-bottom: 30px;
+        }
+
+        #configuracion-iframe-container .form-field {
+           margin-bottom: 20px;
+        }
+
+        #configuracion-iframe-container .field-label {
+           display: block;
+           font-size: 14px;
+           color: var(--dark-color);
+           margin-bottom: 8px;
+           line-height: 1.4;
+           text-align: left;
+        }
+
+        #configuracion-iframe-container .product-input,
+        #configuracion-iframe-container .product-select {
+           width: 100%;
+           border: 2px solid #e0e0e0;
+           border-radius: 8px;
+           padding: 12px 16px;
+           font-size: 14px;
+           color: var(--text-color);
+           transition: border-color 0.3s ease;
+           background: white;
+           resize: vertical;
+        }
+
+        #configuracion-iframe-container .product-input:focus,
+        #configuracion-iframe-container .product-select:focus {
+           border-color: var(--primary-color);
+           outline: none;
+           box-shadow: 0 0 0 2px rgba(4,219,141,0.15);
+        }
+
+        #configuracion-iframe-container .product-input::placeholder {
+           color: #999;
+           font-style: normal;
+        }
+
+        #configuracion-iframe-container .product-select {
+           cursor: pointer;
+        }
+
+        #configuracion-iframe-container .generate-agent-container {
+           display: flex;
+           justify-content: center;
+           margin-top: 30px;
+        }
+
+        #configuracion-iframe-container .generate-agent-btn {
+           background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+           color: white;
+           border: none;
+           border-radius: 12px;
+           padding: 16px 32px;
+           font-size: 16px;
+           font-weight: 600;
+           cursor: pointer;
+           transition: all 0.3s ease;
+           display: flex;
+           align-items: center;
+           gap: 10px;
+           box-shadow: 0 4px 12px rgba(69,88,98,0.3);
+        }
+
+        #configuracion-iframe-container .generate-agent-btn:hover {
+           transform: translateY(-2px);
+           box-shadow: 0 6px 16px rgba(69,88,98,0.4);
+        }
+
+                #configuracion-iframe-container .generate-agent-btn i {
+            font-size: 16px;
+         }
+
+         #configuracion-iframe-container .custom-input-container {
+            margin-top: 10px;
+            animation: fadeIn 0.3s ease-out;
+         }
+
+         @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+         }
+
+         /* Generated agent display styles */
+         #configuracion-iframe-container .generated-agent-box {
+            background: white;
+            border: 1px solid var(--dark-color);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(4,219,141,0.15);
+            animation: fadeInUp 0.4s ease-out;
+            text-align: left;
+         }
+
+         #configuracion-iframe-container .generated-agent-content {
+            padding-right: 35px;
+            text-align: left;
+         }
+
+         #configuracion-iframe-container .agent-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin: 0 0 8px 0;
+            line-height: 1.3;
+            text-align: left;
+         }
+
+         #configuracion-iframe-container .agent-definition {
+            font-size: 13px;
+            color: var(--text-color);
+            line-height: 1.4;
+            margin: 0;
+            text-align: left;
+         }
+
+         #configuracion-iframe-container .close-agent-box {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: #495057;
+            font-size: 12px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+         }
+
+         #configuracion-iframe-container .close-agent-box:hover {
+            background: #f5f5f5;
+            color: #c82333;
+            transform: scale(1.1);
+         }
+
+         /* Agent editing styles */
+         #configuracion-iframe-container .agent-edit-controls {
+            position: absolute;
+            top: 15px;
+            right: 45px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+         }
+
+         #configuracion-iframe-container .edit-agent-btn,
+         #configuracion-iframe-container .save-agent-btn,
+         #configuracion-iframe-container .cancel-agent-btn {
+            background: transparent;
+            border: none;
+            color: #333;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+         }
+
+         #configuracion-iframe-container .edit-agent-btn:hover,
+         #configuracion-iframe-container .save-agent-btn:hover,
+         #configuracion-iframe-container .cancel-agent-btn:hover {
+            background: #f5f5f5;
+         }
+
+         #configuracion-iframe-container .save-agent-btn {
+            color: var(--primary-color);
+         }
+
+         #configuracion-iframe-container .save-agent-btn:disabled {
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.7;
+         }
+
+         #configuracion-iframe-container .cancel-agent-btn {
+            color: #dc3545;
+         }
+
+         #configuracion-iframe-container .agent-name-edit,
+         #configuracion-iframe-container .agent-definition-edit {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+         }
+
+         #configuracion-iframe-container .agent-name-edit {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+         }
+
+         #configuracion-iframe-container .agent-definition-edit {
+            font-size: 13px;
+            min-height: 60px;
+         }
+
+         /* Ensure the generated agent box maintains width during editing */
+         #configuracion-iframe-container .generated-agent-box {
+            min-width: 400px;
+            width: 100%;
+            max-width: 800px;
+            transition: min-height 0.5s ease, padding 0.5s ease, margin-bottom 0.5s ease;
+         }
+
+         #configuracion-iframe-container .generated-agent-content {
+            width: 100%;
+            box-sizing: border-box;
+         }
+
+         /* Expanded state for editing */
+         #configuracion-iframe-container .generated-agent-box.editing {
+            min-height: 200px;
+            padding-bottom: 25px;
+            margin-bottom: 25px;
+         }
+
+         #configuracion-iframe-container .generated-agent-box.editing .generated-agent-content {
+            padding-top: 30px;
+         }
+
+         #configuracion-iframe-container .generated-agent-box.editing .agent-definition-edit {
+            min-height: 120px;
+         }
+
+         /* Character counter styles */
+         #configuracion-iframe-container .character-counter-container {
+            position: relative;
+            margin-top: 8px;
+         }
+
+         #configuracion-iframe-container .character-counter {
+            font-size: 12px;
+            color: #7a8a93;
+            text-align: left;
+            transition: color 0.3s ease;
+         }
+
+         #configuracion-iframe-container .character-counter.over-limit {
+            color: #dc3545;
+            font-weight: 600;
+         }
+
+         #configuracion-iframe-container .character-error-message {
+            color: #dc3545;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 10px;
+         }
+
+    /* --- Align contexto & agentes content same as fuentes --- */
+    #configuracion-iframe-container #contexto-content,
+    #configuracion-iframe-container #agentes-content {
+      align-items: flex-start !important;
+      text-align: left !important;
+      width: 100% !important;
+      max-width: 900px !important;
+      margin: 0 auto !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="config-body" style="position:relative;">
+    <div id="config-loader" class="loader-overlay"><div class="spinner"></div></div>
+    <div class="config-body">
+      <div class="config-menu">
+        <div class="config-menu-item active" data-content="contexto">
+          <i class="fas fa-info-circle"></i>
+          <span>Contexto</span>
+        </div>
+        <div class="config-menu-item" data-content="fuentes">
+          <i class="fas fa-database"></i>
+          <span>Fuentes</span>
+        </div>
+        <div class="config-menu-item" data-content="agentes">
+          <i class="fas fa-users"></i>
+          <span>Agentes</span>
+        </div>
+      </div>
+      
+      <div id="contexto-content" class="config-content active">
+        <div class="main-title"><i class="fas fa-search"></i><span>Proporciona contexto</span></div>
+        <div class="content-title">Proporciona información sobre tu empresa y necesidades para personalizar tu experiencia</div>
+
+        <!-- Onboarding form -->
+        <div id="onboarding-container">
+          <div id="summary-tags"></div>
+          <div id="onboarding-form">
+            <!-- Step 1 -->
+            <section class="form-step" data-step="0">
+              <div class="step-header">
+                <p class="question-text">¿Qué tipo de empresa se ajusta a tu perfil?</p>
+                <span class="step-tracker"></span>
+              </div>
+              <div class="options">
+                <div class="option-box" data-value="Consultora">Consultora</div>
+                <div class="option-box" data-value="Despacho">Despacho</div>
+                <div class="option-box" data-value="Empresa Regulada">Empresa Regulada</div>
+                <div class="option-box" data-value="Otros">Otros</div>
+              </div>
+            </section>
+            <!-- Step 2 -->
+            <section class="form-step" data-step="1">
+              <div class="step-header">
+                <p class="question-text">¿Cuál es tu especialización?</p>
+                <span class="step-tracker"></span>
+              </div>
+              <div class="options">
+                <div class="option-box" data-value="Energía">Energía</div>
+                <div class="option-box" data-value="Construcción">Construcción</div>
+                <div class="option-box" data-value="Agrícola">Agrícola</div>
+                <div class="option-box" data-value="Financiero">Financiero</div>
+              </div>
+            </section>
+          </div>
+          <div id="completion-message" style="display:none;"></div>
+        </div>
+        <!-- End onboarding form -->
+        
+        <!-- Final Profile View (hidden by default) -->
+        <div id="profile-summary-view" style="display: none; width: 100%; max-width: 800px; text-align: left;">
+            <button id="configuraCoberturaBtn" class="configura-cobertura-btn">
+                Configura tu cobertura legal <i class="fas fa-arrow-right" style="float: right;"></i>
+            </button>
+            <h3 class="summary-title">Información de empresa</h3>
+            <table class="summary-table">
+                <tbody>
+                    <!-- Rows will be injected by JS -->
+                </tbody>
+            </table>
+            <h3 class="summary-title">Resumen perfil regulatorio</h3>
+            <div id="regulatory-profile-content" class="regulatory-summary">
+                <!-- Content will be injected by JS -->
+            </div>
+        </div>
+      </div>
+      
+      <div id="fuentes-content" class="config-content" style="display: none; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; max-width: 900px; margin: 0 auto;">
+          <div class="main-title"><i class="fas fa-database"></i><span>Selecciona tus fuentes oficiales</span></div>
+          <div class="content-title">Configura tu cobertura legal seleccionando las fuentes de tu interés</div>
+
+          <!-- Banner for users without custom agents -->
+          <button id="configuraAgentesBtn" class="configura-agentes-btn" style="display: none;">
+              Configura tus agentes regulatorios <i class="fas fa-arrow-right" style="float: right;"></i>
+          </button>
+
+          <div id="fuentes-container" style="width: 100%;">
+              <!-- Sections will be injected here -->
+          </div>
+          
+
+      </div>
+      
+      <div id="agentes-content" class="config-content">
+        <div class="main-title"><i class="fas fa-users"></i><span>Configura tus agentes</span></div>
+        <div class="content-title">Crea tus agentes personalizados que automáticamente analizarán toda la normativa por ti</div>
+        
+        <!-- Generated agents will be dynamically inserted here -->
+
+        <button id="crearAgenteBtn" class="crear-agente-btn">
+          <i class="fas fa-plus"></i> Crear agente
+        </button>
+
+        <!-- Agent Template Selection Box -->
+        <div id="agentTemplateBox" class="agent-template-box" style="display: none;">
+          <button class="close-template-box" id="closeTemplateBox">
+            <i class="fas fa-times"></i>
+          </button>
+          <h3 class="template-title">Elige de entre nuestras plantillas pre-configuradas que tipo de agente quieres crear</h3>
+          
+          <div class="template-options">
+            <button class="template-btn" data-type="producto">
+              <div class="template-btn-content">
+                <div class="template-btn-header">
+                  <i class="fas fa-box"></i>
+                  <span class="template-btn-title">Producto</span>
+                </div>
+                <p class="template-btn-description">
+                  Agente especializado en identificación de novedades regulatorias que impacten un producto concreto 
+                  <em>(ej: producto cárnico porcino)</em>
+                </p>
+              </div>
+            </button>
+
+            <button class="template-btn" data-type="cliente">
+              <div class="template-btn-content">
+                <div class="template-btn-header">
+                  <i class="fas fa-user-tie"></i>
+                  <span class="template-btn-title">Cliente</span>
+                </div>
+                <p class="template-btn-description">
+                  Agente especializado en identificación de novedades regulatorias que impacten un cliente específico 
+                  <em>(ej: empresa farmacéutica multinacional)</em>
+                </p>
+              </div>
+            </button>
+
+            <button class="template-btn" data-type="sector">
+              <div class="template-btn-content">
+                <div class="template-btn-header">
+                  <i class="fas fa-industry"></i>
+                  <span class="template-btn-title">Sector</span>
+                </div>
+                <p class="template-btn-description">
+                  Agente especializado en identificación de novedades regulatorias que impacten un sector completo 
+                  <em>(ej: sector energético renovable)</em>
+                </p>
+              </div>
+            </button>
+
+            <button class="template-btn" data-type="personalizado">
+              <div class="template-btn-content">
+                <div class="template-btn-header">
+                  <i class="fas fa-cog"></i>
+                  <span class="template-btn-title">Personalizado</span>
+                </div>
+                <p class="template-btn-description">
+                  Define exactamente que quieres que trackee tu agente
+                </p>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Product Details Form -->
+        <div id="productDetailsForm" class="product-details-form" style="display: none;">
+          <button class="close-template-box" id="closeProductForm">
+            <i class="fas fa-times"></i>
+          </button>
+          <h3 class="template-title">Proporciona algunos detalles sobre el producto</h3>
+          
+          <div class="product-form-fields">
+            <div class="form-field">
+              <label class="field-label">Nombre y descripción corta del producto</label>
+              <textarea class="product-input" id="productDescription" placeholder="Ej.: &quot;Vacuna veterinaria porcina basada en ARNm&quot;" rows="3"></textarea>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Fase regulatoria o de mercado en la que se encuentra</label>
+              <select class="product-select" id="productPhase">
+                <option value="">Selecciona una fase</option>
+                <option value="investigacion">Investigación-I+D</option>
+                <option value="ensayo">Ensayo/piloto</option>
+                <option value="precomercializacion">Pre-comercialización (solicitud de autorización)</option>
+                <option value="comercializado">Comercializado</option>
+                <option value="postcomercializacion">Post-comercialización</option>
+                <option value="otro">Otro</option>
+              </select>
+              <div id="customPhaseContainer" class="custom-input-container" style="display: none;">
+                <input type="text" class="product-input" id="customPhase" placeholder="Especifica la fase regulatoria">
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Características del producto especialmente relevantes para la regulación</label>
+              <textarea class="product-input" id="productCharacteristics" placeholder="Ej.: &quot;Contiene ingredientes de origen animal&quot;, &quot;Integra IA generativa para diagnóstico&quot;, &quot;Usa nanomateriales&quot;, &quot;Alto potencial medioambiental&quot;" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="generate-agent-container">
+            <button id="generateAgentBtn" class="generate-agent-btn">
+              <i class="fas fa-magic"></i> Generar Agente
+            </button>
+          </div>
+        </div>
+
+        <!-- Client Details Form -->
+        <div id="clientDetailsForm" class="product-details-form" style="display: none;">
+          <button class="close-template-box" id="closeClientForm">
+            <i class="fas fa-times"></i>
+          </button>
+          <h3 class="template-title">Proporciona algunos detalles sobre el cliente</h3>
+          
+          <div class="product-form-fields">
+            <div class="form-field">
+              <label class="field-label">Nombre y descripción del cliente</label>
+              <textarea class="product-input" id="clientDescription" placeholder="Ej.: &quot;Banco digital especializado en servicios financieros para pymes&quot;" rows="3"></textarea>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Página web del cliente</label>
+              <input type="url" class="product-input" id="clientWebsite" placeholder="https://www.ejemplo.com">
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Sectores y áreas de interés regulatorio</label>
+              <textarea class="product-input" id="clientScope" placeholder="Ej.: &quot;Servicios de pago, préstamos digitales, protección de datos financieros, blanqueo de capitales&quot;" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="generate-agent-container">
+            <button id="generateClientAgentBtn" class="generate-agent-btn">
+              <i class="fas fa-magic"></i> Generar Agente
+            </button>
+          </div>
+        </div>
+
+        <!-- Sector Details Form -->
+        <div id="sectorDetailsForm" class="product-details-form" style="display: none;">
+          <button class="close-template-box" id="closeSectorForm">
+            <i class="fas fa-times"></i>
+          </button>
+          <h3 class="template-title">Proporciona algunos detalles sobre el sector</h3>
+          
+          <div class="product-form-fields">
+            <div class="form-field">
+              <label class="field-label">Defina brevemente el sector o rama jurídica que desea monitorizar</label>
+              <textarea class="product-input" id="sectorDescription" placeholder="Ej.: &quot;Urbanismo y planeamiento municipal&quot;" rows="3"></textarea>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Indique el ámbito geográfico o la jurisdicción principal</label>
+              <input type="text" class="product-input" id="sectorGeographicScope" placeholder="Ej.: &quot;Comunidad de Madrid&quot;">
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Mencione hasta tres subtemas o procesos críticos dentro de ese sector</label>
+              <textarea class="product-input" id="sectorSubtopics" placeholder="Ej.: &quot;Licencias de obra mayor, ordenanzas de vivienda, suelos protegidos&quot;" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="generate-agent-container">
+            <button id="generateSectorAgentBtn" class="generate-agent-btn">
+              <i class="fas fa-magic"></i> Generar Agente
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Details Form -->
+        <div id="customDetailsForm" class="product-details-form" style="display: none;">
+          <button class="close-template-box" id="closeCustomForm">
+            <i class="fas fa-times"></i>
+          </button>
+          <h3 class="template-title">Describe qué contenido quieres que el agente rastree de manera automática</h3>
+          
+          <div class="product-form-fields">
+            <div class="form-field">
+              <textarea class="product-input" id="customDescription" placeholder="Ej.: &quot;Novedades en contratación pública electrónica que afecten a pequeñas empresas de servicios tecnológicos&quot;" rows="4" style="margin-top: 10px;"></textarea>
+            </div>
+          </div>
+
+          <div class="generate-agent-container">
+            <button id="generateCustomAgentBtn" class="generate-agent-btn">
+              <i class="fas fa-magic"></i> Generar Agente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Use a function that can be called when content is loaded dynamically
+    function initializeConfigurationMenu() {
+      const container = document.getElementById('configuracion-iframe-container');
+      if (!container) return;
+      
+      const menuItems = container.querySelectorAll('.config-menu-item');
+      const contents = container.querySelectorAll('.config-content');
+      
+      // Remove any existing event listeners to avoid duplicates
+      menuItems.forEach(item => {
+        const newItem = item.cloneNode(true);
+        item.parentNode.replaceChild(newItem, item);
+      });
+      
+      // Get the updated menu items after cloning
+      const newMenuItems = container.querySelectorAll('.config-menu-item');
+      
+      newMenuItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const targetContent = this.getAttribute('data-content');
+          
+          // Remove active class from all menu items and contents
+          newMenuItems.forEach(menuItem => menuItem.classList.remove('active'));
+          contents.forEach(content => content.classList.remove('active'));
+          
+          // Add active class to clicked menu item and corresponding content
+          this.classList.add('active');
+          const targetElement = container.querySelector('#' + targetContent + '-content');
+          if (targetElement) {
+            targetElement.classList.add('active');
+            
+
+            
+            // If switching to fuentes content, check for banner display
+            if (targetContent === 'fuentes') {
+              setTimeout(() => checkAndShowAgentesRegulatoryBanner(), 100);
+            }
+          }
+        });
+      });
+      
+
+    }
+    
+
+
+    function checkAndShowAgentesRegulatoryBanner() {
+      let hasEtiquetasPersonalizadas = false;
+      
+      try {
+        // Try to get etiquetas personalizadas from parent window
+        if (window.parent && window.parent.document) {
+          const etiquetasElement = window.parent.document.getElementById('userEtiquetasPersonalizadas');
+          if (etiquetasElement) {
+            const etiquetas = JSON.parse(etiquetasElement.textContent || '{}');
+            hasEtiquetasPersonalizadas = Object.keys(etiquetas).length > 0;
+          }
+        }
+      } catch (error) {
+        console.log('Could not access parent window data:', error);
+      }
+      
+      const agentesBtn = document.getElementById('configuraAgentesBtn');
+      if (agentesBtn) {
+        if (!hasEtiquetasPersonalizadas) {
+          agentesBtn.style.display = 'block';
+          agentesBtn.onclick = () => {
+            // Switch to "Agentes" tab
+            const menuItems = document.querySelectorAll('.config-menu-item');
+            menuItems.forEach(item => {
+              if (item.dataset.content === 'agentes') {
+                item.click();
+              }
+            });
+          };
+        } else {
+          agentesBtn.style.display = 'none';
+        }
+      }
+    }
+    
+    // Agent management functions (moved outside to be globally accessible)
+    
+    // Function to load existing agents from database
+    async function loadExistingAgents() {
+        try {
+            const response = await fetch('/api/get-user-data');
+            const userData = await response.json();
+            
+            if (userData.etiquetas_personalizadas && Object.keys(userData.etiquetas_personalizadas).length > 0) {
+                displayExistingAgents(userData.etiquetas_personalizadas);
+            }
+        } catch (error) {
+            console.error('Error loading existing agents:', error);
+        }
+    }
+    
+         // Function to display existing agents
+     function displayExistingAgents(etiquetas) {
+         const agentesContainer = document.querySelector('#agentes-content');
+         const crearAgenteBtn = document.getElementById('crearAgenteBtn');
+         
+         // Clear any existing agent boxes (except the create button and forms)
+         const existingBoxes = agentesContainer.querySelectorAll('.generated-agent-box');
+         existingBoxes.forEach(box => box.remove());
+         
+         // Create agent boxes for each etiqueta (insert after the create button)
+         Object.entries(etiquetas).forEach(([etiquetaName, etiquetaDefinition]) => {
+             createAgentBox(etiquetaName, etiquetaDefinition, crearAgenteBtn);
+         });
+     }
+    
+         // Function to create an agent box
+     function createAgentBox(name, definition, insertAfter) {
+         const agentBox = document.createElement('div');
+         agentBox.className = 'generated-agent-box';
+         
+         // Create content elements safely without innerHTML
+         const agentContent = document.createElement('div');
+         agentContent.className = 'generated-agent-content';
+         
+         const agentName = document.createElement('h4');
+         agentName.className = 'agent-name';
+         agentName.textContent = name;
+         
+         const agentDefinition = document.createElement('p');
+         agentDefinition.className = 'agent-definition';
+         agentDefinition.textContent = definition;
+         
+         agentContent.appendChild(agentName);
+         agentContent.appendChild(agentDefinition);
+         
+         // Create edit controls
+         const editControls = document.createElement('div');
+         editControls.className = 'agent-edit-controls';
+         
+         const editBtn = document.createElement('button');
+         editBtn.className = 'edit-agent-btn';
+         editBtn.innerHTML = '<i class="fas fa-edit"></i> Editar';
+         editBtn.addEventListener('click', () => editAgent(editBtn, name));
+         
+         editControls.appendChild(editBtn);
+         
+                   // Create close button
+          const closeBtn = document.createElement('button');
+          closeBtn.className = 'close-agent-box';
+          closeBtn.innerHTML = '<i class="fas fa-trash"></i>';
+          closeBtn.addEventListener('click', () => deleteAgent(closeBtn, name));
+         
+                   // Assemble the agent box
+          agentBox.appendChild(agentContent);
+          agentBox.appendChild(editControls);
+          agentBox.appendChild(closeBtn);
+          
+          // Insert after the "Crear agente" button
+          insertAfter.parentNode.insertBefore(agentBox, insertAfter.nextSibling);
+     }
+    
+         // Function to edit an agent
+     function editAgent(button, originalName) {
+         const agentBox = button.closest('.generated-agent-box');
+         const agentName = agentBox.querySelector('.agent-name');
+         const agentDefinition = agentBox.querySelector('.agent-definition');
+         const editControls = agentBox.querySelector('.agent-edit-controls');
+         
+         // Add editing class to expand the box
+         agentBox.classList.add('editing');
+         
+         // Store original values
+         const originalDefinition = agentDefinition.textContent;
+         
+         // Replace content with editable inputs
+         const nameInput = document.createElement('input');
+         nameInput.type = 'text';
+         nameInput.className = 'agent-name-edit';
+         nameInput.value = originalName;
+         agentName.innerHTML = '';
+         agentName.appendChild(nameInput);
+         
+         const definitionTextarea = document.createElement('textarea');
+         definitionTextarea.className = 'agent-definition-edit';
+         definitionTextarea.value = originalDefinition;
+         definitionTextarea.maxLength = 1000;
+         agentDefinition.innerHTML = '';
+         agentDefinition.appendChild(definitionTextarea);
+
+         // Add character counter
+         const counterContainer = document.createElement('div');
+         counterContainer.className = 'character-counter-container';
+         
+         const errorMessage = document.createElement('span');
+         errorMessage.className = 'character-error-message';
+         errorMessage.style.display = 'none';
+         
+         const counter = document.createElement('span');
+         counter.className = 'character-counter';
+         
+         function updateCounter() {
+             const length = definitionTextarea.value.length;
+             counter.textContent = `${length} /1000`;
+             
+             if (length > 1000) {
+                 counter.classList.add('over-limit');
+                 errorMessage.textContent = 'Número máximo de carácteres superado';
+                 errorMessage.style.display = 'inline';
+             } else {
+                 counter.classList.remove('over-limit');
+                 errorMessage.style.display = 'none';
+             }
+         }
+         
+         definitionTextarea.addEventListener('input', updateCounter);
+         
+         counterContainer.appendChild(errorMessage);
+         counterContainer.appendChild(counter);
+         agentDefinition.appendChild(counterContainer);
+         
+         // Initial counter update
+         updateCounter();
+         
+         // Replace edit button with save and cancel buttons
+         editControls.innerHTML = '';
+         
+         const saveBtn = document.createElement('button');
+         saveBtn.className = 'save-agent-btn';
+         saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+         saveBtn.addEventListener('click', () => saveAgent(saveBtn, originalName));
+         
+         const cancelBtn = document.createElement('button');
+         cancelBtn.className = 'cancel-agent-btn';
+         cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancelar';
+         cancelBtn.addEventListener('click', () => cancelEdit(cancelBtn, originalName, originalDefinition));
+         
+         editControls.appendChild(saveBtn);
+         editControls.appendChild(cancelBtn);
+     }
+    
+         // Function to save agent changes
+     async function saveAgent(button, originalName) {
+         const agentBox = button.closest('.generated-agent-box');
+         const nameInput = agentBox.querySelector('.agent-name-edit');
+         const definitionInput = agentBox.querySelector('.agent-definition-edit');
+         
+         const newName = nameInput.value.trim();
+         const newDefinition = definitionInput.value.trim();
+         
+         if (!newName || !newDefinition) {
+             alert('Por favor, completa todos los campos.');
+             return;
+         }
+         
+         if (newDefinition.length > 1000) {
+             // Show error message if not already visible
+             const errorMessage = agentBox.querySelector('.character-error-message');
+             const counter = agentBox.querySelector('.character-counter');
+             if (errorMessage && counter) {
+                 errorMessage.textContent = 'Número máximo de carácteres superado';
+                 errorMessage.style.display = 'inline';
+                 counter.classList.add('over-limit');
+             }
+             return;
+         }
+         
+         // Show loading state
+         const originalButtonContent = button.innerHTML;
+         button.disabled = true;
+         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+         
+         try {
+            // Get current user data
+            const response = await fetch('/api/get-user-data');
+            const userData = await response.json();
+            
+            // Update etiquetas_personalizadas
+            const etiquetas = userData.etiquetas_personalizadas || {};
+            
+            // Remove old key if name changed
+            if (originalName !== newName) {
+                delete etiquetas[originalName];
+            }
+            
+            // Add/update with new values
+            etiquetas[newName] = newDefinition;
+            
+            // Save to database
+            const updateResponse = await fetch('/api/update-user-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    etiquetas_personalizadas: etiquetas
+                })
+            });
+            
+                              if (updateResponse.ok) {
+                      // Update UI first
+                      agentBox.querySelector('.agent-name').textContent = newName;
+                      agentBox.querySelector('.agent-definition').textContent = newDefinition;
+                      
+                      // Restore edit controls
+                      const editControls = agentBox.querySelector('.agent-edit-controls');
+                      editControls.innerHTML = '';
+                      
+                      const editBtn = document.createElement('button');
+                      editBtn.className = 'edit-agent-btn';
+                      editBtn.innerHTML = '<i class="fas fa-edit"></i> Editar';
+                      editBtn.addEventListener('click', () => editAgent(editBtn, newName));
+                      
+                      editControls.appendChild(editBtn);
+                      
+                      // Remove editing class with slight delay for smoother transition
+                      setTimeout(() => {
+                          agentBox.classList.remove('editing');
+                      }, 100);
+                  } else {
+                      // Restore button state on error
+                      button.disabled = false;
+                      button.innerHTML = originalButtonContent;
+                      alert('Error al guardar los cambios. Por favor, inténtalo de nuevo.');
+                  }
+              } catch (error) {
+                  console.error('Error saving agent:', error);
+                  // Restore button state on error
+                  button.disabled = false;
+                  button.innerHTML = originalButtonContent;
+                  alert('Error al guardar los cambios. Por favor, inténtalo de nuevo.');
+              }
+    }
+    
+         // Function to cancel editing
+     function cancelEdit(button, originalName, originalDefinition) {
+         const agentBox = button.closest('.generated-agent-box');
+         
+         // Restore original content first
+         agentBox.querySelector('.agent-name').textContent = originalName;
+         agentBox.querySelector('.agent-definition').textContent = originalDefinition;
+         
+         // Restore edit controls
+         const editControls = agentBox.querySelector('.agent-edit-controls');
+         editControls.innerHTML = '';
+         
+         const editBtn = document.createElement('button');
+         editBtn.className = 'edit-agent-btn';
+         editBtn.innerHTML = '<i class="fas fa-edit"></i> Editar';
+         editBtn.addEventListener('click', () => editAgent(editBtn, originalName));
+         
+         editControls.appendChild(editBtn);
+         
+         // Remove editing class with slight delay for smoother transition
+         setTimeout(() => {
+             agentBox.classList.remove('editing');
+         }, 100);
+     }
+    
+    // Function to delete an agent
+    async function deleteAgent(button, agentName) {
+        if (!confirm(`¿Estás seguro de que quieres eliminar el agente "${agentName}"?`)) {
+            return;
+        }
+        
+        try {
+            // Get current user data
+            const response = await fetch('/api/get-user-data');
+            const userData = await response.json();
+            
+            // Remove from etiquetas_personalizadas
+            const etiquetas = userData.etiquetas_personalizadas || {};
+            delete etiquetas[agentName];
+            
+            // Save to database
+            const updateResponse = await fetch('/api/update-user-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    etiquetas_personalizadas: etiquetas
+                })
+            });
+            
+            if (updateResponse.ok) {
+                // Remove from UI
+                button.closest('.generated-agent-box').remove();
+            } else {
+                alert('Error al eliminar el agente. Por favor, inténtalo de nuevo.');
+            }
+        } catch (error) {
+            console.error('Error deleting agent:', error);
+            alert('Error al eliminar el agente. Por favor, inténtalo de nuevo.');
+        }
+    }
+    
+         // Function to show generated agent
+     function showGeneratedAgent(agentData) {
+         const crearAgenteBtn = document.getElementById('crearAgenteBtn');
+         
+         if (agentData.etiqueta_personalizada && crearAgenteBtn) {
+             // Extract the first (and only) key-value pair from etiqueta_personalizada
+             const etiquetaKey = Object.keys(agentData.etiqueta_personalizada)[0];
+             const etiquetaValue = agentData.etiqueta_personalizada[etiquetaKey];
+             
+             // Find the last agent box to insert after it (or after button if no agents exist)
+             const agentesContainer = document.querySelector('#agentes-content');
+             const agentBoxes = agentesContainer.querySelectorAll('.generated-agent-box');
+             const insertAfterElement = agentBoxes.length > 0 ? agentBoxes[agentBoxes.length - 1] : crearAgenteBtn;
+             
+             // Create a new agent box using the createAgentBox function
+             createAgentBox(etiquetaKey, etiquetaValue, insertAfterElement);
+             
+             // Scroll to the new agent box
+             setTimeout(() => {
+                 const newAgentBox = insertAfterElement.nextElementSibling;
+                 if (newAgentBox && newAgentBox.classList.contains('generated-agent-box')) {
+                     newAgentBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                 }
+             }, 100);
+         }
+     }
+    
+    // Initialize agent template functionality
+    function initializeAgentTemplates() {
+      const crearAgenteBtn = document.getElementById('crearAgenteBtn');
+      const agentTemplateBox = document.getElementById('agentTemplateBox');
+      const closeTemplateBox = document.getElementById('closeTemplateBox');
+      const productDetailsForm = document.getElementById('productDetailsForm');
+      const closeProductForm = document.getElementById('closeProductForm');
+      const clientDetailsForm = document.getElementById('clientDetailsForm');
+      const closeClientForm = document.getElementById('closeClientForm');
+      const sectorDetailsForm = document.getElementById('sectorDetailsForm');
+      const closeSectorForm = document.getElementById('closeSectorForm');
+      const customDetailsForm = document.getElementById('customDetailsForm');
+      const closeCustomForm = document.getElementById('closeCustomForm');
+      const generateAgentBtn = document.getElementById('generateAgentBtn');
+      const generateClientAgentBtn = document.getElementById('generateClientAgentBtn');
+      const generateSectorAgentBtn = document.getElementById('generateSectorAgentBtn');
+      const generateCustomAgentBtn = document.getElementById('generateCustomAgentBtn');
+      
+      // Load existing agents on initialization
+      loadExistingAgents();
+      
+      if (crearAgenteBtn && agentTemplateBox) {
+          // Function to show template box
+          function showTemplateBox() {
+              agentTemplateBox.style.display = 'block';
+              crearAgenteBtn.style.display = 'none';
+              if (productDetailsForm) productDetailsForm.style.display = 'none';
+              if (clientDetailsForm) clientDetailsForm.style.display = 'none';
+              if (sectorDetailsForm) sectorDetailsForm.style.display = 'none';
+              if (customDetailsForm) customDetailsForm.style.display = 'none';
+              
+              // Hide existing agent boxes
+              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
+              existingAgentBoxes.forEach(box => {
+                  box.style.display = 'none';
+              });
+              
+              // Scroll to the box smoothly
+              setTimeout(() => {
+                  agentTemplateBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }, 100);
+          }
+
+          // Function to hide template box
+          function hideTemplateBox() {
+              agentTemplateBox.style.display = 'none';
+              crearAgenteBtn.style.display = 'flex';
+              if (productDetailsForm) productDetailsForm.style.display = 'none';
+              if (clientDetailsForm) clientDetailsForm.style.display = 'none';
+              if (sectorDetailsForm) sectorDetailsForm.style.display = 'none';
+              if (customDetailsForm) customDetailsForm.style.display = 'none';
+              
+              // Show existing agent boxes again
+              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
+              existingAgentBoxes.forEach(box => {
+                  box.style.display = 'block';
+              });
+          }
+
+          // Function to show product details form
+          function showProductForm() {
+              agentTemplateBox.style.display = 'none';
+              if (productDetailsForm) {
+                  // Reset form fields
+                  const productDescription = document.getElementById('productDescription');
+                  const productPhase = document.getElementById('productPhase');
+                  const productCharacteristics = document.getElementById('productCharacteristics');
+                  const customPhase = document.getElementById('customPhase');
+                  const customPhaseContainer = document.getElementById('customPhaseContainer');
+                  const generateBtn = document.getElementById('generateAgentBtn');
+                  
+                  if (productDescription) productDescription.value = '';
+                  if (productPhase) productPhase.value = '';
+                  if (productCharacteristics) productCharacteristics.value = '';
+                  if (customPhase) customPhase.value = '';
+                  if (customPhaseContainer) customPhaseContainer.style.display = 'none';
+                  if (generateBtn) {
+                      generateBtn.disabled = false;
+                      generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+                  
+                  productDetailsForm.style.display = 'block';
+                  // Scroll to the form smoothly
+                  setTimeout(() => {
+                      productDetailsForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }, 100);
+              }
+          }
+
+          // Function to show client form
+          function showClientForm() {
+              agentTemplateBox.style.display = 'none';
+              if (clientDetailsForm) {
+                  // Reset form fields
+                  const clientDescription = document.getElementById('clientDescription');
+                  const clientWebsite = document.getElementById('clientWebsite');
+                  const clientScope = document.getElementById('clientScope');
+                  const generateBtn = document.getElementById('generateClientAgentBtn');
+                  
+                  if (clientDescription) clientDescription.value = '';
+                  if (clientWebsite) clientWebsite.value = '';
+                  if (clientScope) clientScope.value = '';
+                  if (generateBtn) {
+                      generateBtn.disabled = false;
+                      generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+                  
+                  clientDetailsForm.style.display = 'block';
+                  // Scroll to the form smoothly
+                  setTimeout(() => {
+                      clientDetailsForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }, 100);
+              }
+          }
+
+          // Function to show sector form
+          function showSectorForm() {
+              agentTemplateBox.style.display = 'none';
+              if (sectorDetailsForm) {
+                  // Reset form fields
+                  const sectorDescription = document.getElementById('sectorDescription');
+                  const sectorGeographicScope = document.getElementById('sectorGeographicScope');
+                  const sectorSubtopics = document.getElementById('sectorSubtopics');
+                  const generateBtn = document.getElementById('generateSectorAgentBtn');
+                  
+                  if (sectorDescription) sectorDescription.value = '';
+                  if (sectorGeographicScope) sectorGeographicScope.value = '';
+                  if (sectorSubtopics) sectorSubtopics.value = '';
+                  if (generateBtn) {
+                      generateBtn.disabled = false;
+                      generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+                  
+                  sectorDetailsForm.style.display = 'block';
+                  // Scroll to the form smoothly
+                  setTimeout(() => {
+                      sectorDetailsForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }, 100);
+              }
+          }
+
+          // Function to show custom form
+          function showCustomForm() {
+              agentTemplateBox.style.display = 'none';
+              if (customDetailsForm) {
+                  // Reset form fields
+                  const customDescription = document.getElementById('customDescription');
+                  const generateBtn = document.getElementById('generateCustomAgentBtn');
+                  
+                  if (customDescription) customDescription.value = '';
+                  if (generateBtn) {
+                      generateBtn.disabled = false;
+                      generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+                  
+                  customDetailsForm.style.display = 'block';
+                  // Scroll to the form smoothly
+                  setTimeout(() => {
+                      customDetailsForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                  }, 100);
+              }
+          }
+
+          // Function to hide product details form
+          function hideProductForm() {
+              if (productDetailsForm) productDetailsForm.style.display = 'none';
+              crearAgenteBtn.style.display = 'flex';
+              
+              // Show existing agent boxes again
+              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
+              existingAgentBoxes.forEach(box => {
+                  box.style.display = 'block';
+              });
+          }
+
+          // Function to hide client details form
+          function hideClientForm() {
+              if (clientDetailsForm) clientDetailsForm.style.display = 'none';
+              crearAgenteBtn.style.display = 'flex';
+              
+              // Show existing agent boxes again
+              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
+              existingAgentBoxes.forEach(box => {
+                  box.style.display = 'block';
+              });
+          }
+
+          // Function to hide sector details form
+          function hideSectorForm() {
+              if (sectorDetailsForm) sectorDetailsForm.style.display = 'none';
+              crearAgenteBtn.style.display = 'flex';
+              
+              // Show existing agent boxes again
+              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
+              existingAgentBoxes.forEach(box => {
+                  box.style.display = 'block';
+              });
+          }
+
+          // Function to hide custom details form
+          function hideCustomForm() {
+              if (customDetailsForm) customDetailsForm.style.display = 'none';
+              crearAgenteBtn.style.display = 'flex';
+              
+              // Show existing agent boxes again
+              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
+              existingAgentBoxes.forEach(box => {
+                  box.style.display = 'block';
+              });
+          }
+
+          // Note: Agent boxes are now managed dynamically with individual delete buttons
+
+          // Show template box when "Crear agente" is clicked
+          crearAgenteBtn.addEventListener('click', showTemplateBox);
+
+          // Hide template box when close button is clicked
+          if (closeTemplateBox) {
+              closeTemplateBox.addEventListener('click', hideTemplateBox);
+          }
+
+          // Hide product form when close button is clicked
+          if (closeProductForm) {
+              closeProductForm.addEventListener('click', hideProductForm);
+          }
+
+          // Hide client form when close button is clicked
+          if (closeClientForm) {
+              closeClientForm.addEventListener('click', hideClientForm);
+          }
+
+          // Hide sector form when close button is clicked
+          if (closeSectorForm) {
+              closeSectorForm.addEventListener('click', hideSectorForm);
+          }
+
+          // Hide custom form when close button is clicked
+          if (closeCustomForm) {
+              closeCustomForm.addEventListener('click', hideCustomForm);
+          }
+
+          // Note: Agent boxes are now managed dynamically with individual delete buttons
+
+          // Add click handlers for template buttons
+          const templateBtns = agentTemplateBox.querySelectorAll('.template-btn');
+          templateBtns.forEach(btn => {
+              btn.addEventListener('click', () => {
+                  const agentType = btn.dataset.type;
+                  console.log('Selected agent type:', agentType);
+                  
+                  if (agentType === 'producto') {
+                      showProductForm();
+                  } else if (agentType === 'cliente') {
+                      showClientForm();
+                  } else if (agentType === 'sector') {
+                      showSectorForm();
+                  } else if (agentType === 'personalizado') {
+                      showCustomForm();
+                  } else {
+                      // For other agent types, just hide template box for now
+                      hideTemplateBox();
+                  }
+              });
+          });
+
+          // Handle custom phase input toggle
+          const productPhaseSelect = document.getElementById('productPhase');
+          const customPhaseContainer = document.getElementById('customPhaseContainer');
+          
+          if (productPhaseSelect && customPhaseContainer) {
+              productPhaseSelect.addEventListener('change', (e) => {
+                  if (e.target.value === 'otro') {
+                      customPhaseContainer.style.display = 'block';
+                  } else {
+                      customPhaseContainer.style.display = 'none';
+                      // Clear custom input when hiding
+                      const customPhaseInput = document.getElementById('customPhase');
+                      if (customPhaseInput) customPhaseInput.value = '';
+                  }
+              });
+          }
+
+          // Handle generate agent button click
+          if (generateAgentBtn) {
+              generateAgentBtn.addEventListener('click', async () => {
+                  // Get form values
+                  const productDescription = document.getElementById('productDescription')?.value || '';
+                  let productPhase = document.getElementById('productPhase')?.value || '';
+                  const productCharacteristics = document.getElementById('productCharacteristics')?.value || '';
+                  
+                  // If "Otro" is selected, use the custom input value
+                  if (productPhase === 'otro') {
+                      const customPhase = document.getElementById('customPhase')?.value || '';
+                      productPhase = customPhase;
+                  }
+
+                  // Validate required fields
+                  if (!productDescription.trim()) {
+                      alert('Por favor, proporciona una descripción del producto.');
+                      return;
+                  }
+
+                  // Show loading state
+                  generateAgentBtn.disabled = true;
+                  generateAgentBtn.innerHTML = '<div class="button-spinner"></div> Generando...';
+                  
+                  try {
+                      // Make API call to generate agent (server handles prompt creation)
+                      const response = await fetch('/api/generate-agent', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                              productData: {
+                                  description: productDescription,
+                                  phase: productPhase,
+                                  characteristics: productCharacteristics
+                              }
+                          })
+                      });
+
+                      if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                      }
+
+                      const result = await response.json();
+                      
+                      if (result.success && result.agent) {
+                          // Close all agent creation forms and show the generated agent
+                          hideProductForm();
+                          hideTemplateBox();
+                          showGeneratedAgent(result.agent);
+                      } else {
+                          throw new Error(result.error || 'Error generating agent');
+                      }
+
+                  } catch (error) {
+                      console.error('Error generating agent:', error);
+                      alert('Error al generar el agente. Por favor, inténtalo de nuevo.');
+                      
+                      // Reset button state
+                      generateAgentBtn.disabled = false;
+                      generateAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+              });
+          }
+
+          // Handle generate client agent button click
+          if (generateClientAgentBtn) {
+              generateClientAgentBtn.addEventListener('click', async () => {
+                  // Get form values
+                  const clientDescription = document.getElementById('clientDescription')?.value || '';
+                  const clientWebsite = document.getElementById('clientWebsite')?.value || '';
+                  const clientScope = document.getElementById('clientScope')?.value || '';
+
+                  // Validate required fields
+                  if (!clientDescription.trim()) {
+                      alert('Por favor, proporciona una descripción del cliente.');
+                      return;
+                  }
+
+                  // Show loading state
+                  generateClientAgentBtn.disabled = true;
+                  generateClientAgentBtn.innerHTML = '<div class="button-spinner"></div> Generando...';
+                  
+                  try {
+                      // Make API call to generate client agent
+                      const response = await fetch('/api/generate-client-agent', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                              clientData: {
+                                  description: clientDescription,
+                                  website: clientWebsite,
+                                  scope: clientScope
+                              }
+                          })
+                      });
+
+                      if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                      }
+
+                      const result = await response.json();
+                      
+                      if (result.success && result.agent) {
+                          // Close all agent creation forms and show the generated agent
+                          hideClientForm();
+                          hideTemplateBox();
+                          showGeneratedAgent(result.agent);
+                      } else {
+                          throw new Error(result.error || 'Error generating client agent');
+                      }
+
+                  } catch (error) {
+                      console.error('Error generating client agent:', error);
+                      alert('Error al generar el agente. Por favor, inténtalo de nuevo.');
+                      
+                      // Reset button state
+                      generateClientAgentBtn.disabled = false;
+                      generateClientAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+              });
+          }
+
+          // Handle generate sector agent button click
+          if (generateSectorAgentBtn) {
+              generateSectorAgentBtn.addEventListener('click', async () => {
+                  // Get form values
+                  const sectorDescription = document.getElementById('sectorDescription')?.value || '';
+                  const sectorGeographicScope = document.getElementById('sectorGeographicScope')?.value || '';
+                  const sectorSubtopics = document.getElementById('sectorSubtopics')?.value || '';
+
+                  // Validate required fields
+                  if (!sectorDescription.trim()) {
+                      alert('Por favor, proporciona una descripción del sector.');
+                      return;
+                  }
+
+                  // Show loading state
+                  generateSectorAgentBtn.disabled = true;
+                  generateSectorAgentBtn.innerHTML = '<div class="button-spinner"></div> Generando...';
+                  
+                  try {
+                      // Make API call to generate sector agent
+                      const response = await fetch('/api/generate-sector-agent', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                              sectorData: {
+                                  description: sectorDescription,
+                                  geographicScope: sectorGeographicScope,
+                                  subtopics: sectorSubtopics
+                              }
+                          })
+                      });
+
+                      if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                      }
+
+                      const result = await response.json();
+                      
+                      if (result.success && result.agent) {
+                          // Close all agent creation forms and show the generated agent
+                          hideSectorForm();
+                          hideTemplateBox();
+                          showGeneratedAgent(result.agent);
+                      } else {
+                          throw new Error(result.error || 'Error generating sector agent');
+                      }
+
+                  } catch (error) {
+                      console.error('Error generating sector agent:', error);
+                      alert('Error al generar el agente. Por favor, inténtalo de nuevo.');
+                      
+                      // Reset button state
+                      generateSectorAgentBtn.disabled = false;
+                      generateSectorAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+              });
+          }
+
+          // Handle generate custom agent button click
+          if (generateCustomAgentBtn) {
+              generateCustomAgentBtn.addEventListener('click', async () => {
+                  // Get form values
+                  const customDescription = document.getElementById('customDescription')?.value || '';
+
+                  // Validate required fields
+                  if (!customDescription.trim()) {
+                      alert('Por favor, describe qué contenido quieres que el agente rastree.');
+                      return;
+                  }
+
+                  // Show loading state
+                  generateCustomAgentBtn.disabled = true;
+                  generateCustomAgentBtn.innerHTML = '<div class="button-spinner"></div> Generando...';
+                  
+                  try {
+                      // Make API call to generate custom agent
+                      const response = await fetch('/api/generate-custom-agent', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json'
+                          },
+                          body: JSON.stringify({
+                              customData: {
+                                  description: customDescription
+                              }
+                          })
+                      });
+
+                      if (!response.ok) {
+                          throw new Error(`HTTP error! status: ${response.status}`);
+                      }
+
+                      const result = await response.json();
+                      
+                      if (result.success && result.agent) {
+                          // Close all agent creation forms and show the generated agent
+                          hideCustomForm();
+                          hideTemplateBox();
+                          showGeneratedAgent(result.agent);
+                      } else {
+                          throw new Error(result.error || 'Error generating custom agent');
+                      }
+
+                  } catch (error) {
+                      console.error('Error generating custom agent:', error);
+                      alert('Error al generar el agente. Por favor, inténtalo de nuevo.');
+                      
+                      // Reset button state
+                      generateCustomAgentBtn.disabled = false;
+                      generateCustomAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                  }
+              });
+          }
+      }
+    }
+
+    // Initialize immediately if DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeConfigurationMenu();
+        initializeAgentTemplates();
+      });
+    } else {
+      // If content is loaded dynamically, initialize immediately
+      setTimeout(() => {
+        initializeConfigurationMenu();
+        initializeAgentTemplates();
+      }, 100);
+    }
+    
+    // Expose functions globally so they can be called from dynamic HTML
+    window.initializeConfigurationMenu = initializeConfigurationMenu;
+    window.loadExistingAgents = loadExistingAgents;
+    window.displayExistingAgents = displayExistingAgents;
+    window.createAgentBox = createAgentBox;
+    window.editAgent = editAgent;
+    window.saveAgent = saveAgent;
+    window.cancelEdit = cancelEdit;
+    window.deleteAgent = deleteAgent;
+    window.showGeneratedAgent = showGeneratedAgent;
+
+    function hideLoader(){
+      const l=document.getElementById('config-loader');
+      if(l) l.style.display='none';
+    }
+  </script>
+  <!-- Onboarding form logic -->
+  <script>
+  (function(){
+    /* ------------------ DATA ------------------ */
+    let onboardingStructure = null;
+    const onboardingContainer = document.getElementById('onboarding-container');
+    const profileView = document.getElementById('profile-summary-view');
+    const configLoader = document.getElementById('config-loader');
+    
+    // Check for existing profile data on load
+    fetch('/api/get-user-data')
+        .then(res => res.json())
+        .then(userData => {
+            if (userData && userData.perfil_regulatorio) {
+                // If profile exists, display it directly
+                renderFinalView(userData);
+                if (onboardingContainer) onboardingContainer.style.display = 'none';
+                if (profileView) profileView.style.display = 'block';
+            } else {
+                // If not, fetch the form structure and start onboarding
+                return fetch('estructura_onboarding.json')
+                  .then(res=>res.json())
+                  .then(json=>{
+                    onboardingStructure=json;
+                    startOnboarding();
+                  })
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching initial data:', err);
+            // On error, try to show the form as a fallback
+            if(onboardingContainer) onboardingContainer.style.display = 'block';
+        })
+        .finally(() => {
+            if (configLoader) configLoader.style.display = 'none';
+        });
+
+    /* -------------- HELPERS -------------- */
+    const onboardingForm = document.getElementById('onboarding-form');
+    const summaryContainer = document.getElementById('summary-tags');
+    const completionMessage = document.getElementById('completion-message');
+    const answers = [];
+    const answerByKey = {};
+    window.onboardingAnswers = answerByKey;
+
+    function toTitle(str){
+      if (!str) return '';
+      const lower=str.replace(/^pregunta[_ ]?/i,'').replace(/_/g,' ').trim().toLowerCase();
+      const titled=lower.replace(/(^|[\s\|])\p{L}/gu, match=>match.toUpperCase());
+      return titled.replace(/\b(De|Del|Y)\b/g, m=>m.toLowerCase()).replace(/M&a/i,'M&A').replace(/Esg/i,'ESG').replace(/Tmt/i,'TMT');
+    }
+
+    function renderSummary(){
+      summaryContainer.innerHTML='';
+      answers.forEach(({question,answer}, idx)=>{
+        const tag=document.createElement('span');
+        tag.className='summary-tag';
+        tag.innerHTML=`<strong>${toTitle(question)}:</strong> ${answer} <span class="tick">✓</span>`;
+        tag.addEventListener('click', ()=> goToStep(idx) );
+        summaryContainer.appendChild(tag);
+      });
+    }
+
+    function renderFinalView(data) {
+        const tableBody = document.querySelector('#profile-summary-view .summary-table tbody');
+        const profileContent = document.getElementById('regulatory-profile-content');
+        const coberturaBtn = document.getElementById('configuraCoberturaBtn');
+
+        if (!tableBody || !profileContent || !coberturaBtn) return;
+        
+        // Hide "Configura tu cobertura" button if coverage is already set
+        const hasCoverage = data.cobertura_legal && (
+            data.cobertura_legal.fuentes?.length > 0 || 
+            data.cobertura_legal.reguladores?.length > 0 ||
+            data.cobertura_legal.fuentes_gobierno?.length > 0 || 
+            data.cobertura_legal.fuentes_reguladores?.length > 0
+        );
+        
+        if (hasCoverage) {
+            coberturaBtn.style.display = 'none';
+        } else {
+            coberturaBtn.style.display = 'block';
+            coberturaBtn.onclick = () => {
+                // Switch to "Fuentes" tab
+                const menuItems = document.querySelectorAll('.config-menu-item');
+                menuItems.forEach(item => {
+                    if (item.dataset.content === 'fuentes') {
+                        item.click();
+                    }
+                });
+            };
+        }
+
+        tableBody.innerHTML = '';
+        profileContent.innerHTML = '';
+
+        const createRow = (variable, valor) => {
+            if (!valor || valor.trim() === '') return '';
+            return `<tr><td>${variable}</td><td>${valor}</td></tr>`;
+        };
+
+        let tableHtml = '';
+        tableHtml += createRow('Tipo de Empresa', data.tipo_empresa);
+        if (data.detalle_empresa) {
+            tableHtml += createRow('Sector', data.detalle_empresa.sector);
+            tableHtml += createRow('Actividad', data.detalle_empresa.actividad);
+        }
+        tableHtml += createRow('Interés', data.interes);
+        tableHtml += createRow('Tamaño Empresa', data.tamaño_empresa);
+        tableHtml += createRow('Web', data.web ? `<a href="${data.web}" target="_blank">${data.web}</a>` : '');
+        tableBody.innerHTML = tableHtml;
+
+        profileContent.innerHTML = data.perfil_regulatorio || '<p>No se ha generado un perfil regulatorio.</p>';
+        
+        // Populate and pre-select fuentes
+        populateFuentes(data.cobertura_legal);
+    }
+
+    function populateFuentes(cobertura_legal) {
+        const container = document.getElementById('fuentes-container');
+        if (!container) return;
+
+        // Check if user has etiquetas_personalizadas and show/hide banner accordingly
+        checkAndShowAgentesRegulatoryBanner();
+
+        const fuentesData = {
+          "Boletines Europeos, Nacionales y Regionales": {
+              "A) Europeos y Nacionales": [
+                  { sigla: "DOUE", nombre: "Diario Oficial de la Unión Europea", tipo: "fuentes-gobierno" },
+                  { sigla: "BOE", nombre: "Boletín Oficial del Estado", tipo: "fuentes-gobierno" },
+              ],
+              "B) Regionales": [
+                  { sigla: "BOPV", nombre: "Boletín Oficial del País Vasco", tipo: "fuentes-gobierno" },
+                  { sigla: "DOGC", nombre: "Diari Oficial de la Generalitat de Catalunya", tipo: "fuentes-gobierno" },
+                  { sigla: "DOGA", nombre: "Diario Oficial de Galicia", tipo: "fuentes-gobierno" },
+                  { sigla: "BOC", nombre: "Boletín Oficial de Cantabria", tipo: "fuentes-gobierno" },
+                  { sigla: "BORM", nombre: "Boletín Oficial de la Región de Murcia", tipo: "fuentes-gobierno" },
+                  { sigla: "BOA", nombre: "Boletín Oficial de Aragón", tipo: "fuentes-gobierno" },
+                  { sigla: "BOCM", nombre: "Boletín Oficial de la Comunidad de Madrid", tipo: "fuentes-gobierno" },
+                  { sigla: "DOE", nombre: "Diario Oficial de Extremadura", tipo: "fuentes-gobierno" },
+                  { sigla: "BOCYL", nombre: "Boletín Oficial de Castilla y León", tipo: "fuentes-gobierno" },
+                  { sigla: "BOJA", nombre: "Boletín Oficial de la Junta de Andalucía", tipo: "fuentes-gobierno" },
+              ]
+          },
+          "Reguladores": [
+              { sigla: "EBA", nombre: "European Banking Authority", tipo: "fuentes-reguladores" },
+              { sigla: "ESMA", nombre: "European Securities and Markets Authority", tipo: "fuentes-reguladores" },
+              { sigla: "CNMV", nombre: "Comisión Nacional del Mercado de Valores", tipo: "fuentes-reguladores" },
+              { sigla: "INCIBE", nombre: "Instituto Nacional de Ciberseguridad", tipo: "fuentes-reguladores" },
+              { sigla: "CNMC", nombre: "Comisión Nacional de los Mercados y la Competencia", tipo: "fuentes-reguladores" },
+              { sigla: "AEPD", nombre: "Agencia Española de Protección de Datos", tipo: "fuentes-reguladores" },
+          ],
+          "Normativa en tramitación": [
+            { sigla: "BOCG", nombre: "Boletín Oficial de las Cortes Generales", tipo: "fuentes-gobierno" },
+          ]
+        };
+        
+        let html = '';
+        const itemsPerPage = 4;
+
+        const createGrid = (items, sectionKey) => {
+            let gridHtml = `<div class="fuentes-grid-container" data-section="${sectionKey}"><div class="fuentes-grid">`;
+            items.forEach(fuente => {
+                gridHtml += `<div class="fuente-box" data-sigla="${fuente.sigla}" data-tipo="${fuente.tipo}" data-section="${sectionKey}"><strong>${fuente.sigla}</strong><span>${fuente.nombre}</span></div>`;
+            });
+            gridHtml += `</div>`;
+            // Always add navigation arrows for sections with more than 4 items
+            if (items.length > itemsPerPage) {
+                gridHtml += `<div class="grid-nav-arrow prev" style="display: none;"><i class="fas fa-chevron-left"></i></div><div class="grid-nav-arrow next"><i class="fas fa-chevron-right"></i></div>`;
+            }
+            gridHtml += `</div>`;
+            return gridHtml;
+        };
+
+        for (const sectionTitle in fuentesData) {
+            const sectionKey = sectionTitle.toLowerCase().replace(/\s+/g, '-');
+            html += `<div class="section-header">`;
+            html += `<h3 class="summary-title">${sectionTitle}</h3>`;
+            html += `<div class="selected-tags-container" id="selected-tags-${sectionKey}"></div>`;
+            // Add save button only for the first section (Boletines)
+            if (sectionTitle === "Boletines Europeos, Nacionales y Regionales") {
+                html += `<button id="saveFuentesBtn" class="save-fuentes-btn-inline">Guardar</button>`;
+                html += `<div id="saveStatus" class="save-status"></div>`;
+            }
+            html += `</div>`;
+            const sectionContent = fuentesData[sectionTitle];
+
+            if (Array.isArray(sectionContent)) { // For Reguladores, Normativa
+                html += createGrid(sectionContent, sectionKey);
+            } else { // For Boletines with subsections
+                for (const subsectionTitle in sectionContent) {
+                    html += `<div class="fuentes-subsection">`;
+                    const subsectionKey = subsectionTitle.toLowerCase().replace(/[()]/g, '').replace(/\s+/g, '-');
+                    html += `<div class="section-header">`;
+                    html += `<h4 class="fuentes-subsection-title">${subsectionTitle}</h4>`;
+                    html += `<div class="selected-tags-container" id="selected-tags-${subsectionKey}"></div>`;
+                    html += `</div>`;
+                    html += createGrid(sectionContent[subsectionTitle], subsectionKey);
+                    html += `</div>`;
+                }
+            }
+        }
+        container.innerHTML = html;
+
+        // Pagination logic - Apply to all grid containers
+        document.querySelectorAll('.fuentes-grid-container').forEach(gridContainer => {
+            const grid = gridContainer.querySelector('.fuentes-grid');
+            const items = Array.from(grid.querySelectorAll('.fuente-box'));
+            const prevArrow = gridContainer.querySelector('.prev');
+            const nextArrow = gridContainer.querySelector('.next');
+            let currentPage = 0;
+            const totalItems = items.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            function showPage(page) {
+                items.forEach((item, index) => {
+                    const isVisible = index >= page * itemsPerPage && index < (page + 1) * itemsPerPage;
+                    item.style.display = isVisible ? 'flex' : 'none';
+                });
+
+                // Show/hide arrows based on current page and total pages
+                if (prevArrow) prevArrow.style.display = page > 0 ? 'flex' : 'none';
+                if (nextArrow) nextArrow.style.display = page < totalPages - 1 ? 'flex' : 'none';
+            }
+
+            // Initialize first page display
+            if (totalItems > 0) {
+                showPage(0);
+            }
+
+            // Add event listeners for navigation
+            if (nextArrow) {
+                nextArrow.addEventListener('click', () => {
+                    if (currentPage < totalPages - 1) {
+                        currentPage++;
+                        showPage(currentPage);
+                    }
+                });
+            }
+            if (prevArrow) {
+                prevArrow.addEventListener('click', () => {
+                    if (currentPage > 0) {
+                        currentPage--;
+                        showPage(currentPage);
+                    }
+                });
+            }
+        });
+
+        // Function to update selected tags display
+        function updateSelectedTags() {
+            // Clear all tag containers
+            document.querySelectorAll('.selected-tags-container').forEach(container => {
+                container.innerHTML = '';
+            });
+
+            // Get all selected boxes and group by section
+            const selectedBySection = {};
+            document.querySelectorAll('.fuente-box.selected').forEach(box => {
+                const sigla = box.dataset.sigla;
+                const sectionKey = box.dataset.section;
+                
+                if (!selectedBySection[sectionKey]) {
+                    selectedBySection[sectionKey] = [];
+                }
+                selectedBySection[sectionKey].push(sigla);
+            });
+
+            // Update each section's tags
+            Object.keys(selectedBySection).forEach(sectionKey => {
+                const container = document.getElementById(`selected-tags-${sectionKey}`);
+                if (container) {
+                    selectedBySection[sectionKey].forEach(sigla => {
+                        const tag = document.createElement('span');
+                        tag.className = 'selected-tag';
+                        tag.textContent = sigla;
+                        container.appendChild(tag);
+                    });
+                }
+            });
+        }
+
+        // Add click listeners and pre-select
+        const selectedFuentes = cobertura_legal?.fuentes_gobierno || cobertura_legal?.fuentes || [];
+        const selectedReguladores = cobertura_legal?.fuentes_reguladores || cobertura_legal?.reguladores || [];
+        const allSelections = [...selectedFuentes, ...selectedReguladores];
+
+        document.querySelectorAll('.fuente-box').forEach(box => {
+            if (allSelections.includes(box.dataset.sigla)) {
+                box.classList.add('selected');
+            }
+            box.addEventListener('click', () => {
+                box.classList.toggle('selected');
+                updateSelectedTags(); // Update tags when selection changes
+            });
+        });
+
+        // Initial tags update
+        updateSelectedTags();
+
+        // Save button logic
+        document.getElementById('saveFuentesBtn').addEventListener('click', () => {
+            const saveBtn = document.getElementById('saveFuentesBtn');
+            const saveStatus = document.getElementById('saveStatus');
+            
+            // Clear any previous status and show loader
+            saveStatus.textContent = '';
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<div class="button-spinner"></div>';
+            saveBtn.classList.add('loading');
+            
+            const newCobertura = {
+                'fuentes-gobierno': [],
+                'fuentes-reguladores': [],
+                'fuentes-tramitacion': [] // This key exists but isn't part of the final payload
+            };
+            document.querySelectorAll('.fuente-box.selected').forEach(box => {
+                const tipo = box.dataset.tipo;
+                const sigla = box.dataset.sigla;
+                if (newCobertura[tipo]) {
+                    newCobertura[tipo].push(sigla);
+                }
+            });
+            
+            const finalPayload = {
+                cobertura_legal: {
+                    fuentes_gobierno: newCobertura['fuentes-gobierno'],
+                    fuentes_reguladores: newCobertura['fuentes-reguladores']
+                },
+                rangos: ["Acuerdos Internacionales","Normativa Europea","Legislacion Nacional","Normativa Reglamentaria","Decisiones Judiciales","Doctrina Administrativa","Comunicados, Guias y Opiniones Consultivas","Consultas Publicas","Normativa en tramitación","Otras"]
+            };
+
+            fetch('/api/update-user-data', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(finalPayload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success state
+                    saveBtn.classList.remove('loading');
+                    saveBtn.innerHTML = '✓ Guardado';
+                    saveBtn.classList.add('success');
+                    
+                    // Reset after 2 seconds
+                    setTimeout(() => {
+                        saveBtn.innerHTML = 'Guardar';
+                        saveBtn.classList.remove('success');
+                        saveBtn.disabled = false;
+                    }, 2000);
+                } else {
+                    // Show error
+                    saveBtn.classList.remove('loading');
+                    saveBtn.innerHTML = 'Guardar';
+                    saveStatus.textContent = 'Error, pruebe de nuevo';
+                    saveBtn.disabled = false;
+                }
+            })
+            .catch(err => {
+                console.error('Error saving fuentes:', err);
+                saveBtn.classList.remove('loading');
+                saveBtn.innerHTML = 'Guardar';
+                saveStatus.textContent = 'Error, pruebe de nuevo';
+                saveBtn.disabled = false;
+            });
+        });
+    }
+
+    /* --------- STEP MANAGEMENT --------- */
+    const steps = [];
+    function clearStepsFrom(index){
+      while(steps.length > index){
+        const s = steps.pop();
+        const removedKey = s.element.dataset.key;
+        if(removedKey) delete answerByKey[removedKey];
+        s.element.remove();
+        answers.splice(index,1);
+      }
+      motivacionAsked = steps.some(st => st.element.dataset.key === 'motivacion_principal');
+      extraInfoAsked = steps.some(st => st.element.dataset.key === 'num_empleados');
+      renderSummary();
+      updateTrackers();
+    }
+
+    function goToStep(idx){
+      steps.forEach((st,i)=> st.element.classList.toggle('active', i===idx));
+    }
+
+    function createStepElement(questionText){
+      const section=document.createElement('section');
+      section.className='form-step';
+      section.innerHTML=`<div class="step-header"><p class="question-text">${questionText}</p><span class="step-tracker"></span></div>`;
+      onboardingForm.appendChild(section);
+      steps.push({element:section});
+      return section;
+    }
+
+    function updateTrackers(){
+      const TOTAL_STEPS = 5;
+      const getStepNumber = (key)=>{
+        if(key==='tipo_empresa') return 1;
+        if(key==='motivacion_principal') return 3;
+        if(key==='num_empleados') return 4;
+        if(key==='web_empresa') return 5;
+        return 2;
+      };
+      steps.forEach((s)=>{
+        const tracker=s.element.querySelector('.step-tracker');
+        if(tracker){
+          const num = getStepNumber(s.element.dataset.key);
+          tracker.textContent=`${num} de ${TOTAL_STEPS}`;
+        }
+      });
+    }
+
+    function showCustomInput(section, questionText, questionKey, proceedCallback) {
+      // Remove existing custom input if any
+      const existingCustomInput = section.querySelector('.custom-input-container');
+      if (existingCustomInput) {
+        existingCustomInput.remove();
+      }
+      
+      // Create custom input container
+      const customContainer = document.createElement('div');
+      customContainer.className = 'custom-input-container';
+      
+      // Create input field
+      const customInput = document.createElement('input');
+      customInput.type = 'text';
+      customInput.className = 'input-field';
+      customInput.placeholder = 'Especifica tu respuesta...';
+      customInput.style.marginBottom = '12px';
+      
+      // Create confirm button
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'next-btn';
+      confirmBtn.textContent = 'Confirmar';
+      confirmBtn.addEventListener('click', () => {
+        const customValue = customInput.value.trim();
+        if (!customValue) {
+          alert('Por favor, introduce una respuesta.');
+          return;
+        }
+        
+        // Handle the custom answer
+        handleAnswer(section, questionText, customValue);
+        proceedCallback(customValue);
+      });
+      
+      // Handle Enter key
+      customInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          confirmBtn.click();
+        }
+      });
+      
+      // Append to container
+      customContainer.appendChild(customInput);
+      customContainer.appendChild(confirmBtn);
+      
+      // Add to section
+      section.appendChild(customContainer);
+      
+      // Focus on input
+      setTimeout(() => customInput.focus(), 100);
+    }
+
+    function showCustomInputMultiSelect(section, questionText, questionKey, selectedValues, proceedCallback) {
+      // Remove existing custom input if any
+      const existingCustomInput = section.querySelector('.custom-input-container');
+      if (existingCustomInput) {
+        existingCustomInput.remove();
+      }
+      
+      // Create custom input container
+      const customContainer = document.createElement('div');
+      customContainer.className = 'custom-input-container';
+      
+      // Show selected values (excluding "Otro")
+      const otherValues = selectedValues.filter(val => val.toLowerCase() !== 'otro');
+      if (otherValues.length > 0) {
+        const selectedText = document.createElement('p');
+        selectedText.style.fontSize = '14px';
+        selectedText.style.color = '#7a8a93';
+        selectedText.style.marginBottom = '12px';
+        selectedText.textContent = `Seleccionado: ${otherValues.map(val => toTitle(val)).join(', ')}`;
+        customContainer.appendChild(selectedText);
+      }
+      
+      // Create input field for custom value
+      const customInput = document.createElement('input');
+      customInput.type = 'text';
+      customInput.className = 'input-field';
+      customInput.placeholder = 'Especifica la opción "Otro"...';
+      customInput.style.marginBottom = '12px';
+      
+      // Create confirm button
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'next-btn';
+      confirmBtn.textContent = 'Confirmar';
+      confirmBtn.addEventListener('click', () => {
+        const customValue = customInput.value.trim();
+        if (!customValue) {
+          alert('Por favor, especifica la opción "Otro".');
+          return;
+        }
+        
+        // Combine other selected values with custom value
+        const finalValues = [...otherValues.map(val => toTitle(val)), customValue];
+        const answerText = finalValues.join(', ');
+        
+        // Handle the combined answer
+        handleAnswer(section, questionText, answerText);
+        proceedCallback(null);
+      });
+      
+      // Handle Enter key
+      customInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          confirmBtn.click();
+        }
+      });
+      
+      // Append to container
+      customContainer.appendChild(customInput);
+      customContainer.appendChild(confirmBtn);
+      
+      // Add to section
+      section.appendChild(customContainer);
+      
+      // Focus on input
+      setTimeout(() => customInput.focus(), 100);
+    }
+
+    function addOptionsStep(questionKey, questionText, optionsArray, currentNode, subtreeMap){
+      const section=createStepElement(questionText);
+      section.dataset.type='select';
+      section.dataset.key=questionKey;
+
+      const userTipo = (answerByKey['tipo_empresa']||'').toLowerCase();
+      const previousAnswerDepartamentos = answerByKey['pregunta_origen_interes']||'';
+      const isDespachoAreaMulti = userTipo==='despacho' && questionKey==='pregunta_area_practica' && /conocimiento/i.test(previousAnswerDepartamentos);
+      const isMotivacionMulti = questionKey==='motivacion_principal';
+      const multiSelect = isDespachoAreaMulti || isMotivacionMulti;
+
+      const optionsWrap=document.createElement('div');
+      optionsWrap.className='options';
+
+      if(userTipo==='consultora' && questionKey==='pregunta_especializacion'){
+        section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">¿En qué tipo de consultoría estás especializado?</p>');
+      }
+      if(userTipo==='despacho' && questionKey==='pregunta_origen_interes'){
+        questionText='Departamentos interesados';
+        section.querySelector('.question-text').textContent=questionText;
+        section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">Selecciona los departamentos interesados del despacho.</p>');
+        optionsArray=['Departamento del conocimiento | Varios departamentos','Área práctica concreta'];
+      }
+      if(questionKey==='motivacion_principal'){
+        section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">Selecciona uno o más de uno</p>');
+      }
+
+      optionsArray.forEach(opt=>{
+        const box=document.createElement('div');
+        box.className='option-box';
+        let displayText=toTitle(opt);
+        if(questionKey==='num_empleados') displayText+= ' empleados';
+        box.textContent=displayText;
+        box.dataset.value=opt;
+        box.addEventListener('click',()=>{
+          if(multiSelect){
+            box.classList.toggle('selected');
+          } else {
+            section.querySelectorAll('.option-box').forEach(o=>o.classList.remove('selected'));
+            box.classList.add('selected');
+            
+            // Check if "Otro" was selected and show custom input
+            if(opt.toLowerCase() === 'otro'){
+              showCustomInput(section, questionText, questionKey, proceedAfterSelection);
+            } else {
+              handleAnswer(section, questionText, toTitle(opt));
+              proceedAfterSelection(opt);
+            }
+          }
+        });
+        optionsWrap.appendChild(box);
+      });
+      section.appendChild(optionsWrap);
+
+      if(multiSelect){
+        const nextBtn=document.createElement('button');
+        nextBtn.className='next-btn';
+        nextBtn.textContent='Siguiente';
+        nextBtn.style.marginTop='18px';
+        nextBtn.addEventListener('click',()=>{
+          const selectedBoxes=[...section.querySelectorAll('.option-box.selected')];
+          if(!selectedBoxes.length) return;
+          
+          const selectedValues = selectedBoxes.map(b=>b.dataset.value);
+          const hasOtro = selectedValues.some(val => val.toLowerCase() === 'otro');
+          
+          if(hasOtro){
+            showCustomInputMultiSelect(section, questionText, questionKey, selectedValues, proceedAfterSelection);
+          } else {
+            const answerText = selectedBoxes.map(b=>toTitle(b.dataset.value)).join(', ');
+            handleAnswer(section, questionText, answerText);
+            proceedAfterSelection(null);
+          }
+        });
+        section.appendChild(nextBtn);
+      }
+      showOnly(section);
+      updateTrackers();
+
+      function proceedAfterSelection(optChosen){
+        if(questionKey==='tipo_empresa'){
+          const freshBranch = subtreeMap ? JSON.parse(JSON.stringify(subtreeMap[optChosen])) : null;
+          generateFromNode(freshBranch);
+          return;
+        }
+        if(questionKey==='num_empleados'){
+          addInputStep('web_empresa','¿Cuál es la página web de tu empresa?','');
+          return;
+        }
+        const nextData = subtreeMap ? subtreeMap[(optChosen||'')] : null;
+        if(currentNode) delete currentNode[questionKey];
+        generateFromNode(nextData || currentNode);
+      }
+    }
+
+    function addInputStep(questionKey, questionText, placeholder){
+      const section=createStepElement(questionText);
+      section.dataset.type='input';
+      section.dataset.key=questionKey;
+      
+      if(questionKey === 'web_empresa'){
+        // Create a container for the URL input with fixed prefix
+        const urlContainer = document.createElement('div');
+        urlContainer.style.display = 'flex';
+        urlContainer.style.alignItems = 'center';
+        urlContainer.style.maxWidth = '420px';
+        urlContainer.style.margin = '0 auto';
+        urlContainer.style.border = '2px solid #e0e0e0';
+        urlContainer.style.borderRadius = '10px';
+        urlContainer.style.transition = 'border-color 0.2s ease';
+        
+        // Create the fixed prefix
+        const prefix = document.createElement('span');
+        prefix.textContent = 'https://';
+        prefix.style.padding = '12px 8px 12px 16px';
+        prefix.style.fontSize = '15px';
+        prefix.style.color = '#7a8a93';
+        prefix.style.borderRight = '1px solid #e0e0e0';
+        prefix.style.whiteSpace = 'nowrap';
+        
+        // Create the input field
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.style.flex = '1';
+        input.style.padding = '12px 16px 12px 8px';
+        input.style.fontSize = '15px';
+        input.style.border = 'none';
+        input.style.outline = 'none';
+        input.style.borderRadius = '0 8px 8px 0';
+        input.placeholder = placeholder || 'www.ejemplo.com';
+        
+        // Focus/blur events for container border
+        input.addEventListener('focus', () => {
+          urlContainer.style.borderColor = 'var(--primary-color)';
+          urlContainer.style.boxShadow = '0 0 0 2px rgba(4,219,141,0.15)';
+        });
+        input.addEventListener('blur', () => {
+          urlContainer.style.borderColor = '#e0e0e0';
+          urlContainer.style.boxShadow = 'none';
+        });
+        
+        urlContainer.appendChild(prefix);
+        urlContainer.appendChild(input);
+        section.appendChild(urlContainer);
+      } else {
+        section.insertAdjacentHTML('beforeend', `<input type="text" class="input-field" placeholder="${placeholder || ''}">`);
+      }
+      
+      const saveBtn=document.createElement('button');
+      if(questionKey === 'web_empresa'){
+        saveBtn.className='save-btn web-empresa-btn';
+        saveBtn.textContent='Generar perfil';
+      } else {
+        saveBtn.className='save-btn';
+        saveBtn.textContent='Siguiente';
+      }
+      const input = section.querySelector('input');
+      saveBtn.addEventListener('click',()=>{
+        let val=input.value.trim();
+        if(!val) return;
+        if(questionKey==='web_empresa') {
+          // Always add https:// prefix for web_empresa
+          val = 'https://' + val;
+        }
+        handleAnswer(section, questionText, val);
+        finalizeOnboarding();
+      });
+      input.addEventListener('keypress',e=> e.key==='Enter' && saveBtn.click() );
+      section.appendChild(saveBtn);
+      showOnly(section);
+      updateTrackers();
+    }
+
+    function showOnly(section){
+      steps.forEach(st=>st.element.classList.remove('active'));
+      section.classList.add('active');
+    }
+
+    function handleAnswer(section, questionText, answerText){
+      const idx = steps.findIndex(s=>s.element===section);
+      answers[idx] = {question:section.dataset.key, answer:answerText};
+      answerByKey[section.dataset.key]=answerText;
+      if(section.dataset.key === 'tipo_empresa'){
+        motivacionAsked = false;
+        extraInfoAsked  = false;
+      }
+      renderSummary();
+      clearStepsFrom(idx+1);
+    }
+
+    /* --------- GENERATION LOGIC --------- */
+    let motivacionAsked=false;
+    let extraInfoAsked=false;
+
+    function generateFirstArrayInNode(node){
+      if(!node) return false;
+      for(const [k,v] of Object.entries(node)){
+        if(Array.isArray(v)){
+          addOptionsStep(k,toTitle(k),v,node,null);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function generateFromNode(node){
+      if(node && Object.keys(node).length===0) node=null;
+      if(!node){
+        if(!motivacionAsked){
+          motivacionAsked=true;
+          addOptionsStep('motivacion_principal','¿Qué te interesa?', onboardingStructure.motivacion_principal, null);
+        } else if(!extraInfoAsked){
+          extraInfoAsked=true;
+          addOptionsStep('num_empleados','¿Cuál es el tamaño de tu empresa?', ['0-20','20-100','100-1000','+1000'], null);
+        } else {
+          finalizeOnboarding();
+        }
+        return;
+      }
+      if(generateFirstArrayInNode(node)){ return; }
+      for(const [k,v] of Object.entries(node)){
+        if(typeof v==='object' && !Array.isArray(v)){
+          addOptionsStep(k,toTitle(k),Object.keys(v),node,v);
+          return;
+        }
+      }
+    }
+
+    function finalizeOnboarding(){
+      if (onboardingForm) onboardingForm.style.display = 'none';
+      if (summaryContainer) summaryContainer.classList.add('fading-out');
+      
+      if(completionMessage){
+        completionMessage.innerHTML = '<div class="spinner" style="margin:20px auto;"></div><p style="margin-top:12px;font-weight:500;color:var(--text-color);">Creando perfil regulatorio…</p>';
+        completionMessage.style.display = 'block';
+      }
+
+      const answersPayload = window.onboardingAnswers || {};
+      const knownKeys = ['tipo_empresa', 'motivacion_principal', 'num_empleados', 'web_empresa'];
+      const detailKeys = Object.keys(answersPayload).filter(k => !knownKeys.includes(k));
+      const detalle_empresa = {};
+      if (detailKeys.length > 0 && answersPayload[detailKeys[0]]) detalle_empresa.sector = answersPayload[detailKeys[0]];
+      if (detailKeys.length > 1 && answersPayload[detailKeys[1]]) detalle_empresa.actividad = answersPayload[detailKeys[1]];
+
+      const onboardingDataToSave = {
+        tipo_empresa: answersPayload['tipo_empresa'],
+        interes: answersPayload['motivacion_principal'],
+        tamaño_empresa: answersPayload['num_empleados'],
+        web: answersPayload['web_empresa'],
+        detalle_empresa: detalle_empresa
+      };
+
+      fetch('/api/save-onboarding-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(onboardingDataToSave)
+      }).catch(err => console.error('Could not save onboarding data:', err));
+
+      fetch('/api/regulatory-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answers: answersPayload })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data && data.html_response){
+          const finalData = { ...onboardingDataToSave, perfil_regulatorio: data.html_response };
+          
+          fetch('/api/save-regulatory-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ perfil_regulatorio: data.html_response })
+          }).catch(err => console.error('Could not save regulatory profile:', err));
+          
+          setTimeout(() => {
+              if (completionMessage) completionMessage.style.display = 'none';
+              if (summaryContainer) summaryContainer.style.display = 'none';
+              renderFinalView(finalData);
+              if (profileView) profileView.style.display = 'block';
+          }, 400);
+
+        } else {
+          completionMessage.innerHTML = '<p style="color:red;">No se pudo generar el perfil regulatorio.</p>';
+        }
+      })
+      .catch(err => {
+        console.error('Error generando perfil regulatorio:', err);
+        completionMessage.innerHTML = '<p style="color:red;">Ocurrió un error generando el perfil regulatorio.</p>';
+      });
+    }
+
+    /* --------- BOOTSTRAP --------- */
+    function startOnboarding(){
+      if (onboardingStructure && onboardingStructure.tipo_empresa) {
+        generateFromNode({tipo_empresa:onboardingStructure.tipo_empresa});
+      }
+    }
+  })();
+  </script>
+</body>
+</html>

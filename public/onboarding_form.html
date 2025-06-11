@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formulario de Onboarding</title>
+  <!-- Root styles -->
+  <link rel="stylesheet" href="styles/styles.css">
+  <style>
+    /* ---------- Onboarding specific styles ---------- */
+    :root {
+      /* Re-declare CSS variables locally in case styles.css fails to load */
+      --primary-color: #04db8d;
+      --secondary-color: #455862;
+      --border-color: #e0e0e0;
+      --text-color: #0b2431;
+      --background-color: #ffffff;
+    }
+
+    body {
+      background: var(--background-color);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 10px;
+      color: var(--text-color);
+    }
+
+    #onboarding-container {
+      width: 100%;
+      max-width: 660px;
+    }
+
+    /* Summary tags */
+    #summary-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+
+    .summary-tag {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-color);
+      color: #fff;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 14px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .summary-tag .tick {
+      font-weight: 700;
+    }
+
+    /* Steps */
+    .form-step {
+      display: none;
+    }
+
+    .form-step.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 16px;
+    }
+
+    .question-text {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .step-tracker {
+      font-size: 14px;
+      color: var(--secondary-color);
+    }
+
+    /* Options */
+    .options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .option-box {
+      flex: 1 1 calc(50% - 12px);
+      background: transparent;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 14px 18px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      color: var(--text-color);
+      min-width: 120px;
+    }
+
+    .option-box:hover {
+      border-color: var(--primary-color);
+      background: rgba(4,219,141,0.08);
+    }
+
+    .option-box.selected {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: #ffffff;
+    }
+
+    /* Completion */
+    #completion-message {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div id="onboarding-container">
+    <!-- Selected answers summary -->
+    <div id="summary-tags"></div>
+
+    <div id="onboarding-form">
+      <!-- Step 1 -->
+      <section class="form-step" data-step="0">
+        <div class="step-header">
+          <p class="question-text">¿Qué tipo de empresa se ajusta a tu perfil?</p>
+          <span class="step-tracker"></span>
+        </div>
+        <div class="options">
+          <div class="option-box" data-value="Consultora">Consultora</div>
+          <div class="option-box" data-value="Despacho">Despacho</div>
+          <div class="option-box" data-value="Empresa Regulada">Empresa Regulada</div>
+          <div class="option-box" data-value="Otros">Otros</div>
+        </div>
+      </section>
+
+      <!-- Step 2 -->
+      <section class="form-step" data-step="1">
+        <div class="step-header">
+          <p class="question-text">¿Cuál es tu especialización?</p>
+          <span class="step-tracker"></span>
+        </div>
+        <div class="options">
+          <div class="option-box" data-value="Energía">Energía</div>
+          <div class="option-box" data-value="Construcción">Construcción</div>
+          <div class="option-box" data-value="Agrícola">Agrícola</div>
+          <div class="option-box" data-value="Financiero">Financiero</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Completion message placeholder -->
+    <div id="completion-message" style="display:none;">¡Gracias por completar el formulario!</div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const steps = Array.from(document.querySelectorAll('.form-step'));
+      const totalSteps = steps.length;
+
+      const summaryContainer = document.getElementById('summary-tags');
+      const completionMessage = document.getElementById('completion-message');
+      const answers = [];
+
+      function updateTracker(stepIdx) {
+        const tracker = steps[stepIdx].querySelector('.step-tracker');
+        tracker.textContent = `${stepIdx + 1} de ${totalSteps}`;
+      }
+
+      function showStep(stepIdx) {
+        steps.forEach((s, idx) => s.classList.toggle('active', idx === stepIdx));
+        if (stepIdx < steps.length) updateTracker(stepIdx);
+      }
+
+      function renderSummary() {
+        summaryContainer.innerHTML = '';
+        answers.forEach(({ question, answer }) => {
+          const tag = document.createElement('span');
+          tag.className = 'summary-tag';
+          tag.innerHTML = `<strong>${question}:</strong> ${answer} <span class="tick">✓</span>`;
+          summaryContainer.appendChild(tag);
+        });
+      }
+
+      function handleOptionSelect(optionEl) {
+        const stepEl = optionEl.closest('.form-step');
+        const stepIdx = steps.indexOf(stepEl);
+
+        // Mark selected option
+        stepEl.querySelectorAll('.option-box').forEach(opt => opt.classList.remove('selected'));
+        optionEl.classList.add('selected');
+
+        // Store answer
+        const questionText = stepEl.querySelector('.question-text').textContent;
+        answers[stepIdx] = { question: questionText, answer: optionEl.dataset.value };
+        renderSummary();
+
+        // Move to next step
+        const nextIdx = stepIdx + 1;
+        if (nextIdx < steps.length) {
+          showStep(nextIdx);
+        } else {
+          // Completed
+          document.getElementById('onboarding-form').style.display = 'none';
+          completionMessage.style.display = 'block';
+        }
+      }
+
+      // Attach listeners
+      document.querySelectorAll('.option-box').forEach(opt => {
+        opt.addEventListener('click', () => handleOptionSelect(opt));
+      });
+
+      // Init first step
+      showStep(0);
+    });
+  </script>
+</body>
+</html> 
