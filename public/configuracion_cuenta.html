@@ -2341,31 +2341,17 @@
 
         if (!tableBody || !profileContent || !coberturaBtn) return;
         
-        // Hide "Configura tu cobertura" button if coverage is already set
-        const hasCoverage = data.cobertura_legal && (
-            data.cobertura_legal.fuentes?.length > 0 || 
-            data.cobertura_legal.reguladores?.length > 0 ||
-            data.cobertura_legal.fuentes_gobierno?.length > 0 || 
-            data.cobertura_legal.fuentes_reguladores?.length > 0 ||
-            data.cobertura_legal['fuentes-gobierno']?.length > 0 ||
-            data.cobertura_legal['fuentes-reguladores']?.length > 0 ||
-            data.cobertura_legal['fuentes-regulador']?.length > 0
-        );
-        
-        if (hasCoverage) {
-            coberturaBtn.style.display = 'none';
-        } else {
-            coberturaBtn.style.display = 'block';
-            coberturaBtn.onclick = () => {
-                // Switch to "Fuentes" tab
-                const menuItems = document.querySelectorAll('.config-menu-item');
-                menuItems.forEach(item => {
-                    if (item.dataset.content === 'fuentes') {
-                        item.click();
-                    }
-                });
-            };
-        }
+        // Siempre mostrar el botón de cobertura
+        coberturaBtn.style.display = 'block';
+        coberturaBtn.onclick = () => {
+            // Switch to "Fuentes" tab
+            const menuItems = document.querySelectorAll('.config-menu-item');
+            menuItems.forEach(item => {
+                if (item.dataset.content === 'fuentes') {
+                    item.click();
+                }
+            });
+        };
 
         tableBody.innerHTML = '';
         profileContent.innerHTML = '';
@@ -2420,7 +2406,9 @@
           },
           "Reguladores": [
               { sigla: "EBA", nombre: "European Banking Authority", tipo: "fuentes-reguladores" },
+              { sigla: "EBA_QA", nombre: "European Banking Authority (QA)", tipo: "fuentes-reguladores" },
               { sigla: "ESMA", nombre: "European Securities and Markets Authority", tipo: "fuentes-reguladores" },
+              { sigla: "ESMA_QA", nombre: "European Securities and Markets Authority (QA)", tipo: "fuentes-reguladores" },
               { sigla: "CNMV", nombre: "Comisión Nacional del Mercado de Valores", tipo: "fuentes-reguladores" },
               { sigla: "INCIBE", nombre: "Instituto Nacional de Ciberseguridad", tipo: "fuentes-reguladores" },
               { sigla: "CNMC", nombre: "Comisión Nacional de los Mercados y la Competencia", tipo: "fuentes-reguladores" },
