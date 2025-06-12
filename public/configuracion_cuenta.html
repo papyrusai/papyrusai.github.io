@@ -2545,17 +2545,19 @@
         }
 
         // Add click listeners and pre-select
-        const selectedFuentes = cobertura_legal?.fuentes_gobierno || 
+        // Normalizar las fuentes existentes (convertir todo a mayúsculas para comparación)
+        const selectedFuentes = (cobertura_legal?.fuentes_gobierno || 
                                cobertura_legal?.['fuentes-gobierno'] || 
-                               cobertura_legal?.fuentes || [];
-        const selectedReguladores = cobertura_legal?.fuentes_reguladores || 
+                               cobertura_legal?.fuentes || []).map(f => f.toUpperCase());
+        const selectedReguladores = (cobertura_legal?.fuentes_reguladores || 
                                    cobertura_legal?.['fuentes-reguladores'] || 
                                    cobertura_legal?.['fuentes-regulador'] ||  // Para usuarios muy antiguos
-                                   cobertura_legal?.reguladores || [];
+                                   cobertura_legal?.reguladores || []).map(f => f.toUpperCase());
         const allSelections = [...selectedFuentes, ...selectedReguladores];
 
         document.querySelectorAll('.fuente-box').forEach(box => {
-            if (allSelections.includes(box.dataset.sigla)) {
+            // Comparar en mayúsculas para evitar problemas de case sensitivity
+            if (allSelections.includes(box.dataset.sigla.toUpperCase())) {
                 box.classList.add('selected');
             }
             box.addEventListener('click', () => {
