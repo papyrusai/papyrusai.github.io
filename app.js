@@ -40,7 +40,7 @@ function getUserLimits(subscriptionPlan) {
       };
     case 'plan3':
       return {
-        limit_agentes: 12,
+        limit_agentes: 10,
         limit_fuentes: 10
       };
     case 'plan4':
@@ -1719,14 +1719,54 @@ if (etiquetasKeys.length === 0) {
             <div class="impacto-agentes" style="margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #04db8d; background-color: rgba(4, 219, 141, 0.05);">
               <div style="font-weight: 600;font-size: large; margin-bottom: 10px; color: #455862; padding: 5px;">Impacto en agentes</div>
               <div style="padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;">
-                ${etiquetasKeys.map(etiqueta => 
-                  `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+                ${etiquetasKeys.map(etiqueta => {
+                  const etiquetaData = userEtiquetas[etiqueta];
+                  let explicacion = '';
+                  let nivelImpacto = '';
+                  
+                  if (typeof etiquetaData === 'string') {
+                    // Estructura antigua: solo string
+                    explicacion = etiquetaData;
+                  } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
+                    // Estructura nueva: objeto con explicacion y nivel_impacto
+                    explicacion = etiquetaData.explicacion || '';
+                    nivelImpacto = etiquetaData.nivel_impacto || '';
+                  }
+                  
+                  // Generar tag de nivel de impacto con colores
+                  let nivelTag = '';
+                  if (nivelImpacto) {
+                    let bgColor = '#f8f9fa';
+                    let textColor = '#6c757d';
+                    
+                    switch (nivelImpacto.toLowerCase()) {
+                      case 'alto':
+                        bgColor = '#ffe6e6';
+                        textColor = '#dc3545';
+                        break;
+                      case 'medio':
+                        bgColor = '#fff3cd';
+                        textColor = '#856404';
+                        break;
+                      case 'bajo':
+                        bgColor = '#d4edda';
+                        textColor = '#155724';
+                        break;
+                    }
+                    
+                    nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
+                  }
+                  
+                  return `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
                     <svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;">
                       <path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path>
                     </svg>
-                    <div style="flex: 1;"><span style="font-weight: 600;">${etiqueta}:</span> ${userEtiquetas[etiqueta]}</div>
-                  </div>`
-                ).join('')}
+                    <div style="flex: 1;">
+                      <span style="font-weight: 600;">${etiqueta}</span>${nivelTag}
+                      <div style="margin-top: 4px; color: #555;">${explicacion}</div>
+                    </div>
+                  </div>`;
+                }).join('')}
               </div>
             </div>
           `;
@@ -2396,14 +2436,54 @@ const queryWithoutEtiquetas = {
           <div class="impacto-agentes" style="margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #04db8d; background-color: rgba(4, 219, 141, 0.05);">
             <div style="font-weight: 600; margin-bottom: 10px; color: #455862; padding: 5px;">Impacto en agentes</div>
             <div style="padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;">
-              ${etiquetasKeys.map(etiqueta => 
-                `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
+              ${etiquetasKeys.map(etiqueta => {
+                const etiquetaData = userEtiquetas[etiqueta];
+                let explicacion = '';
+                let nivelImpacto = '';
+                
+                if (typeof etiquetaData === 'string') {
+                  // Estructura antigua: solo string
+                  explicacion = etiquetaData;
+                } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
+                  // Estructura nueva: objeto con explicacion y nivel_impacto
+                  explicacion = etiquetaData.explicacion || '';
+                  nivelImpacto = etiquetaData.nivel_impacto || '';
+                }
+                
+                // Generar tag de nivel de impacto con colores
+                let nivelTag = '';
+                if (nivelImpacto) {
+                  let bgColor = '#f8f9fa';
+                  let textColor = '#6c757d';
+                  
+                  switch (nivelImpacto.toLowerCase()) {
+                    case 'alto':
+                      bgColor = '#ffe6e6';
+                      textColor = '#dc3545';
+                      break;
+                    case 'medio':
+                      bgColor = '#fff3cd';
+                      textColor = '#856404';
+                      break;
+                    case 'bajo':
+                      bgColor = '#d4edda';
+                      textColor = '#155724';
+                      break;
+                  }
+                  
+                  nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
+                }
+                
+                return `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
                   <svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;">
                     <path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path>
                   </svg>
-                  <div style="flex: 1;"><span style="font-weight: 600;">${etiqueta}:</span> ${userEtiquetas[etiqueta]}</div>
-                </div>`
-              ).join('')}
+                  <div style="flex: 1;">
+                    <span style="font-weight: 600;">${etiqueta}</span>${nivelTag}
+                    <div style="margin-top: 4px; color: #555;">${explicacion}</div>
+                  </div>
+                </div>`;
+              }).join('')}
             </div>
           </div>
         `;

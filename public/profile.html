@@ -140,6 +140,149 @@
       max-height: 200px;
       overflow-y: auto;
     }
+    
+    /* Estilos para los tags de nivel de impacto */
+    .nivel-impacto-tag {
+      display: inline-block;
+      font-size: 0.7em;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+    
+    .nivel-impacto-alto {
+      background-color: #ffe6e6;
+      color: #dc3545;
+    }
+    
+    .nivel-impacto-medio {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .nivel-impacto-bajo {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    /* Estilos para los círculos del filtro de nivel de impacto */
+    .nivel-circulo {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      margin-left: 6px;
+    }
+    
+    .nivel-circulo-todos {
+      background-color: #e0e0e0;
+    }
+    
+    .nivel-circulo-alto {
+      background-color: #ffbaba;
+    }
+    
+    .nivel-circulo-medio {
+      background-color: #ffeb9c;
+    }
+    
+    .nivel-circulo-bajo {
+      background-color: #b3d9b3;
+    }
+    
+    /* Ajustes para los radio buttons en el dropdown de nivel de impacto */
+    #nivelImpactoDropdown input[type="radio"] {
+      margin-right: 8px;
+      accent-color: #04db8d;
+      width: 12px;
+      height: 12px;
+      transform: scale(1);
+      border: 1px solid white;
+      outline: 1px solid #ccc;
+    }
+    
+    #nivelImpactoDropdown label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #ddd;
+      position: relative;
+    }
+    
+    #nivelImpactoDropdown label:last-child {
+      border-bottom: none;
+    }
+    
+    #nivelImpactoDropdown label:hover {
+      background-color: #f5f5f5;
+    }
+    
+    /* Hide radio buttons */
+    #nivelImpactoDropdown input[type="radio"] {
+      display: none;
+    }
+    
+    /* Green tick for selected option */
+    #nivelImpactoDropdown input[type="radio"]:checked + .nivel-option-content::after {
+      content: "✓";
+      color: #04db8d;
+      font-weight: bold;
+      font-size: 14px;
+      margin-left: auto;
+    }
+    
+    .nivel-option-content {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    /* Estilos específicos para el botón de nivel de impacto */
+    #btnNivelImpacto {
+      display: flex;
+      align-items: center;
+      transition: none !important;
+      background-color: #f8f9fa !important;
+    }
+    
+    #btnNivelImpacto:hover,
+    #btnNivelImpacto:focus,
+    #btnNivelImpacto:active,
+    #btnNivelImpacto.show {
+      background-color: #f8f9fa !important;
+      color: inherit !important;
+      transform: none !important;
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      outline: none !important;
+    }
+    
+    /* Sobrescribir cualquier regla de .dropbtn para este botón específico */
+    .dropdown #btnNivelImpacto:hover,
+    .dropdown #btnNivelImpacto:focus,
+    .dropdown #btnNivelImpacto:active {
+      background: #f8f9fa !important;
+      color: #333 !important;
+      border-color: #ccc !important;
+      transform: translateY(0) !important;
+      box-shadow: none !important;
+    }
+    
+    #btnNivelImpacto #selectedNivelCirculo {
+      margin-right: 8px;
+      margin-left: 0;
+    }
+    
+    /* Hover para mostrar el dropdown */
+    .dropdown:hover #nivelImpactoDropdown {
+      display: block;
+    }
     #subRamasCheckboxContainer label {
       display: block;
       margin-bottom: 5px;
@@ -1645,17 +1788,66 @@
               <canvas id="documentsChart"></canvas>
             </div>
 
-            <!-- Documentos -->
-            <div class="analytics-label">Documentos</div>
+            <!-- Filtro Nivel de Impacto -->
+            <div style="margin-bottom: 15px;">
+              <div class="etiquetas-label" style="margin-bottom: 8px;">Nivel de impacto</div>
+              <div class="dropdown">
+                <button class="dropbtn" id="btnNivelImpacto" onclick="toggleNivelImpactoDropdown()">
+                  <span class="nivel-circulo nivel-circulo-todos" id="selectedNivelCirculo"></span>
+                  <span id="selectedNivelImpacto">Todos</span> 
+                  <i class="fa fa-caret-down"></i>
+                </button>
+                <div id="nivelImpactoDropdown" class="dropdown-content">
+                  <label>
+                    <input type="radio" name="nivelImpacto" value="todos" checked>
+                    <div class="nivel-option-content">
+                      <div style="display: flex; align-items: center;">
+                        <span class="nivel-circulo nivel-circulo-todos"></span>
+                        Todos
+                      </div>
+                    </div>
+                  </label>
+                  <label>
+                    <input type="radio" name="nivelImpacto" value="alto">
+                    <div class="nivel-option-content">
+                      <div style="display: flex; align-items: center;">
+                        <span class="nivel-circulo nivel-circulo-alto"></span>
+                        Alto
+                      </div>
+                    </div>
+                  </label>
+                  <label>
+                    <input type="radio" name="nivelImpacto" value="medio">
+                    <div class="nivel-option-content">
+                      <div style="display: flex; align-items: center;">
+                        <span class="nivel-circulo nivel-circulo-medio"></span>
+                        Medio
+                      </div>
+                    </div>
+                  </label>
+                  <label>
+                    <input type="radio" name="nivelImpacto" value="bajo">
+                    <div class="nivel-option-content">
+                      <div style="display: flex; align-items: center;">
+                        <span class="nivel-circulo nivel-circulo-bajo"></span>
+                        Bajo
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
             <div id="loading-icon" style="display: none;"><div class="loader"></div></div>
             <div class="collectionDocs">{{boeDocuments}}</div>
          </div> <!-- Fin de #data-container -->
 
          <!-- Logout (movido al final de la sección Agentes) -->
-         <div class="logout-container">
+       <!--  <div class="logout-container">
            <a href="/logout">Logout</a>
          </div>
-      </div> <!-- Fin de #content-agentes -->
+          -->
+      </div> 
+     
 
       <!-- Sección Boletín Diario (Contenido de marcador de posición) -->
       <div id="content-boletin" class="vision-section">
@@ -2120,6 +2312,9 @@
        loadBoletinDropdown();
        loadRangoDropdown();
        
+       // Inicializar el filtro de nivel de impacto
+       handleNivelImpactoChange();
+       
        // Check URL parameters to determine which section to show
        const urlParams = new URLSearchParams(window.location.search);
        const viewParam = urlParams.get('view');
@@ -2307,10 +2502,49 @@
   
   // Crear HTML para mostrar las etiquetas personalizadas
   let agentesHtml = '';
-  Object.entries(etiquetasPersonalizadas).forEach(([etiqueta, descripcion]) => {
+  Object.entries(etiquetasPersonalizadas).forEach(([etiqueta, etiquetaData]) => {
+    let descripcion = '';
+    let nivelImpacto = '';
+    
+    if (typeof etiquetaData === 'string') {
+      // Estructura antigua: solo string
+      descripcion = etiquetaData;
+    } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
+      // Estructura nueva: objeto con explicacion y nivel_impacto
+      descripcion = etiquetaData.explicacion || '';
+      nivelImpacto = etiquetaData.nivel_impacto || '';
+    }
+    
+    // Generar tag de nivel de impacto con colores
+    let nivelTag = '';
+    if (nivelImpacto) {
+      let bgColor = '#f8f9fa';
+      let textColor = '#6c757d';
+      
+      switch (nivelImpacto.toLowerCase()) {
+        case 'alto':
+          bgColor = '#ffe6e6';
+          textColor = '#dc3545';
+          break;
+        case 'medio':
+          bgColor = '#fff3cd';
+          textColor = '#856404';
+          break;
+        case 'bajo':
+          bgColor = '#d4edda';
+          textColor = '#155724';
+          break;
+      }
+      
+      nivelTag = `<span class="nivel-impacto-tag" style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.7em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
+    }
+    
     agentesHtml += `
       <div class="agente-item">
-        <span class="agente-nombre">${etiqueta}<i class="fas fa-info-circle agente-descripcion" title="${descripcion}"></i></span>
+        <span class="agente-nombre">
+          ${etiqueta}${nivelTag}
+          <i class="fas fa-info-circle agente-descripcion" title="${descripcion}"></i>
+        </span>
       </div>
     `;
   });
@@ -2420,15 +2654,10 @@ function loadBoletinDropdown() {
   // Crear el checkbox "Todos"
   let html = `<label><input type="checkbox" value="Todos" id="chkAllBoletin" checked> Todos</label>`;
   
-  // Añadir BOE por defecto
-  html += `<label><input type="checkbox" value="BOE" checked> BOE</label>`;
-  
-  // Añadir todas las fuentes del array directamente
+  // Añadir todas las fuentes del array directamente (solo las de la cobertura legal del usuario)
   if (Array.isArray(coberturaLegal)) {
     coberturaLegal.forEach(fuente => {
-      if (fuente !== 'BOE') { // Evitar duplicar BOE
-        html += `<label><input type="checkbox" value="${fuente}" checked> ${fuente.toUpperCase()}</label>`;
-      }
+      html += `<label><input type="checkbox" value="${fuente}" checked> ${fuente.toUpperCase()}</label>`;
     });
   }
   
@@ -2586,6 +2815,105 @@ function toggleRangoDropdown(event) {
   document.getElementById('rangoDropdown').classList.toggle('show');
 }
 
+// Función para mostrar/ocultar el dropdown de nivel de impacto
+function toggleNivelImpactoDropdown(event) {
+  if (event) event.stopPropagation(); // Detener la propagación del evento
+  document.getElementById('nivelImpactoDropdown').classList.toggle('show');
+}
+
+// Función para filtrar documentos por nivel de impacto
+function filterDocumentsByNivelImpacto(selectedLevel) {
+  const documents = document.querySelectorAll('.data-item');
+  let visibleCount = 0;
+  
+  documents.forEach(doc => {
+    let shouldShow = true;
+    
+    if (selectedLevel !== 'todos') {
+      // Buscar en la sección de impacto en agentes si existe
+      const impactoSection = doc.querySelector('.impacto-agentes');
+      let hasMatchingLevel = false;
+      
+      if (impactoSection) {
+        // Buscar todos los spans que contienen nivel de impacto
+        const nivelTags = impactoSection.querySelectorAll('span[style*="background-color"]');
+        
+        nivelTags.forEach(tag => {
+          const tagText = tag.textContent.toLowerCase().trim();
+          if (tagText === selectedLevel.toLowerCase()) {
+            hasMatchingLevel = true;
+          }
+        });
+      }
+      
+      // Solo mostrar documentos que tienen el nivel seleccionado
+      shouldShow = hasMatchingLevel;
+    }
+    
+    if (shouldShow) {
+      doc.style.display = 'block';
+      visibleCount++;
+    } else {
+      doc.style.display = 'none';
+    }
+  });
+  
+  // Actualizar contador si existe
+  console.log(`Documentos visibles: ${visibleCount} de ${documents.length}`);
+  
+  // Mostrar mensaje si no hay documentos visibles
+  const collectionDocs = document.querySelector('.collectionDocs');
+  let noResultsMessage = collectionDocs.querySelector('.no-results-nivel');
+  
+  if (visibleCount === 0 && selectedLevel !== 'todos') {
+    if (!noResultsMessage) {
+      noResultsMessage = document.createElement('div');
+      noResultsMessage.className = 'no-results-nivel';
+      noResultsMessage.style.cssText = 'color: #666; font-style: italic; text-align: center; padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin: 20px 0; background-color: #f9f9f9;';
+      noResultsMessage.textContent = `No hay documentos con nivel de impacto "${selectedLevel.charAt(0).toUpperCase() + selectedLevel.slice(1)}"`;
+      collectionDocs.appendChild(noResultsMessage);
+    }
+    noResultsMessage.style.display = 'block';
+  } else if (noResultsMessage) {
+    noResultsMessage.style.display = 'none';
+  }
+}
+
+// Función para manejar el cambio de filtro de nivel de impacto
+function handleNivelImpactoChange() {
+  const nivelImpactoDropdown = document.getElementById('nivelImpactoDropdown');
+  const selectedNivelSpan = document.getElementById('selectedNivelImpacto');
+  const selectedNivelCirculo = document.getElementById('selectedNivelCirculo');
+  
+  if (!nivelImpactoDropdown || !selectedNivelSpan || !selectedNivelCirculo) return;
+  
+  const radioButtons = nivelImpactoDropdown.querySelectorAll('input[type="radio"]');
+  
+  radioButtons.forEach(radio => {
+    radio.addEventListener('change', function(event) {
+      event.stopPropagation();
+      
+      if (this.checked) {
+        const selectedValue = this.value;
+        const labelText = this.parentElement.textContent.trim();
+        
+        // Actualizar el texto del botón
+        selectedNivelSpan.textContent = labelText;
+        
+        // Actualizar el círculo del botón
+        const circuloClass = `nivel-circulo-${selectedValue}`;
+        selectedNivelCirculo.className = `nivel-circulo ${circuloClass}`;
+        
+        // Filtrar documentos
+        filterDocumentsByNivelImpacto(selectedValue);
+        
+        // Cerrar el dropdown
+        nivelImpactoDropdown.classList.remove('show');
+      }
+    });
+  });
+}
+
     // --------------------- BÚSQUEDA FUNCTION ---------------------
     function handleBuscar() {
   // Mostrar loader
@@ -2735,13 +3063,34 @@ function toggleRangoDropdown(event) {
       // Ocultar los loaders
       document.getElementById('loading-icon').style.display = 'none';
       document.getElementById('loading-icon-chart').style.display = 'none';
+      
+      // Reiniciar el filtro de nivel de impacto a "Todos"
+      const nivelImpactoRadio = document.querySelector('input[name="nivelImpacto"][value="todos"]');
+      const selectedNivelSpan = document.getElementById('selectedNivelImpacto');
+      const selectedNivelCirculo = document.getElementById('selectedNivelCirculo');
+      if (nivelImpactoRadio && selectedNivelSpan && selectedNivelCirculo) {
+        nivelImpactoRadio.checked = true;
+        selectedNivelSpan.textContent = 'Todos';
+        selectedNivelCirculo.className = 'nivel-circulo nivel-circulo-todos';
+        filterDocumentsByNivelImpacto('todos');
+      }
     })
-    .catch(error => {
-      console.error('Error:', error);
-      document.querySelector('.collectionDocs').innerHTML = `<div class="no-results">Error al realizar la búsqueda: ${error.message}</div>`;
-      document.getElementById('loading-icon').style.display = 'none';
-      document.getElementById('loading-icon-chart').style.display = 'none';
-    });
+          .catch(error => {
+        console.error('Error:', error);
+        document.querySelector('.collectionDocs').innerHTML = `<div class="no-results">Error al realizar la búsqueda: ${error.message}</div>`;
+        document.getElementById('loading-icon').style.display = 'none';
+        document.getElementById('loading-icon-chart').style.display = 'none';
+        
+        // Reiniciar el filtro de nivel de impacto a "Todos"
+        const nivelImpactoRadio = document.querySelector('input[name="nivelImpacto"][value="todos"]');
+        const selectedNivelSpan = document.getElementById('selectedNivelImpacto');
+        const selectedNivelCirculo = document.getElementById('selectedNivelCirculo');
+        if (nivelImpactoRadio && selectedNivelSpan && selectedNivelCirculo) {
+          nivelImpactoRadio.checked = true;
+          selectedNivelSpan.textContent = 'Todos';
+          selectedNivelCirculo.className = 'nivel-circulo nivel-circulo-todos';
+        }
+      });
 }
  
     // --------------------- FEEDBACK FUNCTION ---------------------

@@ -2521,18 +2521,7 @@ function createSubscriptionModal() {
                 <i class="fas fa-star"></i>
                 <span id="current-plan-name">Plan Actual</span>
               </li>
-              <li data-section="agents">
-                <i class="fas fa-robot"></i>
-                <span>Gestión Agentes</span>
-              </li>
-              <li data-section="sources">
-                <i class="fas fa-database"></i>
-                <span>Fuentes</span>
-              </li>
-              <li data-section="range">
-                <i class="fas fa-ruler-horizontal"></i>
-                <span>Rango</span>
-              </li>
+
               <li data-section="analysis">
                 <i class="fas fa-chart-bar"></i>
                 <span>Análisis</span>
@@ -2545,6 +2534,22 @@ function createSubscriptionModal() {
                 <i class="fas fa-ban"></i>
                 <span>Cancelar suscripción</span>
               </li>
+
+                <!-- Agentes, fuentes y rango ocultados por ahora
+              <li data-section="agents">
+                <i class="fas fa-robot"></i>
+                <span>Gestión Agentes</span>
+              </li>
+              <li data-section="sources">
+                <i class="fas fa-database"></i>
+                <span>Fuentes</span>
+              </li>
+              <li data-section="range">
+                <i class="fas fa-ruler-horizontal"></i>
+                <span>Rango</span>
+              </li>
+              -->
+              
             </ul>
           </div>
           

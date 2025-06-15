@@ -24,12 +24,14 @@ const DB_NAME = 'papyrus';
 // Take today's date in real time
 const TODAY = moment().utc();
 //const TOMORROW = TODAY.clone().add(1, 'day');
+const YESTERDAY = moment().utc().subtract(1, 'days');
+
 const anioToday = TODAY.year();
 const mesToday  = TODAY.month() + 1;
 const diaToday  = TODAY.date();
 
 // Format current date as YYYY-MM-DD for logs
-const currentDateString = TODAY.format('YYYY-MM-DD');
+const currentDateString = TODAY.format('YYYY-MM-DD'); //TODAY
 
 // 2) Setup nodemailer with SendGrid transport
 console.log("SendGrid key is:", process.env.SENDGRID_API_KEY);
@@ -42,12 +44,29 @@ const transporter = nodemailer.createTransport(
 );
 
 /**
- * Check if webscraping ran today by looking for a log entry
+ * Check if webscraping ran today by looking for a log entry with datetime_run
  */
 async function checkWebscrapingRanToday(db) {
   try {
     const logsCollection = db.collection('logs');
-    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    
+    // Create date range for the specified day
+    const targetDate = moment(currentDateString, 'YYYY-MM-DD');
+    const startOfDay = targetDate.clone().startOf('day').toDate();
+    const endOfDay = targetDate.clone().endOf('day').toDate();
+    
+    console.log(`Checking for webscraping logs between ${startOfDay} and ${endOfDay} with environment = production`);
+    
+    // Check if there are any logs with datetime_run for today with production environment
+    const logEntry = await logsCollection.findOne({
+      datetime_run: { 
+        $exists: true,
+        $gte: startOfDay,
+        $lte: endOfDay
+      },
+      "run_info.environment": "production"
+    });
+    
     return logEntry !== null;
   } catch (err) {
     console.error('Error checking webscraping logs:', err);
@@ -91,7 +110,8 @@ async function getAvailableCollectionsToday(db) {
   const availableCollections = [];
   for (const collection of allCollections) {
     const collectionName = collection.name;
-    if (!excludedCollections.includes(collectionName)) {
+    // Exclude specific collections and any collection ending with "_test"
+    if (!excludedCollections.includes(collectionName) && !collectionName.endsWith('_test')) {
       try {
         const coll = db.collection(collectionName);
         const query = {
@@ -115,30 +135,54 @@ async function getAvailableCollectionsToday(db) {
 
 /**
  * Log the first shipment information
+ * Now uses datetime_run to find the most recent log entry
  */
 async function logFirstShipment(db, availableCollections) {
   try {
     const logsCollection = db.collection('logs');
     const currentTimestamp = moment().toDate();
     
-    const updateResult = await logsCollection.updateOne(
-      { "date_range.start": currentDateString },
-      {
-        $set: {
-          first_shipment: {
-            time_stamp: currentTimestamp,
-            collections: availableCollections
+    // Create date range for the specified day
+    const targetDate = moment(currentDateString, 'YYYY-MM-DD');
+    const startOfDay = targetDate.clone().startOf('day').toDate();
+    const endOfDay = targetDate.clone().endOf('day').toDate();
+    
+    // Find the most recent log entry by datetime_run for the specified date with production environment
+    const recentLogEntry = await logsCollection.findOne(
+      { 
+        datetime_run: { 
+          $exists: true,
+          $gte: startOfDay,
+          $lte: endOfDay
+        },
+        "run_info.environment": "production"
+      },
+      { sort: { datetime_run: -1 } }
+    );
+    
+    if (recentLogEntry) {
+      // Update the most recent log entry
+      const updateResult = await logsCollection.updateOne(
+        { _id: recentLogEntry._id },
+        {
+          $set: {
+            first_shipment: {
+              time_stamp: currentTimestamp,
+              collections: availableCollections
+            }
           }
         }
-      },
-      { upsert: true }
-    );
-
-    console.log('First shipment logged successfully:', {
-      date: currentDateString,
-      timestamp: currentTimestamp,
-      collections: availableCollections
-    });
+      );
+      
+      console.log('First shipment logged successfully:', {
+        date: currentDateString,
+        timestamp: currentTimestamp,
+        collections: availableCollections,
+        logId: recentLogEntry._id
+      });
+    } else {
+      console.warn('No recent log entry found to update with first shipment info');
+    }
   } catch (err) {
     console.error('Error logging first shipment:', err);
   }
@@ -202,8 +246,45 @@ function buildDocumentHTML(doc, isLastDoc) {
       ">
         <h4 style="margin-bottom: 8px; color: #0c2532;">Impacto en agentes</h4>
         ${doc.matched_etiquetas_personalizadas.map((etiqueta, index) => {
-          const description = doc.matched_etiquetas_descriptions[index] || '';
-          return `<p style="margin: 5px 0; font-size: 0.9em;"><strong>${etiqueta}:</strong> ${description}</p>`;
+          const fullDescription = doc.matched_etiquetas_descriptions[index] || '';
+          
+          // Extraer nivel de impacto del texto si está presente
+          let descripcion = fullDescription;
+          let nivelImpacto = '';
+          let nivelTag = '';
+          
+          const nivelMatch = fullDescription.match(/\(Nivel:\s*([^)]+)\)$/);
+          if (nivelMatch) {
+            nivelImpacto = nivelMatch[1].trim();
+            descripcion = fullDescription.replace(/\s*\(Nivel:[^)]+\)$/, '');
+            
+            // Generar tag de nivel de impacto con colores para email
+            let bgColor = '#f8f9fa';
+            let textColor = '#6c757d';
+            
+            switch (nivelImpacto.toLowerCase()) {
+              case 'alto':
+                bgColor = '#ffe6e6';
+                textColor = '#dc3545';
+                break;
+              case 'medio':
+                bgColor = '#fff3cd';
+                textColor = '#856404';
+                break;
+              case 'bajo':
+                bgColor = '#d4edda';
+                textColor = '#155724';
+                break;
+            }
+            
+            nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px; display: inline-block;">${nivelImpacto}</span>`;
+          }
+          
+          return `<p style="margin: 8px 0; font-size: 0.9em; line-height: 1.4;">
+            <strong>${etiqueta}</strong>${nivelTag}
+            <br>
+            <span style="color: #555;">${descripcion}</span>
+          </p>`;
         }).join('')}
       </div>
     `;
@@ -964,11 +1045,29 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
 
 /**
  * Check if first shipment already exists for today and get previously shipped collections
+ * Now uses datetime_run instead of date_range.start
  */
 async function getFirstShipmentInfo(db) {
   try {
     const logsCollection = db.collection('logs');
-    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    
+    // Create date range for the specified day
+    const targetDate = moment(currentDateString, 'YYYY-MM-DD');
+    const startOfDay = targetDate.clone().startOf('day').toDate();
+    const endOfDay = targetDate.clone().endOf('day').toDate();
+    
+    // Find the most recent log entry by datetime_run for the specified date with production environment
+    const logEntry = await logsCollection.findOne(
+      { 
+        datetime_run: { 
+          $exists: true,
+          $gte: startOfDay,
+          $lte: endOfDay
+        },
+        "run_info.environment": "production"
+      },
+      { sort: { datetime_run: -1 } }
+    );
     
     if (logEntry && logEntry.first_shipment) {
       return {
@@ -1003,24 +1102,75 @@ function getNewCollections(availableCollections, previousCollections) {
 }
 
 /**
- * Check if any collections have documents with doc_count > 0
+ * Check if any collections have documents uploaded (docs_uploaded > 0) using ETL detailed stats
+ * Uses same logic as collections report: if run before 7AM, check all runs; if after 7AM, check most recent
  */
 async function checkCollectionsHaveDocuments(db) {
   try {
     const logsCollection = db.collection('logs');
-    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
     
-    if (!logEntry || !logEntry.collections) {
+    // Create date range for the specified day
+    const targetDate = moment(currentDateString, 'YYYY-MM-DD');
+    const startOfDay = targetDate.clone().startOf('day').toDate();
+    const endOfDay = targetDate.clone().endOf('day').toDate();
+    
+    console.log(`Checking for documents uploaded between ${startOfDay} and ${endOfDay} with environment = production`);
+    
+    // Find the most recent log entry by datetime_run for the specified date with production environment
+    const recentLogEntry = await logsCollection.findOne(
+      { 
+        datetime_run: { 
+          $exists: true,
+          $gte: startOfDay,
+          $lte: endOfDay
+        },
+        "run_info.environment": "production"
+      },
+      { sort: { datetime_run: -1 } }
+    );
+    
+    if (!recentLogEntry || !recentLogEntry.etl_detailed_stats) {
+      console.warn(`No log entry with etl_detailed_stats found for date ${currentDateString} with environment=production`);
       return false;
     }
     
-    // Check if any collection has doc_count > 0
-    for (const [collectionName, collectionData] of Object.entries(logEntry.collections)) {
-      if (collectionData.doc_count && collectionData.doc_count > 0) {
-        return true;
+    // Check if the most recent run is before 07:00 UTC
+    const recentRunTime = moment(recentLogEntry.datetime_run);
+    const isBefore7AM = recentRunTime.utc().hour() < 7;
+    
+    let allLogEntries = [recentLogEntry];
+    
+    if (isBefore7AM) {
+      console.log(`Latest run is before 07:00 UTC (${recentRunTime.utc().format('HH:mm')}). Fetching all production runs from ${currentDateString}...`);
+      
+      // Get ALL production logs from that day
+      const allDayLogs = await logsCollection.find(
+        { 
+          datetime_run: { 
+            $exists: true,
+            $gte: startOfDay,
+            $lte: endOfDay
+          },
+          "run_info.environment": "production"
+        },
+        { sort: { datetime_run: -1 } }
+      ).toArray();
+      
+      allLogEntries = allDayLogs.filter(log => log.etl_detailed_stats);
+      console.log(`Found ${allLogEntries.length} total runs with ETL stats.`);
+    }
+    
+    // Check across all relevant log entries for any collection with docs_uploaded > 0
+    for (const logEntry of allLogEntries) {
+      for (const [collectionName, stats] of Object.entries(logEntry.etl_detailed_stats)) {
+        if (stats.docs_uploaded && stats.docs_uploaded > 0) {
+          console.log(`Found collection ${collectionName} with ${stats.docs_uploaded} docs uploaded`);
+          return true;
+        }
       }
     }
     
+    console.log('No collections found with docs_uploaded > 0');
     return false;
   } catch (err) {
     console.error('Error checking collections document count:', err);
@@ -1341,6 +1491,355 @@ async function sendReportEmail(db, userStats) {
   }
 }
 
+/**
+ * Send comprehensive report email with collection statistics from ETL process
+ */
+async function sendCollectionsReportEmail(db) {
+  try {
+    const logsCollection = db.collection('logs');
+    
+    // Create date range for the specified day in currentDateString
+    const targetDate = moment(currentDateString, 'YYYY-MM-DD');
+    const startOfDay = targetDate.clone().startOf('day').toDate();
+    const endOfDay = targetDate.clone().endOf('day').toDate();
+    
+    console.log(`Searching for logs between ${startOfDay} and ${endOfDay} with environment = production`);
+    
+    // Find the most recent log entry by datetime_run for the specified date with production environment
+    const recentLogEntry = await logsCollection.findOne(
+      { 
+        datetime_run: { 
+          $exists: true,
+          $gte: startOfDay,
+          $lte: endOfDay
+        },
+        "run_info.environment": "production"
+      },
+      { sort: { datetime_run: -1 } }
+    );
+    
+    if (!recentLogEntry || !recentLogEntry.etl_detailed_stats) {
+      console.warn(`No log entry with etl_detailed_stats found for date ${currentDateString} with environment=production. Sending empty report...`);
+      
+      // Send a report indicating no data was found
+      const noDataReportHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Reporte Colecciones ETL - Sin Datos</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; margin: 20px; font-size: 12px;">
+          <h1 style="font-size: 18px;">Reporte Colecciones ETL - ${currentDateString}</h1>
+          
+          <h2 style="font-size: 16px;">🚨 Sin Datos Disponibles</h2>
+          <p style="font-size: 12px; color: #dc3545;">
+            <strong>No se encontraron logs de ETL para la fecha ${currentDateString} con environment=production.</strong>
+          </p>
+          
+          <h3 style="font-size: 14px;">Posibles causas:</h3>
+          <ul style="font-size: 12px;">
+            <li>El proceso ETL no se ejecutó</li>
+            <li>El proceso ETL no completó exitosamente</li>
+            <li>No se guardaron estadísticas detalladas</li>
+            <li>El environment no está configurado como "production"</li>
+          </ul>
+          
+          <hr>
+          <p style="font-size: 10px; color: #666;">
+            Generado automáticamente el ${moment().format('YYYY-MM-DD HH:mm:ss')} UTC
+          </p>
+        </body>
+        </html>
+      `;
+      
+      const noDataMailOptions = {
+        from: 'Reversa <info@reversa.ai>',
+        to: 'info@reversa.ai',
+        subject: `Reporte Colecciones ETL - Sin Datos - ${currentDateString}`,
+        html: noDataReportHTML
+      };
+      
+      await transporter.sendMail(noDataMailOptions);
+      console.log('Collections ETL report (no data) sent to info@reversa.ai');
+      return;
+    }
+    
+    console.log(`Found recent log entry for date ${currentDateString} with datetime_run: ${recentLogEntry.datetime_run} (environment: ${recentLogEntry.run_info?.environment})`);
+    
+    // Check if the most recent run is before 07:00 UTC (09:00 Spain time)
+    const recentRunTime = moment(recentLogEntry.datetime_run);
+    const isBefore7AM = recentRunTime.utc().hour() < 7;
+    
+    let allLogEntries = [recentLogEntry];
+    let otherRunsIncluded = [];
+    
+    if (isBefore7AM) {
+      console.log(`Latest run is before 07:00 UTC (${recentRunTime.utc().format('HH:mm')}). Fetching all production runs from ${currentDateString}...`);
+      
+      // Get ALL production logs from that day
+      const allDayLogs = await logsCollection.find(
+        { 
+          datetime_run: { 
+            $exists: true,
+            $gte: startOfDay,
+            $lte: endOfDay
+          },
+          "run_info.environment": "production"
+        },
+        { sort: { datetime_run: -1 } }
+      ).toArray();
+      
+      allLogEntries = allDayLogs.filter(log => log.etl_detailed_stats);
+      
+      if (allLogEntries.length > 1) {
+        otherRunsIncluded = allLogEntries.slice(1).map(log => 
+          moment(log.datetime_run).format('HH:mm:ss')
+        );
+        console.log(`Found ${allLogEntries.length} total runs. Other runs included: ${otherRunsIncluded.join(', ')}`);
+      }
+    }
+    
+    // Combine statistics from all log entries FIRST
+    const combinedStats = {};
+    
+    // Process each log entry
+    for (let logIndex = 0; logIndex < allLogEntries.length; logIndex++) {
+      const logEntry = allLogEntries[logIndex];
+      const runTime = moment(logEntry.datetime_run).format('HH:mm:ss');
+      
+      for (const [collectionName, stats] of Object.entries(logEntry.etl_detailed_stats)) {
+        if (!combinedStats[collectionName]) {
+          combinedStats[collectionName] = {
+            docs_scraped: 0,
+            docs_new: 0,
+            docs_processed: 0,
+            docs_uploaded: 0,
+            etiquetas_found: 0,
+            input_tokens: 0,
+            output_tokens: 0,
+            error_count: 0,
+            errors: []
+          };
+        }
+        
+        // For docs_scraped, take the maximum value across all runs
+        combinedStats[collectionName].docs_scraped = Math.max(
+          combinedStats[collectionName].docs_scraped, 
+          stats.docs_scraped || 0
+        );
+        
+        // For all other metrics, sum them
+        combinedStats[collectionName].docs_new += stats.docs_new || 0;
+        combinedStats[collectionName].docs_processed += stats.docs_processed || 0;
+        combinedStats[collectionName].docs_uploaded += stats.docs_uploaded || 0;
+        combinedStats[collectionName].etiquetas_found += stats.etiquetas_found || 0;
+        combinedStats[collectionName].input_tokens += stats.input_tokens || 0;
+        combinedStats[collectionName].output_tokens += stats.output_tokens || 0;
+        combinedStats[collectionName].error_count += stats.error_count || 0;
+        
+        // Collect errors from all runs
+        if (stats.errors && Array.isArray(stats.errors)) {
+          combinedStats[collectionName].errors.push(...stats.errors);
+        }
+      }
+    }
+
+    // Build collections statistics table
+    let collectionsStatsTableHTML = '';
+    let totalDocsScraped = 0;
+    let totalDocsNew = 0;
+    let totalDocsProcessed = 0;
+    let totalDocsUploaded = 0;
+    let totalEtiquetasFound = 0;
+    let totalErrorCount = 0;
+    let totalCostEUR = 0;
+    let collectionsWithData = 0;
+    
+    // API pricing (USD per million tokens)
+    const INPUT_TOKEN_COST_USD = 1.100; // USD per 1M tokens
+    const OUTPUT_TOKEN_COST_USD = 4.400; // USD per 1M tokens
+    const USD_TO_EUR_RATE = 0.92; // Approximate conversion rate
+    
+    // Process each collection in combined stats
+    for (const [collectionName, stats] of Object.entries(combinedStats)) {
+      const docsScraped = stats.docs_scraped || 0;
+      const docsNew = stats.docs_new || 0;
+      const docsProcessed = stats.docs_processed || 0;
+      const docsUploaded = stats.docs_uploaded || 0;
+      const etiquetasFound = stats.etiquetas_found || 0;
+      const errorCount = stats.error_count || 0;
+      
+      // Calculate cost in EUR
+      const inputTokens = stats.input_tokens || 0;
+      const outputTokens = stats.output_tokens || 0;
+      
+      const inputCostUSD = (inputTokens / 1000000) * INPUT_TOKEN_COST_USD;
+      const outputCostUSD = (outputTokens / 1000000) * OUTPUT_TOKEN_COST_USD;
+      const totalCostUSD = inputCostUSD + outputCostUSD;
+      const totalCostCollectionEUR = totalCostUSD * USD_TO_EUR_RATE;
+      
+      // Add to totals
+      totalDocsScraped += docsScraped;
+      totalDocsNew += docsNew;
+      totalDocsProcessed += docsProcessed;
+      totalDocsUploaded += docsUploaded;
+      totalEtiquetasFound += etiquetasFound;
+      totalErrorCount += errorCount;
+      totalCostEUR += totalCostCollectionEUR;
+      
+      if (docsScraped > 0 || docsNew > 0 || docsProcessed > 0) {
+        collectionsWithData++;
+      }
+      
+      // Determine row color based on status
+      let rowStyle = '';
+      if (errorCount > 0) {
+        rowStyle = 'background-color: #ffebee;'; // Light red for errors
+      } else if (docsNew === 0 && docsScraped === 0) {
+        rowStyle = 'background-color: #f5f5f5;'; // Light gray for no activity
+      } else if (docsUploaded > 0) {
+        rowStyle = 'background-color: #e8f5e8;'; // Light green for successful uploads
+      }
+      
+      collectionsStatsTableHTML += `
+        <tr style="${rowStyle}">
+          <td style="border: 1px solid #ddd; padding: 6px; font-weight: bold; font-size: 11px;">${collectionName}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${docsScraped}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${docsNew}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${docsProcessed}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${docsUploaded}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${etiquetasFound}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">€${totalCostCollectionEUR.toFixed(2)}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${allLogEntries.length > 1 ? 'Multi-run' : (recentLogEntry.etl_detailed_stats[collectionName]?.duration || '-')}</td>
+          <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${errorCount}</td>
+        </tr>
+      `;
+    }
+    
+    // Add totals row
+    collectionsStatsTableHTML += `
+      <tr style="background-color: #f2f2f2; font-weight: bold;">
+        <td style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">TOTAL</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${totalDocsScraped}</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${totalDocsNew}</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${totalDocsProcessed}</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${totalDocsUploaded}</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${totalEtiquetasFound}</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">€${totalCostEUR.toFixed(2)}</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">-</td>
+        <td style="border: 1px solid #ddd; padding: 6px; text-align: center; font-size: 11px;">${totalErrorCount}</td>
+      </tr>
+    `;
+    
+    // Format the datetime_run for display
+    const formattedDateTime = moment(recentLogEntry.datetime_run).format('YYYY-MM-DD HH:mm:ss');
+    
+    // Build errors section from combined data
+    let errorsHTML = '';
+    let totalErrors = 0;
+    
+    for (const [collectionName, stats] of Object.entries(combinedStats)) {
+      if (stats.errors && stats.errors.length > 0) {
+        for (const errorObj of stats.errors) {
+          totalErrors++;
+          errorsHTML += `<li style="margin-bottom: 5px;"><strong>${collectionName}:</strong> ${errorObj.error}</li>`;
+        }
+      }
+    }
+    
+    let errorsSection = '';
+    if (totalErrors > 0) {
+      errorsSection = `
+        <h2 style="font-size: 16px;">3. Detalle de errores</h2>
+        <ul style="font-size: 11px; margin-bottom: 30px;">
+          ${errorsHTML}
+        </ul>
+      `;
+    } else {
+      errorsSection = `
+        <h2 style="font-size: 16px;">3. Detalle de errores</h2>
+        <p style="font-size: 12px; color: #28a745;">✅ No se encontraron errores en el procesamiento.</p>
+      `;
+    }
+    
+    const collectionsReportHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Reporte Colecciones ETL</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; margin: 20px; font-size: 12px;">
+        <h1 style="font-size: 18px;">Reporte Colecciones ETL - ${formattedDateTime}</h1>
+        
+        <h2 style="font-size: 16px;">1. Resumen General</h2>
+        <p style="font-size: 12px;"><strong>Fecha/Hora de Ejecución:</strong> ${formattedDateTime}</p>
+        ${otherRunsIncluded.length > 0 ? `<p style="font-size: 12px;"><strong>Otros runs incluidos:</strong> ${otherRunsIncluded.join(', ')}</p>` : ''}
+        <p style="font-size: 12px;"><strong>Colecciones Procesadas:</strong> ${Object.keys(combinedStats).length}</p>
+        <p style="font-size: 12px;"><strong>Colecciones con Actividad:</strong> ${collectionsWithData}</p>
+        <ul style="font-size: 12px; margin-bottom: 30px;">
+          <li><strong>Total Documentos Scrapeados:</strong> ${totalDocsScraped}</li>
+          <li><strong>Total Documentos Nuevos:</strong> ${totalDocsNew}</li>
+          <li><strong>Total Documentos Procesados:</strong> ${totalDocsProcessed}</li>
+          <li><strong>Total Documentos Subidos:</strong> ${totalDocsUploaded}</li>
+          <li><strong>Total Etiquetas Encontradas:</strong> ${totalEtiquetasFound}</li>
+          <li><strong>Total Coste API:</strong> €${totalCostEUR.toFixed(2)}</li>
+          <li><strong>Total Errores:</strong> ${totalErrorCount}</li>
+        </ul>
+        
+        <h2 style="font-size: 16px;">2. Estadísticas Detalladas por Colección</h2>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px; font-size: 11px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Colección</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Docs Scraped</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Docs New</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Docs Processed</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Docs Uploaded</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Etiquetas Found</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Coste (€)</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Duration</th>
+              <th style="border: 1px solid #ddd; padding: 6px; font-size: 11px;">Errors</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${collectionsStatsTableHTML}
+          </tbody>
+        </table>
+        
+        <h3 style="font-size: 12px; margin-top: 20px;">Códigos de Color</h3>
+        <ul style="font-size: 10px; margin-bottom: 30px;">
+          <li><span style="background-color: #e8f5e8; padding: 1px 6px; border-radius: 3px; font-size: 9px;">Verde claro</span> - Documentos procesados exitosamente</li>
+          <li><span style="background-color: #f5f5f5; padding: 1px 6px; border-radius: 3px; font-size: 9px;">Gris claro</span> - Sin actividad</li>
+          <li><span style="background-color: #ffebee; padding: 1px 6px; border-radius: 3px; font-size: 9px;">Rojo claro</span> - Errores encontrados</li>
+        </ul>
+        
+        ${errorsSection}
+        
+        <hr>
+        <p style="font-size: 12px; color: #666;">
+          Generado automáticamente el ${moment().format('YYYY-MM-DD HH:mm:ss')} UTC
+        </p>
+      </body>
+      </html>
+    `;
+    
+    const collectionsReportMailOptions = {
+      from: 'Reversa <info@reversa.ai>',
+      to: 'info@reversa.ai',
+      subject: `Reporte Colecciones ETL - ${moment(recentLogEntry.datetime_run).format('YYYY-MM-DD')}`,
+      html: collectionsReportHTML
+    };
+    
+    await transporter.sendMail(collectionsReportMailOptions);
+    console.log('Collections ETL report email sent to info@reversa.ai');
+    
+  } catch (err) {
+    console.error('Error sending collections report email:', err);
+  }
+}
+
 // MAIN EXECUTION
 
 (async () => {
@@ -1357,8 +1856,12 @@ async function sendReportEmail(db, userStats) {
     const webscrapingRanToday = await checkWebscrapingRanToday(db);
     
     if (!webscrapingRanToday) {
-      console.log('Webscraping did not run today. Sending warning email and exiting.');
+      console.log('Webscraping did not run today. Sending warning email and ETL report...');
       await sendWarningEmail();
+      
+      console.log('Sending collections ETL report...');
+      await sendCollectionsReportEmail(db);
+      
       await client.close();
       return;
     }
@@ -1369,8 +1872,12 @@ async function sendReportEmail(db, userStats) {
     const hasDocuments = await checkCollectionsHaveDocuments(db);
     
     if (!hasDocuments) {
-      console.log('No documents were processed today. Sending warning email and exiting.');
+      console.log('No documents were processed today. Sending warning email and ETL report...');
       await sendNoDocumentsWarningEmail();
+      
+      console.log('Sending collections ETL report...');
+      await sendCollectionsReportEmail(db);
+      
       await client.close();
       return;
     }
@@ -1393,7 +1900,13 @@ async function sendReportEmail(db, userStats) {
       console.log('New collections since first shipment:', newCollections);
       
       if (newCollections.length === 0) {
-        console.log('No new collections found. All collections were already processed in first shipment. Exiting.');
+        console.log('No new collections found. All collections were already processed in first shipment.');
+        console.log('Skipping user email processing, but will still send Collections ETL report...');
+        
+        // Send collections ETL report even when no new collections for users
+        await sendCollectionsReportEmail(db);
+        
+        console.log('Collections ETL report sent. Closing DB.');
         await client.close();
         return;
       }
@@ -1425,7 +1938,7 @@ async function sendReportEmail(db, userStats) {
         const emailLower = user.email.toLowerCase();
         
         // Exclude specific emails
-        if (emailLower.endsWith('@cuatrecasas.com') || emailLower === 'pmolina@perezllorca.com') {
+        if (emailLower.endsWith('@cuatrecasas.com')) {
           return false;
         }
         
@@ -1438,7 +1951,7 @@ async function sendReportEmail(db, userStats) {
       });
     }
 
-    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
+    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai'); //filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
 
     // Initialize user statistics for report
     const userStats = {
@@ -1539,7 +2052,24 @@ async function sendReportEmail(db, userStats) {
               if (etiquetaKey in docEtiquetasObj) {
                 hasEtiquetasMatch = true;
                 matchedEtiquetas.push(etiquetaKey);
-                matchedEtiquetasDescriptions.push(docEtiquetasObj[etiquetaKey] || '');
+                
+                // Extraer descripción y nivel de impacto según la estructura
+                const etiquetaData = docEtiquetasObj[etiquetaKey];
+                let descripcion = '';
+                let nivelImpacto = '';
+                
+                if (typeof etiquetaData === 'string') {
+                  // Estructura antigua: solo string
+                  descripcion = etiquetaData;
+                } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
+                  // Estructura nueva: objeto con explicacion y nivel_impacto
+                  descripcion = etiquetaData.explicacion || '';
+                  nivelImpacto = etiquetaData.nivel_impacto || '';
+                }
+                
+                // Combinar descripción y nivel de impacto para compatibilidad
+                const fullDescription = nivelImpacto ? `${descripcion} (Nivel: ${nivelImpacto})` : descripcion;
+                matchedEtiquetasDescriptions.push(fullDescription);
                 
                 // Track for statistics
                 if (!userMatchStats.has(etiquetaKey)) {
@@ -1756,6 +2286,11 @@ async function sendReportEmail(db, userStats) {
     // Send daily report email
     await sendReportEmail(db, userStats);
 
+    console.log('Sending collections ETL report...');
+    
+    // Send collections ETL report email
+    await sendCollectionsReportEmail(db);
+
     console.log('Logging first shipment information...');
     
     // Log the first shipment information
@@ -1765,29 +2300,50 @@ async function sendReportEmail(db, userStats) {
         const logsCollection = db.collection('logs');
         const currentTimestamp = moment().toDate();
         
-        // Get current first_shipment info
-        const currentLog = await logsCollection.findOne({ "date_range.start": currentDateString });
-        const existingCollections = currentLog?.first_shipment?.collections || [];
+        // Create date range for the specified day
+        const targetDate = moment(currentDateString, 'YYYY-MM-DD');
+        const startOfDay = targetDate.clone().startOf('day').toDate();
+        const endOfDay = targetDate.clone().endOf('day').toDate();
         
-        // Merge existing collections with new ones
-        const updatedCollections = [...new Set([...existingCollections, ...collectionsToProcess])];
-        
-        await logsCollection.updateOne(
-          { "date_range.start": currentDateString },
-          {
-            $set: {
-              "first_shipment.collections": updatedCollections,
-              "first_shipment.last_update": currentTimestamp
-            }
-          }
+        // Find the most recent log entry by datetime_run for the specified date with production environment
+        const currentLog = await logsCollection.findOne(
+          { 
+            datetime_run: { 
+              $exists: true,
+              $gte: startOfDay,
+              $lte: endOfDay
+            },
+            "run_info.environment": "production"
+          },
+          { sort: { datetime_run: -1 } }
         );
         
-        console.log('Extra shipment logged successfully:', {
-          date: currentDateString,
-          newCollections: collectionsToProcess,
-          allCollections: updatedCollections,
-          timestamp: currentTimestamp
-        });
+        if (currentLog) {
+          const existingCollections = currentLog?.first_shipment?.collections || [];
+          
+          // Merge existing collections with new ones
+          const updatedCollections = [...new Set([...existingCollections, ...collectionsToProcess])];
+          
+          await logsCollection.updateOne(
+            { _id: currentLog._id },
+            {
+              $set: {
+                "first_shipment.collections": updatedCollections,
+                "first_shipment.last_update": currentTimestamp
+              }
+            }
+          );
+          
+          console.log('Extra shipment logged successfully:', {
+            date: currentDateString,
+            newCollections: collectionsToProcess,
+            allCollections: updatedCollections,
+            timestamp: currentTimestamp,
+            logId: currentLog._id
+          });
+        } else {
+          console.warn('No recent log entry found to update with extra shipment info');
+        }
       } catch (err) {
         console.error('Error logging extra shipment:', err);
       }

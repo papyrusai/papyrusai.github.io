@@ -1002,6 +1002,35 @@
       max-width: 900px !important;
       margin: 0 auto !important;
     }
+
+    /* Usage tracker styles */
+    #configuracion-iframe-container .usage-tracker {
+      margin-left: auto;
+      font-size: 14px;
+      color: var(--text-color);
+      font-weight: 500;
+      padding: 6px 12px;
+      background: rgba(69, 88, 98, 0.1);
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    #configuracion-iframe-container .usage-tracker.unlimited {
+      color: white;
+      font-weight: 600;
+    }
+
+    #configuracion-iframe-container .usage-tracker.at-limit {
+   
+      color: #c62828;
+     
+    }
+
+    #configuracion-iframe-container .usage-tracker.near-limit {
+      background: #fff3e0;
+      color: #ef6c00;
+      border: 1px solid #ff9800;
+    }
   </style>
 </head>
 <body>
@@ -1081,7 +1110,10 @@
       </div>
       
       <div id="fuentes-content" class="config-content" style="display: none; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; max-width: 900px; margin: 0 auto;">
-          <div class="main-title"><i class="fas fa-database"></i><span>Selecciona tus fuentes oficiales</span></div>
+          <div class="main-title">
+            <i class="fas fa-database"></i><span>Selecciona tus fuentes oficiales</span>
+            <div id="fuentes-usage-tracker" class="usage-tracker"></div>
+          </div>
           <div class="content-title">Configura tu cobertura legal seleccionando las fuentes de tu interés</div>
 
           <!-- Banner for users without custom agents -->
@@ -1097,7 +1129,10 @@
       </div>
       
       <div id="agentes-content" class="config-content">
-        <div class="main-title"><i class="fas fa-users"></i><span>Configura tus agentes</span></div>
+        <div class="main-title">
+          <i class="fas fa-users"></i><span>Configura tus agentes</span>
+          <div id="agentes-usage-tracker" class="usage-tracker"></div>
+        </div>
         <div class="content-title">Crea tus agentes personalizados que automáticamente analizarán toda la normativa por ti</div>
         
         <!-- Generated agents will be dynamically inserted here -->
@@ -1250,17 +1285,17 @@
           <div class="product-form-fields">
             <div class="form-field">
               <label class="field-label">Defina brevemente el sector o rama jurídica que desea monitorizar</label>
-              <textarea class="product-input" id="sectorDescription" placeholder="Ej.: &quot;Urbanismo y planeamiento municipal&quot;" rows="3"></textarea>
+              <textarea class="product-input" id="sectorDescription" placeholder="Ej.: &quot;Protección de datos&quot;" rows="3"></textarea>
             </div>
 
             <div class="form-field">
               <label class="field-label">Indique el ámbito geográfico o la jurisdicción principal</label>
-              <input type="text" class="product-input" id="sectorGeographicScope" placeholder="Ej.: &quot;Comunidad de Madrid&quot;">
+              <input type="text" class="product-input" id="sectorGeographicScope" placeholder="Ej.: &quot;España y UE&quot;">
             </div>
 
             <div class="form-field">
-              <label class="field-label">Mencione hasta tres subtemas o procesos críticos dentro de ese sector</label>
-              <textarea class="product-input" id="sectorSubtopics" placeholder="Ej.: &quot;Licencias de obra mayor, ordenanzas de vivienda, suelos protegidos&quot;" rows="3"></textarea>
+              <label class="field-label">¿Cuál es el motivo u objetivo por el que quieres hacer este seguimiento regulatorio?</label>
+              <textarea class="product-input" id="sectorSubtopics" placeholder="Ej.: &quot;Evitar sanciones por no cumplir con la normativa&quot;" rows="3"></textarea>
             </div>
           </div>
 
@@ -1384,6 +1419,9 @@
             const response = await fetch('/api/get-user-data');
             const userData = await response.json();
             
+            // Update usage trackers
+            updateUsageTrackers(userData);
+            
             if (userData.etiquetas_personalizadas && Object.keys(userData.etiquetas_personalizadas).length > 0) {
                 displayExistingAgents(userData.etiquetas_personalizadas);
             }
@@ -1477,7 +1515,7 @@
          const definitionTextarea = document.createElement('textarea');
          definitionTextarea.className = 'agent-definition-edit';
          definitionTextarea.value = originalDefinition;
-         definitionTextarea.maxLength = 1000;
+         definitionTextarea.maxLength = 2000;
          agentDefinition.innerHTML = '';
          agentDefinition.appendChild(definitionTextarea);
 
@@ -1610,6 +1648,9 @@
                       setTimeout(() => {
                           agentBox.classList.remove('editing');
                       }, 100);
+                      
+                      // Refresh usage tracker
+                      loadExistingAgents();
                   } else {
                       // Restore button state on error
                       button.disabled = false;
@@ -1679,6 +1720,9 @@
             if (updateResponse.ok) {
                 // Remove from UI
                 button.closest('.generated-agent-box').remove();
+                
+                // Refresh usage tracker
+                loadExistingAgents();
             } else {
                 alert('Error al eliminar el agente. Por favor, inténtalo de nuevo.');
             }
@@ -1712,6 +1756,9 @@
                      newAgentBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                  }
              }, 100);
+             
+             // Refresh usage tracker
+             loadExistingAgents();
          }
      }
     
@@ -1929,7 +1976,27 @@
           // Note: Agent boxes are now managed dynamically with individual delete buttons
 
           // Show template box when "Crear agente" is clicked
-          crearAgenteBtn.addEventListener('click', showTemplateBox);
+          crearAgenteBtn.addEventListener('click', async () => {
+            // Check if user can create more agents
+            try {
+              const response = await fetch('/api/get-user-data');
+              const userData = await response.json();
+              
+              const defaultLimits = getDefaultLimits(userData.subscription_plan || 'plan1');
+              const limitAgentes = userData.limit_agentes !== undefined ? userData.limit_agentes : defaultLimits.limit_agentes;
+              const currentAgentes = Object.keys(userData.etiquetas_personalizadas || {}).length;
+              
+              if (limitAgentes !== null && currentAgentes >= limitAgentes) {
+                alert(`Has alcanzado el límite de ${limitAgentes} agentes para tu plan actual. Para crear más agentes, actualiza tu suscripción.`);
+                return;
+              }
+              
+              showTemplateBox();
+            } catch (error) {
+              console.error('Error checking agent limits:', error);
+              showTemplateBox(); // Show anyway if there's an error
+            }
+          });
 
           // Hide template box when close button is clicked
           if (closeTemplateBox) {
@@ -2255,6 +2322,78 @@
       }, 100);
     }
     
+    // Function to get default limits based on plan
+    function getDefaultLimits(plan) {
+      switch (plan) {
+        case 'plan1':
+          return { limit_agentes: 0, limit_fuentes: 0 };
+        case 'plan2':
+          return { limit_agentes: 5, limit_fuentes: 3 };
+        case 'plan3':
+          return { limit_agentes: 10, limit_fuentes: 10 };
+        case 'plan4':
+          return { limit_agentes: null, limit_fuentes: null }; // unlimited
+        default:
+          return { limit_agentes: 0, limit_fuentes: 0 };
+      }
+    }
+
+    // Function to update usage trackers
+    function updateUsageTrackers(userData) {
+      const agentesTracker = document.getElementById('agentes-usage-tracker');
+      const fuentesTracker = document.getElementById('fuentes-usage-tracker');
+      
+      if (!userData) return;
+      
+      // Get default limits if not defined
+      const defaultLimits = getDefaultLimits(userData.subscription_plan || 'plan1');
+      const limitAgentes = userData.limit_agentes !== undefined ? userData.limit_agentes : defaultLimits.limit_agentes;
+      const limitFuentes = userData.limit_fuentes !== undefined ? userData.limit_fuentes : defaultLimits.limit_fuentes;
+      
+      // Count current usage
+      const currentAgentes = Object.keys(userData.etiquetas_personalizadas || {}).length;
+      const currentFuentes = (userData.cobertura_legal?.fuentes_gobierno || []).length + 
+                            (userData.cobertura_legal?.fuentes_reguladores || []).length;
+      
+      // Update agentes tracker
+      if (agentesTracker) {
+        if (limitAgentes === null) {
+          // Unlimited
+          agentesTracker.textContent = 'Número de agentes ilimitado';
+          agentesTracker.className = 'usage-tracker unlimited';
+        } else {
+          agentesTracker.textContent = `${currentAgentes}/${limitAgentes} disponibles`;
+          agentesTracker.className = 'usage-tracker';
+          
+          // Add warning classes
+          if (currentAgentes >= limitAgentes) {
+            agentesTracker.classList.add('at-limit');
+          } else if (currentAgentes >= limitAgentes * 0.8) {
+            agentesTracker.classList.add('near-limit');
+          }
+        }
+      }
+      
+      // Update fuentes tracker
+      if (fuentesTracker) {
+        if (limitFuentes === null) {
+          // Unlimited
+          fuentesTracker.textContent = 'Número de fuentes ilimitado';
+          fuentesTracker.className = 'usage-tracker unlimited';
+        } else {
+          fuentesTracker.textContent = `${currentFuentes}/${limitFuentes} disponibles`;
+          fuentesTracker.className = 'usage-tracker';
+          
+          // Add warning classes
+          if (currentFuentes >= limitFuentes) {
+            fuentesTracker.classList.add('at-limit');
+          } else if (currentFuentes >= limitFuentes * 0.8) {
+            fuentesTracker.classList.add('near-limit');
+          }
+        }
+      }
+    }
+
     // Expose functions globally so they can be called from dynamic HTML
     window.initializeConfigurationMenu = initializeConfigurationMenu;
     window.loadExistingAgents = loadExistingAgents;
@@ -2265,6 +2404,7 @@
     window.cancelEdit = cancelEdit;
     window.deleteAgent = deleteAgent;
     window.showGeneratedAgent = showGeneratedAgent;
+    window.updateUsageTrackers = updateUsageTrackers;
 
     function hideLoader(){
       const l=document.getElementById('config-loader');
@@ -2284,6 +2424,12 @@
     fetch('/api/get-user-data')
         .then(res => res.json())
         .then(userData => {
+            // Update usage trackers with user data
+            updateUsageTrackers(userData);
+            
+            // Always populate fuentes when user data is loaded
+            populateFuentes(userData.cobertura_legal);
+            
             if (userData && userData.perfil_regulatorio) {
                 // If profile exists, display it directly
                 renderFinalView(userData);
@@ -2303,6 +2449,8 @@
             console.error('Error fetching initial data:', err);
             // On error, try to show the form as a fallback
             if(onboardingContainer) onboardingContainer.style.display = 'block';
+            // Still try to populate fuentes even on error
+            populateFuentes(null);
         })
         .finally(() => {
             if (configLoader) configLoader.style.display = 'none';
@@ -2373,9 +2521,6 @@
         tableBody.innerHTML = tableHtml;
 
         profileContent.innerHTML = data.perfil_regulatorio || '<p>No se ha generado un perfil regulatorio.</p>';
-        
-        // Populate and pre-select fuentes
-        populateFuentes(data.cobertura_legal);
     }
 
     function populateFuentes(cobertura_legal) {
@@ -2390,9 +2535,12 @@
               "A) Europeos y Nacionales": [
                   { sigla: "DOUE", nombre: "Diario Oficial de la Unión Europea", tipo: "fuentes-gobierno" },
                   { sigla: "BOE", nombre: "Boletín Oficial del Estado", tipo: "fuentes-gobierno" },
+                  { sigla: "CEPC", nombre: "Comisión Europea Press Corner", tipo: "fuentes-gobierno" },
+
               ],
               "B) Regionales": [
                   { sigla: "BOPV", nombre: "Boletín Oficial del País Vasco", tipo: "fuentes-gobierno" },
+                  { sigla: "CGCC", nombre: "Consejo de Gobierno Comunidad de Catalunya", tipo: "fuentes-gobierno" },
                   { sigla: "DOGC", nombre: "Diari Oficial de la Generalitat de Catalunya", tipo: "fuentes-gobierno" },
                   { sigla: "DOGA", nombre: "Diario Oficial de Galicia", tipo: "fuentes-gobierno" },
                   { sigla: "BOC", nombre: "Boletín Oficial de Cantabria", tipo: "fuentes-gobierno" },
@@ -2560,7 +2708,28 @@
             if (allSelections.includes(box.dataset.sigla.toUpperCase())) {
                 box.classList.add('selected');
             }
-            box.addEventListener('click', () => {
+            box.addEventListener('click', async () => {
+                // If trying to select a new source, check limits
+                if (!box.classList.contains('selected')) {
+                    try {
+                        const response = await fetch('/api/get-user-data');
+                        const userData = await response.json();
+                        
+                        const defaultLimits = getDefaultLimits(userData.subscription_plan || 'plan1');
+                        const limitFuentes = userData.limit_fuentes !== undefined ? userData.limit_fuentes : defaultLimits.limit_fuentes;
+                        const currentFuentes = (userData.cobertura_legal?.fuentes_gobierno || []).length + 
+                                               (userData.cobertura_legal?.fuentes_reguladores || []).length;
+                        
+                        if (limitFuentes !== null && currentFuentes >= limitFuentes) {
+                            alert(`Has alcanzado el límite de ${limitFuentes} fuentes para tu plan actual. Para seleccionar más fuentes, actualiza tu suscripción.`);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error checking fuentes limits:', error);
+                        // Continue anyway if there's an error
+                    }
+                }
+                
                 box.classList.toggle('selected');
                 updateSelectedTags(); // Update tags when selection changes
             });
@@ -2614,6 +2783,12 @@
                     saveBtn.innerHTML = '✓ Guardado';
                     saveBtn.classList.add('success');
                     
+                    // Refresh usage tracker after successful save
+                    fetch('/api/get-user-data')
+                        .then(res => res.json())
+                        .then(userData => updateUsageTrackers(userData))
+                        .catch(err => console.error('Error updating tracker:', err));
+                    
                     // Reset after 2 seconds
                     setTimeout(() => {
                         saveBtn.innerHTML = 'Guardar';
@@ -2648,6 +2823,7 @@
         s.element.remove();
         answers.splice(index,1);
       }
+      // Reset flags based on remaining steps
       motivacionAsked = steps.some(st => st.element.dataset.key === 'motivacion_principal');
       extraInfoAsked = steps.some(st => st.element.dataset.key === 'num_empleados');
       renderSummary();
@@ -2668,13 +2844,17 @@
     }
 
     function updateTrackers(){
-      const TOTAL_STEPS = 5;
+      // Calculate total steps dynamically based on flow
+      const hasOtroEmpresa = steps.some(st => st.element.dataset.key === 'empresa_otro_detalle');
+      const TOTAL_STEPS = hasOtroEmpresa ? 6 : 5;
+      
       const getStepNumber = (key)=>{
         if(key==='tipo_empresa') return 1;
-        if(key==='motivacion_principal') return 3;
-        if(key==='num_empleados') return 4;
-        if(key==='web_empresa') return 5;
-        return 2;
+        if(key==='empresa_otro_detalle') return 2;
+        if(key==='motivacion_principal') return hasOtroEmpresa ? 3 : 3;
+        if(key==='num_empleados') return hasOtroEmpresa ? 4 : 4;
+        if(key==='web_empresa') return hasOtroEmpresa ? 5 : 5;
+        return hasOtroEmpresa ? 3 : 2; // Default for other second-level questions
       };
       steps.forEach((s)=>{
         const tracker=s.element.querySelector('.step-tracker');
@@ -2811,9 +2991,17 @@
 
       const userTipo = (answerByKey['tipo_empresa']||'').toLowerCase();
       const previousAnswerDepartamentos = answerByKey['pregunta_origen_interes']||'';
-      const isDespachoAreaMulti = userTipo==='despacho' && questionKey==='pregunta_area_practica' && /conocimiento/i.test(previousAnswerDepartamentos);
+      
+      // Define which questions should allow multiple selection
+      const isDespachoAreaMulti = userTipo==='despacho' && questionKey==='pregunta_area_practica';
+      // For empresa_regulada, both sector and activity questions should be multiselect
+      const isEmpresaReguladaSector = userTipo==='empresa_regulada' && questionKey==='pregunta_sector';
+      const isEmpresaReguladaActividad = userTipo==='empresa_regulada' && questionKey==='pregunta_actividad';
       const isMotivacionMulti = questionKey==='motivacion_principal';
-      const multiSelect = isDespachoAreaMulti || isMotivacionMulti;
+      const multiSelect = isDespachoAreaMulti || isEmpresaReguladaSector || isEmpresaReguladaActividad || isMotivacionMulti;
+      
+      // Debug log to verify multiselect detection
+      console.log(`Question: ${questionKey}, UserTipo: ${userTipo}, MultiSelect: ${multiSelect}`);
 
       const optionsWrap=document.createElement('div');
       optionsWrap.className='options';
@@ -2830,6 +3018,52 @@
       if(questionKey==='motivacion_principal'){
         section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">Selecciona uno o más de uno</p>');
       }
+      if(questionKey==='pregunta_area_practica'){
+        section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">Selecciona una o más áreas de práctica</p>');
+      }
+      if(questionKey==='pregunta_sector'){
+        section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">Selecciona uno o más sectores</p>');
+      }
+      if(questionKey==='pregunta_actividad' && userTipo==='empresa_regulada'){
+        section.insertAdjacentHTML('beforeend', '<p style="font-size:14px;color:#7a8a93;margin-bottom:18px;">Selecciona una o más actividades</p>');
+      }
+
+      // Add "Select All" checkbox for multiselect questions
+      if(multiSelect){
+        const selectAllContainer = document.createElement('div');
+        selectAllContainer.style.marginBottom = '15px';
+        selectAllContainer.style.padding = '10px';
+        selectAllContainer.style.backgroundColor = '#f8f9fa';
+        selectAllContainer.style.borderRadius = '8px';
+        selectAllContainer.style.border = '1px solid #e9ecef';
+        
+        const selectAllCheckbox = document.createElement('input');
+        selectAllCheckbox.type = 'checkbox';
+        selectAllCheckbox.id = `selectAll_${questionKey}`;
+        selectAllCheckbox.style.marginRight = '8px';
+        
+        const selectAllLabel = document.createElement('label');
+        selectAllLabel.htmlFor = `selectAll_${questionKey}`;
+        selectAllLabel.textContent = 'Seleccionar todos';
+        selectAllLabel.style.fontSize = '14px';
+        selectAllLabel.style.fontWeight = '500';
+        selectAllLabel.style.cursor = 'pointer';
+        selectAllLabel.style.color = 'var(--text-color)';
+        
+        selectAllContainer.appendChild(selectAllCheckbox);
+        selectAllContainer.appendChild(selectAllLabel);
+        section.appendChild(selectAllContainer);
+        
+        // Handle select all functionality
+        selectAllCheckbox.addEventListener('change', ()=>{
+          const allOptions = section.querySelectorAll('.option-box');
+          if(selectAllCheckbox.checked){
+            allOptions.forEach(opt => opt.classList.add('selected'));
+          } else {
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+          }
+        });
+      }
 
       optionsArray.forEach(opt=>{
         const box=document.createElement('div');
@@ -2841,6 +3075,14 @@
         box.addEventListener('click',()=>{
           if(multiSelect){
             box.classList.toggle('selected');
+            
+            // Update "Select All" checkbox state
+            const selectAllCheckbox = section.querySelector(`#selectAll_${questionKey}`);
+            if(selectAllCheckbox){
+              const allOptions = section.querySelectorAll('.option-box');
+              const selectedOptions = section.querySelectorAll('.option-box.selected');
+              selectAllCheckbox.checked = allOptions.length === selectedOptions.length;
+            }
           } else {
             section.querySelectorAll('.option-box').forEach(o=>o.classList.remove('selected'));
             box.classList.add('selected');
@@ -2865,7 +3107,10 @@
         nextBtn.style.marginTop='18px';
         nextBtn.addEventListener('click',()=>{
           const selectedBoxes=[...section.querySelectorAll('.option-box.selected')];
-          if(!selectedBoxes.length) return;
+          if(!selectedBoxes.length) {
+            alert('Por favor, selecciona al menos una opción.');
+            return;
+          }
           
           const selectedValues = selectedBoxes.map(b=>b.dataset.value);
           const hasOtro = selectedValues.some(val => val.toLowerCase() === 'otro');
@@ -2875,7 +3120,14 @@
           } else {
             const answerText = selectedBoxes.map(b=>toTitle(b.dataset.value)).join(', ');
             handleAnswer(section, questionText, answerText);
-            proceedAfterSelection(null);
+            
+            // For empresa_regulada multiselect, we need special handling
+            if(userTipo==='empresa_regulada' && questionKey==='pregunta_sector'){
+              // Pass all selected sectors to continue the flow
+              proceedAfterSelection(selectedValues);
+            } else {
+              proceedAfterSelection(null);
+            }
           }
         });
         section.appendChild(nextBtn);
@@ -2884,8 +3136,17 @@
       updateTrackers();
 
       function proceedAfterSelection(optChosen){
+        // Helper function to deep clone objects to avoid mutating the original structure
+        const cloneDeep = (obj) => obj ? JSON.parse(JSON.stringify(obj)) : null;
+        
         if(questionKey==='tipo_empresa'){
-          const freshBranch = subtreeMap ? JSON.parse(JSON.stringify(subtreeMap[optChosen])) : null;
+          // Special case for "otro" - go directly to custom input
+          if(optChosen && optChosen.toLowerCase() === 'otro'){
+            addInputStep('empresa_otro_detalle','Indicanos a que se dedica tu empresa','Describe brevemente la actividad de tu empresa');
+            return;
+          }
+          
+          const freshBranch = subtreeMap ? cloneDeep(subtreeMap[optChosen]) : null;
           generateFromNode(freshBranch);
           return;
         }
@@ -2893,9 +3154,39 @@
           addInputStep('web_empresa','¿Cuál es la página web de tu empresa?','');
           return;
         }
-        const nextData = subtreeMap ? subtreeMap[(optChosen||'')] : null;
-        if(currentNode) delete currentNode[questionKey];
-        generateFromNode(nextData || currentNode);
+        
+        // Special handling for empresa_regulada multiselect
+        if(userTipo==='empresa_regulada' && questionKey==='pregunta_sector' && Array.isArray(optChosen)){
+          // Combine activities from all selected sectors
+          const combinedActivities = new Set();
+          optChosen.forEach(sector => {
+            if(subtreeMap && subtreeMap[sector] && subtreeMap[sector].pregunta_actividad){
+              subtreeMap[sector].pregunta_actividad.forEach(activity => {
+                combinedActivities.add(activity);
+              });
+            }
+          });
+          
+          if(combinedActivities.size > 0){
+            // Create a synthetic node with combined activities
+            const syntheticNode = {
+              pregunta_actividad: Array.from(combinedActivities).sort()
+            };
+            generateFromNode(syntheticNode);
+            return;
+          }
+        }
+        
+        // Get the next branch data without mutating the original
+        const nextData = subtreeMap ? cloneDeep(subtreeMap[(optChosen||'')]) : null;
+        
+        // Clone current node and remove the current question to avoid repeating it
+        const currentNodeClone = cloneDeep(currentNode);
+        if(currentNodeClone && questionKey in currentNodeClone) {
+          delete currentNodeClone[questionKey];
+        }
+        
+        generateFromNode(nextData || currentNodeClone);
       }
     }
 
@@ -2956,6 +3247,9 @@
       if(questionKey === 'web_empresa'){
         saveBtn.className='save-btn web-empresa-btn';
         saveBtn.textContent='Generar perfil';
+      } else if(questionKey === 'empresa_otro_detalle'){
+        saveBtn.className='save-btn';
+        saveBtn.textContent='Siguiente';
       } else {
         saveBtn.className='save-btn';
         saveBtn.textContent='Siguiente';
@@ -2969,7 +3263,21 @@
           val = 'https://' + val;
         }
         handleAnswer(section, questionText, val);
-        finalizeOnboarding();
+        
+        // Special handling for "empresa_otro_detalle" - continue to motivacion_principal
+        if(questionKey==='empresa_otro_detalle'){
+          if(!motivacionAsked){
+            motivacionAsked=true;
+            addOptionsStep('motivacion_principal','¿Qué te interesa?', onboardingStructure.motivacion_principal, null);
+          } else if(!extraInfoAsked){
+            extraInfoAsked=true;
+            addOptionsStep('num_empleados','¿Cuál es el tamaño de tu empresa?', ['0-20','20-100','100-1000','+1000'], null);
+          } else {
+            finalizeOnboarding();
+          }
+        } else {
+          finalizeOnboarding();
+        }
       });
       input.addEventListener('keypress',e=> e.key==='Enter' && saveBtn.click() );
       section.appendChild(saveBtn);
@@ -2986,10 +3294,13 @@
       const idx = steps.findIndex(s=>s.element===section);
       answers[idx] = {question:section.dataset.key, answer:answerText};
       answerByKey[section.dataset.key]=answerText;
-      if(section.dataset.key === 'tipo_empresa'){
+      
+      // Reset progression flags when going back to certain key steps
+      if(section.dataset.key === 'tipo_empresa' || section.dataset.key === 'empresa_otro_detalle'){
         motivacionAsked = false;
         extraInfoAsked  = false;
       }
+      
       renderSummary();
       clearStepsFrom(idx+1);
     }
@@ -3023,10 +3334,18 @@
         }
         return;
       }
-      if(generateFirstArrayInNode(node)){ return; }
+      
+      // First try to find and generate the first array in the current node
+      if(generateFirstArrayInNode(node)){ 
+        return; 
+      }
+      
+      // Then look for nested objects to continue the flow
       for(const [k,v] of Object.entries(node)){
         if(typeof v==='object' && !Array.isArray(v)){
-          addOptionsStep(k,toTitle(k),Object.keys(v),node,v);
+          // Pass a clean clone to avoid mutations affecting subsequent flows
+          const cleanClone = JSON.parse(JSON.stringify(node));
+          addOptionsStep(k,toTitle(k),Object.keys(v),cleanClone,v);
           return;
         }
       }

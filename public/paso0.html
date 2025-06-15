@@ -495,6 +495,83 @@
 
     
   </style>
+  <!-- ****** INICIO: ESTILOS PARA MODALES Y CHECKBOX DE POLÍTICA DE PRIVACIDAD ****** -->
+  <style>
+    /* --- NUEVOS ESTILOS PARA MODALES Y CHECKBOX --- */
+    .privacy-policy-container {
+        margin: 30px auto 20px; /* Centrado y espacio antes del botón */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        max-width: 500px;
+    }
+
+    .privacy-policy-container input[type="checkbox"] {
+        margin-right: 10px;
+    }
+
+    .privacy-policy-container label {
+        font-size: 14px;
+        color: var(--text-color);
+        text-align: center;
+    }
+
+    .privacy-policy-link {
+        color: var(--primary-color);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    /* Estilos básicos para el modal */
+    .modal {
+        display: none; /* Oculto por defecto */
+        position: fixed; /* Posición fija */
+        z-index: 1000; /* Asegurar que esté por encima */
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto; /* Habilitar scroll si es necesario */
+        background-color: rgba(0,0,0,0.4); /* Fondo oscuro semitransparente */
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 10% auto; /* Centrado vertical y horizontal */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Ancho del modal */
+        max-width: 600px; /* Ancho máximo */
+        position: relative;
+        border-radius: 8px;
+    }
+
+    .modal-content-policy {
+        max-height: 60vh; /* Altura máxima para el contenido de la política */
+        overflow-y: auto; /* Scroll vertical si el contenido es largo */
+        margin-top: 15px;
+        margin-bottom: 15px;
+        padding-right: 15px; /* Espacio para la barra de scroll */
+    }
+
+    .close-button {
+        color: #aaa;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close-button:hover,
+    .close-button:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+  </style>
+  <!-- ****** FIN: ESTILOS PARA MODALES Y CHECKBOX DE POLÍTICA DE PRIVACIDAD ****** -->
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -682,6 +759,15 @@
         </div>
       </div>
 
+      <!-- ****** INICIO: CHECKBOX DE POLÍTICA DE PRIVACIDAD ****** -->
+      <div class="privacy-policy-container">
+        <input type="checkbox" id="privacyPolicy" name="privacyPolicy" required>
+        <label for="privacyPolicy">
+            Acepto la <span id="privacyPolicyLink" class="privacy-policy-link">política de privacidad</span> de Reversa AI.
+        </label>
+      </div>
+      <!-- ****** FIN: CHECKBOX DE POLÍTICA DE PRIVACIDAD ****** -->
+
       <div class="step-navigation">
         <button type="button" id="btnSiguientePaso0" class="btn-siguiente">Siguiente</button>
       </div>
@@ -690,6 +776,46 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // ****** INICIO: FUNCIONALIDAD DE POLÍTICA DE PRIVACIDAD ******
+      // Elementos del DOM para política de privacidad
+      const privacyCheckbox = document.getElementById('privacyPolicy');
+      const privacyPolicyLink = document.getElementById('privacyPolicyLink');
+      const privacyModal = document.getElementById('privacyModal');
+      const warningModal = document.getElementById('warningModal');
+      const closePrivacyModal = document.getElementById('closePrivacyModal');
+      const closeWarningModal = document.getElementById('closeWarningModal');
+
+      // Abrir modal de política de privacidad
+      if (privacyPolicyLink) {
+        privacyPolicyLink.addEventListener('click', function() {
+          if (privacyModal) privacyModal.style.display = 'block';
+        });
+      }
+
+      // Cerrar modal de política de privacidad
+      if (closePrivacyModal) {
+        closePrivacyModal.addEventListener('click', function() {
+          if (privacyModal) privacyModal.style.display = 'none';
+        });
+      }
+
+      // Cerrar modal de advertencia
+      if (closeWarningModal) {
+        closeWarningModal.addEventListener('click', function() {
+          if (warningModal) warningModal.style.display = 'none';
+        });
+      }
+
+      // Cerrar modales si se hace clic fuera del contenido
+      window.addEventListener('click', function(event) {
+        if (event.target == privacyModal) {
+          if (privacyModal) privacyModal.style.display = 'none';
+        }
+        if (event.target == warningModal) {
+          if (warningModal) warningModal.style.display = 'none';
+        }
+      });
+      // ****** FIN: FUNCIONALIDAD DE POLÍTICA DE PRIVACIDAD ******
       // Billing toggle functionality
       const monthlyButton = document.getElementById('monthly-button');
       const annualButton = document.getElementById('annual-button');
@@ -788,6 +914,15 @@
       });
 
       nextButton.addEventListener('click', async function() {
+        // ****** VALIDACIÓN DE POLÍTICA DE PRIVACIDAD ******
+        const privacyCheckbox = document.getElementById('privacyPolicy');
+        if (!privacyCheckbox || !privacyCheckbox.checked) {
+          const warningModal = document.getElementById('warningModal');
+          if (warningModal) warningModal.style.display = 'block';
+          return;
+        }
+        // ****** FIN VALIDACIÓN DE POLÍTICA DE PRIVACIDAD ******
+
         if (!selectedPlan) {
           alert('Por favor, selecciona un plan para continuar.');
           return;
@@ -941,5 +1076,55 @@
   </script>
 
   <!-- Add hidden error message element -->
+
+<!-- ****** INICIO: MODAL POLÍTICA DE PRIVACIDAD ****** -->
+<div id="privacyModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" id="closePrivacyModal">&times;</span>
+    <h2>Política de Privacidad</h2>
+    <div class="modal-content-policy">
+      <!-- Aquí va el texto de tu política de privacidad -->
+      <p><strong>Última actualización: 5/6/2025</strong></p>
+        <p><strong>1. Introducción</strong><br>Reversa AI, con domicilio en Calle Valle de la Fuenfría, 10, 28034, Madrid, ha creado esta Política de Privacidad para demostrar nuestro firme compromiso con la privacidad de los datos personales de nuestros usuarios. Esta política describe cómo recopilamos, utilizamos, compartimos y protegemos la información personal que recibimos de los usuarios de nuestra plataforma y servicios.</p>
+        <p><strong>2. Recopilación de Información</strong><br>Recopilamos información personal cuando un usuario se registra en nuestra plataforma, utiliza nuestros servicios o interactúa con nuestro sitio web. Esta información puede incluir, entre otros:</p>
+        <ul>
+          <li>Información de contacto (nombre, correo electrónico, teléfono)</li>
+          <li>Información de la empresa</li>
+          <li>Registros de uso y actividad en la plataforma</li>
+          <li>Información técnica como dirección IP y datos de navegación</li>
+        </ul>
+        <p><strong>3. Uso de la Información</strong><br>Utilizamos la información recopilada para:</p>
+        <ul>
+          <li>Proporcionar, mantener y mejorar nuestros servicios</li>
+          <li>Procesar transacciones y enviar notificaciones relacionadas</li>
+          <li>Personalizar la experiencia del usuario</li>
+          <li>Enviar información sobre actualizaciones, ofertas y eventos</li>
+          <li>Analizar tendencias y mejorar nuestras ofertas</li>
+        </ul>
+        <p><strong>4. Protección de Datos</strong><br>Implementamos medidas técnicas y organizativas adecuadas para proteger sus datos personales contra el acceso no autorizado, la pérdida o el daño. Estas medidas son revisadas y actualizadas regularmente para garantizar su efectividad.</p>
+        <p><strong>5. Compartir Información</strong><br>No vendemos, comercializamos ni alquilamos información personal a terceros. Podemos compartir información en las siguientes circunstancias:</p>
+        <ul>
+          <li>Con proveedores de servicios que nos ayudan a ofrecer nuestros servicios</li>
+          <li>Cuando sea requerido por ley o para proteger nuestros derechos</li>
+          <li>En caso de fusión, adquisición o venta de activos</li>
+        </ul>
+        <p><strong>6. Derechos del Usuario</strong><br>Los usuarios tienen derecho a acceder, rectificar, limitar, portar y eliminar sus datos personales. Para ejercer estos derechos, contacte con nosotros a través de info@reversa.ai.</p>
+        <p><strong>7. Cambios en esta Política</strong><br>Podemos actualizar esta política periódicamente. Le notificaremos cualquier cambio significativo publicando la nueva política en nuestro sitio web.</p>
+        <p><strong>8. Contacto</strong><br>Si tiene alguna pregunta sobre esta política, puede contactarnos en:</p>
+        <p>Reversa AI<br>Calle Valle de la Fuenfría, 10, 28034<br>Madrid, España<br>Email: info@reversa.ai</p>
+    </div>
+  </div>
+</div>
+<!-- ****** FIN: MODAL POLÍTICA DE PRIVACIDAD ****** -->
+
+<!-- ****** INICIO: MODAL DE ADVERTENCIA ****** -->
+<div id="warningModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button" id="closeWarningModal">&times;</span>
+    <p>Es necesario que aceptes la política de privacidad para poder continuar.</p>
+  </div>
+</div>
+<!-- ****** FIN: MODAL DE ADVERTENCIA ****** -->
+
 </body>
 </html>
