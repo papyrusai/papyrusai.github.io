@@ -1951,7 +1951,7 @@ async function sendCollectionsReportEmail(db) {
       });
     }
 
-    const filteredUsers = allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai'); //filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
+    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
 
     // Initialize user statistics for report
     const userStats = {

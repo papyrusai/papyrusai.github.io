@@ -1609,6 +1609,119 @@
       position: relative;
       z-index: 5;
     }
+    
+    /* Estilos para la vista de nodos */
+    .nodos-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+      margin-top: 10px;
+      width: 800px !important;
+      height: 400px !important;
+      max-width: 800px !important;
+      max-height: 400px !important;
+      position: relative;
+    }
+    
+    .nodos-menu {
+      display: flex;
+      border-bottom: 2px solid #f0f0f0;
+      font-size: 20px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+    
+    .nodo-tab {
+      flex: 1;
+      padding: 15px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 500;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+      color: #999;
+      text-align: center;
+    }
+    
+    .nodo-tab:hover {
+      color: #666;
+    }
+    
+    .nodo-tab.active {
+      color: #04db8d;
+      border-bottom-color: #04db8d;
+    }
+    
+    .nodo-tab i {
+      font-size: 1.1em;
+    }
+    
+    .nodo-content {
+      padding: 20px;
+      height: 340px !important;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: absolute;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+    
+    .nodo-agentes {
+      display: none;
+    }
+    
+    .nodo-agentes.active {
+      display: block;
+    }
+    
+    .nodo-agente-item {
+      display: inline-block;
+      margin: 5px 8px 5px 0;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 20px;
+      font-size: 0.85em;
+      color: #495057;
+      transition: all 0.2s ease;
+    }
+    
+    .nodo-agente-item:hover {
+      background: #e9ecef;
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 768px) {
+      .nodos-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 400px !important;
+      }
+      
+      .nodos-menu {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .nodo-tab {
+        justify-content: flex-start;
+        padding: 12px 15px;
+        height: 50px;
+      }
+      
+      .nodo-content {
+        top: auto;
+        position: relative;
+        height: 300px !important;
+      }
+    }
   </style>
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -2127,9 +2240,10 @@
   <script id="endDateInput" type="application/json">{{end_date}}</script>
   <script id="userBoletines" type="application/json">{{user_boletines_json}}</script>
   <script id="userRangos" type="application/json">{{user_rangos_json}}</script>
-  <script id="userAcceptedEmail" type="application/json">{{#if accepted_email}}{{accepted_email}}{{else}}null{{/if}}</script>
+              <script id="userAcceptedEmail" type="application/json">{{#if accepted_email}}{{accepted_email}}{{else}}null{{/if}}</script>
+            <script id="userEmail" type="application/json">"{{email}}"</script>
 
-  <script id="allRangosData" type="application/json">{{all_rangos_json}}</script>
+            <script id="allRangosData" type="application/json">{{all_rangos_json}}</script>
 
   <!-- Modal para validación de documentos -->
   <div id="modal-no-documentos" class="modal-overlay" style="display: none;">
@@ -2487,6 +2601,40 @@
   const agentesContainer = document.getElementById('agentesContainer');
   if (!agentesContainer) return;
   
+  // Obtener el email del usuario para verificar si debe mostrar la vista de nodos
+  let userEmail = null;
+  try {
+    // Intentar obtener el email desde el script del template
+    const userEmailElement = document.getElementById('userEmail');
+    if (userEmailElement && userEmailElement.textContent) {
+      userEmail = JSON.parse(userEmailElement.textContent);
+    }
+  } catch (e) {
+    console.log('Error al obtener email del template:', e);
+  }
+  
+  // Si no se encuentra en el template, intentar desde sessionStorage
+  if (!userEmail) {
+    userEmail = sessionStorage.getItem('userEmail');
+  }
+  
+  console.log('Email del usuario:', userEmail); // Para debug
+  const showNodesView = userEmail === 'burgalonso@gmail.com';
+  console.log('¿Mostrar vista de nodos?', showNodesView); // Para debug
+  
+  // Cambiar el título y la clase del contenedor según el usuario
+  const etiquetasLabel = document.querySelector('.etiquetas-label');
+  if (etiquetasLabel && showNodesView) {
+    etiquetasLabel.textContent = 'Nodos';
+    console.log('Título cambiado a "Nodos"'); // Para debug
+    
+    // Cambiar la clase del contenedor para evitar conflictos de CSS
+    agentesContainer.className = 'nodos-container-section';
+  } else {
+    // Mantener la clase original para usuarios normales
+    agentesContainer.className = 'etiquetas-values';
+  }
+  
   // Obtener las etiquetas personalizadas del usuario 
   const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
   
@@ -2500,6 +2648,17 @@
     return;
   }
   
+  if (showNodesView) {
+    // Vista de nodos para el usuario específico
+    loadNodesView(etiquetasPersonalizadas, agentesContainer);
+  } else {
+    // Vista normal para otros usuarios
+    loadNormalView(etiquetasPersonalizadas, agentesContainer);
+  }
+}
+
+// Vista normal de agentes
+function loadNormalView(etiquetasPersonalizadas, agentesContainer) {
   // Crear HTML para mostrar las etiquetas personalizadas
   let agentesHtml = '';
   Object.entries(etiquetasPersonalizadas).forEach(([etiqueta, etiquetaData]) => {
@@ -2552,14 +2711,292 @@
   agentesContainer.innerHTML = agentesHtml;
 }
 
+// Vista de nodos para el usuario específico
+function loadNodesView(etiquetasPersonalizadas, agentesContainer) {
+  // Definir los nodos y sus agentes asociados
+  const nodos = {
+    'tecnologia': {
+      nombre: 'Tecnología y Digitalización',
+      icono: 'fas fa-laptop-code',
+      agentes: [
+        'Inteligencia regulatoria en asuntos públicos',
+        'Competencias Digitales & STEM',
+        'Consumidor Digital & E-Commerce',
+        'IA & Tecnologías Emergentes',
+        'Plataformas Digitales & Contenido',
+        'Protección de Datos & Ciberseguridad',
+        'Menores & Usuarios Vulnerables',
+        'Atención Rural & Personalizada',
+      ]
+    },
+    'banca': {
+      nombre: 'Banca y Finanzas',
+      icono: 'fas fa-university',
+      agentes: [
+        'Banca & Política Fiscal',
+        'Crédito & Financiación',
+        'Inclusión Financiera & Comisiones',
+        'Mercados & Inversión Colectiva',
+        'ESG & Buen Gobierno'
+      ]
+    },
+    'energia': {
+      nombre: 'Energía',
+      icono: 'fas fa-bolt',
+      agentes: [
+        'Energía Convencional y Combustibles Fósiles',
+        'Energías Renovables y Transición Energética',
+        'Emisiones de Carbono, Captura y Economía Circular'
+      ]
+    },
+    'salud': {
+      nombre: 'Salud y Farma',
+      icono: 'fas fa-heartbeat',
+      agentes: [
+        
+        'Enfermedades Crónicas de Alto Impacto',
+        'Enfermedades Raras y Medicamentos Huérfanos',
+        'Oncología y Medicina de Precisión',
+        'Política Farmacéutica, Acceso y Compra Innovadora',
+        'Resistencias Antimicrobianas y Seguridad Clínica',
+        'Vacunación, Inmunización y Enfermedades Infecciosas',
+        'Salud Digital, IA y Datos Reales'
+      ]
+    },
+    'residuos': {
+      nombre: 'Gestión de Residuos y Reciclaje',
+      icono: 'fas fa-recycle',
+      agentes: [
+        'Gestión y Tratamiento de Residuos',
+        'Economía Circular & Responsabilidad del Productor',
+        'Circularidad & Reporting ESG'
+      ]
+    }
+  };
+  
+  // Filtrar solo los agentes que el usuario tiene configurados y que están en los nodos
+  const agentesUsuario = Object.keys(etiquetasPersonalizadas);
+  const nodosConAgentes = {};
+  
+  Object.entries(nodos).forEach(([nodoId, nodoData]) => {
+    const agentesEncontrados = nodoData.agentes.filter(agente => 
+      agentesUsuario.includes(agente)
+    );
+    if (agentesEncontrados.length > 0) {
+      nodosConAgentes[nodoId] = {
+        ...nodoData,
+        agentesUsuario: agentesEncontrados
+      };
+    }
+  });
+  
+  // Si no hay nodos con agentes, mostrar mensaje
+  if (Object.keys(nodosConAgentes).length === 0) {
+    agentesContainer.innerHTML = '<div class="no-agentes">No hay agentes configurados en los nodos disponibles</div>';
+    return;
+  }
+  
+  // Crear HTML para la vista de nodos
+  let nodosHtml = `
+    <div class="nodos-container">
+      <div class="nodos-menu">
+  `;
+  
+  // Crear los tabs de los nodos
+  Object.entries(nodosConAgentes).forEach(([nodoId, nodoData], index) => {
+    const activeClass = index === 0 ? 'active' : '';
+    nodosHtml += `
+      <div class="nodo-tab ${activeClass}" data-nodo="${nodoId}">
+        <i class="${nodoData.icono}"></i>
+        <span>${nodoData.nombre}</span>
+      </div>
+    `;
+  });
+  
+  nodosHtml += `
+      </div>
+      <div class="nodo-content">
+  `;
+  
+  // Crear el contenido de cada nodo
+  Object.entries(nodosConAgentes).forEach(([nodoId, nodoData], index) => {
+    const activeClass = index === 0 ? 'active' : '';
+    nodosHtml += `
+      <div class="nodo-agentes ${activeClass}" data-nodo="${nodoId}">
+    `;
+    
+    nodoData.agentesUsuario.forEach(agente => {
+      const etiquetaData = etiquetasPersonalizadas[agente];
+      let descripcion = '';
+      let nivelImpacto = '';
+      
+      if (typeof etiquetaData === 'string') {
+        descripcion = etiquetaData;
+      } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
+        descripcion = etiquetaData.explicacion || '';
+        nivelImpacto = etiquetaData.nivel_impacto || '';
+      }
+      
+      // Generar tag de nivel de impacto
+      let nivelTag = '';
+      if (nivelImpacto) {
+        let bgColor = '#f8f9fa';
+        let textColor = '#6c757d';
+        
+        switch (nivelImpacto.toLowerCase()) {
+          case 'alto':
+            bgColor = '#ffe6e6';
+            textColor = '#dc3545';
+            break;
+          case 'medio':
+            bgColor = '#fff3cd';
+            textColor = '#856404';
+            break;
+          case 'bajo':
+            bgColor = '#d4edda';
+            textColor = '#155724';
+            break;
+        }
+        
+        nivelTag = `<span class="nivel-impacto-tag" style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.7em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
+      }
+      
+      nodosHtml += `
+        <div class="nodo-agente-item" title="${descripcion}">
+          ${agente}${nivelTag}
+        </div>
+      `;
+    });
+    
+    nodosHtml += `
+      </div>
+    `;
+  });
+  
+  nodosHtml += `
+      </div>
+    </div>
+  `;
+  
+  agentesContainer.innerHTML = nodosHtml;
+  
+  // Agregar event listeners para los tabs
+  document.querySelectorAll('.nodo-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const nodoId = this.dataset.nodo;
+      
+      // Remover clase active de todos los tabs y contenidos
+      document.querySelectorAll('.nodo-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nodo-agentes').forEach(content => content.classList.remove('active'));
+      
+      // Agregar clase active al tab y contenido seleccionado
+      this.classList.add('active');
+      document.querySelector(`.nodo-agentes[data-nodo="${nodoId}"]`).classList.add('active');
+      
+      // Actualizar el dropdown de etiquetas para mostrar solo los agentes del nodo seleccionado
+      loadEtiquetasDropdown();
+    });
+  });
+}
+
+// Función para obtener los agentes del nodo activo
+function getAgentesFromActiveNode(etiquetasPersonalizadas) {
+  // Definir los nodos y sus agentes (misma estructura que en loadNodesView)
+  const nodos = {
+    'tecnologia': {
+      agentes: [
+        'Inteligencia regulatoria en asuntos públicos',
+        'Competencias Digitales & STEM',
+        'Consumidor Digital & E-Commerce',
+        'IA & Tecnologías Emergentes',
+        'Plataformas Digitales & Contenido',
+        'Protección de Datos & Ciberseguridad',
+        'Menores & Usuarios Vulnerables'
+      ]
+    },
+    'banca': {
+      agentes: [
+        'Banca & Política Fiscal',
+        'Crédito & Financiación',
+        'Inclusión Financiera & Comisiones',
+        'Mercados & Inversión Colectiva',
+        'ESG & Buen Gobierno'
+      ]
+    },
+    'energia': {
+      agentes: [
+        'Energía Convencional y Combustibles Fósiles',
+        'Energías Renovables y Transición Energética',
+        'Emisiones de Carbono, Captura y Economía Circular'
+      ]
+    },
+    'salud': {
+      agentes: [
+        'Atención Rural & Personalizada',
+        'Enfermedades Crónicas de Alto Impacto',
+        'Enfermedades Raras y Medicamentos Huérfanos',
+        'Oncología y Medicina de Precisión',
+        'Política Farmacéutica, Acceso y Compra Innovadora',
+        'Resistencias Antimicrobianas y Seguridad Clínica',
+        'Vacunación, Inmunización y Enfermedades Infecciosas',
+        'Salud Digital, IA y Datos Reales'
+      ]
+    },
+    'residuos': {
+      agentes: [
+        'Gestión y Tratamiento de Residuos',
+        'Economía Circular & Responsabilidad del Productor',
+        'Circularidad & Reporting ESG'
+      ]
+    }
+  };
+  
+  // Encontrar el nodo activo
+  const activeTab = document.querySelector('.nodo-tab.active');
+  if (!activeTab) {
+    // Si no hay nodo activo, devolver todas las etiquetas del usuario
+    return Object.keys(etiquetasPersonalizadas);
+  }
+  
+  const activeNodeId = activeTab.dataset.nodo;
+  const activeNode = nodos[activeNodeId];
+  
+  if (!activeNode) {
+    // Si no se encuentra el nodo, devolver todas las etiquetas del usuario
+    return Object.keys(etiquetasPersonalizadas);
+  }
+  
+  // Filtrar solo los agentes que el usuario tiene y que pertenecen al nodo activo
+  const agentesUsuario = Object.keys(etiquetasPersonalizadas);
+  return activeNode.agentes.filter(agente => agentesUsuario.includes(agente));
+}
+
     // Función para cargar y mostrar las etiquetas personalizadas en el dropdown de búsqueda
     function loadEtiquetasDropdown() {
   const etiquetasDropdown = document.getElementById('etiquetasDropdown');
   if (!etiquetasDropdown) return;
   
+  // Verificar si es el usuario específico y si está usando la vista de nodos
+  let userEmail = null;
+  try {
+    const userEmailElement = document.getElementById('userEmail');
+    if (userEmailElement && userEmailElement.textContent) {
+      userEmail = JSON.parse(userEmailElement.textContent);
+    }
+  } catch (e) {
+    userEmail = sessionStorage.getItem('userEmail');
+  }
+  
+  const isNodesUser = userEmail === 'burgalonso@gmail.com';
+  
   // Obtener las etiquetas personalizadas del usuario (directamente, no anidado por userId)
   const etiquetasPersonalizadas = JSON.parse(document.getElementById('userEtiquetasPersonalizadas').textContent || '{}');
-  const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
+  let etiquetasKeys = Object.keys(etiquetasPersonalizadas);
+  
+  // Si es el usuario de nodos, filtrar por el nodo activo
+  if (isNodesUser) {
+    etiquetasKeys = getAgentesFromActiveNode(etiquetasPersonalizadas);
+  }
   
   // Si no hay etiquetas personalizadas, mostrar mensaje
   if (etiquetasKeys.length === 0) {
