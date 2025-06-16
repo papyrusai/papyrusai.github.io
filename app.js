@@ -2125,7 +2125,7 @@ app.get('/data', async (req, res) => {
     const etiquetasStr = req.query.etiquetas || '';
     let selectedEtiquetas = [];
     if (etiquetasStr.trim() !== '') {
-      selectedEtiquetas = etiquetasStr.split('||').map(s => s.trim().toLowerCase()).filter(Boolean);
+      selectedEtiquetas = etiquetasStr.split('||').map(s => s.toLowerCase()).filter(Boolean);
     }
     
     // CORRECCIÓN: Si no se seleccionaron etiquetas específicas, mostrar mensaje
