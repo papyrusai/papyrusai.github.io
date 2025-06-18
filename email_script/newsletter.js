@@ -1203,52 +1203,206 @@ async function sendNoDocumentsWarningEmail() {
 }
 
 /**
+ * Identify hot accounts based on email patterns
+ */
+function identifyHotAccounts(userStats) {
+  const hotAccountsConfig = [
+    { pattern: 'antonio.madueno@cartesio.com', company: 'Cartesio', type: 'exact' },
+    { pattern: 'ecix', company: 'ECIX', type: 'contains' },
+    { pattern: 'burgalonso@gmail.com', company: 'Harmon', type: 'exact' },
+    { pattern: 'axact', company: 'Axactor', type: 'contains' },
+    { pattern: 'pareja', company: 'Pareja Advocats', type: 'contains' }
+  ];
+  
+  const hotAccounts = [];
+  const allUsers = [...userStats.withMatches, ...userStats.withoutMatches];
+  
+  for (const user of allUsers) {
+    for (const config of hotAccountsConfig) {
+      let isMatch = false;
+      const email = user.email.toLowerCase();
+      
+      if (config.type === 'exact' && email === config.pattern) {
+        isMatch = true;
+      } else if (config.type === 'contains' && email.includes(config.pattern)) {
+        isMatch = true;
+      }
+      
+      if (isMatch) {
+        hotAccounts.push({
+          ...user,
+          company: config.company,
+          hasMatches: userStats.withMatches.includes(user)
+        });
+        break; // Only add once per user
+      }
+    }
+  }
+  
+  return hotAccounts;
+}
+
+/**
  * Send comprehensive report email with statistics
  */
 async function sendReportEmail(db, userStats) {
   try {
-    const logsCollection = db.collection('logs');
-    const logEntry = await logsCollection.findOne({ "date_range.start": currentDateString });
+    // Identify hot accounts
+    const hotAccounts = identifyHotAccounts(userStats);
     
-    if (!logEntry || !logEntry.collections) {
-      console.warn('No log entry found for report email');
-      return;
-    }
-    
-    // 1. Build collections table
-    let collectionsTableHTML = '';
-    let totalBoletines = 0;
-    let totalDocs = 0;
-    let totalPages = 0;
-    
-    for (const [collectionName, collectionData] of Object.entries(logEntry.collections)) {
-      const docCount = collectionData.doc_count || 0;
-      const pageCount = collectionData.page_count || 0;
-      
-      if (docCount > 0) {
-        totalBoletines++;
-        totalDocs += docCount;
-        totalPages += pageCount;
+    // 1. Build Hot Accounts Summary
+    let hotAccountsSummaryHTML = '';
+    for (const hotAccount of hotAccounts) {
+      if (hotAccount.hasMatches) {
+        // Count unique etiquetas for this user
+        const etiquetaGroups = new Map();
+        for (const docInfo of hotAccount.detailedMatches) {
+          for (const etiqueta of docInfo.matchedEtiquetas) {
+            etiquetaGroups.set(etiqueta, true);
+          }
+        }
+        const userEtiquetasCount = etiquetaGroups.size;
         
-        collectionsTableHTML += `
+        // Count collections with matches
+        const collectionsWithMatches = new Map();
+        for (const docInfo of hotAccount.detailedMatches) {
+          const collection = docInfo.collectionName;
+          if (!collectionsWithMatches.has(collection)) {
+            collectionsWithMatches.set(collection, 0);
+          }
+          collectionsWithMatches.set(collection, collectionsWithMatches.get(collection) + 1);
+        }
+        
+        const collectionsText = Array.from(collectionsWithMatches.entries())
+          .map(([collection, count]) => `${collection}(${count})`)
+          .join(', ');
+        
+        hotAccountsSummaryHTML += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">${collectionName}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${docCount}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${pageCount}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${hotAccount.email} - ${hotAccount.company}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userEtiquetasCount}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${collectionsText}</td>
+          </tr>
+        `;
+      } else {
+        hotAccountsSummaryHTML += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${hotAccount.email} - ${hotAccount.company}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">0</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">Sin matches</td>
           </tr>
         `;
       }
     }
     
-    collectionsTableHTML += `
-      <tr style="background-color: #f2f2f2; font-weight: bold;">
-        <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
-        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalDocs}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalPages}</td>
-      </tr>
-    `;
+    // 2. Build Hot Accounts Detail Table
+    let hotAccountsDetailHTML = '';
     
-    // 2.1. Build users with matches summary table
+    // Get all collections from hot accounts with matches
+    const allCollections = new Set();
+    for (const hotAccount of hotAccounts) {
+      if (hotAccount.hasMatches) {
+        for (const docInfo of hotAccount.detailedMatches) {
+          allCollections.add(docInfo.collectionName);
+        }
+      }
+    }
+    const collectionsArray = Array.from(allCollections).sort();
+    
+    // Build table header
+    let headerHTML = `
+      <tr style="background-color: #f2f2f2;">
+        <th style="border: 1px solid #ddd; padding: 8px;">Fecha</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Usuario - Empresa</th>
+        <th style="border: 1px solid #ddd; padding: 8px;">Agente</th>
+    `;
+    for (const collection of collectionsArray) {
+      headerHTML += `<th style="border: 1px solid #ddd; padding: 8px;">${collection}</th>`;
+    }
+    headerHTML += `</tr>`;
+    
+    // Build table rows
+    let totalMatches = 0;
+    for (const hotAccount of hotAccounts) {
+      if (!hotAccount.hasMatches) continue;
+      
+      // Group matches by etiqueta
+      const etiquetaGroups = new Map();
+      for (const docInfo of hotAccount.detailedMatches) {
+        for (const etiqueta of docInfo.matchedEtiquetas) {
+          if (!etiquetaGroups.has(etiqueta)) {
+            etiquetaGroups.set(etiqueta, new Map());
+          }
+          const collection = docInfo.collectionName;
+          if (!etiquetaGroups.get(etiqueta).has(collection)) {
+            etiquetaGroups.get(etiqueta).set(collection, []);
+          }
+          etiquetaGroups.get(etiqueta).get(collection).push({
+            id: docInfo.shortName,
+            name: docInfo.shortName,
+            url: docInfo.urlPdf
+          });
+        }
+      }
+      
+      let isFirstEtiqueta = true;
+      for (const [etiqueta, collectionsMap] of etiquetaGroups.entries()) {
+        const userCell = isFirstEtiqueta ? 
+          `<td style="border: 1px solid #ddd; padding: 8px; vertical-align: top;" rowspan="${etiquetaGroups.size}">${hotAccount.email} - ${hotAccount.company}</td>` : 
+          '';
+        
+        hotAccountsDetailHTML += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${currentDateString}</td>
+            ${userCell}
+            <td style="border: 1px solid #ddd; padding: 8px;">${etiqueta}</td>
+        `;
+        
+        for (const collection of collectionsArray) {
+          const docs = collectionsMap.get(collection) || [];
+          let cellContent = '';
+          
+          if (docs.length > 0) {
+            cellContent = docs.map(doc => 
+              `• <a href="${doc.url}" target="_blank" style="color: #0066cc; text-decoration: none;">${doc.id}</a>`
+            ).join('<br>');
+            totalMatches += docs.length;
+          }
+          
+          hotAccountsDetailHTML += `<td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; line-height: 1.6;">${cellContent}</td>`;
+        }
+        
+        hotAccountsDetailHTML += `</tr>`;
+        isFirstEtiqueta = false;
+      }
+      
+      // Add subtotal row for this user
+      hotAccountsDetailHTML += `
+        <tr style="background-color: #f9f9f9; font-weight: bold;">
+          <td style="border: 1px solid #ddd; padding: 8px;" colspan="3">Subtotal ${hotAccount.email}</td>
+      `;
+      for (const collection of collectionsArray) {
+        const userCollectionTotal = hotAccount.detailedMatches
+          .filter(doc => doc.collectionName === collection).length;
+        hotAccountsDetailHTML += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userCollectionTotal || ''}</td>`;
+      }
+      hotAccountsDetailHTML += `</tr>`;
+    }
+    
+    // Add total row
+    hotAccountsDetailHTML += `
+      <tr style="background-color: #f2f2f2; font-weight: bold;">
+        <td style="border: 1px solid #ddd; padding: 8px;" colspan="3">TOTAL</td>
+    `;
+    for (const collection of collectionsArray) {
+      const collectionTotal = hotAccounts
+        .filter(acc => acc.hasMatches)
+        .reduce((sum, acc) => sum + acc.detailedMatches.filter(doc => doc.collectionName === collection).length, 0);
+      hotAccountsDetailHTML += `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${collectionTotal || ''}</td>`;
+    }
+    hotAccountsDetailHTML += `</tr>`;
+    
+    // 3. Build regular users with matches summary table
     let usersWithMatchesSummaryHTML = '';
     let totalEmailsWithMatches = 0;
     let totalEtiquetasWithMatches = 0;
@@ -1281,7 +1435,7 @@ async function sendReportEmail(db, userStats) {
       </tr>
     `;
     
-    // 2.2. Build users without matches table
+    // 4. Build users without matches table
     let usersWithoutMatchesHTML = '';
     let totalEmailsWithoutMatches = 0;
     let totalEtiquetasWithoutMatches = 0;
@@ -1305,7 +1459,7 @@ async function sendReportEmail(db, userStats) {
       </tr>
     `;
     
-    // 3. Build detailed users with matches table
+    // 5. Build detailed users with matches table (existing structure)
     let usersWithMatchesDetailHTML = '';
     
     for (const userStat of userStats.withMatches) {
@@ -1408,22 +1562,33 @@ async function sendReportEmail(db, userStats) {
       <body style="font-family: Arial, sans-serif; margin: 20px;">
         <h1>Reporte Diario Newsletter - ${currentDateString}</h1>
         
-        <h2>1. Documentos procesados hoy</h2>
+        <h2>1. Cuentas Calientes</h2>
+        
+        <h3>1.1. Resumen Cuentas Calientes</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
           <thead>
             <tr style="background-color: #f2f2f2;">
-              <th style="border: 1px solid #ddd; padding: 8px;">Boletín</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Documentos</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Páginas</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Usuario - Empresa</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas con Match</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Colecciones con Match</th>
             </tr>
           </thead>
           <tbody>
-            ${collectionsTableHTML}
+            ${hotAccountsSummaryHTML}
           </tbody>
         </table>
-        <p><strong>Resumen:</strong> ${totalBoletines} boletines, ${totalDocs} documentos, ${totalPages} páginas</p>
         
-        <h2>2. Resumen usuarios</h2>
+        <h3>1.2. Detalle Cuentas Calientes por Agente y Boletín</h3>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px; font-size: 12px;">
+          <thead>
+            ${headerHTML}
+          </thead>
+          <tbody>
+            ${hotAccountsDetailHTML}
+          </tbody>
+        </table>
+        
+        <h2>2. Todos los Usuarios</h2>
         
         <h3>2.1. Usuarios con match</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
@@ -1453,7 +1618,7 @@ async function sendReportEmail(db, userStats) {
         </table>
         <p><strong>Total:</strong> ${totalEmailsWithoutMatches} usuarios, ${totalEtiquetasWithoutMatches} etiquetas</p>
         
-        <h2>3. Detalle usuarios con match agentes</h2>
+        <h3>2.3. Detalle usuarios con match agentes</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
           <thead>
             <tr style="background-color: #f2f2f2;">
@@ -1735,15 +1900,24 @@ async function sendCollectionsReportEmail(db) {
     // Format the datetime_run for display
     const formattedDateTime = moment(recentLogEntry.datetime_run).format('YYYY-MM-DD HH:mm:ss');
     
-    // Build errors section from combined data
+    // Build errors and warnings sections from combined data
     let errorsHTML = '';
+    let warningsHTML = '';
     let totalErrors = 0;
+    let totalWarnings = 0;
     
     for (const [collectionName, stats] of Object.entries(combinedStats)) {
       if (stats.errors && stats.errors.length > 0) {
         for (const errorObj of stats.errors) {
-          totalErrors++;
-          errorsHTML += `<li style="margin-bottom: 5px;"><strong>${collectionName}:</strong> ${errorObj.error}</li>`;
+          if (collectionName.toUpperCase() === 'BOCG') {
+            // Move BOCG errors to warnings section
+            totalWarnings++;
+            warningsHTML += `<li style="margin-bottom: 5px;"><strong>${collectionName}:</strong> ${errorObj.error}</li>`;
+          } else {
+            // Keep other errors in errors section
+            totalErrors++;
+            errorsHTML += `<li style="margin-bottom: 5px;"><strong>${collectionName}:</strong> ${errorObj.error}</li>`;
+          }
         }
       }
     }
@@ -1760,6 +1934,21 @@ async function sendCollectionsReportEmail(db) {
       errorsSection = `
         <h2 style="font-size: 16px;">3. Detalle de errores</h2>
         <p style="font-size: 12px; color: #28a745;">✅ No se encontraron errores en el procesamiento.</p>
+      `;
+    }
+    
+    let warningsSection = '';
+    if (totalWarnings > 0) {
+      warningsSection = `
+        <h2 style="font-size: 16px;">4. Warnings</h2>
+        <ul style="font-size: 11px; margin-bottom: 30px;">
+          ${warningsHTML}
+        </ul>
+      `;
+    } else {
+      warningsSection = `
+        <h2 style="font-size: 16px;">4. Warnings</h2>
+        <p style="font-size: 12px; color: #28a745;">✅ No se encontraron warnings en el procesamiento.</p>
       `;
     }
     
@@ -1816,6 +2005,8 @@ async function sendCollectionsReportEmail(db) {
         </ul>
         
         ${errorsSection}
+        
+        ${warningsSection}
         
         <hr>
         <p style="font-size: 12px; color: #666;">
