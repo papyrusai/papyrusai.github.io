@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultas Públicas - Versión Beta</title>
+    <style>
+        body {
+            font-family: 'Satoshi', sans-serif;
+            margin:0;
+            padding: 20px;
+            background-color: #ffffff ;
+            color: #0b2431;
+            padding-bottom: 60px; /* Añadir padding bottom al body */
+        }
+        
+        .title-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+            border-bottom: 2px solid #04db8d;
+            padding-bottom: 10px;
+        }
+        
+        h1 {
+            color: #0b2431;
+            font-size: 2.5em;
+            margin: 0;
+            text-align: left;
+            /* Evitamos que empuje el banner al extremo derecho */
+            flex-grow: 0;
+        }
+
+        .beta-banner {
+                
+            border: 1px solid black;
+            color: black;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 20px;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .section {
+            margin-bottom: 50px; /* Aumentado para más espacio */
+        }
+
+        .section:last-child {
+            margin-bottom: 80px; /* Margen extra para la última sección */
+        }
+        
+
+        
+        .consulta-item {
+            background-color: #f8f9fa;
+            border-left: 4px solid #04db8d;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .consulta-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .consulta-title {
+            font-weight: 600;
+            font-size: 1.2em;
+            color: #0b2431;
+            margin-bottom: 10px;
+        }
+        
+        .consulta-description {
+            color: #455862;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .consulta-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        
+        .consulta-date {
+            font-weight: 500;
+        }
+        
+        .consulta-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-abierta {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-cerrada {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-proceso {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .search-bar {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+        
+        .search-button {
+            background-color: #495057;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        
+        .search-button:hover {
+            background-color: #03c077;
+        }
+        
+        .filter-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-label {
+            font-weight: 600;
+            color: #455862;
+            font-size: 0.9em;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.9em;
+            background-color: white;
+            cursor: pointer;
+            /* Restaurar flecha por defecto del navegador */
+            -webkit-appearance: menulist;
+            -moz-appearance: menulist;
+            appearance: menulist;
+        }
+
+        .filter-select:hover {
+            border-color: #04db8d;
+        }
+
+        .filter-select:focus {
+            border-color: #04db8d;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(4, 219, 141, 0.2);
+        }
+
+        /* Estilos mejorados para opciones de select */
+        .filter-select option {
+            background-color: white !important;
+            color: #0b2431 !important;
+            padding: 8px 12px;
+        }
+
+        .filter-select option:checked {
+            background-color: #f8f9fa !important;
+            background: linear-gradient(#f8f9fa, #f8f9fa) !important;
+        }
+
+        /* Para Firefox */
+        .filter-select option:hover {
+            background-color: #f2f2f2 !important;
+            color: #0b2431 !important;
+        }
+
+        /* Para WebKit browsers */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            .filter-select option:hover {
+                background-color: #f2f2f2 !important;
+                color: #0b2431 !important;
+            }
+        }
+
+        /* Nuevos estilos para boxes de radar de consultas públicas */
+        .radar-consulta-box {
+            background-color: white;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: box-shadow 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .radar-consulta-box:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .radar-consulta-box.hidden {
+            display: none;
+        }
+
+        .radar-fecha-publicacion {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 0.85em;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .radar-nombre {
+            font-weight: 600;
+            font-size: 1.1em;
+            color: #0b2431;
+            margin-bottom: 12px;
+            line-height: 1.4;
+            padding-right: 100px;
+        }
+
+        .radar-meta-line {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .radar-fuente {
+            color: #455862;
+            font-weight: 500;
+        }
+
+        .radar-estado {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .radar-plazo {
+            color: #0b2431; /* Cambiado de rojo a negro */
+            font-weight: 500;
+        }
+
+        .radar-plazo-fechas {
+            font-style: italic;
+            color: #0b2431;
+        }
+
+        .radar-tipo-documento {
+            color: #6c757d;
+            font-size: 0.85em;
+            margin-bottom: 12px;
+            font-style: italic;
+        }
+
+        .radar-agente-tag {
+            box-shadow: 0 2px 4px rgba(4, 219, 141, 0.2);
+    margin: 5px 0;
+    background-color: rgba(4, 219, 141, 0.1);
+    --tw-text-opacity: 1;
+    color: rgb(4 219 141 / var(--tw-text-opacity));
+    display: inline-flex
+;
+    align-items: center;
+    border-radius: 9999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+        }
+
+        .radar-explicacion {
+            color: #455862;
+            line-height: 1.5;
+            font-size: 0.95em;
+            border-left: 4px solid #04db8d; /* Border verde Reversa */
+            padding-left: 15px;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .radar-explicacion::before {
+            content: "• Alerta: ";
+            font-weight: 600;
+            color: #0b2431;
+        }
+
+        /* Estilo para indicar que no hay resultados */
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-container">
+            <h1>Radar de Consultas Públicas</h1>
+            <div class="beta-banner">Versión Beta</div>
+        </div>
+        
+        <div class="search-bar">
+            <input type="text" class="search-input" id="search-input" placeholder="Buscar consultas públicas...">
+            <button class="search-button" onclick="filterBoxes()">Buscar</button>
+        </div>
+        
+        <div class="filter-section">
+            <div class="filter-item">
+                <label class="filter-label">Estado</label>
+                <select class="filter-select" id="estado-filter" onchange="filterBoxes()">
+                    <option value="">Todos</option>
+                    <option value="Abierto plazo de alegaciones">Abierto plazo de alegaciones</option>
+                </select>
+            </div>
+            
+            <div class="filter-item">
+                <label class="filter-label">Agente</label>
+                <select class="filter-select" id="agente-filter" onchange="filterBoxes()">
+                    <option value="">Todos</option>
+                    <option value="Señales de Innovación Sanitaria Regional">Señales de Innovación Sanitaria Regional</option>
+                    <option value="Observador de Permisos Ambientales de Andalucía">Observador de Permisos Ambientales de Andalucía</option>
+                </select>
+            </div>
+            
+            <div class="filter-item">
+                <label class="filter-label">Fuente</label>
+                <select class="filter-select" id="fuente-filter" onchange="filterBoxes()">
+                    <option value="">Todas</option>
+                    <option value="Junta de Andalucía - Consultas públicas">Junta de Andalucía - Consultas públicas</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Nueva sección de radar de consultas públicas -->
+        <div class="section" id="consultas-section">
+           
+            
+            <div class="radar-consulta-box" 
+                 data-estado="Abierto plazo de alegaciones" 
+                 data-agente="Señales de Innovación Sanitaria Regional"
+                 data-fuente="Junta de Andalucía - Consultas públicas">
+                <div class="radar-fecha-publicacion">13/06/2025</div>
+                <div class="radar-nombre">Estrategia de i+I en Salud en Andalucía 2025-2027</div>
+                <div class="radar-meta-line">
+                    <span class="radar-fuente">Junta de Andalucía - Consultas públicas</span>
+                    <span class="radar-estado">Abierto plazo de alegaciones</span>
+                    <span class="radar-plazo">Plazo de alegaciones: <span class="radar-plazo-fechas">14/06/2025 - 14/07/2025</span></span>
+                </div>
+                <div class="radar-tipo-documento">Estrategia</div>
+                <div class="radar-agente-tag">Señales de Innovación Sanitaria Regional</div>
+                <div class="radar-explicacion">
+                    El documento fija prioridades y calendario para el nuevo marco andaluz de investigación e innovación en salud, marcando las líneas de las próximas convocatorias y fondos. Hospitales, biotechs y clústeres regionales deben alinear ya sus proyectos y prever recursos antes de la aprobación de las órdenes que desarrollarán la estrategia.
+                </div>
+            </div>
+
+            <div class="radar-consulta-box"
+                 data-estado="Abierto plazo de alegaciones" 
+                 data-agente="Observador de Permisos Ambientales de Andalucía"
+                 data-fuente="Junta de Andalucía - Consultas públicas">
+                <div class="radar-fecha-publicacion">11/06/2025</div>
+                <div class="radar-nombre">ANUNCIO DE LA DELEGACIÓN TERRITORIAL DE ECONOMÍA, HACIENDA Y FONDOS EUROPEOS Y DE INDUSTRIA, ENERGÍA Y MINAS EN CÁDIZ, POR EL QUE SE SOMETE AL TRÁMITE DE INFORMACIÓN PÚBLICA LA SOLICITUD DE AUTORIZACIÓN ADMINISTRATIVA PREVIA, AUTORIZACIÓN ADMINISTRATIVA DE CONSTRUCCIÓN Y DECLARACIÓN, EN CONCRETO, DE UTILIDAD PÚBLICA DE LA INSTALACIÓN ELÉCTRICA FOTOVOLTAICA PSV "LA CONCEPCIÓN". Término municipal afectado Chiclana de la Frontera (Cádiz) AT-15092/22</div>
+                <div class="radar-meta-line">
+                    <span class="radar-fuente">Junta de Andalucía - Consultas públicas</span>
+                    <span class="radar-estado">Abierto plazo de alegaciones</span>
+                    <span class="radar-plazo">Plazo de alegaciones: <span class="radar-plazo-fechas">12/06/2025 - 24/07/2025</span></span>
+                </div>
+                <div class="radar-tipo-documento">Anuncio de información pública</div>
+                <div class="radar-agente-tag">Observador de Permisos Ambientales de Andalucía</div>
+                <div class="radar-explicacion">
+                    Se abre la ventana para impugnar o condicionar una planta fotovoltaica de gran potencia en Cádiz con solo 30 días hábiles para alegar. Ingenierías, despachos y promotores deben revisar trazado, afecciones ambientales y servidumbres para proteger la viabilidad del proyecto o defender intereses afectados.
+                </div>
+            </div>
+
+            <div class="radar-consulta-box"
+                 data-estado="Abierto plazo de alegaciones" 
+                 data-agente="Observador de Permisos Ambientales de Andalucía"
+                 data-fuente="Junta de Andalucía - Consultas públicas">
+                <div class="radar-fecha-publicacion">17/06/2025</div>
+                <div class="radar-nombre">Acuerdo de 12 de junio de 2025, de la Delegación Territorial de Sostenibilidad, Medio Ambiente y Economía Azul en Granada, por el que se abre periodo de información pública sobre el expediente de autorización ambiental unificada para ampliación de explotación avícola intensiva en el término municipal de Castilléjar (Granada). AAU/GR/25/003</div>
+                <div class="radar-meta-line">
+                    <span class="radar-fuente">Junta de Andalucía - Consultas públicas</span>
+                    <span class="radar-estado">Abierto plazo de alegaciones</span>
+                    <span class="radar-plazo">Plazo de alegaciones: <span class="radar-plazo-fechas">18/06/2025 - 30/07/2025</span></span>
+                </div>
+                <div class="radar-tipo-documento">Documentación sometida a información pública expediente AAU/GR/25/003</div>
+                <div class="radar-agente-tag">Observador de Permisos Ambientales de Andalucía</div>
+                <div class="radar-explicacion">
+                    El trámite ambiental para ampliar una granja avícola intensiva puede introducir nuevas exigencias sobre emisiones, olores y gestión de residuos. Consultores y abogados ambientales deben analizar la documentación y proponer medidas correctoras antes de que la autorización sea definitiva.
+                </div>
+            </div>
+
+            <!-- Mensaje para cuando no hay resultados -->
+            <div class="no-results" id="no-results" style="display: none;">
+                No se encontraron consultas públicas que coincidan con los filtros seleccionados.
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        function filterBoxes() {
+            const searchValue = document.getElementById('search-input').value.toLowerCase();
+            const estadoFilter = document.getElementById('estado-filter').value;
+            const agenteFilter = document.getElementById('agente-filter').value;
+            const fuenteFilter = document.getElementById('fuente-filter').value;
+            
+            const boxes = document.querySelectorAll('.radar-consulta-box');
+            const noResults = document.getElementById('no-results');
+            let visibleCount = 0;
+            
+            boxes.forEach(box => {
+                const estado = box.getAttribute('data-estado');
+                const agente = box.getAttribute('data-agente');
+                const fuente = box.getAttribute('data-fuente');
+                const nombre = box.querySelector('.radar-nombre').textContent.toLowerCase();
+                const explicacion = box.querySelector('.radar-explicacion').textContent.toLowerCase();
+                
+                // Verificar si coincide con los filtros
+                const matchesEstado = !estadoFilter || estado === estadoFilter;
+                const matchesAgente = !agenteFilter || agente === agenteFilter;
+                const matchesFuente = !fuenteFilter || fuente === fuenteFilter;
+                const matchesSearch = !searchValue || 
+                                    nombre.includes(searchValue) || 
+                                    explicacion.includes(searchValue);
+                
+                if (matchesEstado && matchesAgente && matchesFuente && matchesSearch) {
+                    box.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    box.classList.add('hidden');
+                }
+            });
+            
+            // Mostrar/ocultar mensaje de no resultados
+            if (visibleCount === 0) {
+                noResults.style.display = 'block';
+            } else {
+                noResults.style.display = 'none';
+            }
+        }
+
+        // Permitir búsqueda al presionar Enter
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                filterBoxes();
+            }
+        });
+    </script>
+</body>
+</html>

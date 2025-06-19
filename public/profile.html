@@ -198,6 +198,84 @@
       margin-right: 8px;
       accent-color: #04db8d;
       width: 12px;
+    }
+    
+    /* Estilos para el dropdown de tipo de contenido en el sidebar */
+    .content-type-dropdown {
+      margin: 15px 0;
+      position: relative;
+      width: 100%;
+    }
+    
+    .content-type-dropbtn {
+      background-color: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 0.3s ease;
+    }
+    
+    .content-type-dropbtn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .content-type-dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      min-width: 100%;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1001;
+      border-radius: 4px;
+      overflow: hidden;
+      top: 100%;
+      left: 0;
+    }
+    
+    .content-type-dropdown-content a {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      transition: background-color 0.3s ease;
+    }
+    
+    .content-type-dropdown-content a:hover {
+      background-color: #f1f1f1;
+    }
+    
+    .content-type-dropdown.show .content-type-dropdown-content {
+      display: block;
+    }
+    
+    
+    /* Estilos específicos para el banner de consultas públicas */
+    .consultas-publicas-beta-banner {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: white;
+      color: #0b2431;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid #0b2431;
+    }
+    
+    #nivelImpactoDropdown input[type="radio"] {
       height: 12px;
       transform: scale(1);
       border: 1px solid white;
@@ -1767,24 +1845,55 @@
         </a>
       </div>
       <div class="border-menu"></div>
-      <a href="#" class="sidebar-item active" data-target="content-agentes">
-        <i class="fas fa-users"></i> Agentes
-      </a>
-      <a href="#" class="sidebar-item" data-target="content-boletin">
-        <i class="fas fa-newspaper"></i> Boletín Diario
-      </a>
-      <a href="#" class="sidebar-item" data-target="content-busqueda">
-        <i class="fas fa-search"></i> Búsqueda y Estadísticas
-      </a>
-      <a href="#" class="sidebar-item" data-target="content-listas">
-        <i class="fas fa-list"></i> Tus listas
-      </a>
-      <a href="#" class="sidebar-item" data-target="content-configuracion">
-        <i class="fas fa-cog"></i> Configuración
-      </a>
-      <a href="#" class="sidebar-item" id="editSuscription">
-        <i class="fas fa-user-circle"></i> Cuenta
-      </a>
+      <!-- Dropdown para cambiar entre Novedades Regulatorias y Consultas Públicas -->
+      <div class="content-type-dropdown">
+        <button class="content-type-dropbtn" id="contentTypeDropdown">
+          <span id="selectedContentType">Novedades Normativas</span> 
+          <i class="fa fa-caret-down"></i>
+        </button>
+        <div id="contentTypeDropdownContent" class="content-type-dropdown-content">
+          <a href="#" data-content="novedades">Novedades Normativas</a>
+          <a href="#" data-content="consultas">Consultas Públicas</a>
+        </div>
+      </div>
+      
+      <!-- Sidebar items para Novedades Normativas -->
+      <div id="sidebar-novedades" class="sidebar-content">
+        <a href="#" class="sidebar-item active" data-target="content-agentes">
+          <i class="fas fa-users"></i> Agentes
+        </a>
+        <a href="#" class="sidebar-item" data-target="content-boletin">
+          <i class="fas fa-newspaper"></i> Boletín Diario
+        </a>
+        <a href="#" class="sidebar-item" data-target="content-busqueda">
+          <i class="fas fa-search"></i> Búsqueda y Estadísticas
+        </a>
+        <a href="#" class="sidebar-item" data-target="content-listas">
+          <i class="fas fa-list"></i> Tus listas
+        </a>
+        <a href="#" class="sidebar-item" data-target="content-configuracion">
+          <i class="fas fa-cog"></i> Configuración
+        </a>
+        <a href="#" class="sidebar-item" id="editSuscription">
+          <i class="fas fa-user-circle"></i> Cuenta
+        </a>
+      </div>
+      
+      <!-- Sidebar items para Consultas Públicas -->
+      <div id="sidebar-consultas" class="sidebar-content" style="display: none;">
+        <a href="#" class="sidebar-item active" data-target="content-radar-consultas">
+          <i class="fas fa-satellite-dish"></i> Radar de Consultas
+        </a>
+        <a href="#" class="sidebar-item" data-target="content-configuracion">
+          <i class="fas fa-cog"></i> Configuración
+        </a>
+        <a href="#" class="sidebar-item" data-target="content-listas">
+          <i class="fas fa-list"></i> Tus listas
+        </a>
+        <a href="#" class="sidebar-item" id="editSuscriptionConsultas">
+          <i class="fas fa-user-circle"></i> Cuenta
+        </a>
+      </div>
     </div>
 
     <!-- NUEVA ÁREA DE CONTENIDO PRINCIPAL -->
@@ -2228,6 +2337,13 @@
         <p>Estamos trabajando en desarrollar el producto para que próximamente tenga esta nueva funcionalidad.</p>
       </div>
 
+      <!-- Sección Radar de Consultas -->
+      <div id="content-radar-consultas" class="vision-section" style="display: none;">
+        <div id="consultas-publicas-container" style="width: 100%; height: 100vh; border: none;">
+          <!-- El contenido de consultas públicas se cargará aquí dinámicamente -->
+        </div>
+      </div>
+
     </div> <!-- Fin de #main-content -->
   </div> <!-- Fin de .profile-container -->
 
@@ -2489,6 +2605,140 @@
            }
          });
        }
+    });
+
+    // --------------------- CONTENT TYPE DROPDOWN FUNCTIONALITY ---------------------
+    document.addEventListener("DOMContentLoaded", () => {
+      // Variable global para mantener el contexto actual
+      window.currentContentType = 'novedades';
+      
+      // Manejar el dropdown de tipo de contenido
+      const contentTypeDropdown = document.getElementById('contentTypeDropdown');
+      const contentTypeDropdownContent = document.getElementById('contentTypeDropdownContent');
+      const selectedContentType = document.getElementById('selectedContentType');
+      
+      // Toggle dropdown
+      contentTypeDropdown.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.querySelector('.content-type-dropdown').classList.toggle('show');
+      });
+      
+      // Cerrar dropdown cuando se hace clic fuera
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.content-type-dropdown')) {
+          document.querySelector('.content-type-dropdown').classList.remove('show');
+        }
+      });
+      
+      // Manejar selección de opciones
+      contentTypeDropdownContent.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = e.target.closest('a');
+        if (!target) return;
+        
+        const contentType = target.getAttribute('data-content');
+        const contentText = target.textContent;
+        
+        // Actualizar texto del dropdown
+        selectedContentType.textContent = contentText;
+        
+        // Cerrar dropdown
+        document.querySelector('.content-type-dropdown').classList.remove('show');
+        
+        // Cambiar el contexto global
+        window.currentContentType = contentType;
+        
+        if (contentType === 'consultas') {
+          // Mostrar contexto de consultas públicas
+          showConsultasContext();
+        } else {
+          // Mostrar contexto de novedades normativas
+          showNovedadesContext();
+        }
+      });
+      
+      // Función para mostrar contexto de consultas públicas
+      function showConsultasContext() {
+        // Cambiar sidebar
+        document.getElementById('sidebar-novedades').style.display = 'none';
+        document.getElementById('sidebar-consultas').style.display = 'block';
+        
+        // Ocultar todas las secciones del contenido principal
+        document.querySelectorAll('.vision-section').forEach(section => {
+          section.style.display = 'none';
+          section.classList.remove('active');
+        });
+        
+        // Mostrar la sección de radar de consultas por defecto
+        const radarConsultasSection = document.getElementById('content-radar-consultas');
+        if (radarConsultasSection) {
+          radarConsultasSection.style.display = 'block';
+          radarConsultasSection.classList.add('active');
+        }
+        
+        // Marcar como activo el primer elemento del sidebar de consultas
+        document.querySelectorAll('#sidebar-consultas .sidebar-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        const firstConsultasItem = document.querySelector('#sidebar-consultas .sidebar-item[data-target="content-radar-consultas"]');
+        if (firstConsultasItem) {
+          firstConsultasItem.classList.add('active');
+        }
+        
+        // Cargar el contenido de consultas públicas
+        window.loadConsultasPublicasContent();
+        
+        // Reconfigurar listeners del sidebar
+        if (typeof setupSidebarListeners === 'function') {
+          setupSidebarListeners();
+        }
+      }
+      
+      // Función para mostrar contexto de novedades normativas
+      function showNovedadesContext() {
+        // Cambiar sidebar
+        document.getElementById('sidebar-consultas').style.display = 'none';
+        document.getElementById('sidebar-novedades').style.display = 'block';
+        
+        // Ocultar todas las secciones del contenido principal
+        document.querySelectorAll('.vision-section').forEach(section => {
+          if (section.id !== 'content-radar-consultas') {
+            section.style.display = 'none';
+            section.classList.remove('active');
+          }
+        });
+        
+        // Ocultar sección de radar de consultas
+        const radarConsultasSection = document.getElementById('content-radar-consultas');
+        if (radarConsultasSection) {
+          radarConsultasSection.style.display = 'none';
+          radarConsultasSection.classList.remove('active');
+        }
+        
+        // Mostrar la sección de agentes por defecto
+        const agentesSection = document.getElementById('content-agentes');
+        if (agentesSection) {
+          agentesSection.style.display = 'block';
+          agentesSection.classList.add('active');
+        }
+        
+        // Marcar como activo el primer elemento del sidebar de novedades
+        document.querySelectorAll('#sidebar-novedades .sidebar-item').forEach(item => {
+          item.classList.remove('active');
+        });
+        const firstNovedadesItem = document.querySelector('#sidebar-novedades .sidebar-item[data-target="content-agentes"]');
+        if (firstNovedadesItem) {
+          firstNovedadesItem.classList.add('active');
+        }
+        
+        // Reconfigurar listeners del sidebar
+        if (typeof setupSidebarListeners === 'function') {
+          setupSidebarListeners();
+        }
+      }
+      
+      // Función duplicada eliminada - ahora se usa window.loadConsultasPublicasContent
     });
 
     // --------------------- plan logic => disabling bulletins if plan1 ---------------------
@@ -3970,14 +4220,37 @@ document.head.appendChild(styleSheet);
  document.addEventListener('DOMContentLoaded', function() {
 
   
-    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    // Función dinámica para obtener los elementos del sidebar según el contexto
+    function getCurrentSidebarItems() {
+        const currentContext = window.currentContentType || 'novedades';
+        if (currentContext === 'consultas') {
+            return document.querySelectorAll('#sidebar-consultas .sidebar-item');
+        } else {
+            return document.querySelectorAll('#sidebar-novedades .sidebar-item');
+        }
+    }
+
     const contentSections = document.querySelectorAll('.vision-section');
 
     // Función para manejar el cambio de sección
     function handleSectionChange(targetId) {
         const targetSection = document.getElementById(targetId);
         if (targetSection) {
-            contentSections.forEach(section => section.style.display = 'none');
+            // Ocultar todas las secciones excepto las específicas del contexto de consultas
+            const currentContext = window.currentContentType || 'novedades';
+            
+            contentSections.forEach(section => {
+                if (currentContext === 'consultas' && section.id === 'content-radar-consultas') {
+                    // No ocultar la sección de radar de consultas si estamos en contexto de consultas
+                    return;
+                } else if (currentContext === 'novedades' && section.id === 'content-radar-consultas') {
+                    // Ocultar la sección de radar de consultas si estamos en contexto de novedades
+                    section.style.display = 'none';
+                    return;
+                }
+                section.style.display = 'none';
+            });
+            
             targetSection.style.display = 'block';
 
             // *** NUEVO/MODIFICADO: Cargar datos del boletín si es la sección correcta y no se ha cargado ***
@@ -4008,6 +4281,11 @@ document.head.appendChild(styleSheet);
                 }
             }
             
+                    // *** NUEVO: Cargar contenido de radar de consultas ***
+        if (targetId === 'content-radar-consultas') {
+            window.loadConsultasPublicasContent();
+        }
+            
             // *** NUEVO: Cargar configuración si es la sección de configuración ***
             if (targetId === 'content-configuracion') {
                 loadConfiguracionContent();
@@ -4032,16 +4310,97 @@ document.head.appendChild(styleSheet);
         }
     }
 
-    // Añadir listeners a los items del sidebar
-    sidebarItems.forEach(item => {
-        item.addEventListener('click', function(event) {
-            event.preventDefault();
-            sidebarItems.forEach(i => i.classList.remove('active'));
-            this.classList.add('active');
-            const targetId = this.getAttribute('data-target');
-            handleSectionChange(targetId);
+    // Función global para cargar el contenido de consultas públicas
+    window.loadConsultasPublicasContent = function() {
+        const container = document.getElementById('consultas-publicas-container');
+        if (!container) {
+            console.error('Elemento consultas-publicas-container no encontrado');
+            return;
+        }
+        
+        // Check if content is already loaded
+        if (container.innerHTML.trim() !== '<!-- El contenido de consultas públicas se cargará aquí dinámicamente -->') {
+            console.log('Contenido de consultas públicas ya está cargado');
+            return;
+        }
+        
+        console.log('Cargando contenido de consultas públicas...');
+        
+        // Load the configuration content
+        fetch('consultas_publicas.html')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.text();
+          })
+          .then(html => {
+            // Extract the body content from the HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const bodyContent = doc.body.innerHTML;
+            
+            container.innerHTML = bodyContent;
+            
+            // Append styles from the loaded document head to the main document head
+            const headStyles = doc.head.querySelectorAll('style, link[rel="stylesheet"]');
+            headStyles.forEach(styleEl => {
+              document.head.appendChild(styleEl.cloneNode(true));
+            });
+            
+            // Re-execute any scripts in the loaded content
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(script => {
+              const newScript = document.createElement('script');
+              if (script.src) {
+                newScript.src = script.src;
+              } else {
+                newScript.textContent = script.textContent;
+              }
+              document.head.appendChild(newScript);
+              script.remove();
+            });
+            
+            console.log('Contenido de consultas públicas cargado exitosamente');
+          })
+          .catch(error => {
+            console.error('Error loading consultas públicas content:', error);
+            container.innerHTML = `
+              <div style="text-align: center; padding: 40px; color: #666;">
+                <h3>Error al cargar las consultas públicas</h3>
+                <p>Por favor, inténtalo de nuevo más tarde.</p>
+              </div>
+            `;
+          });
+    }
+
+    // Función para configurar los listeners de los elementos del sidebar
+    function setupSidebarListeners() {
+        // Remover listeners existentes
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.replaceWith(item.cloneNode(true));
         });
-    });
+
+        // Añadir nuevos listeners a todos los elementos del sidebar
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                // Remover clase active de todos los elementos del sidebar activo
+                const currentSidebarItems = getCurrentSidebarItems();
+                currentSidebarItems.forEach(i => i.classList.remove('active'));
+                
+                // Añadir clase active al elemento clickeado
+                this.classList.add('active');
+                
+                const targetId = this.getAttribute('data-target');
+                handleSectionChange(targetId);
+            });
+        });
+    }
+
+    // Configurar listeners iniciales
+    setupSidebarListeners();
 
     // Mostrar la sección activa inicial y cargarla si es el Boletín
     const initialActiveItem = document.querySelector('.sidebar-item.active');
@@ -4073,7 +4432,7 @@ document.head.appendChild(styleSheet);
     });
 
     // Set up event listener for editSuscription buttons - both in the sidebar and content area
-    document.querySelectorAll('#editSuscription, #editSuscription2, #editSuscription3').forEach(button => {
+    document.querySelectorAll('#editSuscription, #editSuscription2, #editSuscription3, #editSuscriptionConsultas').forEach(button => {
       button.addEventListener('click', function(e) {
         e.preventDefault();
         // Show subscription container instead of redirecting
