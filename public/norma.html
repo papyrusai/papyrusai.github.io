@@ -150,6 +150,12 @@
           margin-bottom: 20px;
           position: relative;
         }
+        
+        /* Wrapper for textarea to contain the button */
+        .textarea-wrapper {
+          position: relative;
+          width: 100%;
+        }
         .input-button-container > * {
             margin-bottom: 10px; /* Adds spacing between elements */
         }
@@ -157,8 +163,8 @@
         /* Style for the custom prompt submit button */
         #sendCustomPrompt {
             position: absolute;
-            bottom: 120px;
-            right: 1%;
+            bottom: 12px;
+            right: 12px;
             background-color: var(--text-color);
             color: white;
             border: none;
@@ -171,7 +177,7 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 10;
+            z-index: 15;
         }
         
         #sendCustomPrompt:hover {
@@ -218,7 +224,7 @@
           display: flex;
           justify-content: space-between;
           padding: 10px 15px;
-          background-color: #f8f8f8;
+          background-color: #ffffff;
           cursor: pointer;
         }
 
@@ -246,20 +252,44 @@
           font-weight: bold;
         }
 
-        /* Etiquetas personalizadas selector */
-        #etiquetasSelectorContainer {
-            margin-top: 15px;
+        /* Dropdown para selección de agentes */
+        .analysis-dropdown {
+            display: none;
+            position: relative;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            animation: dropdownSlide 0.3s ease-out;
+        }
+
+        @keyframes dropdownSlide {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .dropdown-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .etiquetas-list {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            justify-content: center;
+            margin-bottom: 16px;
         }
 
         .etiqueta-btn {
             background: #f2f2f2;
             border: 1px solid #dcdcdc;
             color: #455862;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: 14px;
             font-size: 14px;
             cursor: pointer;
@@ -274,6 +304,34 @@
             background: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
+        }
+
+        .start-analysis-btn {
+            background: transparent;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .start-analysis-btn:hover {
+            background: var(--text-color);
+            color: white;
+        }
+
+        .start-analysis-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Hidden class for original etiquetas selector */
+        #etiquetasSelectorContainer {
+            display: none;
         }
 
         /* ---------- STATUS WORKFLOW ---------- */
@@ -404,8 +462,10 @@
            <!-- <label for="userPrompt">Custom Prompt:</label> --> </div>
              <div class="input-button-container">
 
+<div class="textarea-wrapper">
 <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Escribe aquí para analizar la norma..." spellcheck="false"></textarea>
 <button id="sendCustomPrompt" title="Enviar consulta personalizada">↑</button>
+</div>
 <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
     <button id="analyzeButton" class="analisis-impacto">
         <i class="fa fa-file-text-o icon"></i>
@@ -420,6 +480,16 @@
         <span>Riesgos y oportunidades</span>
     </button>
 </div>
+
+<!-- Dropdown para selección de agentes -->
+<div id="analysisDropdown" class="analysis-dropdown">
+    <div class="dropdown-title">Selecciona agentes</div>
+    <div id="etiquetasList" class="etiquetas-list">
+        <!-- Las etiquetas se llenarán dinámicamente -->
+    </div>
+    <button id="startAnalysisBtn" class="start-analysis-btn">Empezar análisis</button>
+</div>
+
 </div>
     <div id="analysisResult"></div>
 
@@ -454,7 +524,12 @@
         const userPromptInput = document.getElementById('userPrompt');
         const analysisStatusDiv = document.getElementById('analysisStatus');
         const statusTextSpan = analysisStatusDiv.querySelector('.shimmer-text');
+        const analysisDropdown = document.getElementById('analysisDropdown');
+        const etiquetasList = document.getElementById('etiquetasList');
+        const startAnalysisBtn = document.getElementById('startAnalysisBtn');
         let statusTimeouts = [];
+        let currentAnalysisType = null;
+        let activeAnalysisButton = null;
 
         // Get the document ID from the URL (you can change this if you pass it differently)
         const urlParams = new URLSearchParams(window.location.search);
@@ -593,8 +668,106 @@
             });
         }
 
+        // Function to show analysis dropdown with agent selection
+        function showAnalysisDropdown(analysisType, buttonElement) {
+            currentAnalysisType = analysisType;
+            activeAnalysisButton = buttonElement;
+            
+            // Reset any active button state
+            document.querySelectorAll('.analisis-impacto').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Set this button as active
+            buttonElement.classList.add('active');
+            
+            // Populate etiquetas list
+            const etiquetasData = window.getEtiquetasData ? window.getEtiquetasData() : {};
+            etiquetasList.innerHTML = '';
+            
+            if (etiquetasData && Object.keys(etiquetasData).length > 0) {
+                Object.keys(etiquetasData).forEach(etiqueta => {
+                    const btn = document.createElement('button');
+                    btn.className = 'etiqueta-btn';
+                    btn.textContent = etiqueta;
+                                        btn.addEventListener('click', () => {
+                        const isAlreadySelected = btn.classList.contains('selected');
+                        
+                        // Toggle selection
+                        etiquetasList.querySelectorAll('.etiqueta-btn').forEach(b => b.classList.remove('selected'));
+                        
+                        const startBtn = document.getElementById('startAnalysisBtn');
+                        const analysisTypeText = {
+                            'summary': 'resumen',
+                            'checklist': 'cuadro de obligaciones', 
+                            'risks': 'riesgos y oportunidades'
+                        };
+                        
+                        if (isAlreadySelected) {
+                            // Deselect - reset to generic
+                            if (window.setSelectedEtiqueta) {
+                                window.setSelectedEtiqueta(null, null);
+                            }
+                            if (startBtn) {
+                                startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} genérico`;
+                            }
+                        } else {
+                            // Select this etiqueta
+                            btn.classList.add('selected');
+                            
+                            // Update global selection
+                            if (window.setSelectedEtiqueta) {
+                                window.setSelectedEtiqueta(etiqueta, etiquetasData[etiqueta]);
+                            }
+                            
+                            // Update start button text to show personalized
+                            if (startBtn) {
+                                startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} personalizado`;
+                            }
+                        }
+                    });
+                    etiquetasList.appendChild(btn);
+                });
+            } else {
+                const noEtiquetasMsg = document.createElement('div');
+                noEtiquetasMsg.style.color = '#999';
+                noEtiquetasMsg.style.fontStyle = 'italic';
+                noEtiquetasMsg.textContent = 'No hay agentes disponibles para este documento';
+                etiquetasList.appendChild(noEtiquetasMsg);
+            }
+            
+            // Reset start button text - initially shows "genérico"
+            const analysisTypeText = {
+                'summary': 'resumen',
+                'checklist': 'cuadro de obligaciones', 
+                'risks': 'riesgos y oportunidades'
+            };
+            startAnalysisBtn.textContent = `Generar ${analysisTypeText[analysisType] || 'análisis'} genérico`;
+            
+            // Show dropdown
+            analysisDropdown.style.display = 'block';
+        }
+
+        // Function to hide analysis dropdown
+        function hideAnalysisDropdown() {
+            analysisDropdown.style.display = 'none';
+            // Reset active button state
+            document.querySelectorAll('.analisis-impacto').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            currentAnalysisType = null;
+            activeAnalysisButton = null;
+        }
+
         // Function to handle all analysis requests
         function performAnalysis(promptType, buttonElement) {
+            // Validate buttonElement
+            if (!buttonElement || typeof buttonElement.innerHTML === 'undefined') {
+                console.error('Error: buttonElement is null or invalid in performAnalysis');
+                alert('Error: Elemento de botón no válido. Por favor, inténtalo de nuevo.');
+                return;
+            }
+            
             analysisResultDiv.textContent = ''; // Clear previous results
             analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
             
@@ -654,6 +827,8 @@ ${bloqueContexto}
 
 Lee el siguiente documento PDF y genera un checklist de obligaciones:
 
+IMPORTANTE: Ten en cuenta la etiqueta personalizada seleccionada. Si el *perfil regulatorio* indica que la empresa es una **consultora** o un **despacho de abogados**, el checklist debe estar orientado a los **clientes** de la empresa que estén afectados por dicha etiqueta, no a la empresa directamente.
+
 INSTRUCCIONES CRÍTICAS DE FORMATO DE SALIDA  
 1. **OBLIGATORIO – JSON estricto:** responde SIEMPRE con un objeto JSON válido.  
 2. **Esquema único:** el objeto JSON debe tener UNA SOLA clave llamada \`html_response\`, cuyo valor sea un string que contenga SOLO el fragmento HTML.  
@@ -684,6 +859,13 @@ REQUERIMIENTOS DEL CONTENIDO HTML
                 userPrompt = `Eres un socio de un despacho de abogados en España. Analiza la norma dentro de <PDF></PDF> y extrae riesgos, oportunidades para la empresa y servicios que el despacho puede ofrecer.
 
 ${bloqueContexto}
+
+=== Indicaciones adicionales (contextualización por tipo de empresa) ===
+• Si el *perfil regulatorio* indica que la empresa es una **empresa regulada** (por ejemplo, entidad financiera, aseguradora, eléctrica, etc.), genera **únicamente** los riesgos y oportunidades que afectan a **esa empresa**.  
+  – Prioriza siempre la **etiqueta personalizada seleccionada**; si no se seleccionó ninguna, haz el análisis genérico sobre la norma.  
+• Si el perfil indica que la empresa es un **despacho de abogados** o **consultora**, divide la respuesta en DOS grandes bloques diferenciados:  
+  A) **Riesgos y oportunidades para clientes** (centrado en los clientes afectados por la etiqueta seleccionada; si no hay etiqueta, hazlo genérico) con sub-apartados 1. *Riesgos para clientes* y 2. *Oportunidades para clientes*.  
+  B) **Riesgos y oportunidades para servicios profesionales** (oportunidades comerciales para la propia firma: captación de clientes, nuevos servicios, notificaciones proactivas, etc.).
 
 === Formato de salida ===
 • Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
@@ -819,7 +1001,7 @@ ${bloqueContexto}
                     analysisResultDiv.style.display = 'block'; // Show the analysis result div
                     
                     showFeedbackSection();
-                }, 1300); // Wait for status completion animation (800 + 500)
+                }, 1300); // Wait for status completion animation
             })
             .catch(error => {
                 console.error('Error analyzing norma:', error);
@@ -876,43 +1058,20 @@ ${bloqueContexto}
                         // Expose profile getter globally
                         window.getPerfilRegulatorio = () => perfilRegulatorioUser;
                         window.getDefinicionEtiqueta = (et) => definicionesMap[et] || '';
-                        if (etiquetasData && Object.keys(etiquetasData).length > 0) {
-                            const selectorContainer = document.createElement('div');
-                            selectorContainer.id = 'etiquetasSelectorContainer';
-
-                            let selectedEtiquetaName = null;
-                            let selectedEtiquetaData = null;
-
-                            Object.keys(etiquetasData).forEach(etiqueta => {
-                                const btn = document.createElement('button');
-                                btn.className = 'etiqueta-btn';
-                                btn.textContent = etiqueta;
-                                btn.addEventListener('click', () => {
-                                    // Remove previous selection styles
-                                    selectorContainer.querySelectorAll('.etiqueta-btn').forEach(b => b.classList.remove('selected'));
-                                    // Toggle selection
-                                    btn.classList.add('selected');
-                                    selectedEtiquetaName = etiqueta;
-                                    selectedEtiquetaData = etiquetasData[etiqueta];
-                                });
-                                selectorContainer.appendChild(btn);
-                            });
-
-                            // Insert selector just below analysis buttons container (input-button-container)
-                            const inputBtnContainer = document.querySelector('.input-button-container');
-                            if (inputBtnContainer) {
-                                inputBtnContainer.appendChild(selectorContainer);
-                            }
-
-                            // Expose selected data to performAnalysis via closure
-                            window.getSelectedEtiquetaContext = () => {
-                                if (!selectedEtiquetaName) return null;
-                                return { name: selectedEtiquetaName, data: selectedEtiquetaData };
-                            };
-                        } else {
-                            // Ensure helper returns null if no etiquetas
-                            window.getSelectedEtiquetaContext = () => null;
-                        }
+                        
+                        // Expose etiquetas data and selection functions globally
+                        let selectedEtiquetaName = null;
+                        let selectedEtiquetaData = null;
+                        
+                        window.getEtiquetasData = () => etiquetasData || {};
+                        window.setSelectedEtiqueta = (name, data) => {
+                            selectedEtiquetaName = name;
+                            selectedEtiquetaData = data;
+                        };
+                        window.getSelectedEtiquetaContext = () => {
+                            if (!selectedEtiquetaName) return null;
+                            return { name: selectedEtiquetaName, data: selectedEtiquetaData };
+                        };
                         /* ==================================================================== */
                     }
                     pageLoaderOverlay.style.display = 'none';
@@ -924,17 +1083,32 @@ ${bloqueContexto}
                     pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
                 });
 
-        // Add click handlers for each button
+        // Add click handlers for each button - now show dropdown instead of direct analysis
         analyzeButton.addEventListener('click', () => {
-            performAnalysis('summary', analyzeButton);
+            showAnalysisDropdown('summary', analyzeButton);
         });
 
         checklistButton.addEventListener('click', () => {
-            performAnalysis('checklist', checklistButton);
+            showAnalysisDropdown('checklist', checklistButton);
         });
 
         risksButton.addEventListener('click', () => {
-            performAnalysis('risks', risksButton);
+            showAnalysisDropdown('risks', risksButton);
+        });
+
+        // Add click handler for start analysis button
+        startAnalysisBtn.addEventListener('click', () => {
+            if (currentAnalysisType && activeAnalysisButton && activeAnalysisButton.innerHTML) {
+                // Store references before hiding dropdown (which resets them)
+                const analysisType = currentAnalysisType;
+                const buttonElement = activeAnalysisButton;
+                
+                hideAnalysisDropdown();
+                performAnalysis(analysisType, buttonElement);
+            } else {
+                console.error('Error: activeAnalysisButton is null or invalid');
+                alert('Error: No se pudo identificar el botón de análisis. Por favor, inténtalo de nuevo.');
+            }
         });
             
 
@@ -1021,6 +1195,16 @@ ${bloqueContexto}
             }
             // Inicializar los listeners
             setupFeedbackListeners();
+
+            // Add click outside to close dropdown
+            document.addEventListener('click', function(event) {
+                if (!analysisDropdown.contains(event.target) && 
+                    !analyzeButton.contains(event.target) && 
+                    !checklistButton.contains(event.target) && 
+                    !risksButton.contains(event.target)) {
+                    hideAnalysisDropdown();
+                }
+            });
 
         function startStatusWorkflow() {
             clearStatusWorkflow();
