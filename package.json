@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@alenaksu/json-viewer": "^0.3.4",
+    "@google/genai": "^1.6.0",
     "@mongodb-js/charts-embed-dom": "^3.2.1",
     "@sendgrid/mail": "^8.1.5",
     "bcryptjs": "^3.0.2",

@@ -993,6 +993,119 @@
             margin-right: 10px;
          }
 
+         /* Edit context styles */
+         #configuracion-iframe-container .context-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+         }
+
+         #configuracion-iframe-container .edit-context-btn {
+            background: transparent;
+            border: none;
+            color: var(--dark-color);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+         }
+
+         #configuracion-iframe-container .edit-context-btn:hover {
+            background: rgba(69,88,98,0.1);
+         }
+
+         #configuracion-iframe-container .edit-context-controls {
+            display: flex;
+            gap: 10px;
+         }
+
+         #configuracion-iframe-container .cancel-edit-btn {
+            background: transparent;
+            border: 1px solid var(--dark-color);
+            color: var(--dark-color);
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+         }
+
+         #configuracion-iframe-container .cancel-edit-btn:hover {
+            background: rgba(69,88,98,0.1);
+         }
+
+         #configuracion-iframe-container .save-edit-btn {
+            background: var(--dark-color);
+            border: none;
+            color: white;
+            border-radius: 16px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+         }
+
+         #configuracion-iframe-container .save-edit-btn:hover {
+            background: #0a1f2a;
+         }
+
+         #configuracion-iframe-container .save-edit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+         }
+
+         /* Editable table styles */
+         #configuracion-iframe-container .summary-table.editing td:nth-child(2) {
+            padding: 4px;
+         }
+
+         #configuracion-iframe-container .summary-table.editing .editable-field {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: 15px;
+            color: var(--text-color);
+            font-family: inherit;
+         }
+
+         #configuracion-iframe-container .summary-table.editing .editable-field:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(4,219,141,0.15);
+         }
+
+         /* Editable profile styles */
+         #configuracion-iframe-container .regulatory-summary.editing {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px;
+         }
+
+         #configuracion-iframe-container .regulatory-summary.editing .editable-profile {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-color);
+            font-family: inherit;
+            resize: vertical;
+            height: 600px;
+         }
+
+         #configuracion-iframe-container .regulatory-summary.editing .editable-profile:focus {
+            box-shadow: none;
+         }
+
     /* --- Align contexto & agentes content same as fuentes --- */
     #configuracion-iframe-container #contexto-content,
     #configuracion-iframe-container #agentes-content {
@@ -1031,6 +1144,58 @@
       color: #ef6c00;
       border: 1px solid #ff9800;
     } */
+
+    /* ✅ ESTILOS COMPLETOS PARA WARNING ICON DE EXTRACCIÓN WEB */
+    #configuracion-iframe-container .web-warning-icon {
+      color: #ff9800 !important; /* ✅ Color naranja visible */
+      margin-left: 8px;
+      font-size: 16px !important; /* ✅ Tamaño visible */
+      cursor: pointer;
+      transition: color 0.2s ease;
+      position: relative;
+      display: inline-block !important; /* ✅ Asegurar que sea visible */
+      opacity: 1 !important; /* ✅ Totalmente opaco */
+      visibility: visible !important; /* ✅ Totalmente visible */
+    }
+    
+    #configuracion-iframe-container .web-warning-icon:hover {
+      color: #f57c00 !important; /* ✅ Color hover más oscuro */
+    }
+    
+    /* ✅ CREAR TOOLTIP PERSONALIZADO SIN USAR ATTR(TITLE) */
+    #configuracion-iframe-container .web-warning-icon::after {
+      content: "No se pudo acceder a la página web, por favor, revisa el URL compartido y prueba de nuevo";
+      position: absolute;
+      background: #333;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: normal;
+      word-wrap: break-word;
+      z-index: 1000;
+      left: calc(100% + 40px);
+      top: 50%;
+      transform: translateY(-50%);
+      width: 240px;
+      min-height: 80px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      line-height: 1.4;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      text-align: left;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
+    }
+    
+    /* ✅ MOSTRAR TOOLTIP AL HOVER */
+    #configuracion-iframe-container .web-warning-icon:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
   </style>
 </head>
 <body>
@@ -1096,8 +1261,17 @@
             <button id="configuraCoberturaBtn" class="configura-cobertura-btn">
                 Configura tu cobertura legal <i class="fas fa-arrow-right" style="float: right;"></i>
             </button>
-            <h3 class="summary-title">Información de empresa</h3>
-            <table class="summary-table">
+            <div class="context-header">
+                <h3 class="summary-title">Información de empresa</h3>
+                <button id="editContextBtn" class="edit-context-btn">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <div id="editContextControls" class="edit-context-controls" style="display: none;">
+                    <button id="cancelEditBtn" class="cancel-edit-btn">Cancelar</button>
+                    <button id="saveEditBtn" class="save-edit-btn">Guardar</button>
+                </div>
+            </div>
+            <table class="summary-table" id="contextTable">
                 <tbody>
                     <!-- Rows will be injected by JS -->
                 </tbody>
@@ -2482,12 +2656,26 @@
       });
     }
 
+    // Store original data for edit functionality
+    let originalContextData = {};
+
     function renderFinalView(data) {
         const tableBody = document.querySelector('#profile-summary-view .summary-table tbody');
         const profileContent = document.getElementById('regulatory-profile-content');
         const coberturaBtn = document.getElementById('configuraCoberturaBtn');
 
         if (!tableBody || !profileContent || !coberturaBtn) return;
+        
+        // Store original data for editing
+        originalContextData = {
+            tipo_empresa: data.tipo_empresa || '',
+            sector: data.detalle_empresa?.sector || '',
+            actividad: data.detalle_empresa?.actividad || '',
+            interes: data.interes || '',
+            tamaño_empresa: data.tamaño_empresa || '',
+            web: data.web || '',
+            perfil_regulatorio: data.perfil_regulatorio || ''
+        };
         
         // Siempre mostrar el botón de cobertura
         coberturaBtn.style.display = 'block';
@@ -2504,23 +2692,219 @@
         tableBody.innerHTML = '';
         profileContent.innerHTML = '';
 
-        const createRow = (variable, valor) => {
+        const createRow = (variable, valor, fieldKey) => {
             if (!valor || valor.trim() === '') return '';
-            return `<tr><td>${variable}</td><td>${valor}</td></tr>`;
+            let displayValue = fieldKey === 'web' ? `<a href="${valor}" target="_blank">${valor}</a>` : valor;
+            
+            // ✅ MEJORA 2: Agregar warning icon para web si hay errores de extracción
+            if (fieldKey === 'web' && data.website_extraction_status && !data.website_extraction_status.success) {
+                // ✅ Agregar warning icon solo si hubo error de extracción
+                const warningIcon = `<span class="web-warning-icon">&#9888;</span>`; /* ⚠️ */
+                displayValue += ` ${warningIcon}`;
+            } else if (fieldKey === 'web') {
+                // ✅ No warning icon needed for web field (successful extraction or no status)
+                console.log('✅ No warning icon needed for web field');
+            }
+            
+            return `<tr data-field="${fieldKey}"><td>${variable}</td><td class="field-value">${displayValue}</td></tr>`;
         };
 
         let tableHtml = '';
-        tableHtml += createRow('Tipo de Empresa', data.tipo_empresa);
+        tableHtml += createRow('Tipo de Empresa', data.tipo_empresa, 'tipo_empresa');
         if (data.detalle_empresa) {
-            tableHtml += createRow('Sector', data.detalle_empresa.sector);
-            tableHtml += createRow('Actividad', data.detalle_empresa.actividad);
+            tableHtml += createRow('Sector', data.detalle_empresa.sector, 'sector');
+            tableHtml += createRow('Actividad', data.detalle_empresa.actividad, 'actividad');
         }
-        tableHtml += createRow('Interés', data.interes);
-        tableHtml += createRow('Tamaño Empresa', data.tamaño_empresa);
-        tableHtml += createRow('Web', data.web ? `<a href="${data.web}" target="_blank">${data.web}</a>` : '');
+        tableHtml += createRow('Interés', data.interes, 'interes');
+        tableHtml += createRow('Tamaño Empresa', data.tamaño_empresa, 'tamaño_empresa');
+        tableHtml += createRow('Web', data.web, 'web');
         tableBody.innerHTML = tableHtml;
 
         profileContent.innerHTML = data.perfil_regulatorio || '<p>No se ha generado un perfil regulatorio.</p>';
+        
+        // Initialize edit functionality
+        initializeContextEdit();
+    }
+
+    function initializeContextEdit() {
+        const editBtn = document.getElementById('editContextBtn');
+        const editControls = document.getElementById('editContextControls');
+        const cancelBtn = document.getElementById('cancelEditBtn');
+        const saveBtn = document.getElementById('saveEditBtn');
+        const contextTable = document.getElementById('contextTable');
+        const profileContent = document.getElementById('regulatory-profile-content');
+
+        if (!editBtn || !editControls || !cancelBtn || !saveBtn || !contextTable || !profileContent) return;
+
+        editBtn.addEventListener('click', () => enterEditMode());
+        cancelBtn.addEventListener('click', () => exitEditMode());
+        saveBtn.addEventListener('click', () => saveContextChanges());
+
+        function enterEditMode() {
+            editBtn.style.display = 'none';
+            editControls.style.display = 'flex';
+            contextTable.classList.add('editing');
+            profileContent.classList.add('editing');
+
+                         // Convert table cells to inputs
+             const tableRows = contextTable.querySelectorAll('tbody tr');
+             tableRows.forEach(row => {
+                 const fieldKey = row.dataset.field;
+                 const valueCell = row.querySelector('.field-value');
+                 if (valueCell && fieldKey) {
+                     const currentValue = getPlainTextValue(originalContextData[fieldKey] || '');
+                     
+                     // Create text input for all fields
+                     const inputElement = document.createElement('input');
+                     inputElement.type = 'text';
+                     inputElement.className = 'editable-field';
+                     inputElement.value = currentValue;
+                     
+                     // Add placeholder text for guidance
+                     if (fieldKey === 'tipo_empresa') {
+                         inputElement.placeholder = 'Ej: Consultora, Despacho, Empresa Regulada, etc.';
+                     } else if (fieldKey === 'interes') {
+                         inputElement.placeholder = 'Ej: Energía, Construcción, Agrícola, Financiero, etc.';
+                     } else if (fieldKey === 'tamaño_empresa') {
+                         inputElement.placeholder = 'Ej: 0-20 empleados, 20-100 empleados, etc.';
+                     } else if (fieldKey === 'web') {
+                         inputElement.placeholder = 'Ej: https://www.ejemplo.com';
+                     } else if (fieldKey === 'sector') {
+                         inputElement.placeholder = 'Ej: Tecnología, Consultoría, etc.';
+                     } else if (fieldKey === 'actividad') {
+                         inputElement.placeholder = 'Ej: Desarrollo de software, Asesoría legal, etc.';
+                     }
+                     
+                     valueCell.innerHTML = '';
+                     valueCell.appendChild(inputElement);
+                 }
+             });
+
+            // Convert profile content to textarea
+            const currentProfileContent = profileContent.innerHTML;
+            profileContent.innerHTML = `<textarea class="editable-profile">${getPlainTextValue(originalContextData.perfil_regulatorio)}</textarea>`;
+        }
+
+        function exitEditMode() {
+            editBtn.style.display = 'flex';
+            editControls.style.display = 'none';
+            contextTable.classList.remove('editing');
+            profileContent.classList.remove('editing');
+
+            // Restore original values
+            const tableRows = contextTable.querySelectorAll('tbody tr');
+            tableRows.forEach(row => {
+                const fieldKey = row.dataset.field;
+                const valueCell = row.querySelector('.field-value');
+                if (valueCell && fieldKey) {
+                    const originalValue = originalContextData[fieldKey] || '';
+                    let displayValue = fieldKey === 'web' && originalValue ? 
+                        `<a href="${originalValue}" target="_blank">${originalValue}</a>` : originalValue;
+                    
+                    // ✅ Restaurar warning icon si había error de extracción web
+                    if (fieldKey === 'web' && originalContextData.website_extraction_status && !originalContextData.website_extraction_status.success) {
+                        const warningIcon = `<span class="web-warning-icon">&#9888;</span>`;
+                        displayValue += ` ${warningIcon}`;
+                    }
+                    
+                    valueCell.innerHTML = displayValue;
+                }
+            });
+
+            // Restore profile content
+            profileContent.innerHTML = originalContextData.perfil_regulatorio || '<p>No se ha generado un perfil regulatorio.</p>';
+        }
+
+                 async function saveContextChanges() {
+             try {
+                 saveBtn.disabled = true;
+                 saveBtn.innerHTML = '<div class="button-spinner"></div>';
+                 saveBtn.style.width = saveBtn.offsetWidth + 'px'; // Prevent button resize
+
+                // Collect updated data
+                const updatedData = {};
+                const detalleEmpresa = {};
+                
+                const tableRows = contextTable.querySelectorAll('tbody tr');
+                tableRows.forEach(row => {
+                    const fieldKey = row.dataset.field;
+                    const input = row.querySelector('.editable-field');
+                    if (input && fieldKey) {
+                        const value = input.value.trim();
+                        if (fieldKey === 'sector' || fieldKey === 'actividad') {
+                            detalleEmpresa[fieldKey] = value;
+                        } else {
+                            updatedData[fieldKey] = value;
+                        }
+                    }
+                });
+
+                // Add detalle_empresa if it has content
+                if (Object.keys(detalleEmpresa).length > 0) {
+                    updatedData.detalle_empresa = detalleEmpresa;
+                }
+
+                // Get updated profile content
+                const profileTextarea = profileContent.querySelector('.editable-profile');
+                if (profileTextarea) {
+                    updatedData.perfil_regulatorio = profileTextarea.value.trim();
+                }
+
+                // Send to server
+                const response = await fetch('/api/update-user-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save changes');
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Update original data
+                    Object.assign(originalContextData, {
+                        ...updatedData,
+                        sector: detalleEmpresa.sector || originalContextData.sector,
+                        actividad: detalleEmpresa.actividad || originalContextData.actividad
+                    });
+
+                    // Exit edit mode and refresh display
+                    exitEditMode();
+                    
+                                         // Show success message briefly
+                     saveBtn.innerHTML = '✓ Guardado';
+                     setTimeout(() => {
+                         saveBtn.innerHTML = 'Guardar';
+                         saveBtn.disabled = false;
+                         saveBtn.style.width = 'auto'; // Reset button width
+                     }, 2000);
+                } else {
+                    throw new Error(result.error || 'Failed to save changes');
+                }
+
+                         } catch (error) {
+                 console.error('Error saving context changes:', error);
+                 alert('Error al guardar los cambios. Por favor, inténtalo de nuevo.');
+                 
+                 saveBtn.innerHTML = 'Guardar';
+                 saveBtn.disabled = false;
+                 saveBtn.style.width = 'auto'; // Reset button width
+             }
+        }
+
+        function getPlainTextValue(htmlContent) {
+            if (!htmlContent) return '';
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = htmlContent;
+            return tempDiv.textContent || tempDiv.innerText || '';
+        }
+
+        
     }
 
     function populateFuentes(cobertura_legal) {
@@ -2549,6 +2933,8 @@
                   { sigla: "DOE", nombre: "Diario Oficial de Extremadura", tipo: "fuentes-gobierno" },
                   { sigla: "BOCYL", nombre: "Boletín Oficial de Castilla y León", tipo: "fuentes-gobierno" },
                   { sigla: "BOJA", nombre: "Boletín Oficial de la Junta de Andalucía", tipo: "fuentes-gobierno" },
+                  { sigla: "BOIB", nombre: "Boletín Oficial de las Islas Baleares", tipo: "fuentes-gobierno" },
+                  { sigla: "BOPA", nombre: "Boletín Oficial del Principado de Asturias", tipo: "fuentes-gobierno" },
               ]
           },
           "Reguladores": [
@@ -2560,6 +2946,7 @@
               { sigla: "INCIBE", nombre: "Instituto Nacional de Ciberseguridad", tipo: "fuentes-reguladores" },
               { sigla: "CNMC", nombre: "Comisión Nacional de los Mercados y la Competencia", tipo: "fuentes-reguladores" },
               { sigla: "AEPD", nombre: "Agencia Española de Protección de Datos", tipo: "fuentes-reguladores" },
+              { sigla: "NIST", nombre: "National Institute of Standards and Technology", tipo: "fuentes-reguladores" },
           ],
           "Normativa en tramitación": [
             { sigla: "BOCG", nombre: "Boletín Oficial de las Cortes Generales", tipo: "fuentes-gobierno" },
@@ -3261,8 +3648,10 @@
         let val=input.value.trim();
         if(!val) return;
         if(questionKey==='web_empresa') {
-          // Always add https:// prefix for web_empresa
-          val = 'https://' + val;
+          // ✅ MEJORA 1: Solo agregar https:// si no está presente
+          if (!val.match(/^https?:\/\//i)) {
+            val = 'https://' + val;
+          }
         }
         handleAnswer(section, questionText, val);
         
@@ -3390,13 +3779,34 @@
       })
       .then(res => res.json())
       .then(data => {
+        // ✅ DEBUG: Log received data
+        console.log('📥 Received regulatory profile data:', {
+          has_html_response: !!data.html_response,
+          website_extraction_status: data.website_extraction_status
+        });
+        
         if(data && data.html_response){
-          const finalData = { ...onboardingDataToSave, perfil_regulatorio: data.html_response };
+          // ✅ MEJORA 2: Incluir estado de extracción web en finalData
+          const finalData = { 
+            ...onboardingDataToSave, 
+            perfil_regulatorio: data.html_response,
+            website_extraction_status: data.website_extraction_status || { success: true, error: null }
+          };
+          
+          // ✅ DEBUG: Log finalData being sent to renderFinalView
+          console.log('🔄 Calling renderFinalView with finalData:', {
+            has_website_extraction_status: !!finalData.website_extraction_status,
+            extraction_success: finalData.website_extraction_status?.success,
+            extraction_error: finalData.website_extraction_status?.error
+          });
           
           fetch('/api/save-regulatory-profile', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ perfil_regulatorio: data.html_response })
+            body: JSON.stringify({ 
+              perfil_regulatorio: data.html_response,
+              website_extraction_status: data.website_extraction_status
+            })
           }).catch(err => console.error('Could not save regulatory profile:', err));
           
           setTimeout(() => {
@@ -3424,5 +3834,7 @@
     }
   })();
   </script>
+  
+
 </body>
 </html>

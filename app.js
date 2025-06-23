@@ -12,6 +12,7 @@ const Fuse = require('fuse.js');
 const stripe = require('stripe')(process.env.STRIPE);
 const crypto = require('crypto'); // Add crypto import for password reset tokens
 const MongoStore = require('connect-mongo');
+const { GoogleAuth } = require('google-auth-library');
 
 // Ensure fetch is available (Node < 18 compatibility)
 if (typeof fetch === 'undefined') {
@@ -654,7 +655,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
     // Insert user name
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-    template = template.replace('{{name}}', user.name || '');
+    template = template.replace('{{name}}', getDisplayName(user.name, user.email));
 
     // CSS + script for feedback
     const feedbackScript = `
@@ -811,7 +812,7 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
 
     const usersCollection = database.collection("users");
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-    template = template.replace('{{name}}', user.name || '');
+    template = template.replace('{{name}}', getDisplayName(user.name, user.email));
 
     // Add style + feedback script
     const feedbackScript = `
@@ -903,7 +904,7 @@ app.get('/profile', async (req, res) => {
       // Preparar HTML con mensaje de error
       let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
       profileHtml = profileHtml
-        .replace('{{name}}', user.name || '')
+        .replace('{{name}}', getDisplayName(user.name, user.email))
         .replace('{{email}}', user.email || '')
         .replace('{{subindustria_map_json}}', JSON.stringify({}))
         .replace('{{industry_tags_json}}', JSON.stringify(user.industry_tags || []))
@@ -1038,6 +1039,9 @@ console.log(`Query:`, query);
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
+
+    // Excluir documentos eliminados previamente por el usuario
+    allDocuments = allDocuments.filter(doc => !(documentosEliminados && documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())));
 
     // NEW: Modified HTML generation to include collection name, cnaes, rama, and subrama
     let documentsHtml;
@@ -1251,7 +1255,7 @@ console.log(`Query:`, query);
     // Read and fill in the profile.html template
     let profileHtml = fs.readFileSync(path.join(__dirname, 'public', 'profile.html'), 'utf8');
     profileHtml = profileHtml
-      .replace('{{name}}', user.name)
+      .replace('{{name}}', getDisplayName(user.name, user.email))
       .replace('{{email}}', user.email)
       // Añadir en la sección de reemplazos (líneas 150-166):
       .replace('{{subindustria_map_json}}', JSON.stringify(user.sub_industria_map || {}))
@@ -1416,12 +1420,9 @@ app.get('/profile', async (req, res) => {
 
     // Retrieve the logged-in user
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    const documentosEliminados = user.documentos_eliminados || [];
     
-    // Obtener las etiquetas personalizadas del usuario (ahora es un objeto con etiquetas como claves)
-    const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
-    const etiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
-    
-        let formattedRegDate = "01/04/2025"; // Fecha por defecto si no se encuentra o hay error
+    let formattedRegDate = "01/04/2025"; // Fecha por defecto si no se encuentra o hay error
     if (user && user.registration_date) {
         try {
             // Intenta crear un objeto Date. MongoDB a veces devuelve string, a veces Date.
@@ -1451,6 +1452,13 @@ app.get('/profile', async (req, res) => {
     const userIndustries = user.industry_tags || [];
     const userRamas = user.rama_juridicas || [];
     const userRangos = user.rangos || [];
+    
+    // Etiquetas personalizadas del usuario (pueden llegar como array o como objeto)
+    const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
+    // Convertir a array de claves para facilitar los filtros posteriores
+    const etiquetasKeys = Array.isArray(userEtiquetasPersonalizadas)
+      ? userEtiquetasPersonalizadas
+      : Object.keys(userEtiquetasPersonalizadas);
     
     // Extraer boletines de cobertura_legal (con compatibilidad para formatos antiguos)
     let userBoletines = [];
@@ -1487,7 +1495,7 @@ if (etiquetasKeys.length === 0) {
   
   // Reemplazar el mensaje de error con el nuevo mensaje personalizado
   profileHtml = profileHtml
-    .replace('{{name}}', user.name || '')
+    .replace('{{name}}', getDisplayName(user.name, user.email))
     .replace('{{email}}', user.email || '')
     .replace('{{subindustria_map_json}}', JSON.stringify(userSubIndustriaMap))
     .replace('{{industry_tags_json}}', JSON.stringify(userIndustries))
@@ -1605,6 +1613,9 @@ if (etiquetasKeys.length === 0) {
       const dateB = new Date(b.anio, b.mes - 1, b.dia);
       return dateB - dateA;
     });
+
+    // Excluir documentos eliminados previamente por el usuario
+    allDocuments = allDocuments.filter(doc => !(documentosEliminados && documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())));
 
     // Generar HTML para los documentos
     // 2. Modificación para el mensaje cuando no hay resultados pero hay documentos que cumplen con otros filtros
@@ -1864,7 +1875,7 @@ if (etiquetasKeys.length === 0) {
     }
 
     profileHtml = profileHtml
-      .replace('{{name}}', user.name || '')
+      .replace('{{name}}', getDisplayName(user.name, user.email))
       .replace('{{email}}', user.email || '')
       .replace('{{subindustria_map_json}}', JSON.stringify(userSubIndustriaMap))
       .replace('{{industry_tags_json}}', JSON.stringify(userIndustries))
@@ -2241,8 +2252,13 @@ const queryWithoutEtiquetas = {
   ]
 };
     // 6) Filtrar documentos por rango y etiquetas personalizadas
+    const documentosEliminados = user.documentos_eliminados || [];
     const filteredDocuments = [];
     for (const doc of allDocuments) {
+      // Omitir los documentos que el usuario haya eliminado previamente
+      if (documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())) {
+        continue;
+      }
       // Rango filter (must match user rangos if specified)
       const docRango = doc.rango_titulo || "Indefinido";
       let passesRangoFilter = true;
@@ -2819,16 +2835,38 @@ app.get('/logout', (req, res) => {
       const database = client.db("papyrus");
       const collection = database.collection(collectionName); // Dynamically use the collection
 
+      // Obtener el perfil_regulatorio del usuario autenticado
+      const usersCollection = database.collection("users");
+      let perfilRegulatorioUser = null;
+      let etiquetasDefiniciones = {};
+      if (req.user && req.user._id) {
+        const userDoc = await usersCollection.findOne({ _id: new ObjectId(req.user._id) }, { projection: { perfil_regulatorio: 1, etiquetas_personalizadas: 1 } });
+        perfilRegulatorioUser = userDoc?.perfil_regulatorio || null;
+        etiquetasDefiniciones = userDoc?.etiquetas_personalizadas || {};
+      }
+
       const document = await collection.findOne({ _id: documentId });
       if (document) {
-        res.json({
-          short_name: document.short_name,
-          collectionName: collectionName, // Este es el nombre de la colección de MongoDB que ya estabas enviando
-          rango_titulo: document.rango_titulo, // Nuevo: Añade esta línea
-          url_pdf: document.url_pdf // Nuevo: Añade esta línea
-      });   
-      
-      } else {
+        // Extraer solo las etiquetas personalizadas que correspondan al usuario autenticado
+        let userEtiquetasPersonalizadas = null;
+        if (document.etiquetas_personalizadas && req.user && req.user._id) {
+          const userId = req.user._id.toString();
+          if (document.etiquetas_personalizadas[userId]) {
+            userEtiquetasPersonalizadas = document.etiquetas_personalizadas[userId];
+          }
+        }
+
+         res.json({
+           short_name: document.short_name,
+           collectionName: collectionName, // Este es el nombre de la colección de MongoDB que ya estabas enviando
+           rango_titulo: document.rango_titulo, // Nuevo: Añade esta línea
+           url_pdf: document.url_pdf, // Nuevo: Añade esta línea
+           user_etiquetas_personalizadas: userEtiquetasPersonalizadas, // Enviar solo las etiquetas del usuario para esta norma
+           perfil_regulatorio: perfilRegulatorioUser, // Perfil regulatorio del usuario para personalizar el análisis
+           user_etiquetas_definiciones: etiquetasDefiniciones // Definiciones globales de las etiquetas
+       });   
+       
+       } else {
           res.status(404).json({ error: 'Document not found' });
       }
   } catch (err) {
@@ -4237,7 +4275,9 @@ app.get('/api/get-user-data', ensureAuthenticated, async (req, res) => {
       detalle_empresa: user.detalle_empresa || null,
       interes: user.interes || null,
       tamaño_empresa: user.tamaño_empresa || null,
-      perfil_regulatorio: user.perfil_regulatorio || null
+      perfil_regulatorio: user.perfil_regulatorio || null,
+      // ✅ AGREGAR CAMPO DE ESTADO DE EXTRACCIÓN WEB
+      website_extraction_status: user.website_extraction_status || { success: true, error: null }
     });
     
     await client.close();
@@ -4246,6 +4286,21 @@ app.get('/api/get-user-data', ensureAuthenticated, async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Helper function to extract name from email if name is empty
+function getDisplayName(userName, userEmail) {
+  if (userName && userName.trim() !== '') {
+    return userName;
+  }
+  
+  if (userEmail && userEmail.includes('@')) {
+    const emailPrefix = userEmail.split('@')[0];
+    // Capitalize first letter and return
+    return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1).toLowerCase();
+  }
+  
+  return '';
+}
 
 // Nueva API para actualizar los datos del usuario
 app.post('/api/update-user-data', ensureAuthenticated, async (req, res) => {
@@ -4267,7 +4322,16 @@ app.post('/api/update-user-data', ensureAuthenticated, async (req, res) => {
       'rangos',
       'accepted_email',  // Add accepted_email as an allowed field
       'limit_agentes',
-      'limit_fuentes'
+      'limit_fuentes',
+      // Context fields
+      'tipo_empresa',
+      'detalle_empresa',
+      'interes',
+      'tamaño_empresa',
+      'web',
+      'perfil_regulatorio',
+      // ✅ AGREGAR CAMPO DE ESTADO DE EXTRACCIÓN WEB
+      'website_extraction_status'
     ];
 
     // Filtrar solo los campos permitidos
@@ -5198,14 +5262,41 @@ app.post('/api/regulatory-profile', async (req, res) => {
 
     const companyWebsite = answers['web_empresa'] || '';
 
-    // Helper: Extract raw text from a website (basic & lightweight)
+    // ✅ HELPER MEJORADO: Extraer texto de sitio web con mejor manejo de errores
     async function extractWebsiteText(url) {
       try {
-        // Ensure URL has protocol
-        const fullUrl = /^(https?:)?\/\//i.test(url) ? url : `https://${url}`;
-        const resp = await fetch(fullUrl, { timeout: 10000 });
-        if (!resp.ok) return '';
+        // ✅ MEJORA 1: Verificar si ya tiene protocolo antes de agregarlo
+        let fullUrl = url;
+        if (!url.match(/^https?:\/\//i)) {
+          fullUrl = `https://${url}`;
+        }
+        
+        // ✅ MEJORA: Timeout correcto para Node.js usando AbortController
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const resp = await fetch(fullUrl, { 
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!resp.ok) {
+          console.warn(`Website fetch failed with status: ${resp.status} for URL: ${fullUrl}`);
+          return { success: false, content: '', error: `HTTP ${resp.status}` };
+        }
+        
         const html = await resp.text();
+        
+        // Verificar si el contenido HTML está vacío o es muy corto
+        if (!html || html.trim().length < 50) {
+          console.warn(`Website content too short or empty for URL: ${fullUrl}`);
+          return { success: false, content: '', error: 'Contenido vacío' };
+        }
+        
         // Remove script/style tags and collapse whitespace
         const cleaned = html
           .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
@@ -5214,20 +5305,133 @@ app.post('/api/regulatory-profile', async (req, res) => {
           .replace(/&[a-z]+;/gi, ' ') // basic entity removal
           .replace(/\s+/g, ' ') // collapse whitespace
           .trim();
-        return cleaned.slice(0, 5000); // limit to 5k chars
+          
+        const finalContent = cleaned.slice(0, 5000); // limit to 5k chars
+        
+        // Verificar si después de la limpieza queda contenido útil
+        if (finalContent.length < 100) {
+          console.warn(`Cleaned content too short for URL: ${fullUrl}`);
+          return { success: false, content: finalContent, error: 'Contenido insuficiente' };
+        }
+        
+        return { success: true, content: finalContent, error: null };
       } catch (err) {
-        console.error('Error fetching website content', err);
-        return '';
+        console.error('Error fetching website content:', err.message, 'for URL:', url);
+        return { success: false, content: '', error: err.message };
       }
     }
 
-    const websiteExtract = companyWebsite ? await extractWebsiteText(companyWebsite) : '';
+    // ✅ MEJORA 2: Detectar errores de extracción web y crear metadata
+    let websiteExtract = '';
+    let websiteExtractionStatus = { success: true, error: null };
+    
+    if (companyWebsite) {
+      console.log('🌐 Attempting to extract website content from:', companyWebsite);
+      const extractResult = await extractWebsiteText(companyWebsite);
+      websiteExtract = extractResult.content;
+      websiteExtractionStatus = {
+        success: extractResult.success,
+        error: extractResult.error
+      };
+      
+      // ✅ DEBUG: Log extraction status
+      console.log('🌐 Website extraction result:', {
+        url: companyWebsite,
+        success: websiteExtractionStatus.success,
+        error: websiteExtractionStatus.error,
+        contentLength: websiteExtract.length
+      });
+    }
 
-    // Build user prompt
-    const infoPairs = Object.entries(answers).map(([k, v]) => `- ${k}: ${v}`).join('\n');
-    const userPrompt = `A continuación encontrarás la información recopilada de una empresa a través de un cuestionario breve. Con estos datos y la siguiente información adicional obtenida de su página web oficial '${companyWebsite}', genera un PERFIL REGULATORIO completo y conciso que pueda servir como contexto para modelos posteriores (agentes) que evaluarán el impacto de normativas en dicha empresa.\n\nInformación del cuestionario:\n${infoPairs}\n\nExtracto de la página web (texto plano):\n${websiteExtract}`;
+    // ✅ FILTRAR "Captación de clientes | Marketing" del prompt pero mantenerlo en answers
+    const answersForPrompt = { ...answers };
+    if (answersForPrompt['motivacion_principal'] === 'Captación de clientes | Marketing') {
+      // Eliminar esta motivación específica del prompt pero mantenerla en el objeto original
+      delete answersForPrompt['motivacion_principal'];
+    }
 
-    const systemInstructions = `Eres un asistente experto en regulación y compliance. Debes devolver únicamente un objeto JSON VÁLIDO que contenga la clave 'html_response'. El valor de 'html_response' será un string HTML con exactamente 3 párrafos (<p>).\n1. Primer párrafo: contexto global de la empresa (sector, número de empleados, misión, fuente principal de ingresos, etc.).\n2. Segundo párrafo: descripción del departamento/sector, actividad económica o área práctica en la que opera la compañía.\n3. Tercer párrafo: principales necesidades regulatorias o preocupaciones detectadas.\nNo uses markdown, sólo HTML dentro del string. No incluyas ningún texto fuera del objeto JSON.`;
+    // ✅ CONSTRUIR PROMPT MEJORADO CON MANEJO ESPECÍFICO DE VARIABLES
+    function buildEnhancedPrompt(answersData, websiteExtract, companyWebsite) {
+      // Extraer variables específicas del objeto answers
+      const tipoEmpresa = answersData['tipo_empresa'] || 'No especificado';
+      const motivacionPrincipal = answersData['motivacion_principal'] || 'No especificado';
+      const numEmpleados = answersData['num_empleados'] || 'No especificado';
+      const webEmpresa = answersData['web_empresa'] || companyWebsite || 'No especificado';
+      
+      // Variables específicas según tipo de empresa
+      let contextoEspecifico = '';
+      
+      if (tipoEmpresa === 'despacho') {
+        const origenInteres = answersData['pregunta_origen_interes'] || 'No especificado';
+        const areaPractica = answersData['pregunta_area_practica'] || 'No especificado';
+        contextoEspecifico = `\n- Origen del interés regulatorio: ${origenInteres}\n- Área práctica principal: ${areaPractica}`;
+      } else if (tipoEmpresa === 'consultora') {
+        const especializacion = answersData['pregunta_especializacion'] || 'No especificado';
+        contextoEspecifico = `\n- Especialización: ${especializacion}`;
+      } else if (tipoEmpresa === 'empresa_regulada') {
+        const sector = answersData['pregunta_sector'] || 'No especificado';
+        const actividad = answersData['pregunta_actividad'] || 'No especificado';
+        contextoEspecifico = `\n- Sector: ${sector}\n- Actividad específica: ${actividad}`;
+      }
+      
+      // Construir lista de información organizada
+      const infoOrganizada = `INFORMACIÓN BÁSICA:
+- Tipo de empresa: ${tipoEmpresa}
+- Motivación principal: ${motivacionPrincipal}
+- Tamaño de empresa: ${numEmpleados}
+- Sitio web: ${webEmpresa}${contextoEspecifico}
+
+INFORMACIÓN ADICIONAL DEL CUESTIONARIO:`;
+      
+      // Agregar otras variables que no sean las ya incluidas
+      const variablesExcluidas = ['tipo_empresa', 'motivacion_principal', 'num_empleados', 'web_empresa', 'pregunta_origen_interes', 'pregunta_area_practica', 'pregunta_especializacion', 'pregunta_sector', 'pregunta_actividad'];
+      const otrasVariables = Object.entries(answersData)
+        .filter(([k, v]) => !variablesExcluidas.includes(k) && v && v.trim() !== '')
+        .map(([k, v]) => `- ${k}: ${v}`)
+        .join('\n');
+      
+      const infoCompleta = otrasVariables ? `${infoOrganizada}\n${otrasVariables}` : infoOrganizada;
+      
+      return `A continuación encontrarás la información recopilada de una empresa a través de un cuestionario breve. Con estos datos y la siguiente información adicional obtenida de su página web oficial, genera un PERFIL REGULATORIO completo y conciso que pueda servir como contexto para modelos posteriores (agentes) que evaluarán el impacto de normativas en dicha empresa.
+
+${infoCompleta}
+
+EXTRACTO DE LA PÁGINA WEB (texto plano):
+${websiteExtract || 'No se pudo obtener información de la página web'}`;
+    }
+
+    // Build user prompt con la nueva función
+    const userPrompt = buildEnhancedPrompt(answersForPrompt, websiteExtract, companyWebsite);
+
+    const systemInstructions = `Eres un asistente experto en regulación y compliance. Debes devolver **únicamente** un objeto JSON **válido** con la clave **"html_response"**.  
+El valor de "html_response" debe ser **un string HTML con exactamente tres párrafos \`<p>\`**, sin ningún texto ni etiqueta adicional fuera de ellos.
+
+1. **Párrafo 1 – Contexto corporativo**  
+   Describe el contexto global de la empresa combinando la información del cuestionario y del extracto web proporcionados por el usuario:  
+   • sector o industria principal · número (o rango) de empleados · misión/propósito · fuente principal de ingresos.  
+   Añade, además, la **actividad económica o área práctica principal** (por ejemplo, "Bancario–Financiero", "Energía renovable solar", "Mercantil M&A", etc.).
+
+2. **Párrafo 2 – Uso de Reversa**  
+   Explica **cómo** y **para qué** el cliente utiliza la plataforma Reversa, según su \`tipo_empresa\` (indicado en la información del cuestionario):  
+   • **consultora | despacho** → Reversa se usa para monitorizar novedades regulatorias sectoriales y asesorar a múltiples clientes sobre los cambios y su impacto.  
+   • **empresa_regulada** → Reversa se emplea internamente para vigilar normas que afectan directamente a su actividad económica y garantizar cumplimiento.  
+   • **otro** → Redacta una explicación genérica del valor de Reversa como radar normativo adaptado a sus necesidades.  
+   Menciona brevemente la motivación práctica (p. ej., "seguimiento regulatorio general", "normativa en tramitación", etc.) cuando aporte claridad.
+
+3. **Párrafo 3 – Objetivo / interés regulatorio**  
+   Resume el **objetivo principal de interés regulatorio** del cliente a partir de \`motivacion_principal\`, campos específicos del cuestionario y hallazgos del extracto web. Indica las áreas normativas críticas, riesgos u oportunidades que pretenden controlar (p. ej., nuevas directivas europeas, licitaciones públicas, subvenciones, ESG, etc.).
+   Si no encuentras las áreas normativas críticas, no inventes información, pero tampoco expreses que se desconocen las áreas normativas, simplemnte omite esa información
+
+**Reglas adicionales**
+
+* Usa únicamente HTML dentro del string; **no** utilices Markdown.  
+* Si algún dato no está disponible, omítelo sin inventar información.  
+* Respeta siempre el formato:  
+  \`\`\`json
+  {
+    "html_response": "<p>…</p><p>…</p><p>…</p>"
+  }
+  \`\`\``;
 
     /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
     const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
@@ -5262,11 +5466,20 @@ app.post('/api/regulatory-profile', async (req, res) => {
 
     const data = await response.json();
     const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
+    
     let parsed;
     try {
-      // The API is now requested to return JSON directly, so parsing should be direct.
       parsed = JSON.parse(aiContent);
+      
+      // ✅ AGREGAR METADATA DE EXTRACCIÓN WEB AL RESPONSE
+      parsed.website_extraction_status = websiteExtractionStatus;
+      
+      // ✅ DEBUG: Log response being sent
+      console.log('📤 Sending response with website_extraction_status:', {
+        success: parsed.website_extraction_status.success,
+        error: parsed.website_extraction_status.error
+      });
+      
     } catch (err) {
       console.error('Failed to parse Gemini response:', err, aiContent);
       return res.status(500).json({ error: 'Invalid AI response format' });
@@ -5318,7 +5531,7 @@ app.post('/api/save-onboarding-data', ensureAuthenticated, async (req, res) => {
 // New API to save the generated regulatory profile
 app.post('/api/save-regulatory-profile', ensureAuthenticated, async (req, res) => {
   try {
-    const { perfil_regulatorio } = req.body;
+    const { perfil_regulatorio, website_extraction_status } = req.body;
     if (!perfil_regulatorio) {
       return res.status(400).json({ error: 'perfil_regulatorio is required' });
     }
@@ -5328,9 +5541,15 @@ app.post('/api/save-regulatory-profile', ensureAuthenticated, async (req, res) =
     const database = client.db("papyrus");
     const usersCollection = database.collection("users");
 
+    // ✅ GUARDAR TAMBIÉN ESTADO DE EXTRACCIÓN WEB
+    const updateData = { perfil_regulatorio };
+    if (website_extraction_status) {
+      updateData.website_extraction_status = website_extraction_status;
+    }
+
     await usersCollection.updateOne(
       { _id: new ObjectId(req.user._id) },
-      { $set: { perfil_regulatorio } }
+      { $set: updateData }
     );
 
     await client.close();
@@ -5851,179 +6070,36 @@ Ejemplo de estructura exacta (sin usar estos valores literales):
   } catch (error) {
     console.error('Error in generate-sector-agent endpoint:', error);
     res.status(500).json({ 
-      success: false, 
+      success: false,
       error: 'Internal server error' 
     });
   }
 });
 
-// Generate Custom Agent endpoint
-app.post('/api/generate-custom-agent', ensureAuthenticated, async (req, res) => {
-  try {
-    const { customData } = req.body;
-    
-    if (!customData) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Custom data is required' 
-      });
-    }
-
-    console.log(`Generating custom agent for user: ${req.user._id}`);
-    console.log(`Custom data:`, customData);
-
-    /* ---------------- GET USER REGULATORY PROFILE ---------------- */
-    const client = new MongoClient(uri, mongodbOptions);
-    await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
-
-    // Get current user data to access perfil_regulatorio
-    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-    if (!user) {
-      await client.close();
-      return res.status(404).json({ 
-        success: false, 
-        error: 'User not found' 
-      });
-    }
-
-    const perfilRegulatorio = user.perfil_regulatorio || '';
-
-    /* ---------------- BUILD DETAILED PROMPT WITH CUSTOM TEMPLATE ---------------- */
-    const prompt = `INSTRUCCIÓN PRINCIPAL:
-Generar **una única etiqueta jurídica** junto a su definición para clasificar documentos legales. Ten en cuenta el contexto de la empresa usuaria de la plataforma: ${perfilRegulatorio}
-
-Eres un experto jurídico en derecho español y de la Unión Europea; tus respuestas serán específicas para la normativa aplicable al contenido descrito.
-
-DESCRIPCIÓN DEL CONTENIDO A RASTREAR (proporcionado por el usuario):
-${customData.description}
-
-TAREAS:
-1. ETIQUETA PERSONALIZADA:
-   - Basándote en la información anterior, genera **solo una etiqueta** que cumpla TODAS estas reglas:
-     • Si la etiqueta pudiera resultar muy general, adáptala al contexto específico del contenido a rastrear.  
-     • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, etc.).  
-     • La etiqueta debe ser precisa y abarcar exactamente lo que el usuario quiere monitorizar, evitando redundancias con categorías genéricas.  
-     • La definición debe cubrir tanto disposiciones generales como específicas que puedan afectar al contenido que se quiere rastrear.
-
-OBJETIVO DE SALIDA:
-Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
-
-Ejemplo de estructura exacta (sin usar estos valores literales):
-{
-  "etiqueta_personalizada": {
-    "Nombre descriptivo de la etiqueta jurídica": "Definición completa y precisa de qué abarca esta etiqueta en el contexto regulatorio"
+// -----------------------------------------------------------------------------
+// ENDPOINT PARA QUE EL USUARIO MARQUE UN DOCUMENTO COMO ELIMINADO
+// -----------------------------------------------------------------------------
+app.post('/delete-document', ensureAuthenticated, async (req, res) => {
+  const { collectionName, documentId } = req.body;
+  if (!collectionName || !documentId) {
+    return res.status(400).json({ error: 'Parámetros requeridos: collectionName, documentId' });
   }
-}`;
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db('papyrus');
+    const usersCollection = database.collection('users');
 
-    // Log the prompt being sent to the LLM
-    console.log('=== CUSTOM PROMPT SENT TO LLM ===');
-    console.log(prompt);
-    console.log('=== END CUSTOM PROMPT ===');
-
-    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      await client.close();
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Google Gemini API key not configured' 
-      });
-    }
-
-    const systemInstructions = `Eres un experto jurídico especializado en derecho español y de la Unión Europea. Tu tarea es generar etiquetas jurídicas precisas para clasificar documentos legales. Devuelve ÚNICAMENTE un objeto JSON válido con la estructura especificada en las instrucciones.`;
-
-    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
-    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
-
-    const body = {
-      systemInstruction: {
-        parts: [{ text: systemInstructions }]
-      },
-      contents: [
-        { role: 'user', parts: [{ text: prompt }] }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.7,
-        topP: 0.95,
-        topK: 64,
-        maxOutputTokens: 1024
-      }
-    };
-
-    const response = await fetch(geminiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
-      await client.close();
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Error generating custom agent with AI' 
-      });
-    }
-
-    const data = await response.json();
-    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    console.log('=== CUSTOM LLM RESPONSE ===');
-    console.log(aiContent);
-    console.log('=== END CUSTOM LLM RESPONSE ===');
-
-    let parsedAgent;
-    try {
-      parsedAgent = JSON.parse(aiContent);
-    } catch (err) {
-      console.error('Failed to parse Gemini response:', err, aiContent);
-      await client.close();
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Invalid AI response format' 
-      });
-    }
-
-    // Validate the response structure
-    if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') {
-      console.error('Invalid agent structure:', parsedAgent);
-      await client.close();
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Invalid agent structure from AI' 
-      });
-    }
-
-    // Merge new agent with existing etiquetas_personalizadas
-    const existingEtiquetas = user.etiquetas_personalizadas || {};
-    const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
-
-    // Update user document
     await usersCollection.updateOne(
       { _id: new ObjectId(req.user._id) },
-      { $set: { etiquetas_personalizadas: newEtiquetas } }
+      { $addToSet: { documentos_eliminados: { coleccion: collectionName, id: documentId } } }
     );
 
-    await client.close();
-
-    console.log('Custom agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
-
-    res.json({
-      success: true,
-      agent: parsedAgent,
-      message: 'Custom agent generated and saved successfully'
-    });
-
+    res.json({ success: true });
   } catch (error) {
-    console.error('Error in generate-custom-agent endpoint:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Internal server error' 
-    });
+    console.error('Error en /delete-document:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  } finally {
+    await client.close();
   }
 });
-

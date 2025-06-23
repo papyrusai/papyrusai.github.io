@@ -36,6 +36,7 @@
             border-radius: 20px;
             text-align: left;
             display: none;
+            background-color: #ffffff;
         }
 
         body {
@@ -61,16 +62,50 @@
             100% { transform: rotate(360deg); }
         }
         .analisis-impacto {
-              background-color: var(--text-color);
-              color: white;
-              padding: 5px 10px;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-              margin-top: 2%;
-              font-size: 14px;
-              text-decoration: none;
-          }
+            background: transparent;
+            color: var(--text-color);
+            padding: 8px 16px;
+            border: 1px solid #999;
+            border-radius: 16px;
+            cursor: pointer;
+            margin-top: 2%;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .analisis-impacto .icon {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+        
+        .analisis-impacto:hover {
+            background-color: var(--text-color);
+            border: none;
+            color: white;
+           /* transform: translateY(-1px);*/
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .analisis-impacto:hover .icon {
+            color: white;
+        }
+        
+        /* Styling for active analysis buttons */
+        .analisis-impacto.active {
+            background-color: var(--text-color);
+            color: white;
+            border: 1px solid var(--text-color);
+        }
+        
+        .analisis-impacto.active .icon {
+            color: white;
+        }
           .container-norma {
             max-width: 1100px; 
             margin: 40px auto; 
@@ -122,7 +157,7 @@
         /* Style for the custom prompt submit button */
         #sendCustomPrompt {
             position: absolute;
-            bottom: 50px;
+            bottom: 120px;
             right: 1%;
             background-color: var(--text-color);
             color: white;
@@ -146,11 +181,6 @@
         /* When textarea is focused, ensure the button is visible */
         .user-prompt:focus + #sendCustomPrompt {
             opacity: 1;
-        }
-        
-        /* Styling for active analysis buttons */
-        .analisis-impacto.active {
-            background-color: var(--primary-color);
         }
         
         /* Table styling for checklist */
@@ -216,6 +246,122 @@
           font-weight: bold;
         }
 
+        /* Etiquetas personalizadas selector */
+        #etiquetasSelectorContainer {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .etiqueta-btn {
+            background: #f2f2f2;
+            border: 1px solid #dcdcdc;
+            color: #455862;
+            padding: 6px 12px;
+            border-radius: 14px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .etiqueta-btn:hover {
+            background: #e6e6e6;
+        }
+
+        .etiqueta-btn.selected {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* ---------- STATUS WORKFLOW ---------- */
+        #analysisStatus {
+            margin-top: 15px;
+            display: none;
+            font-size: 15px;
+            color: var(--text-color);
+            font-weight: 500;
+            align-items: center;
+            gap: 8px;
+            justify-content: flex-start; /* left align */
+            position: relative;
+            width: 100%;
+        }
+
+        #analysisStatus .spinner {
+            font-size: 16px;
+            animation: spin 2s linear infinite;
+        }
+
+        /* shimmer effect - PRECISE TEXT ONLY */
+        .shimmer-text {
+            position: relative;
+            display: inline-block;
+            color: var(--text-color);
+            overflow: hidden; /* This ensures shimmer doesn't go beyond text */
+        }
+
+        .shimmer-text::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50px; /* Start from left edge */
+            width: 50px; /* Fixed width shimmer bar */
+            height: 100%;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.8) 50%, transparent 100%);
+            animation: shimmer-slide 3s infinite;
+        }
+
+        @keyframes shimmer-slide {
+          0% { 
+            left: -50px; 
+          }
+          100% { 
+            left: 100%; 
+          }
+        }
+
+        /* slide-in subtle animation */
+        .slide {
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            0% { opacity: 0; transform: translateX(-8px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Analysis result render animation */
+        .analysis-render {
+            animation: renderFromTop 0.8s ease-out;
+        }
+
+        @keyframes renderFromTop {
+            0% { 
+                opacity: 0; 
+                transform: translateY(-20px);
+                max-height: 0;
+            }
+            100% { 
+                opacity: 1; 
+                transform: translateY(0);
+                max-height: none;
+            }
+        }
+
+        /* Completed status animation */
+        .status-completed {
+            animation: statusComplete 0.5s ease-out;
+        }
+
+        @keyframes statusComplete {
+            0% { opacity: 1; }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-10px); }
+        }
+
     </style>
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
@@ -261,12 +407,25 @@
 <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Escribe aquí para analizar la norma..." spellcheck="false"></textarea>
 <button id="sendCustomPrompt" title="Enviar consulta personalizada">↑</button>
 <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-    <button id="analyzeButton" class="analisis-impacto">📝 Realizar resumen</button>
-    <button id="checklistButton" class="analisis-impacto">✅ Cuadro de obligaciones</button>
-    <button id="risksButton" class="analisis-impacto">⚠️ Riesgos y oportunidades</button>
+    <button id="analyzeButton" class="analisis-impacto">
+        <i class="fa fa-file-text-o icon"></i>
+        <span>Realizar resumen</span>
+    </button>
+    <button id="checklistButton" class="analisis-impacto">
+        <span class="icon">☐</span>
+        <span>Cuadro de obligaciones</span>
+    </button>
+    <button id="risksButton" class="analisis-impacto">
+        <span class="icon">⚠</span>
+        <span>Riesgos y oportunidades</span>
+    </button>
 </div>
 </div>
     <div id="analysisResult"></div>
+
+    <!-- Status workflow indicator -->
+    <div id="analysisStatus"><i class="fa fa-spinner spinner"></i> <span class="shimmer-text"></span></div>
+
 <!-- Sección de Feedback -->
 <div id="feedbackSection" style="display: none;">
   <div id="feedbackToggle">
@@ -293,6 +452,9 @@
         const loaderDiv = document.getElementById('loader');
         const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
         const userPromptInput = document.getElementById('userPrompt');
+        const analysisStatusDiv = document.getElementById('analysisStatus');
+        const statusTextSpan = analysisStatusDiv.querySelector('.shimmer-text');
+        let statusTimeouts = [];
 
         // Get the document ID from the URL (you can change this if you pass it differently)
         const urlParams = new URLSearchParams(window.location.search);
@@ -339,14 +501,21 @@
         // Function for custom prompt analysis
         function performCustomAnalysis(customPrompt, buttonElement) {
             analysisResultDiv.textContent = ''; // Clear previous results
+            analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
+            
+            // Disable all buttons during analysis
+            setAnalysisButtonsState(true);
+            
             const originalButtonText = buttonElement.innerHTML;
             buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; // Show loading icon
-            buttonElement.disabled = true;
             
             // Reset any active button state
             document.querySelectorAll('.analisis-impacto').forEach(btn => {
                 btn.classList.remove('active');
             });
+            
+            // Start status workflow for custom analysis
+            if (typeof startStatusWorkflow === 'function') startStatusWorkflow();
             
             fetch('/api/analyze-norma', {
                 method: 'POST',
@@ -371,24 +540,68 @@
             .then(data => {
                 // Process the response
                 const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                buttonElement.innerHTML = originalButtonText; // Restore original button text
-                buttonElement.disabled = false;
-                analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-                analysisResultDiv.style.display = 'block'; // Show the analysis result div
-                showFeedbackSection();
+                
+                // Complete the status workflow with success animation
+                completeStatusWorkflow();
+                
+                // After status animation completes, show results with animation
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalButtonText; // Restore original button text
+                    
+                    // Enable all buttons again
+                    setAnalysisButtonsState(false);
+                    
+                    // Set content and show with animation
+                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
+                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                    
+                    showFeedbackSection();
+                }, 1300); // Wait for status completion animation
             })
             .catch(error => {
                 console.error('Error analyzing norma:', error);
-                buttonElement.innerHTML = originalButtonText; // Restore original button text
-                buttonElement.disabled = false;
-                analysisResultDiv.textContent = 'Error al analizar la norma.';
-                analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                
+                // Complete the status workflow first, then show error
+                clearStatusWorkflow();
+                
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalButtonText; // Restore original button text
+                    
+                    // Enable all buttons again
+                    setAnalysisButtonsState(false);
+                    
+                    analysisResultDiv.textContent = 'Error al analizar la norma. Por favor, inténtalo de nuevo.';
+                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
+                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                }, 1300); // Wait for status completion animation
+            });
+        }
+
+        // Function to disable/enable analysis buttons
+        function setAnalysisButtonsState(disabled) {
+            const buttons = [analyzeButton, checklistButton, risksButton, sendCustomPromptButton];
+            buttons.forEach(btn => {
+                btn.disabled = disabled;
+                if (disabled) {
+                    btn.style.opacity = '0.6';
+                    btn.style.cursor = 'not-allowed';
+                } else {
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }
             });
         }
 
         // Function to handle all analysis requests
         function performAnalysis(promptType, buttonElement) {
             analysisResultDiv.textContent = ''; // Clear previous results
+            analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
+            
+            // Disable all buttons during analysis
+            setAnalysisButtonsState(true);
+            
+            if (typeof startStatusWorkflow === 'function') startStatusWorkflow();
             const originalButtonText = buttonElement.innerHTML;
             buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
             
@@ -402,9 +615,42 @@
             
             let userPrompt;
             
+            // Obtener contexto de etiqueta seleccionada, si existe
+            const etiquetaContext = window.getSelectedEtiquetaContext ? window.getSelectedEtiquetaContext() : null;
+            let contextoEtiquetaTexto = '';
+            if (etiquetaContext) {
+                const { name, data } = etiquetaContext;
+                let definicion = '';
+                let nivelImpacto = '';
+                if (typeof data === 'string') {
+                    definicion = data;
+                } else if (data && typeof data === 'object') {
+                    definicion = data.explicacion || data.definicion || '';
+                    nivelImpacto = data.nivel_impacto || '';
+                }
+                const definicionGlobal = window.getDefinicionEtiqueta ? window.getDefinicionEtiqueta(name) : '';
+                if (!definicion || definicion.trim() === '') {
+                    definicion = definicionGlobal;
+                }
+                contextoEtiquetaTexto = `\n=== CONTEXTO ESPECÍFICO DEL USUARIO – ETIQUETA SELECCIONADA ===\nEtiqueta: "${name}"\nDefinición global: ${definicionGlobal || 'No especificada'}\nDescripción / explicación específica: ${definicion || 'No especificada'}\nGrado de impacto en este documento: ${nivelImpacto || 'No especificado'}\n`;
+            }
+
+            // Obtener perfil regulatorio del usuario
+            const perfilRegulatorio = window.getPerfilRegulatorio ? window.getPerfilRegulatorio() : '';
+            let contextoPerfilTexto = '';
+            if (perfilRegulatorio && perfilRegulatorio.trim() !== '') {
+                contextoPerfilTexto = `\n=== CONTEXTO – PERFIL REGULATORIO DE LA EMPRESA ===\n${perfilRegulatorio}\n`;
+            }
+
+            // Unir ambos contextos (perfil + etiqueta) para inyectarlos antes del resto del prompt
+            const bloqueContexto = `${contextoPerfilTexto}${contextoEtiquetaTexto}\n`;
+            console.log(bloqueContexto);
+            
             // Set the specific prompt based on button type
             if (promptType === 'checklist') {
-                userPrompt = `Eres un abogado senior.
+                userPrompt = `Eres un abogado senior especializado en compliance. Utiliza el contexto proporcionado para adaptar tu análisis.
+
+${bloqueContexto}
 
 Lee el siguiente documento PDF y genera un checklist de obligaciones:
 
@@ -436,6 +682,8 @@ REQUERIMIENTOS DEL CONTENIDO HTML
 **RECUERDA:** Tu salida debe ser únicamente el objeto JSON como el del ejemplo anterior, sin nada antes ni después. El string HTML dentro de \`html_response\` no debe contener saltos de línea innecesarios, solo el HTML puro.`;
             } else if (promptType === 'risks') {
                 userPrompt = `Eres un socio de un despacho de abogados en España. Analiza la norma dentro de <PDF></PDF> y extrae riesgos, oportunidades para la empresa y servicios que el despacho puede ofrecer.
+
+${bloqueContexto}
 
 === Formato de salida ===
 • Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
@@ -484,29 +732,51 @@ REQUERIMIENTOS DEL CONTENIDO HTML
 • Estilo claro y preciso, sin opiniones personales ni especulación.
 • Evalúa de forma realista si existen verdaderas oportunidades antes de incluir las tablas correspondientes.`;
             } else if (promptType === 'summary') {
-                // Fixed summary prompt (no longer using user input)
+                const tieneEtiqueta = !!etiquetaContext;
+                const tituloImpacto = tieneEtiqueta ? `Impacto en ${etiquetaContext.name}` : 'Aspectos clave y puntos importantes';
+
                 userPrompt = `Eres un abogado experto. Analiza el documento PDF y genera un resumen claro y conciso.
+
+${bloqueContexto}
 
 === Formato de salida ===
 • Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
-• El string HTML solo puede incluir <h2>, <p>, <ul>, <li>, <b>. Nada más.  
-• Sin saltos de línea innecesarios ni Markdown.
+• El string HTML puede incluir <h2>, <p>, <ul>, <li>, <b>, <hr>. Nada más.  
+• Usa <hr> (o dos saltos de línea) para separar visualmente secciones. No utilices Markdown.
 
-=== Contenido HTML requerido (≤ 300 palabras) ===
-<h2>Resumen de la Norma</h2>
-<p>Introducción (≤ 50 palabras) con el título completo, fecha de publicación y entrada en vigor.</p>
-<p>Propósito principal de la norma y su alcance.</p>
-<p>Aspectos clave y puntos importantes a considerar.</p>
+=== Contenido HTML requerido (≤ 600 palabras) ===
+<h2 style="font-size:1.3em; margin-bottom:12px;">Resumen de la Norma</h2>
+<table style="width:100%; border-collapse:collapse; font-size:0.95em;">
+  <tr style="background:#f8f8f8;">
+    <th style="text-align:left; padding:6px 8px; color:#0b2431;">Concepto</th>
+    <th style="text-align:left; padding:6px 8px; color:#455862;">Detalle</th>
+  </tr>
+  <tr><td style="padding:6px 8px;">Título completo</td><td style="padding:6px 8px;"></td></tr>
+  <tr style="background:#fafafa;"><td style="padding:6px 8px;">Fecha de publicación</td><td style="padding:6px 8px;"></td></tr>
+  <tr><td style="padding:6px 8px;">Entrada en vigor</td><td style="padding:6px 8px;"></td></tr>
+  <tr style="background:#fafafa;"><td style="padding:6px 8px;">Ámbito de aplicación</td><td style="padding:6px 8px;"></td></tr>
+</table>
+<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
+<h3>Propósito principal de la norma</h3>
+<p>Contenido de propósito principal de la norma</p>	
+<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
+<h3>Sujetos afectados</h3>
+<p>Contenido de sujetos afectados</p>
+<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
+<h2 style="font-size:1.3em;">${tituloImpacto}</h2>
+<h3>Implicaciones generales</h3>
+<h3>Aspectos clave y puntos importantes a considerar.</h3>
 <ul>
-<li>Principales disposiciones (máximo 5 puntos)</li>
+  <li style="margin:6px 0;">Principales disposiciones (máximo 5 puntos)</li>
 </ul>
-<p>Ámbito de aplicación y sujetos afectados.</p>
-<p>Conclusión con implicaciones generales.</p>
+<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
+<h3>Próximos pasos recomendados</h3>
 
 === Criterios analíticos ===
-• Basado únicamente en el PDF; cita artículos concretos.
+• Basado únicamente en el PDF y el contexto proporcionado; cita artículos concretos.
 • Estilo claro y preciso, sin opiniones personales ni especulación.`;
             }
+            console.log(userPrompt);
 
             fetch('/api/analyze-norma', {
                 method: 'POST',
@@ -531,18 +801,43 @@ REQUERIMIENTOS DEL CONTENIDO HTML
             .then(data => {
                 // Process the response
                 const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                buttonElement.innerHTML = originalButtonText; // Restore original button text
-                buttonElement.style.backgroundColor = ''; // Remove inline style
-                analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-                analysisResultDiv.style.display = 'block'; // Show the analysis result div
-                showFeedbackSection();
+                
+                // Complete the status workflow with success animation
+                completeStatusWorkflow();
+                
+                // After status animation completes, show results with animation
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalButtonText; // Restore original button text
+                    buttonElement.style.backgroundColor = ''; // Remove inline style
+                    
+                    // Enable all buttons again
+                    setAnalysisButtonsState(false);
+                    
+                    // Set content and show with animation
+                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
+                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
+                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                    
+                    showFeedbackSection();
+                }, 1300); // Wait for status completion animation (800 + 500)
             })
             .catch(error => {
                 console.error('Error analyzing norma:', error);
-                buttonElement.innerHTML = originalButtonText; // Restore original button text
-                buttonElement.classList.remove('active'); // Remove active state on error
-                analysisResultDiv.textContent = 'Error analyzing norma.';
-                analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                
+                // Complete the status workflow first, then show error
+                clearStatusWorkflow();
+                
+                setTimeout(() => {
+                    buttonElement.innerHTML = originalButtonText; // Restore original button text
+                    buttonElement.classList.remove('active'); // Remove active state on error
+                    
+                    // Enable all buttons again
+                    setAnalysisButtonsState(false);
+                    
+                    analysisResultDiv.textContent = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
+                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
+                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                }, 1300); // Wait for status completion animation
             });
         }
 
@@ -571,6 +866,54 @@ REQUERIMIENTOS DEL CONTENIDO HTML
                         
                         // Une las partes con ' | ', filtrando las que estén vacías o nulas
                         extraDetailsDiv.innerHTML = detailsParts.filter(part => part !== null && part !== undefined && part !== '').join(' | ');
+
+                        /* =========  NUEVO: Selector de etiquetas personalizadas  ========= */
+                        const etiquetasData = data.user_etiquetas_personalizadas;
+                        const perfilRegulatorioUser = data.perfil_regulatorio || '';
+                        // Mapa de definiciones de todas las etiquetas del usuario
+                        const definicionesMap = data.user_etiquetas_definiciones || {};
+
+                        // Expose profile getter globally
+                        window.getPerfilRegulatorio = () => perfilRegulatorioUser;
+                        window.getDefinicionEtiqueta = (et) => definicionesMap[et] || '';
+                        if (etiquetasData && Object.keys(etiquetasData).length > 0) {
+                            const selectorContainer = document.createElement('div');
+                            selectorContainer.id = 'etiquetasSelectorContainer';
+
+                            let selectedEtiquetaName = null;
+                            let selectedEtiquetaData = null;
+
+                            Object.keys(etiquetasData).forEach(etiqueta => {
+                                const btn = document.createElement('button');
+                                btn.className = 'etiqueta-btn';
+                                btn.textContent = etiqueta;
+                                btn.addEventListener('click', () => {
+                                    // Remove previous selection styles
+                                    selectorContainer.querySelectorAll('.etiqueta-btn').forEach(b => b.classList.remove('selected'));
+                                    // Toggle selection
+                                    btn.classList.add('selected');
+                                    selectedEtiquetaName = etiqueta;
+                                    selectedEtiquetaData = etiquetasData[etiqueta];
+                                });
+                                selectorContainer.appendChild(btn);
+                            });
+
+                            // Insert selector just below analysis buttons container (input-button-container)
+                            const inputBtnContainer = document.querySelector('.input-button-container');
+                            if (inputBtnContainer) {
+                                inputBtnContainer.appendChild(selectorContainer);
+                            }
+
+                            // Expose selected data to performAnalysis via closure
+                            window.getSelectedEtiquetaContext = () => {
+                                if (!selectedEtiquetaName) return null;
+                                return { name: selectedEtiquetaName, data: selectedEtiquetaData };
+                            };
+                        } else {
+                            // Ensure helper returns null if no etiquetas
+                            window.getSelectedEtiquetaContext = () => null;
+                        }
+                        /* ==================================================================== */
                     }
                     pageLoaderOverlay.style.display = 'none';
     // Fin del nuevo código
@@ -678,7 +1021,65 @@ REQUERIMIENTOS DEL CONTENIDO HTML
             }
             // Inicializar los listeners
             setupFeedbackListeners();
-        });
+
+        function startStatusWorkflow() {
+            clearStatusWorkflow();
+            console.log('[workflow] starting');
+            analysisStatusDiv.style.display = 'flex';
+            statusTextSpan.classList.remove('slide');
+            void statusTextSpan.offsetWidth;
+            statusTextSpan.textContent = 'Pensando…';
+            const steps = [
+                { text: 'Pensando…', duration: 3000 },
+                { text: 'Accediendo a la fuente oficial…', duration: 2000 },
+                { text: 'Analizando la norma…', duration: 3000 },
+                { text: 'Personalizando el análisis…', duration: null } // stays until done
+            ];
+
+            let cumulative = 0;
+            steps.forEach((step, idx) => {
+                const t = setTimeout(() => {
+                    console.log('[workflow] step', step.text);
+                    statusTextSpan.classList.remove('slide');
+                    void statusTextSpan.offsetWidth;
+                    statusTextSpan.textContent = step.text;
+                    statusTextSpan.classList.add('slide');
+                }, cumulative);
+                statusTimeouts.push(t);
+                if (step.duration) cumulative += step.duration;
+            });
+        }
+
+        function clearStatusWorkflow() {
+            statusTimeouts.forEach(t => clearTimeout(t));
+            statusTimeouts = [];
+            console.log('[workflow] cleared');
+            analysisStatusDiv.style.display = 'none';
+        }
+
+        function completeStatusWorkflow() {
+            // Cancel any pending timeouts but don't hide yet
+            statusTimeouts.forEach(t => clearTimeout(t));
+            statusTimeouts = [];
+            console.log('[workflow] completing with success');
+            
+            // Show completion status with tick
+            const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
+            spinnerIcon.className = 'fa fa-check'; // Change to tick
+            statusTextSpan.textContent = 'Análisis Finalizado';
+            
+            // Animate out after showing completion
+            setTimeout(() => {
+                analysisStatusDiv.classList.add('status-completed');
+                setTimeout(() => {
+                    analysisStatusDiv.style.display = 'none';
+                    analysisStatusDiv.classList.remove('status-completed');
+                    // Reset spinner for next time
+                    spinnerIcon.className = 'fa fa-spinner spinner';
+                }, 500); // Match animation duration
+            }, 800); // Show completed state for 800ms
+        }
+    });
 </script>
 <script>
         function toggleMenu() {

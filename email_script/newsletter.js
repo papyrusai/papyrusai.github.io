@@ -1253,15 +1253,23 @@ async function sendReportEmail(db, userStats) {
     // 1. Build Hot Accounts Summary
     let hotAccountsSummaryHTML = '';
     for (const hotAccount of hotAccounts) {
+      // Count total user etiquetas personalizadas
+      const userEtiquetasPersonalizadas = hotAccount.etiquetas_personalizadas || {};
+      const totalUserEtiquetas = Object.keys(userEtiquetasPersonalizadas).length;
+      
+      // Count etiquetas demo
+      const userEtiquetasDemo = hotAccount.etiquetas_demo || {};
+      const totalDemoEtiquetas = Object.keys(userEtiquetasDemo).length;
+      
       if (hotAccount.hasMatches) {
-        // Count unique etiquetas for this user
+        // Count unique etiquetas with matches for this user
         const etiquetaGroups = new Map();
         for (const docInfo of hotAccount.detailedMatches) {
           for (const etiqueta of docInfo.matchedEtiquetas) {
             etiquetaGroups.set(etiqueta, true);
           }
         }
-        const userEtiquetasCount = etiquetaGroups.size;
+        const userEtiquetasWithMatches = etiquetaGroups.size;
         
         // Count collections with matches
         const collectionsWithMatches = new Map();
@@ -1280,7 +1288,8 @@ async function sendReportEmail(db, userStats) {
         hotAccountsSummaryHTML += `
           <tr>
             <td style="border: 1px solid #ddd; padding: 8px;">${hotAccount.email} - ${hotAccount.company}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userEtiquetasCount}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userEtiquetasWithMatches}/${totalUserEtiquetas}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalDemoEtiquetas}</td>
             <td style="border: 1px solid #ddd; padding: 8px;">${collectionsText}</td>
           </tr>
         `;
@@ -1288,7 +1297,8 @@ async function sendReportEmail(db, userStats) {
         hotAccountsSummaryHTML += `
           <tr>
             <td style="border: 1px solid #ddd; padding: 8px;">${hotAccount.email} - ${hotAccount.company}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">0</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">0/${totalUserEtiquetas}</td>
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalDemoEtiquetas}</td>
             <td style="border: 1px solid #ddd; padding: 8px;">Sin matches</td>
           </tr>
         `;
@@ -1406,24 +1416,35 @@ async function sendReportEmail(db, userStats) {
     let usersWithMatchesSummaryHTML = '';
     let totalEmailsWithMatches = 0;
     let totalEtiquetasWithMatches = 0;
+    let totalDemoEtiquetas = 0;
     
     for (const userStat of userStats.withMatches) {
       totalEmailsWithMatches++;
       
-      // Count unique etiquetas for this user
+      // Count total user etiquetas personalizadas
+      const userEtiquetasPersonalizadas = userStat.etiquetas_personalizadas || {};
+      const totalUserEtiquetas = Object.keys(userEtiquetasPersonalizadas).length;
+      
+      // Count etiquetas demo
+      const userEtiquetasDemo = userStat.etiquetas_demo || {};
+      const userDemoCount = Object.keys(userEtiquetasDemo).length;
+      totalDemoEtiquetas += userDemoCount;
+      
+      // Count unique etiquetas with matches for this user
       const etiquetaGroups = new Map();
       for (const docInfo of userStat.detailedMatches) {
         for (const etiqueta of docInfo.matchedEtiquetas) {
           etiquetaGroups.set(etiqueta, true);
         }
       }
-      const userEtiquetasCount = etiquetaGroups.size;
-      totalEtiquetasWithMatches += userEtiquetasCount;
+      const userEtiquetasWithMatches = etiquetaGroups.size;
+      totalEtiquetasWithMatches += userEtiquetasWithMatches;
       
       usersWithMatchesSummaryHTML += `
         <tr>
           <td style="border: 1px solid #ddd; padding: 8px;">${userStat.email}</td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userEtiquetasCount}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userEtiquetasWithMatches}/${totalUserEtiquetas}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userDemoCount}</td>
         </tr>
       `;
     }
@@ -1432,6 +1453,7 @@ async function sendReportEmail(db, userStats) {
       <tr style="background-color: #f2f2f2; font-weight: bold;">
         <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
         <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalEtiquetasWithMatches}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalDemoEtiquetas}</td>
       </tr>
     `;
     
@@ -1439,15 +1461,26 @@ async function sendReportEmail(db, userStats) {
     let usersWithoutMatchesHTML = '';
     let totalEmailsWithoutMatches = 0;
     let totalEtiquetasWithoutMatches = 0;
+    let totalDemoEtiquetasWithoutMatches = 0;
     
     for (const userStat of userStats.withoutMatches) {
       totalEmailsWithoutMatches++;
-      totalEtiquetasWithoutMatches += userStat.etiquetasCount;
+      
+      // Count total user etiquetas personalizadas
+      const userEtiquetasPersonalizadas = userStat.etiquetas_personalizadas || {};
+      const totalUserEtiquetas = Object.keys(userEtiquetasPersonalizadas).length;
+      totalEtiquetasWithoutMatches += totalUserEtiquetas;
+      
+      // Count etiquetas demo
+      const userEtiquetasDemo = userStat.etiquetas_demo || {};
+      const userDemoCount = Object.keys(userEtiquetasDemo).length;
+      totalDemoEtiquetasWithoutMatches += userDemoCount;
       
       usersWithoutMatchesHTML += `
         <tr>
           <td style="border: 1px solid #ddd; padding: 8px;">${userStat.email}</td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userStat.etiquetasCount}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">0/${totalUserEtiquetas}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${userDemoCount}</td>
         </tr>
       `;
     }
@@ -1456,6 +1489,7 @@ async function sendReportEmail(db, userStats) {
       <tr style="background-color: #f2f2f2; font-weight: bold;">
         <td style="border: 1px solid #ddd; padding: 8px;">TOTAL</td>
         <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalEtiquetasWithoutMatches}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalDemoEtiquetasWithoutMatches}</td>
       </tr>
     `;
     
@@ -1569,7 +1603,8 @@ async function sendReportEmail(db, userStats) {
           <thead>
             <tr style="background-color: #f2f2f2;">
               <th style="border: 1px solid #ddd; padding: 8px;">Usuario - Empresa</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas con Match</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas (match/total)</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas demo</th>
               <th style="border: 1px solid #ddd; padding: 8px;">Colecciones con Match</th>
             </tr>
           </thead>
@@ -1595,28 +1630,30 @@ async function sendReportEmail(db, userStats) {
           <thead>
             <tr style="background-color: #f2f2f2;">
               <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Número de Etiquetas</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas (match/total)</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas demo</th>
             </tr>
           </thead>
           <tbody>
             ${usersWithMatchesSummaryHTML}
           </tbody>
         </table>
-        <p><strong>Total:</strong> ${totalEmailsWithMatches} emails, ${totalEtiquetasWithMatches} etiquetas personalizadas con match</p>
+        <p><strong>Total:</strong> ${totalEmailsWithMatches} emails, ${totalEtiquetasWithMatches} etiquetas personalizadas con match, ${totalDemoEtiquetas} etiquetas demo</p>
         
         <h3>2.2. Usuarios sin match</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
           <thead>
             <tr style="background-color: #f2f2f2;">
               <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
-              <th style="border: 1px solid #ddd; padding: 8px;">Número de Etiquetas</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas (match/total)</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiquetas demo</th>
             </tr>
           </thead>
           <tbody>
             ${usersWithoutMatchesHTML}
           </tbody>
         </table>
-        <p><strong>Total:</strong> ${totalEmailsWithoutMatches} usuarios, ${totalEtiquetasWithoutMatches} etiquetas</p>
+        <p><strong>Total:</strong> ${totalEmailsWithoutMatches} usuarios, ${totalEtiquetasWithoutMatches} etiquetas, ${totalDemoEtiquetasWithoutMatches} etiquetas demo</p>
         
         <h3>2.3. Detalle usuarios con match agentes</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
@@ -2409,7 +2446,9 @@ async function sendCollectionsReportEmail(db) {
         // Add to statistics - users without matches
         userStats.withoutMatches.push({
           email: user.email,
-          etiquetasCount: userEtiquetasKeys.length
+          etiquetasCount: userEtiquetasKeys.length,
+          etiquetas_personalizadas: user.etiquetas_personalizadas || {},
+          etiquetas_demo: user.etiquetas_demo || {}
         });
       } else {
         htmlBody = buildNewsletterHTML(
@@ -2436,6 +2475,8 @@ async function sendCollectionsReportEmail(db) {
           totalDocs: userMatchingDocsFiltered.length,
           uniqueEtiquetas: userMatchStats.size,
           matchDetails: matchDetails.join(' ; '),
+          etiquetas_personalizadas: user.etiquetas_personalizadas || {},
+          etiquetas_demo: user.etiquetas_demo || {},
           detailedMatches: userMatchingDocsFiltered.map(docObj => ({
             collectionName: docObj.collectionName,
             shortName: docObj.doc.short_name,

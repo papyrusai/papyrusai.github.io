@@ -8,6 +8,7 @@ import requests
 import io
 import pypdf
 import json
+import hashlib
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,10 +32,10 @@ else:
 # Set up the Gemini model
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-2.0-flash-lite-preview-02-05')  # Specify the correct model here
-    logging.info("Gemini model initialized successfully")  # Log initialization
+    model = genai.GenerativeModel('gemini-2.5-flash')  # Specify the correct model here
+    logging.info("Gemini model initialized successfully with gemini-2.5-flash")
 except Exception as e:
-    logging.exception(f"Error initializing Gemini model: {e}")  # Log the full exception
+    logging.exception(f"Error initializing Gemini model: {e}")
     model = None
 
 def connect_to_mongodb():
@@ -93,12 +94,38 @@ def ask_gemini(text, prompt):
         logging.error("Gemini model is not initialized. Cannot ask Gemini.")
         return None
     try:
-        logging.info(f"Sending prompt to Gemini: {prompt[:100]}...")  # Log the first 100 chars of the prompt
-        
-        response = model.generate_content(
-            f"{prompt}:\n\n{text}"
+        content_hash = hashlib.md5(f"{prompt}:{text}".encode('utf-8')).hexdigest()
+        logging.info(f"Processing content with hash: {content_hash}")
+        logging.info(f"Sending prompt to Gemini: {prompt[:100]}...")
+
+        # Use the most direct and stable configuration for determinism
+        generation_config = genai.GenerationConfig(
+            candidate_count=1,
+            temperature=0.0,
+            top_p=1.0,
+            top_k=1
         )
-        logging.info("Gemini API call successful")  # Log success
+
+        # Set safety settings to be less restrictive to reduce variability
+        safety_settings = {
+            'HARM_CATEGORY_HARASSMENT': 'BLOCK_ONLY_HIGH',
+            'HARM_CATEGORY_HATE_SPEECH': 'BLOCK_ONLY_HIGH',
+            'HARM_CATEGORY_SEXUALLY_EXPLICIT': 'BLOCK_ONLY_HIGH',
+            'HARM_CATEGORY_DANGEROUS_CONTENT': 'BLOCK_ONLY_HIGH',
+        }
+
+        logging.info(f"Using generation config: {generation_config} and safety_settings: {safety_settings}")
+
+        response = model.generate_content(
+            f"{prompt}:\n\n{text}",
+            generation_config=generation_config,
+            safety_settings=safety_settings
+        )
+        
+        logging.info("Gemini API call successful")
+        if response.text:
+            response_hash = hashlib.md5(response.text.encode('utf-8')).hexdigest()
+            logging.info(f"Response received. Length: {len(response.text)}, Hash: {response_hash}")
 
         return response.text
     except Exception as e:
