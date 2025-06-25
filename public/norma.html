@@ -420,6 +420,18 @@
             100% { opacity: 0; transform: translateY(-10px); }
         }
 
+        /* ---------- BOCG banner ---------- */
+        .bocg-banner {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 12px;
+            padding: 12px 18px;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
     </style>
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
@@ -535,6 +547,26 @@
         const urlParams = new URLSearchParams(window.location.search);
         const documentId = urlParams.get('documentId');
         const collectionName = urlParams.get('collectionName'); // Get the collection from URL
+
+        // ----- Disable impact analysis for BOCG collections -----
+        const bocgCollections = ['BOCG', 'BOCG_test'];
+        if (bocgCollections.includes(collectionName)) {
+            const impactButtons = [analyzeButton, checklistButton, risksButton];
+            impactButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+                btn.style.cursor = 'not-allowed';
+            });
+
+            // Create and insert informational banner
+            const banner = document.createElement('div');
+            banner.className = 'bocg-banner';
+            banner.textContent = 'Análisis de impacto BOCG coming soon';
+
+            // Insert banner just after the impact buttons container
+            const buttonsContainer = analyzeButton.parentElement;
+            buttonsContainer.insertAdjacentElement('afterend', banner);
+        }
 
         // Función para mostrar la sección de feedback
         function showFeedbackSection() {
