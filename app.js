@@ -1516,11 +1516,9 @@ if (etiquetasKeys.length === 0) {
   return res.send(profileHtml);
 }
 
-    // Default date range for "profile": from 1 month ago to now
+    // Default date range for "profile": from registration date to now
     const now = new Date();
-    const startDate = new Date();
-    startDate.setMonth(now.getMonth());
-    startDate.setDate(now.getDate()-1);
+    const startDate = new Date(user.registration_date || new Date());
     const endDate = now;
 
     // Obtener parámetros de búsqueda de la URL
