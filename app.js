@@ -2861,6 +2861,7 @@ app.get('/logout', (req, res) => {
            collectionName: collectionName, // Este es el nombre de la colección de MongoDB que ya estabas enviando
            rango_titulo: document.rango_titulo, // Nuevo: Añade esta línea
            url_pdf: document.url_pdf, // Nuevo: Añade esta línea
+           url_html: document.url_html, // Add url_html to the response
            user_etiquetas_personalizadas: userEtiquetasPersonalizadas, // Enviar solo las etiquetas del usuario para esta norma
            perfil_regulatorio: perfilRegulatorioUser, // Perfil regulatorio del usuario para personalizar el análisis
            user_etiquetas_definiciones: etiquetasDefiniciones // Definiciones globales de las etiquetas
@@ -2877,20 +2878,62 @@ app.get('/logout', (req, res) => {
   }
 });
 
+// New endpoint for webscraping
+app.post('/api/webscrape', ensureAuthenticated, async (req, res) => {
+  const { url } = req.body;
+  
+  if (!url) {
+    return res.status(400).json({ error: 'URL is required' });
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const html = await response.text();
+    
+    // Simple text extraction - remove HTML tags and clean up
+    const textContent = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // Remove script tags
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove style tags
+      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim();
+    
+    res.json({ text: textContent });
+  } catch (error) {
+    console.error('Error during webscraping:', error);
+    res.status(500).json({ error: 'Error during webscraping: ' + error.message });
+  }
+});
+
 // New endpoint to trigger Python script
 app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
   const documentId = req.body.documentId;
   const userPrompt = req.body.userPrompt; // Get the user's prompt from the request body
   const collectionName = req.body.collectionName; // Get the name of the collection from the request body
+  const htmlContent = req.body.htmlContent; // Optional HTML content for analysis
 
   // Path to your Python script
   const pythonScriptPath = path.join(__dirname, 'questionsMongo.py');
 
-  console.log(`Analyzing norma with documentId: ${documentId}, User Prompt: ${userPrompt}, Collection Name: ${collectionName}`); //Log the document ID
+  console.log(`Analyzing norma with documentId: ${documentId}, User Prompt: ${userPrompt}, Collection Name: ${collectionName}, HTML Content: ${htmlContent ? 'provided' : 'not provided'}`); //Log the document ID
 
   try {
+      // Pass htmlContent as 4th argument if provided
+      const args = htmlContent ? 
+        [pythonScriptPath, documentId, userPrompt, collectionName, htmlContent] :
+        [pythonScriptPath, documentId, userPrompt, collectionName];
+        
       // Spawn a new process to execute the Python script
-      const pythonProcess = spawn('python', [pythonScriptPath, documentId, userPrompt, collectionName]); // Pass documentId and userPrompt as arguments
+      const pythonProcess = spawn('python', args); // Pass documentId, userPrompt, collectionName, and optionally htmlContent as arguments
 
       // Explicitly set encoding for stdout and stderr
       pythonProcess.stdout.setEncoding('utf8');

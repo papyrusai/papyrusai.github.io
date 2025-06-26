@@ -132,25 +132,31 @@ def ask_gemini(text, prompt):
         logging.exception(f"Error querying Gemini: {e}")
         return None
 
-def main(document_id, user_prompt, collection_name): # Removed default value
+def main(document_id, user_prompt, collection_name, html_content=None): # Added html_content parameter
     """Main function to connect, retrieve PDF URL, extract text, and ask Gemini."""
     logging.info(f"Starting main function with document_id: {document_id}")
-    db, collection = connect_to_mongodb()
-    if db is None or collection is None:
-        logging.error("Failed to connect to MongoDB")
-        return
+    
+    # If HTML content is provided directly, use it instead of fetching from MongoDB
+    if html_content:
+        logging.info("Using provided HTML content for analysis")
+        text = html_content
+    else:
+        db, collection = connect_to_mongodb()
+        if db is None or collection is None:
+            logging.error("Failed to connect to MongoDB")
+            return
 
-    pdf_url = get_pdf_url_from_mongodb(db, collection_name, document_id) #Here is where we use user value
-    if not pdf_url:
-        logging.warning("No PDF URL found for document")
-        return
+        pdf_url = get_pdf_url_from_mongodb(db, collection_name, document_id) #Here is where we use user value
+        if not pdf_url:
+            logging.warning("No PDF URL found for document")
+            return
 
-    text = download_and_extract_text_from_pdf(pdf_url)
-    if not text:
-        logging.error("Failed to extract text from PDF")
-        return
+        text = download_and_extract_text_from_pdf(pdf_url)
+        if not text:
+            logging.error("Failed to extract text from PDF")
+            return
 
-    system_prompt = """Eres un Asistente Legal de primer nivel, con profundo conocimiento en leyes y normativas. Tu tarea es analizar el documento PDF proporcionado y responder a la pregunta del usuario basándote *única y exclusivamente* en la información contenida en ese PDF.
+    system_prompt = """Eres un Asistente Legal de primer nivel, con profundo conocimiento en leyes y normativas. Tu tarea es analizar el documento proporcionado (PDF o texto HTML) y responder a la pregunta del usuario basándote *única y exclusivamente* en la información contenida en ese documento.
 
 **Instrucciones Críticas de Formato de Salida:**
 1.  **OBLIGATORIO: Formato JSON Estricto:** Tu respuesta DEBE ser SIEMPRE un objeto JSON válido.
@@ -167,13 +173,13 @@ def main(document_id, user_prompt, collection_name): # Removed default value
     *   **Prohibición de Markdown (dentro del string `html_response`):** NO uses sintaxis Markdown. No `*` o `_` para énfasis (usa `<b>`), no `#` para encabezados (usa `<h2>`), no `* ` para listas (usa `<ul><li>`), no `[texto](url)`.
 
 **Contenido y Estilo de la Respuesta (para el HTML en `html_response`):**
-4.  **Basado en el PDF:** No inventes información. Si la respuesta no está en el PDF, indícalo cortésmente (ej: `<p>El documento no proporciona información específica sobre este tema.</p>`).
-5.  **Citas:** Cita referencias internas del PDF (artículos, secciones, etc.) cuando fundamentes tu respuesta.
+4.  **Basado en el documento:** No inventes información. Si la respuesta no está en el documento, indícalo cortésmente (ej: `<p>El documento no proporciona información específica sobre este tema.</p>`).
+5.  **Citas:** Cita referencias internas del documento (artículos, secciones, etc.) cuando fundamentes tu respuesta.
 6.  **Extensión:** Máximo aproximado de 300 palabras.
 7.  **Estilo "Mike Ross":** Claro, analítico, preciso, lenguaje accesible pero demostrando conocimiento.
 8.  **Resúmenes:** Si se pide un resumen, que sea preciso, ordenado y conciso.
 9.  **Sensibilidad e Implicaciones:** Al evaluar el impacto de la ley en industrias, sectores o casos concretos, utiliza la información disponible en el PDF. Mantén un nivel mínimo de sensibilidad para inferir implicaciones, pero sin sesgos.
-10. **Sin Opiniones Personales:** No ofrezcas opiniones personales ni especulaciones, realiza un análisis aséptico. Recuerda que tu respuesta debe estar respaldada por la información provista en el PDF. Cualquier tema no contemplado en el documento será declarado como "No disponible"
+10. **Sin Opiniones Personales:** No ofrezcas opiniones personales ni especulaciones, realiza un análisis aséptico. Recuerda que tu respuesta debe estar respaldada por la información provista en el documento. Cualquier tema no contemplado en el documento será declarado como "No disponible"
 
 **Ejemplo de Respuesta JSON Esperada:**
 ```json
@@ -231,6 +237,7 @@ if __name__ == "__main__":
         document_id = sys.argv[1]
         user_prompt = sys.argv[2] if len(sys.argv) > 2 else "Realiza un resumen" # added get user prompt
         collection_name = sys.argv[3] if len(sys.argv) > 3 else "BOE"
-        main(document_id,user_prompt, collection_name) # call main
+        html_content = sys.argv[4] if len(sys.argv) > 4 else None # added html_content parameter
+        main(document_id, user_prompt, collection_name, html_content) # call main with html_content
     else:
         logging.warning("No document_id provided when running directly.")

@@ -393,35 +393,110 @@
 
         /* Analysis result render animation */
         .analysis-render {
-            animation: renderFromTop 0.8s ease-out;
+            animation: renderFromTop 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
         }
 
         @keyframes renderFromTop {
             0% { 
                 opacity: 0; 
-                transform: translateY(-20px);
+                transform: translateY(-30px);
                 max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                margin-top: 0;
+                margin-bottom: 0;
+            }
+            25% {
+                opacity: 0.3;
+                transform: translateY(-15px);
+                max-height: 50px;
+            }
+            50% {
+                opacity: 0.7;
+                transform: translateY(-5px);
+                max-height: 200px;
+            }
+            75% {
+                opacity: 0.9;
+                transform: translateY(0);
+                max-height: 500px;
             }
             100% { 
                 opacity: 1; 
                 transform: translateY(0);
                 max-height: none;
+                padding-top: inherit;
+                padding-bottom: inherit;
+                margin-top: inherit;
+                margin-bottom: inherit;
             }
         }
 
         /* Completed status animation */
         .status-completed {
-            animation: statusComplete 0.5s ease-out;
+            animation: statusComplete 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         @keyframes statusComplete {
-            0% { opacity: 1; }
-            50% { opacity: 1; }
-            100% { opacity: 0; transform: translateY(-10px); }
+            0% { 
+                opacity: 1; 
+                transform: scale(1) translateY(0);
+            }
+            20% {
+                opacity: 1;
+                transform: scale(1.05) translateY(0);
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            60% {
+                opacity: 0.8;
+                transform: scale(0.95) translateY(-5px);
+            }
+            100% { 
+                opacity: 0; 
+                transform: scale(0.8) translateY(-15px);
+            }
         }
 
         /* ---------- BOCG banner ---------- */
         .bocg-banner {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 12px;
+            padding: 12px 18px;
+            text-align: center;
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
+        /* ---------- HTML source banner ---------- */
+        .html-source-banner {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+            border-radius: 12px;
+            padding: 12px 18px;
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .html-source-banner a {
+            color: #04db8d;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        .html-source-banner a:hover {
+            color: #03c57f;
+        }
+
+        /* ---------- No analysis available banner ---------- */
+        .no-analysis-banner {
             background: #fff3cd;
             color: #856404;
             border: 1px solid #ffeeba;
@@ -568,6 +643,10 @@
             buttonsContainer.insertAdjacentElement('afterend', banner);
         }
 
+        // Global variables to store document URLs
+        let documentUrlPdf = null;
+        let documentUrlHtml = null;
+
         // Función para mostrar la sección de feedback
         function showFeedbackSection() {
           const feedbackSection = document.getElementById('feedbackSection');
@@ -609,6 +688,8 @@
         function performCustomAnalysis(customPrompt, buttonElement) {
             analysisResultDiv.textContent = ''; // Clear previous results
             analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
+            analysisResultDiv.style.opacity = ''; // Reset opacity
+            analysisResultDiv.style.display = 'none'; // Hide initially
             
             // Disable all buttons during analysis
             setAnalysisButtonsState(true);
@@ -622,7 +703,7 @@
             });
             
             // Start status workflow for custom analysis
-            if (typeof startStatusWorkflow === 'function') startStatusWorkflow();
+            if (typeof startStatusWorkflow === 'function') startStatusWorkflow('custom');
             
             fetch('/api/analyze-norma', {
                 method: 'POST',
@@ -658,19 +739,25 @@
                     // Enable all buttons again
                     setAnalysisButtonsState(false);
                     
-                    // Set content and show with animation
-                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
-                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
+                    // Pre-set content but keep hidden for smooth transition
+                    analysisResultDiv.innerHTML = htmlContent;
+                    analysisResultDiv.style.display = 'block';
+                    analysisResultDiv.style.opacity = '0';
+                    
+                    // Small delay to ensure DOM is ready, then animate in
+                    setTimeout(() => {
+                        analysisResultDiv.classList.add('analysis-render');
+                        analysisResultDiv.style.opacity = '1';
+                    }, 50);
                     
                     showFeedbackSection();
-                }, 1300); // Wait for status completion animation
+                }, 1200); // Consistent timing
             })
             .catch(error => {
                 console.error('Error analyzing norma:', error);
                 
-                // Complete the status workflow first, then show error
-                clearStatusWorkflow();
+                // Complete the status workflow with error animation
+                completeStatusWorkflowWithError();
                 
                 setTimeout(() => {
                     buttonElement.innerHTML = originalButtonText; // Restore original button text
@@ -679,9 +766,14 @@
                     setAnalysisButtonsState(false);
                     
                     analysisResultDiv.textContent = 'Error al analizar la norma. Por favor, inténtalo de nuevo.';
-                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
-                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
-                }, 1300); // Wait for status completion animation
+                    analysisResultDiv.style.display = 'block';
+                    analysisResultDiv.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        analysisResultDiv.classList.add('analysis-render');
+                        analysisResultDiv.style.opacity = '1';
+                    }, 50);
+                }, 1400); // Consistent with other error cases
             });
         }
 
@@ -791,35 +883,85 @@
             activeAnalysisButton = null;
         }
 
-        // Function to handle all analysis requests
-        function performAnalysis(promptType, buttonElement) {
-            // Validate buttonElement
-            if (!buttonElement || typeof buttonElement.innerHTML === 'undefined') {
-                console.error('Error: buttonElement is null or invalid in performAnalysis');
-                alert('Error: Elemento de botón no válido. Por favor, inténtalo de nuevo.');
-                return;
+        // Function to handle webscraping and analysis
+        async function performWebscrapingAnalysis(promptType, buttonElement, htmlUrl) {
+            try {
+                // First, perform webscraping
+                const webscrapingResponse = await fetch('/api/webscrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: htmlUrl })
+                });
+
+                if (!webscrapingResponse.ok) {
+                    throw new Error('Error during webscraping');
+                }
+
+                const webscrapingData = await webscrapingResponse.json();
+                const htmlContent = webscrapingData.text;
+
+                // Now perform analysis with the scraped content
+                return performAnalysisWithContent(promptType, buttonElement, htmlContent, htmlUrl);
+            } catch (error) {
+                console.error('Error during webscraping:', error);
+                throw error;
             }
-            
-            analysisResultDiv.textContent = ''; // Clear previous results
-            analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
-            
-            // Disable all buttons during analysis
-            setAnalysisButtonsState(true);
-            
-            if (typeof startStatusWorkflow === 'function') startStatusWorkflow();
-            const originalButtonText = buttonElement.innerHTML;
-            buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
-            
-            // Reset any active button state
-            document.querySelectorAll('.analisis-impacto').forEach(btn => {
-                btn.classList.remove('active');
+        }
+
+        // Function to perform analysis with content (either from PDF or HTML)
+        function performAnalysisWithContent(promptType, buttonElement, htmlContent = null, sourceUrl = null) {
+            return new Promise((resolve, reject) => {
+                const requestBody = {
+                    documentId: documentId,
+                    userPrompt: buildUserPrompt(promptType),
+                    collectionName: collectionName
+                };
+
+                // Add HTML content if provided
+                if (htmlContent) {
+                    requestBody.htmlContent = htmlContent;
+                }
+
+                fetch('/api/analyze-norma', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/html; charset=utf-8'
+                    },
+                    body: JSON.stringify(requestBody)
+                })
+                .then(response => {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('charset=utf-8')) {
+                        return response.text();
+                    }
+                    return response.arrayBuffer().then(buffer => {
+                        const decoder = new TextDecoder('utf-8');
+                        return decoder.decode(buffer);
+                    });
+                })
+                .then(data => {
+                    const htmlResult = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                    
+                    // Show banner if analysis was based on HTML source
+                    let finalHtml = htmlResult;
+                    if (htmlContent && sourceUrl) {
+                        const banner = `<div class="html-source-banner">Documento PDF no identificado para este documento, análisis basado en el texto publicado en la <a href="${sourceUrl}" target="_blank">fuente</a></div>`;
+                        finalHtml = banner + htmlResult;
+                    }
+                    
+                    resolve(finalHtml);
+                })
+                .catch(error => {
+                    reject(error);
+                });
             });
-            
-            // Set this button as active
-            buttonElement.classList.add('active');
-            
-            let userPrompt;
-            
+        }
+
+        // Function to build user prompt based on analysis type
+        function buildUserPrompt(promptType) {
             // Obtener contexto de etiqueta seleccionada, si existe
             const etiquetaContext = window.getSelectedEtiquetaContext ? window.getSelectedEtiquetaContext() : null;
             let contextoEtiquetaTexto = '';
@@ -849,11 +991,10 @@
 
             // Unir ambos contextos (perfil + etiqueta) para inyectarlos antes del resto del prompt
             const bloqueContexto = `${contextoPerfilTexto}${contextoEtiquetaTexto}\n`;
-            console.log(bloqueContexto);
-            
-            // Set the specific prompt based on button type
+
+            // Return the appropriate prompt based on type
             if (promptType === 'checklist') {
-                userPrompt = `Eres un abogado senior especializado en compliance. Utiliza el contexto proporcionado para adaptar tu análisis.
+                return `Eres un abogado senior especializado en compliance. Utiliza el contexto proporcionado para adaptar tu análisis.
 
 ${bloqueContexto}
 
@@ -888,7 +1029,7 @@ REQUERIMIENTOS DEL CONTENIDO HTML
 
 **RECUERDA:** Tu salida debe ser únicamente el objeto JSON como el del ejemplo anterior, sin nada antes ni después. El string HTML dentro de \`html_response\` no debe contener saltos de línea innecesarios, solo el HTML puro.`;
             } else if (promptType === 'risks') {
-                userPrompt = `Eres un socio de un despacho de abogados en España. Analiza la norma dentro de <PDF></PDF> y extrae riesgos, oportunidades para la empresa y servicios que el despacho puede ofrecer.
+                return `Eres un socio de un despacho de abogados en España. Analiza la norma dentro de <PDF></PDF> y extrae riesgos, oportunidades para la empresa y servicios que el despacho puede ofrecer.
 
 ${bloqueContexto}
 
@@ -949,7 +1090,7 @@ ${bloqueContexto}
                 const tieneEtiqueta = !!etiquetaContext;
                 const tituloImpacto = tieneEtiqueta ? `Impacto en ${etiquetaContext.name}` : 'Aspectos clave y puntos importantes';
 
-                userPrompt = `Eres un abogado experto. Analiza el documento PDF y genera un resumen claro y conciso.
+                return `Eres un abogado experto. Analiza el documento PDF y genera un resumen claro y conciso.
 
 ${bloqueContexto}
 
@@ -990,69 +1131,108 @@ ${bloqueContexto}
 • Basado únicamente en el PDF y el contexto proporcionado; cita artículos concretos.
 • Estilo claro y preciso, sin opiniones personales ni especulación.`;
             }
-            console.log(userPrompt);
+        }
 
-            fetch('/api/analyze-norma', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'text/html; charset=utf-8'
-                },
-                body: JSON.stringify({ documentId: documentId, userPrompt: userPrompt, collectionName: collectionName })
-            })
-            .then(response => {
-                // Ensure we're properly handling the UTF-8 encoding
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('charset=utf-8')) {
-                    return response.text();
-                }
-                // Explicitly decode as UTF-8 if charset not specified
-                return response.arrayBuffer().then(buffer => {
-                    const decoder = new TextDecoder('utf-8');
-                    return decoder.decode(buffer);
-                });
-            })
-            .then(data => {
-                // Process the response
-                const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                
-                // Complete the status workflow with success animation
-                completeStatusWorkflow();
-                
-                // After status animation completes, show results with animation
-                setTimeout(() => {
-                    buttonElement.innerHTML = originalButtonText; // Restore original button text
-                    buttonElement.style.backgroundColor = ''; // Remove inline style
-                    
-                    // Enable all buttons again
-                    setAnalysisButtonsState(false);
-                    
-                    // Set content and show with animation
-                    analysisResultDiv.innerHTML = htmlContent; // Set as HTML
-                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
-                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
-                    
-                    showFeedbackSection();
-                }, 1300); // Wait for status completion animation
-            })
-            .catch(error => {
-                console.error('Error analyzing norma:', error);
-                
-                // Complete the status workflow first, then show error
-                clearStatusWorkflow();
-                
-                setTimeout(() => {
-                    buttonElement.innerHTML = originalButtonText; // Restore original button text
-                    buttonElement.classList.remove('active'); // Remove active state on error
-                    
-                    // Enable all buttons again
-                    setAnalysisButtonsState(false);
-                    
-                    analysisResultDiv.textContent = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
-                    analysisResultDiv.classList.add('analysis-render'); // Add render animation
-                    analysisResultDiv.style.display = 'block'; // Show the analysis result div
-                }, 1300); // Wait for status completion animation
+        // Function to handle all analysis requests
+        function performAnalysis(promptType, buttonElement) {
+            // Validate buttonElement
+            if (!buttonElement || typeof buttonElement.innerHTML === 'undefined') {
+                console.error('Error: buttonElement is null or invalid in performAnalysis');
+                alert('Error: Elemento de botón no válido. Por favor, inténtalo de nuevo.');
+                return;
+            }
+            
+            analysisResultDiv.textContent = ''; // Clear previous results
+            analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
+            analysisResultDiv.style.opacity = ''; // Reset opacity
+            analysisResultDiv.style.display = 'none'; // Hide initially
+            
+            // Disable all buttons during analysis
+            setAnalysisButtonsState(true);
+            
+            if (typeof startStatusWorkflow === 'function') startStatusWorkflow(promptType);
+            const originalButtonText = buttonElement.innerHTML;
+            buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
+            
+            // Reset any active button state
+            document.querySelectorAll('.analisis-impacto').forEach(btn => {
+                btn.classList.remove('active');
             });
+            
+            // Set this button as active
+            buttonElement.classList.add('active');
+
+            // Determine analysis strategy based on available URLs
+            let analysisPromise;
+            
+            if (documentUrlPdf) {
+                // Scenario 3: PDF available - use normal workflow
+                analysisPromise = performAnalysisWithContent(promptType, buttonElement);
+            } else if (documentUrlHtml) {
+                // Scenario 1: No PDF but HTML available - use webscraping
+                analysisPromise = performWebscrapingAnalysis(promptType, buttonElement, documentUrlHtml);
+            } else {
+                // Scenario 2: Neither PDF nor HTML available - should not reach here as buttons should be disabled
+                console.error('No PDF or HTML URL available for analysis');
+                setAnalysisButtonsState(false);
+                buttonElement.innerHTML = originalButtonText;
+                buttonElement.classList.remove('active');
+                clearStatusWorkflow();
+                alert('No hay fuentes disponibles para el análisis de este documento.');
+                return;
+                         }
+
+             // Handle the analysis promise
+             analysisPromise
+                                 .then(htmlContent => {
+                    // Complete the status workflow with success animation
+                    completeStatusWorkflow();
+                    
+                    // After status animation completes, show results with animation
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalButtonText; // Restore original button text
+                        buttonElement.style.backgroundColor = ''; // Remove inline style
+                        
+                        // Enable all buttons again
+                        setAnalysisButtonsState(false);
+                        
+                        // Pre-set content but keep hidden for smooth transition
+                        analysisResultDiv.innerHTML = htmlContent;
+                        analysisResultDiv.style.display = 'block';
+                        analysisResultDiv.style.opacity = '0';
+                        
+                        // Small delay to ensure DOM is ready, then animate in
+                        setTimeout(() => {
+                            analysisResultDiv.classList.add('analysis-render');
+                            analysisResultDiv.style.opacity = '1';
+                        }, 50);
+                        
+                        showFeedbackSection();
+                    }, 1200); // Slightly reduced wait time for smoother transition
+                })
+                .catch(error => {
+                    console.error('Error analyzing norma:', error);
+                    
+                    // Complete the status workflow with error animation
+                    completeStatusWorkflowWithError();
+                    
+                    setTimeout(() => {
+                        buttonElement.innerHTML = originalButtonText; // Restore original button text
+                        buttonElement.classList.remove('active'); // Remove active state on error
+                        
+                        // Enable all buttons again
+                        setAnalysisButtonsState(false);
+                        
+                        analysisResultDiv.textContent = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
+                        analysisResultDiv.style.display = 'block';
+                        analysisResultDiv.style.opacity = '0';
+                        
+                        setTimeout(() => {
+                            analysisResultDiv.classList.add('analysis-render');
+                            analysisResultDiv.style.opacity = '1';
+                        }, 50);
+                    }, 1400); // Slightly longer for error case
+                });
         }
 
         // Fetch the document details (only the short_name for this example)
@@ -1060,6 +1240,31 @@ ${bloqueContexto}
                 .then(response => response.json())
                 .then(data => {
                     shortNameSpan.textContent = data.short_name;
+                    
+                    // Store document URLs globally
+                    documentUrlPdf = data.url_pdf;
+                    documentUrlHtml = data.url_html;
+                    
+                    // Handle different scenarios based on available URLs
+                    if (!documentUrlPdf && !documentUrlHtml) {
+                        // Scenario 2: Neither PDF nor HTML available - disable analysis buttons and show banner
+                        const impactButtons = [analyzeButton, checklistButton, risksButton];
+                        impactButtons.forEach(btn => {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.6';
+                            btn.style.cursor = 'not-allowed';
+                        });
+
+                        // Create and insert no analysis available banner
+                        const banner = document.createElement('div');
+                        banner.className = 'no-analysis-banner';
+                        banner.textContent = 'Documento con análisis de impacto no disponible';
+
+                        // Insert banner just after the impact buttons container
+                        const buttonsContainer = analyzeButton.parentElement;
+                        buttonsContainer.insertAdjacentElement('afterend', banner);
+                    }
+                    
                      // Nuevo código para mostrar detalles adicionales
                     const extraDetailsDiv = document.getElementById('normaExtraDetails');
                     if (extraDetailsDiv) {
@@ -1074,8 +1279,11 @@ ${bloqueContexto}
                             detailsParts.push(data.rango_titulo);
                         }
 
+                        // Prioritize PDF URL, but show HTML URL if PDF is not available
                         if (data.url_pdf) {
                             detailsParts.push(`<a href="${data.url_pdf}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`);
+                        } else if (data.url_html) {
+                            detailsParts.push(`<a href="${data.url_html}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`);
                         }
                         
                         // Une las partes con ' | ', filtrando las que estén vacías o nulas
@@ -1238,17 +1446,55 @@ ${bloqueContexto}
                 }
             });
 
-        function startStatusWorkflow() {
+        function startStatusWorkflow(analysisType = 'generic') {
             clearStatusWorkflow();
-            console.log('[workflow] starting');
+            console.log('[workflow] starting for type:', analysisType);
             analysisStatusDiv.style.display = 'flex';
             statusTextSpan.classList.remove('slide');
             void statusTextSpan.offsetWidth;
             statusTextSpan.textContent = 'Pensando…';
-            const steps = [
+            
+            // Define specific steps based on analysis type
+            let specificSteps = [];
+            
+            if (analysisType === 'summary') {
+                specificSteps = [
+                    { text: 'Resumiendo aspectos generales…', duration: 2500 },
+                    { text: 'Analizando el objetivo de la norma…', duration: 2500 },
+                    { text: 'Identificando sujetos afectados…', duration: 2500 },
+                    { text: 'Recomendando próximos pasos…', duration: 2500 }
+                ];
+            } else if (analysisType === 'checklist') {
+                specificSteps = [
+                    { text: 'Identificando cuadro de obligaciones…', duration: 2500 },
+                    { text: 'Referenciando los artículos…', duration: 2500 },
+                    { text: 'Analizando sanciones por incumplimiento…', duration: 2500 }
+                ];
+            } else if (analysisType === 'risks') {
+                specificSteps = [
+                    { text: 'Identificando oportunidades…', duration: 2500 },
+                    { text: 'Analizando riesgos…', duration: 2500 }
+                ];
+                         } else {
+                 // Generic fallback for custom prompts
+                 specificSteps = [
+                     { text: 'Procesando tu consulta…', duration: 2500 },
+                     { text: 'Buscando información relevante…', duration: 2500 },
+                     { text: 'Estructurando la respuesta…', duration: 2500 }
+                 ];
+             }
+            
+            // Common initial steps
+            const commonSteps = [
                 { text: 'Pensando…', duration: 3000 },
                 { text: 'Accediendo a la fuente oficial…', duration: 2000 },
-                { text: 'Analizando la norma…', duration: 3000 },
+                { text: 'Analizando el documento…', duration: 3000 }
+            ];
+            
+            // Combine common steps with specific steps
+            const steps = [
+                ...commonSteps,
+                ...specificSteps,
                 { text: 'Personalizando el análisis…', duration: null } // stays until done
             ];
 
@@ -1273,16 +1519,45 @@ ${bloqueContexto}
             analysisStatusDiv.style.display = 'none';
         }
 
+        function completeStatusWorkflowWithError() {
+            // Cancel any pending timeouts
+            statusTimeouts.forEach(t => clearTimeout(t));
+            statusTimeouts = [];
+            console.log('[workflow] completing with error - API error received');
+            
+            // Show error status
+            const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
+            spinnerIcon.className = 'fa fa-exclamation-triangle'; // Change to error icon
+            statusTextSpan.classList.remove('slide');
+            void statusTextSpan.offsetWidth;
+            statusTextSpan.textContent = 'Error en el análisis';
+            statusTextSpan.classList.add('slide');
+            
+            // Animate out after showing error
+            setTimeout(() => {
+                analysisStatusDiv.classList.add('status-completed');
+                setTimeout(() => {
+                    analysisStatusDiv.style.display = 'none';
+                    analysisStatusDiv.classList.remove('status-completed');
+                    // Reset spinner for next time
+                    spinnerIcon.className = 'fa fa-spinner spinner';
+                }, 800); // Match animation duration
+            }, 800); // Show error state a bit longer
+        }
+
         function completeStatusWorkflow() {
             // Cancel any pending timeouts but don't hide yet
             statusTimeouts.forEach(t => clearTimeout(t));
             statusTimeouts = [];
-            console.log('[workflow] completing with success');
+            console.log('[workflow] completing with success - API response received');
             
-            // Show completion status with tick
+            // Show completion status with tick immediately
             const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
             spinnerIcon.className = 'fa fa-check'; // Change to tick
+            statusTextSpan.classList.remove('slide');
+            void statusTextSpan.offsetWidth;
             statusTextSpan.textContent = 'Análisis Finalizado';
+            statusTextSpan.classList.add('slide');
             
             // Animate out after showing completion
             setTimeout(() => {
@@ -1292,8 +1567,8 @@ ${bloqueContexto}
                     analysisStatusDiv.classList.remove('status-completed');
                     // Reset spinner for next time
                     spinnerIcon.className = 'fa fa-spinner spinner';
-                }, 500); // Match animation duration
-            }, 800); // Show completed state for 800ms
+                }, 800); // Match animation duration
+            }, 600); // Show completed state for 600ms
         }
     });
 </script>
