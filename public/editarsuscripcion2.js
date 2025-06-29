@@ -2778,29 +2778,35 @@ function insertSubscriptionModalStyles() {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        width: 100vw !important;
+        height: 100vh !important;
         background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
+        z-index: 10001 !important;
         backdrop-filter: blur(5px);
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
       }
       
       .subscription-modal.active {
-        display: flex;
+        display: flex !important;
         justify-content: center;
         align-items: center;
       }
       
-      .modal-content {
+      .subscription-modal .modal-content {
         position: relative;
         background-color: white;
-        width: 90%;
-        max-width: 1000px;
-        height: 80%;
-        max-height: 700px;
+        width: 90vw !important;
+        max-width: 1200px !important;
+        min-width: 600px !important;
+        height: 85vh !important;
+        max-height: 800px !important;
         border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
         overflow: hidden;
+        margin: auto !important;
+        box-sizing: border-box !important;
       }
       
       /* Botón para cerrar el modal */
@@ -2992,7 +2998,6 @@ function insertSubscriptionModalStyles() {
         border: 1px solid #e0e0e0;
         border-radius: 10px;
         padding: 20px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
       
       .upgrade-plan-card:hover {
@@ -3033,7 +3038,7 @@ function insertSubscriptionModalStyles() {
       }
       
       .upgrade-button, .downgrade-button, .action-button {
-        width: 100%;
+        width: 300px;
         padding: 10px;
         border: none;
         border-radius: 5px;
@@ -3301,9 +3306,11 @@ function insertSubscriptionModalStyles() {
           min-width: 100%; /* Asegurar que ocupe todo el ancho */
         }
         
-        .modal-content {
-          width: 95%;
-          height: 90%;
+        .subscription-modal .modal-content {
+          width: 75vw !important;
+          height: 95vh !important;
+          min-width: 320px !important;
+          max-width: none !important;
         }
         
         /* Ajustes específicos para la sección de agentes en móvil */
@@ -3317,6 +3324,23 @@ function insertSubscriptionModalStyles() {
         
         .rama-header h4 {
           font-size: 16px; /* Texto más grande para mejor legibilidad */
+        }
+      }
+      
+      /* Estilos adicionales para pantallas muy pequeñas */
+      @media (max-width: 480px) {
+        .subscription-modal .modal-content {
+          width: 98vw !important;
+          height: 98vh !important;
+          min-width: 300px !important;
+        }
+      }
+      
+      /* Estilos para pantallas grandes */
+      @media (min-width: 1200px) {
+        .subscription-modal .modal-content {
+          width: 80vw !important;
+          max-width: 1400px !important;
         }
       }
     `;

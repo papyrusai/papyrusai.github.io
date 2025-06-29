@@ -22,6 +22,7 @@ const MONGODB_URI = process.env.DB_URI;
 const DB_NAME = 'papyrus';
 
 // Take today's date in real time
+//const TODAY = moment().utc().subtract(3, 'days'); //moment().utc();
 const TODAY = moment().utc();
 //const TOMORROW = TODAY.clone().add(1, 'day');
 const YESTERDAY = moment().utc().subtract(1, 'days');
@@ -218,6 +219,110 @@ function mapCollectionNameToDisplay(cName) {
 }
 
 /**
+ * buildDocumentHTMLWithCollectionRango:
+ * Genera un snippet HTML para un único doc mostrando colección y rango.
+ */
+function buildDocumentHTMLWithCollectionRango(doc, isLastDoc) {
+  // Mostrar colección y rango en lugar de etiquetas
+  const collectionRangoHTML = `<p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">${doc.collectionDisplayName} | ${doc.rangoTitle}</p>`;
+
+  // Nueva sección: Impacto en agentes
+  let impactoAgentesHTML = '';
+  if (doc.matched_etiquetas_personalizadas && doc.matched_etiquetas_personalizadas.length && doc.matched_etiquetas_descriptions) {
+    impactoAgentesHTML = `
+      <div style="
+        margin-top: 15px;
+        margin-bottom: 20px;
+        padding-left: 15px;
+        border-left: 4px solid #4ce3a7;
+        background-color: rgba(76, 227, 167, 0.05);
+      ">
+        <h4 style="margin-bottom: 8px; color: #0c2532;">Impacto en agentes</h4>
+        ${doc.matched_etiquetas_personalizadas.map((etiqueta, index) => {
+          const fullDescription = doc.matched_etiquetas_descriptions[index] || '';
+          
+          // Extraer nivel de impacto del texto si está presente
+          let descripcion = fullDescription;
+          let nivelImpacto = '';
+          let nivelTag = '';
+          
+          const nivelMatch = fullDescription.match(/\(Nivel:\s*([^)]+)\)$/);
+          if (nivelMatch) {
+            nivelImpacto = nivelMatch[1].trim();
+            descripcion = fullDescription.replace(/\s*\(Nivel:[^)]+\)$/, '');
+            
+            // Generar tag de nivel de impacto con colores para email
+            let bgColor = '#f8f9fa';
+            let textColor = '#6c757d';
+            
+            switch (nivelImpacto.toLowerCase()) {
+              case 'alto':
+                bgColor = '#ffe6e6';
+                textColor = '#dc3545';
+                break;
+              case 'medio':
+                bgColor = '#fff3cd';
+                textColor = '#856404';
+                break;
+              case 'bajo':
+                bgColor = '#d4edda';
+                textColor = '#155724';
+                break;
+            }
+            
+            nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px; display: inline-block;">${nivelImpacto}</span>`;
+          }
+          
+          return `<p style="margin: 8px 0; font-size: 0.9em; line-height: 1.4;">
+            <strong>${etiqueta}</strong>${nivelTag}
+            <br>
+            <span style="color: #555;">${descripcion}</span>
+          </p>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  const hrOrNot = isLastDoc
+    ? ''
+    : `
+      <hr style="
+        border: none;
+        border-top: 1px solid #ddd;
+        width: 75%;
+        margin: 10px auto;
+      ">
+    `;
+
+  return `
+    <div class="document">
+      <h2>${doc.short_name}</h2>
+      ${collectionRangoHTML}
+      <p style="color: black;">${doc.resumen}</p>
+      ${impactoAgentesHTML}
+      <p>
+        <div class="margin-impacto">
+          <a class="button-impacto"
+            href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
+            style="margin-right: 10px;">
+            Analizar documento
+          </a>
+        </div>
+        <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
+          Leer más: ${doc._id}
+        </a>
+        <span class="less-opacity">
+          ${doc.num_paginas || 0} 
+          ${doc.num_paginas === 1 ? 'página' : 'páginas'}
+          - tiempo estimado de lectura: ${doc.tiempo_lectura || 1} minutos
+        </span>
+      </p>
+    </div>
+    ${hrOrNot}
+  `;
+}
+
+/**
  * buildDocumentHTML:
  * Genera un snippet HTML para un único doc.
  * Modificado para mostrar solo etiquetas personalizadas en caso de match
@@ -312,7 +417,7 @@ function buildDocumentHTML(doc, isLastDoc) {
           <a class="button-impacto"
             href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
             style="margin-right: 10px;">
-            Análisis impacto normativo
+            Analizar documento
           </a>
         </div>
         <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
@@ -375,7 +480,7 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
         <a class="button-impacto"
            href="https://app.reversa.ai/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}"
            style="margin-right: 10px;">
-          Análisis impacto normativo
+          Analizar documento
         </a>
       </div>
       <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
@@ -396,74 +501,124 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
  * buildNewsletterHTML:
  * Construye el newsletter con matches para un usuario.
  */
-function buildNewsletterHTML(userName, userId, dateString, rangoGroups, isExtraVersion = false) {
-  // Create summary section by ranges instead of CNAE/juridical categories
+function buildNewsletterHTML(userName, userId, dateString, etiquetaGroups, isExtraVersion = false) {
+  // Create summary section by etiquetas personalizadas
   console.log("Normal html is triggered");
-  const rangoSummaryHTML = rangoGroups.map(rango => {
-    const totalDocs = rango.collections.reduce((sum, coll) => sum + coll.docs.length, 0);
-    return `<li>${totalDocs} Alertas de <span style="color:#4ce3a7;">${rango.rangoTitle}</span></li>`;
+  
+  // Sort etiquetaGroups by total number of documents (descending)
+  const sortedEtiquetaGroups = [...etiquetaGroups].sort((a, b) => {
+    const totalDocsA = a.collections.reduce((sum, coll) => 
+      sum + coll.rangos.reduce((rangoSum, rango) => rangoSum + rango.docs.length, 0), 0);
+    const totalDocsB = b.collections.reduce((sum, coll) => 
+      sum + coll.rangos.reduce((rangoSum, rango) => rangoSum + rango.docs.length, 0), 0);
+    return totalDocsB - totalDocsA;
+  });
+  
+  // Calculate total documents across all etiquetas
+  const grandTotal = sortedEtiquetaGroups.reduce((total, etiqueta) => {
+    const etiquetaTotal = etiqueta.collections.reduce((sum, coll) => 
+      sum + coll.rangos.reduce((rangoSum, rango) => rangoSum + rango.docs.length, 0), 0);
+    return total + etiquetaTotal;
+  }, 0);
+  
+  const etiquetaSummaryHTML = sortedEtiquetaGroups.map(etiqueta => {
+    const totalDocs = etiqueta.collections.reduce((sum, coll) => 
+      sum + coll.rangos.reduce((rangoSum, rango) => rangoSum + rango.docs.length, 0), 0);
+    return `<li>${totalDocs} Alertas de <span style="color:#4ce3a7;">${etiqueta.etiquetaTitle}</span></li>`;
   }).join('');
 
   let summarySection = '';
-  if (rangoGroups.length > 0) {
+  if (etiquetaGroups.length > 0) {
     summarySection = `
       <h4 style="font-size:16px; margin-bottom:15px; color:#0c2532">
-        RESUMEN POR TIPO DE NORMATIVA
+        RESUMEN POR AGENTE
       </h4>
+      <p style="font-weight:bold; margin-bottom:10px; color:#0c2532;">Total: ${grandTotal} alertas</p>
       <ul style="margin-bottom:15px;">
-        ${rangoSummaryHTML}
+        ${etiquetaSummaryHTML}
       </ul>
     `;
   }
 
-  // Build detail blocks by range and collection
-  const detailBlocks = rangoGroups.map((rango, rangoIndex) => {
-    // Range header (Legislación, Normativa Reglamentaria, etc.)
-    const rangoHeading = `
+  // Build detail blocks by etiqueta (no grouping by collection or rango)
+  const detailBlocks = sortedEtiquetaGroups.map((etiqueta, etiquetaIndex) => {
+    // Etiqueta header
+    const etiquetaHeading = `
       <div style="background-color:#4ce3a7; margin:5% 0; padding:5px 20px; border-radius:20px;">
         <h2 style="margin:0; color:#fefefe; font-size:14px;">
-          ${rangoIndex + 1}. ${rango.rangoTitle.toUpperCase()}
+          ${etiquetaIndex + 1}. ${etiqueta.etiquetaTitle.toUpperCase()}
         </h2>
       </div>
     `;
 
-    // Collection blocks within this range
-    const collectionBlocks = rango.collections.map((collObj, collIndex) => {
-      const docsHTML = collObj.docs.map((doc, idx) => {
-        const isLastDoc = (idx === collObj.docs.length - 1);
-        return buildDocumentHTML(doc, isLastDoc);
-      }).join('');
+    // Collect all documents from all collections and rangos
+    const allDocs = [];
+    etiqueta.collections.forEach(collObj => {
+      collObj.rangos.forEach(rangoObj => {
+        rangoObj.docs.forEach(doc => {
+          // Find the impact level for this specific etiqueta
+          let impactLevel = null; // no default, will be set to 'bajo' if not found
+          if (doc.matched_etiquetas_personalizadas && doc.matched_etiquetas_descriptions) {
+            const etiquetaIndex = doc.matched_etiquetas_personalizadas.indexOf(etiqueta.etiquetaTitle);
+            if (etiquetaIndex !== -1 && doc.matched_etiquetas_descriptions[etiquetaIndex]) {
+              const description = doc.matched_etiquetas_descriptions[etiquetaIndex];
+              const nivelMatch = description.match(/\(Nivel:\s*([^)]+)\)$/i);
+              if (nivelMatch) {
+                impactLevel = nivelMatch[1].trim().toLowerCase();
+              }
+            }
+          }
+          
+          // Set default if no impact level found
+          if (!impactLevel || !['alto', 'medio', 'bajo'].includes(impactLevel)) {
+            impactLevel = 'bajo';
+          }
+          
+          allDocs.push({
+            ...doc,
+            collectionName: collObj.collectionName,
+            collectionDisplayName: collObj.displayName,
+            rangoTitle: rangoObj.rangoTitle,
+            impactLevel: impactLevel
+          });
+        });
+      });
+    });
 
-      // Collection header with numbered sections (1.1, 1.2, etc.)
-      const collectionHeading = `
-        <h3 style="
-          color:#0c2532;
-          margin: 3% auto;
-          margin-top:5%;
-          text-align:center;
-          font-style:italic;
-        ">
-          ${rangoIndex + 1}.${collIndex + 1} ${collObj.displayName}
-        </h3>
-      `;
+    // Sort documents by impact level (alto -> medio -> bajo) and then by collection name
+    allDocs.sort((a, b) => {
+      const impactOrder = { 'alto': 3, 'medio': 2, 'bajo': 1 };
+      
+      // Primary sort: by impact level (descending)
+      const impactDiff = (impactOrder[b.impactLevel] || 1) - (impactOrder[a.impactLevel] || 1);
+      if (impactDiff !== 0) {
+        return impactDiff;
+      }
+      
+      // Secondary sort: by collection name (ascending)
+      return a.collectionName.localeCompare(b.collectionName);
+    });
 
-      const collectionSeparator = `
-        <hr style="
-          border: none;
-          border-top: 1px solid #0c2532;
-          width: 100%;
-          margin: 10px auto;
-        ">
-      `;
-
-      return `
-        ${collectionSeparator}
-        ${collectionHeading}
-        ${docsHTML}
-      `;
+    // Build documents HTML without grouping
+    const docsHTML = allDocs.map((doc, idx) => {
+      const isLastDoc = (idx === allDocs.length - 1);
+      return buildDocumentHTMLWithCollectionRango(doc, isLastDoc);
     }).join('');
 
-    return rangoHeading + collectionBlocks;
+    const etiquetaSeparator = `
+      <hr style="
+        border: none;
+        border-top: 1px solid #0c2532;
+        width: 100%;
+        margin: 10px auto;
+      ">
+    `;
+
+    return `
+      ${etiquetaSeparator}
+      ${etiquetaHeading}
+      ${docsHTML}
+    `;
   }).join('');
   
   // Extra version message
@@ -2179,8 +2334,7 @@ async function sendCollectionsReportEmail(db) {
       });
     }
 
-    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
-
+    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai'); //
     // Initialize user statistics for report
     const userStats = {
       withMatches: [],
@@ -2327,73 +2481,93 @@ async function sendCollectionsReportEmail(db) {
       // Reemplazar la colección original con la filtrada
       const userMatchingDocsFiltered = filteredMatchingDocs;
       
-      // 4) Build rango & collection grouping
-      const rangoGroups = {};
+      // 4) Build etiqueta & collection & rango grouping
+      const etiquetaGroups = {};
 
       userMatchingDocsFiltered.forEach(({ collectionName, doc }) => {
-        // Get rango_titulo or assign a default
+        // Get matched etiquetas personalizadas
+        const matchedEtiquetas = doc.matched_etiquetas_personalizadas || [];
         const rango = doc.rango_titulo || "Otras";
         
-        // Initialize the rango group if needed
-        if (!rangoGroups[rango]) {
-          rangoGroups[rango] = {};
-        }
-        
-        // Initialize the collection subgroup if needed
-        if (!rangoGroups[rango][collectionName]) {
-          rangoGroups[rango][collectionName] = [];
-        }
-        
-        // Add document to its group
-        rangoGroups[rango][collectionName].push({
-          ...doc,
-          collectionName
+        matchedEtiquetas.forEach(etiqueta => {
+          // Initialize the etiqueta group if needed
+          if (!etiquetaGroups[etiqueta]) {
+            etiquetaGroups[etiqueta] = {};
+          }
+          
+          // Initialize the collection subgroup if needed
+          if (!etiquetaGroups[etiqueta][collectionName]) {
+            etiquetaGroups[etiqueta][collectionName] = {};
+          }
+          
+          // Initialize the rango subgroup if needed
+          if (!etiquetaGroups[etiqueta][collectionName][rango]) {
+            etiquetaGroups[etiqueta][collectionName][rango] = [];
+          }
+          
+          // Add document to its group
+          etiquetaGroups[etiqueta][collectionName][rango].push({
+            ...doc,
+            collectionName
+          });
         });
       });
 
       // Convert to array structure for template processing
       const finalGroups = [];
-      for (const [rango, collections] of Object.entries(rangoGroups)) {
-        const rangoGroup = {
-          rangoTitle: rango,
+      for (const [etiqueta, collections] of Object.entries(etiquetaGroups)) {
+        const etiquetaGroup = {
+          etiquetaTitle: etiqueta,
           collections: []
         };
         
-        for (const [collName, docs] of Object.entries(collections)) {
-          rangoGroup.collections.push({
+        for (const [collName, rangos] of Object.entries(collections)) {
+          const collectionGroup = {
             collectionName: collName,
             displayName: mapCollectionNameToDisplay(collName),
-            docs: docs
+            rangos: []
+          };
+          
+          for (const [rango, docs] of Object.entries(rangos)) {
+            collectionGroup.rangos.push({
+              rangoTitle: rango,
+              docs: docs
+            });
+          }
+          
+          // Sort rangos by predefined order
+          collectionGroup.rangos.sort((a, b) => {
+            const order = [
+              "Legislación", 
+              "Normativa Reglamentaria", 
+              "Doctrina Administrativa",
+              "Comunicados, Guías y Directivas de Reguladores",
+              "Decisiones Judiciales",
+              "Normativa Europea",
+              "Acuerdos Internacionales",
+              "Anuncios de Concentración de Empresas",
+              "Dictámenes y Opiniones",
+              "Subvenciones",
+              "Declaraciones e Informes de Impacto Ambiental",
+              "Otras"
+            ];
+            return order.indexOf(a.rangoTitle) - order.indexOf(b.rangoTitle);
           });
+          
+          etiquetaGroup.collections.push(collectionGroup);
         }
         
         // Sort collections by predefined order
-        rangoGroup.collections.sort((a, b) => {
+        etiquetaGroup.collections.sort((a, b) => {
           const order = ["BOE", "DOUE", "DOG", "BOA", "BOCM", "BOCYL", "BOJA", "BOPV", "CNMV"];
           return order.indexOf(a.collectionName.toUpperCase()) - order.indexOf(b.collectionName.toUpperCase());
         });
         
-        finalGroups.push(rangoGroup);
+        finalGroups.push(etiquetaGroup);
       }
 
-      // Sort rango groups by predefined order
-      finalGroups.sort((a, b) => {
-        const order = [
-          "Legislación", 
-          "Normativa Reglamentaria", 
-          "Doctrina Administrativa",
-          "Comunicados, Guías y Directivas de Reguladores",
-          "Decisiones Judiciales",
-          "Normativa Europea",
-          "Acuerdos Internacionales",
-          "Anuncios de Concentración de Empresas",
-          "Dictámenes y Opiniones",
-          "Subvenciones",
-          "Declaraciones e Informes de Impacto Ambiental",
-          "Otras"
-        ];
-        return order.indexOf(a.rangoTitle) - order.indexOf(b.rangoTitle);
-      });
+      // Sort etiqueta groups alphabetically
+      finalGroups.sort((a, b) => a.etiquetaTitle.localeCompare(b.etiquetaTitle));
 
       // 5) Build HTML
 

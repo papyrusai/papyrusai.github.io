@@ -1,4 +1,3 @@
-
 /* === ESTILOS PARA EL NUEVO MENÚ LATERAL Y LAYOUT === */
 
 /* Contenedor principal que envuelve el menú y el contenido */
@@ -135,5 +134,35 @@
   }
   
   /* === FIN ESTILOS PARA MENÚ LATERAL === */
+  
+  /* === ALIGN LEFT FOR LISTAS & CONFIGURACIÓN SECTIONS === */
+  #content-listas,
+  #content-configuracion {
+    padding-left: 0 !important; /* Remove any extra internal padding so it matches Agentes & Boletín */
+  }
+  
+  /* Eliminate additional left spacing inside the dynamically loaded configuración HTML */
+  #configuracion-iframe-container .config-body {
+    padding-left: 0 !important; /* Override inline padding (was 20px) */
+  }
+  
+  /* Ensure inner configuration content stretches from the very left (after sidebar) */
+  #configuracion-iframe-container .config-content {
+    margin-left: 0 !important; /* Prevent auto-centering */
+    align-items: flex-start !important;
+    text-align: left !important;
+  }
+  
+  /* Keep titles in configuration aligned with the rest */
+  #configuracion-iframe-container .main-title {
+    margin-left: 0 !important;
+  }
+  
+  /* Force zero left margin/padding for children of the affected sections */
+  #content-listas > *,
+  #content-configuracion > * {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+  }
   
   

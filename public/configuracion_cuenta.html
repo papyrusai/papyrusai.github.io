@@ -1283,7 +1283,7 @@
         </div>
       </div>
       
-      <div id="fuentes-content" class="config-content" style="display: none; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; max-width: 900px; margin: 0 auto;">
+      <div id="fuentes-content" class="config-content" style="display: none; flex-direction: column; align-items: flex-start; text-align: left; width: 100%; max-width: 900px; margin: 0 auto !important;">
           <div class="main-title">
             <i class="fas fa-database"></i><span>Selecciona tus fuentes oficiales</span>
             <div id="fuentes-usage-tracker" class="usage-tracker"></div>
@@ -1603,6 +1603,7 @@
             console.error('Error loading existing agents:', error);
         }
     }
+
     
          // Function to display existing agents
      function displayExistingAgents(etiquetas) {
@@ -1613,8 +1614,9 @@
          const existingBoxes = agentesContainer.querySelectorAll('.generated-agent-box');
          existingBoxes.forEach(box => box.remove());
          
-         // Create agent boxes for each etiqueta (insert after the create button)
-         Object.entries(etiquetas).forEach(([etiquetaName, etiquetaDefinition]) => {
+         // Convert to array, reverse to show newest first, then create agent boxes
+         const etiquetasArray = Object.entries(etiquetas).reverse();
+         etiquetasArray.forEach(([etiquetaName, etiquetaDefinition]) => {
              createAgentBox(etiquetaName, etiquetaDefinition, crearAgenteBtn);
          });
      }
@@ -1911,28 +1913,18 @@
          const crearAgenteBtn = document.getElementById('crearAgenteBtn');
          
          if (agentData.etiqueta_personalizada && crearAgenteBtn) {
-             // Extract the first (and only) key-value pair from etiqueta_personalizada
-             const etiquetaKey = Object.keys(agentData.etiqueta_personalizada)[0];
-             const etiquetaValue = agentData.etiqueta_personalizada[etiquetaKey];
-             
-             // Find the last agent box to insert after it (or after button if no agents exist)
-             const agentesContainer = document.querySelector('#agentes-content');
-             const agentBoxes = agentesContainer.querySelectorAll('.generated-agent-box');
-             const insertAfterElement = agentBoxes.length > 0 ? agentBoxes[agentBoxes.length - 1] : crearAgenteBtn;
-             
-             // Create a new agent box using the createAgentBox function
-             createAgentBox(etiquetaKey, etiquetaValue, insertAfterElement);
-             
-             // Scroll to the new agent box
+             // Wait a bit longer to ensure smooth loading, then reload all agents in correct order
              setTimeout(() => {
-                 const newAgentBox = insertAfterElement.nextElementSibling;
-                 if (newAgentBox && newAgentBox.classList.contains('generated-agent-box')) {
-                     newAgentBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                 }
-             }, 100);
-             
-             // Refresh usage tracker
-             loadExistingAgents();
+                 loadExistingAgents();
+                 
+                 // Scroll to top after reload
+                 setTimeout(() => {
+                     const configMenu = document.querySelector('.config-menu');
+                     if (configMenu) {
+                         configMenu.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                     }
+                 }, 200);
+             }, 800); // Extended delay for smoother experience
          }
      }
     
@@ -2285,10 +2277,18 @@
                       const result = await response.json();
                       
                       if (result.success && result.agent) {
-                          // Close all agent creation forms and show the generated agent
-                          hideProductForm();
-                          hideTemplateBox();
+                          // Show generated agent first (this will handle the delay and reload)
                           showGeneratedAgent(result.agent);
+                          
+                          // Close forms and reset button after the complete loading animation
+                          setTimeout(() => {
+                              hideProductForm();
+                              hideTemplateBox();
+                              generateAgentBtn.disabled = false;
+                              generateAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                          }, 1200); // Wait for showGeneratedAgent complete animation
+                          
+                          return; // Don't execute the catch block
                       } else {
                           throw new Error(result.error || 'Error generating agent');
                       }
@@ -2345,10 +2345,18 @@
                       const result = await response.json();
                       
                       if (result.success && result.agent) {
-                          // Close all agent creation forms and show the generated agent
-                          hideClientForm();
-                          hideTemplateBox();
+                          // Show generated agent first (this will handle the delay and reload)
                           showGeneratedAgent(result.agent);
+                          
+                          // Close forms and reset button after the complete loading animation
+                          setTimeout(() => {
+                              hideClientForm();
+                              hideTemplateBox();
+                              generateClientAgentBtn.disabled = false;
+                              generateClientAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                          }, 1200); // Wait for showGeneratedAgent complete animation
+                          
+                          return; // Don't execute the catch block
                       } else {
                           throw new Error(result.error || 'Error generating client agent');
                       }
@@ -2405,10 +2413,18 @@
                       const result = await response.json();
                       
                       if (result.success && result.agent) {
-                          // Close all agent creation forms and show the generated agent
-                          hideSectorForm();
-                          hideTemplateBox();
+                          // Show generated agent first (this will handle the delay and reload)
                           showGeneratedAgent(result.agent);
+                          
+                          // Close forms and reset button after the complete loading animation
+                          setTimeout(() => {
+                              hideSectorForm();
+                              hideTemplateBox();
+                              generateSectorAgentBtn.disabled = false;
+                              generateSectorAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                          }, 1200); // Wait for showGeneratedAgent complete animation
+                          
+                          return; // Don't execute the catch block
                       } else {
                           throw new Error(result.error || 'Error generating sector agent');
                       }
@@ -2461,10 +2477,18 @@
                       const result = await response.json();
                       
                       if (result.success && result.agent) {
-                          // Close all agent creation forms and show the generated agent
-                          hideCustomForm();
-                          hideTemplateBox();
+                          // Show generated agent first (this will handle the delay and reload)
                           showGeneratedAgent(result.agent);
+                          
+                          // Close forms and reset button after the complete loading animation
+                          setTimeout(() => {
+                              hideCustomForm();
+                              hideTemplateBox();
+                              generateCustomAgentBtn.disabled = false;
+                              generateCustomAgentBtn.innerHTML = '<i class="fas fa-magic"></i> Generar Agente';
+                          }, 1200); // Wait for showGeneratedAgent complete animation
+                          
+                          return; // Don't execute the catch block
                       } else {
                           throw new Error(result.error || 'Error generating custom agent');
                       }
