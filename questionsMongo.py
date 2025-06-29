@@ -80,12 +80,15 @@ def download_and_extract_text_from_pdf(pdf_url):
         return text
     except requests.exceptions.RequestException as e:
         logging.error(f"Error downloading PDF: {e}")
+        print("PDF_ACCESS_ERROR")
         return None
     except pypdf.errors.PdfReadError as e:
         logging.error(f"Error reading PDF: {e}")
+        print("PDF_ACCESS_ERROR")
         return None
     except Exception as e:
         logging.exception(f"Error processing PDF: {e}")
+        print("PDF_ACCESS_ERROR")
         return None
 
 def ask_gemini(text, prompt):
@@ -136,6 +139,9 @@ def main(document_id, user_prompt, collection_name, html_content=None): # Added 
     """Main function to connect, retrieve PDF URL, extract text, and ask Gemini."""
     logging.info(f"Starting main function with document_id: {document_id}")
     
+    # Set stdout to use utf-8 encoding at the beginning to handle all outputs
+    sys.stdout.reconfigure(encoding='utf-8')
+    
     # If HTML content is provided directly, use it instead of fetching from MongoDB
     if html_content:
         logging.info("Using provided HTML content for analysis")
@@ -154,6 +160,7 @@ def main(document_id, user_prompt, collection_name, html_content=None): # Added 
         text = download_and_extract_text_from_pdf(pdf_url)
         if not text:
             logging.error("Failed to extract text from PDF")
+            # Don't print anything else, the error was already printed in download_and_extract_text_from_pdf
             return
 
     system_prompt = """Eres un Asistente Legal de primer nivel, con profundo conocimiento en leyes y normativas. Tu tarea es analizar el documento proporcionado (PDF o texto HTML) y responder a la pregunta del usuario basándote *única y exclusivamente* en la información contenida en ese documento.

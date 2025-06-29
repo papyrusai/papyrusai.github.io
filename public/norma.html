@@ -37,6 +37,18 @@
             text-align: left;
             display: none;
             background-color: #ffffff;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+        
+        #analysisResult.show {
+            opacity: 1;
+        }
+        
+        #analysisResult.error-state {
+            border: none;
+            background-color: transparent;
+            padding: 0;
         }
 
         body {
@@ -391,74 +403,15 @@
             100% { opacity: 1; transform: translateX(0); }
         }
 
-        /* Analysis result render animation */
+        /* Analysis result - no animation for better performance */
         .analysis-render {
-            animation: renderFromTop 1.2s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
+            /* No animation - show results immediately */
         }
 
-        @keyframes renderFromTop {
-            0% { 
-                opacity: 0; 
-                transform: translateY(-30px);
-                max-height: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                margin-top: 0;
-                margin-bottom: 0;
-            }
-            25% {
-                opacity: 0.3;
-                transform: translateY(-15px);
-                max-height: 50px;
-            }
-            50% {
-                opacity: 0.7;
-                transform: translateY(-5px);
-                max-height: 200px;
-            }
-            75% {
-                opacity: 0.9;
-                transform: translateY(0);
-                max-height: 500px;
-            }
-            100% { 
-                opacity: 1; 
-                transform: translateY(0);
-                max-height: none;
-                padding-top: inherit;
-                padding-bottom: inherit;
-                margin-top: inherit;
-                margin-bottom: inherit;
-            }
-        }
-
-        /* Completed status animation */
+        /* Status completed - simplified for better performance */
         .status-completed {
-            animation: statusComplete 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes statusComplete {
-            0% { 
-                opacity: 1; 
-                transform: scale(1) translateY(0);
-            }
-            20% {
-                opacity: 1;
-                transform: scale(1.05) translateY(0);
-            }
-            40% {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-            60% {
-                opacity: 0.8;
-                transform: scale(0.95) translateY(-5px);
-            }
-            100% { 
-                opacity: 0; 
-                transform: scale(0.8) translateY(-15px);
-            }
+            /* No complex animation - just hide immediately */
+            opacity: 0;
         }
 
         /* ---------- BOCG banner ---------- */
@@ -578,10 +531,10 @@
 </div>
 
 </div>
-    <div id="analysisResult"></div>
 
     <!-- Status workflow indicator -->
     <div id="analysisStatus"><i class="fa fa-spinner spinner"></i> <span class="shimmer-text"></span></div>
+    <div id="analysisResult"></div>
 
 <!-- Sección de Feedback -->
 <div id="feedbackSection" style="display: none;">
@@ -687,8 +640,8 @@
         // Function for custom prompt analysis
         function performCustomAnalysis(customPrompt, buttonElement) {
             analysisResultDiv.textContent = ''; // Clear previous results
-            analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
-            analysisResultDiv.style.opacity = ''; // Reset opacity
+            analysisResultDiv.classList.remove('show'); // Reset transition class
+            analysisResultDiv.classList.remove('error-state'); // Reset error styling
             analysisResultDiv.style.display = 'none'; // Hide initially
             
             // Disable all buttons during analysis
@@ -714,12 +667,26 @@
                 body: JSON.stringify({ documentId: documentId, userPrompt: customPrompt, collectionName: collectionName })
             })
             .then(response => {
-                // Ensure we're properly handling the UTF-8 encoding
+                // Check if response is JSON (error) or HTML (success)
                 const contentType = response.headers.get('content-type');
+                
+                if (!response.ok) {
+                    // If response is not ok, try to parse as JSON for error details
+                    if (contentType && contentType.includes('application/json')) {
+                        return response.json().then(errorData => {
+                            throw new Error(JSON.stringify(errorData));
+                        });
+                    } else {
+                        return response.text().then(errorText => {
+                            throw new Error(errorText);
+                        });
+                    }
+                }
+                
+                // Success case - parse as text/html
                 if (contentType && contentType.includes('charset=utf-8')) {
                     return response.text();
                 }
-                // Explicitly decode as UTF-8 if charset not specified
                 return response.arrayBuffer().then(buffer => {
                     const decoder = new TextDecoder('utf-8');
                     return decoder.decode(buffer);
@@ -729,51 +696,99 @@
                 // Process the response
                 const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
                 
-                // Complete the status workflow with success animation
-                completeStatusWorkflow();
+                // Complete the status workflow
+                if (typeof completeStatusWorkflow === 'function') completeStatusWorkflow();
                 
-                // After status animation completes, show results with animation
+                // Show results immediately without delays
+                buttonElement.innerHTML = originalButtonText; // Restore original button text
+                
+                // Enable all buttons again
+                setAnalysisButtonsState(false);
+                
+                // Show content with smooth transition
+                analysisResultDiv.innerHTML = htmlContent;
+                analysisResultDiv.style.display = 'block';
+                analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
+                analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
+                
+                // Small delay for smooth transition
                 setTimeout(() => {
-                    buttonElement.innerHTML = originalButtonText; // Restore original button text
-                    
-                    // Enable all buttons again
-                    setAnalysisButtonsState(false);
-                    
-                    // Pre-set content but keep hidden for smooth transition
-                    analysisResultDiv.innerHTML = htmlContent;
-                    analysisResultDiv.style.display = 'block';
-                    analysisResultDiv.style.opacity = '0';
-                    
-                    // Small delay to ensure DOM is ready, then animate in
-                    setTimeout(() => {
-                        analysisResultDiv.classList.add('analysis-render');
-                        analysisResultDiv.style.opacity = '1';
-                    }, 50);
-                    
-                    showFeedbackSection();
-                }, 1200); // Consistent timing
+                    analysisResultDiv.classList.add('show');
+                    if (typeof showFeedbackSection === 'function') showFeedbackSection();
+                }, 250);
             })
             .catch(error => {
                 console.error('Error analyzing norma:', error);
                 
-                // Complete the status workflow with error animation
-                completeStatusWorkflowWithError();
+                // Parse error details if it's a JSON error
+                let errorType = 'GENERIC_ERROR';
+                let errorMessage = 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor';
+                let statusMessage = 'Error en el análisis';
                 
-                setTimeout(() => {
-                    buttonElement.innerHTML = originalButtonText; // Restore original button text
+                try {
+                    const errorData = JSON.parse(error.message);
+                    errorType = errorData.error;
+                    errorMessage = errorData.message;
+                } catch (e) {
+                    // If error message is not JSON, use the default error message
+                    console.error('Error parsing error response:', e);
+                }
+                
+                // Set specific status message based on error type
+                if (errorType === 'PDF_ACCESS_ERROR') {
+                    statusMessage = 'Error accediendo al documento';
+                } else {
+                    statusMessage = 'Error procesando análisis';
+                }
+                
+                // Show error in status first, then in result div
+                completeStatusWorkflowWithErrorAndCallback(statusMessage, () => {
+                    // This callback executes after status is hidden
                     
-                    // Enable all buttons again
+                    // Restore button state
+                    buttonElement.innerHTML = originalButtonText;
                     setAnalysisButtonsState(false);
                     
-                    analysisResultDiv.textContent = 'Error al analizar la norma. Por favor, inténtalo de nuevo.';
-                    analysisResultDiv.style.display = 'block';
-                    analysisResultDiv.style.opacity = '0';
+                    // Determine styling based on error type
+                    let errorStyle = '';
+                    if (errorType === 'PDF_ACCESS_ERROR') {
+                        errorStyle = `
+                            background-color: #ffebee;
+                            border: 2px solid #c62828;
+                            color: #c62828;
+                            padding: 15px;
+                            border-radius: 8px;
+                            margin: 10px 0;
+                            font-weight: 500;
+                        `;
+                    } else {
+                        errorStyle = `
+                            background-color: #ffebee;
+                            border: 2px solid #c62828;
+                            color: #f57f17;
+                            padding: 15px;
+                            border-radius: 8px;
+                            margin: 10px 0;
+                            font-weight: 500;
+                        `;
+                    }
                     
+                    // Create and show error element with smooth transition
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = errorStyle;
+                    errorDiv.textContent = errorMessage;
+                    
+                    analysisResultDiv.innerHTML = '';
+                    analysisResultDiv.appendChild(errorDiv);
+                    analysisResultDiv.style.display = 'block';
+                    analysisResultDiv.classList.remove('show');
+                    analysisResultDiv.classList.add('error-state'); // Add error styling to remove container border/background
+                    
+                    // Small delay for smooth transition
                     setTimeout(() => {
-                        analysisResultDiv.classList.add('analysis-render');
-                        analysisResultDiv.style.opacity = '1';
-                    }, 50);
-                }, 1400); // Consistent with other error cases
+                        analysisResultDiv.classList.add('show');
+                    }, 250);
+                });
             });
         }
 
@@ -933,7 +948,23 @@
                     body: JSON.stringify(requestBody)
                 })
                 .then(response => {
+                    // Check if response is JSON (error) or HTML (success)
                     const contentType = response.headers.get('content-type');
+                    
+                    if (!response.ok) {
+                        // If response is not ok, try to parse as JSON for error details
+                        if (contentType && contentType.includes('application/json')) {
+                            return response.json().then(errorData => {
+                                throw new Error(JSON.stringify(errorData));
+                            });
+                        } else {
+                            return response.text().then(errorText => {
+                                throw new Error(errorText);
+                            });
+                        }
+                    }
+                    
+                    // Success case - parse as text/html
                     if (contentType && contentType.includes('charset=utf-8')) {
                         return response.text();
                     }
@@ -955,7 +986,22 @@
                     resolve(finalHtml);
                 })
                 .catch(error => {
-                    reject(error);
+                    // Parse error details if it's a JSON error
+                    let errorType = 'GENERIC_ERROR';
+                    let errorMessage = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
+                    
+                    try {
+                        const errorData = JSON.parse(error.message);
+                        errorType = errorData.error;
+                        errorMessage = errorData.message;
+                    } catch (e) {
+                        // If error message is not JSON, use the raw error message
+                        console.error('Error parsing error response:', e);
+                    }
+                    
+                    const errorObj = new Error(errorMessage);
+                    errorObj.errorType = errorType;
+                    reject(errorObj);
                 });
             });
         }
@@ -1143,8 +1189,8 @@ ${bloqueContexto}
             }
             
             analysisResultDiv.textContent = ''; // Clear previous results
-            analysisResultDiv.classList.remove('analysis-render'); // Remove previous animation
-            analysisResultDiv.style.opacity = ''; // Reset opacity
+            analysisResultDiv.classList.remove('show'); // Reset transition class
+            analysisResultDiv.classList.remove('error-state'); // Reset error styling
             analysisResultDiv.style.display = 'none'; // Hide initially
             
             // Disable all buttons during analysis
@@ -1185,53 +1231,101 @@ ${bloqueContexto}
              // Handle the analysis promise
              analysisPromise
                                  .then(htmlContent => {
-                    // Complete the status workflow with success animation
-                    completeStatusWorkflow();
+                    // Complete the status workflow
+                    if (typeof completeStatusWorkflow === 'function') completeStatusWorkflow();
                     
-                    // After status animation completes, show results with animation
+                    // Show results immediately without delays
+                    buttonElement.innerHTML = originalButtonText; // Restore original button text
+                    buttonElement.style.backgroundColor = ''; // Remove inline style
+                    
+                    // Enable all buttons again
+                    setAnalysisButtonsState(false);
+                    
+                    // Show content with smooth transition
+                    analysisResultDiv.innerHTML = htmlContent;
+                    analysisResultDiv.style.display = 'block';
+                    analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
+                    analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
+                    
+                    // Small delay for smooth transition
                     setTimeout(() => {
-                        buttonElement.innerHTML = originalButtonText; // Restore original button text
-                        buttonElement.style.backgroundColor = ''; // Remove inline style
-                        
-                        // Enable all buttons again
-                        setAnalysisButtonsState(false);
-                        
-                        // Pre-set content but keep hidden for smooth transition
-                        analysisResultDiv.innerHTML = htmlContent;
-                        analysisResultDiv.style.display = 'block';
-                        analysisResultDiv.style.opacity = '0';
-                        
-                        // Small delay to ensure DOM is ready, then animate in
-                        setTimeout(() => {
-                            analysisResultDiv.classList.add('analysis-render');
-                            analysisResultDiv.style.opacity = '1';
-                        }, 50);
-                        
-                        showFeedbackSection();
-                    }, 1200); // Slightly reduced wait time for smoother transition
+                        analysisResultDiv.classList.add('show');
+                        if (typeof showFeedbackSection === 'function') showFeedbackSection();
+                    }, 250);
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);
                     
-                    // Complete the status workflow with error animation
-                    completeStatusWorkflowWithError();
+                    // Parse error details if it's a JSON error
+                    let errorType = 'GENERIC_ERROR';
+                    let errorMessage = 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor';
+                    let statusMessage = 'Error en el análisis';
                     
-                    setTimeout(() => {
-                        buttonElement.innerHTML = originalButtonText; // Restore original button text
-                        buttonElement.classList.remove('active'); // Remove active state on error
+                    try {
+                        const errorData = JSON.parse(error.message);
+                        errorType = errorData.error;
+                        errorMessage = errorData.message;
+                    } catch (e) {
+                        // If error message is not JSON, use the default error message
+                        console.error('Error parsing error response:', e);
+                    }
+                    
+                    // Set specific status message based on error type
+                    if (errorType === 'PDF_ACCESS_ERROR') {
+                        statusMessage = 'Error accediendo al documento';
+                    } else {
+                        statusMessage = 'Error procesando análisis';
+                    }
+                    
+                    // Show error in status first, then in result div
+                    completeStatusWorkflowWithErrorAndCallback(statusMessage, () => {
+                        // This callback executes after status is hidden
                         
-                        // Enable all buttons again
+                        // Restore button state
+                        buttonElement.innerHTML = originalButtonText;
+                        buttonElement.classList.remove('active');
                         setAnalysisButtonsState(false);
                         
-                        analysisResultDiv.textContent = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
-                        analysisResultDiv.style.display = 'block';
-                        analysisResultDiv.style.opacity = '0';
+                        // Determine styling based on error type
+                        let errorStyle = '';
+                        if (errorType === 'PDF_ACCESS_ERROR') {
+                            errorStyle = `
+                                background-color: #ffebee;
+                                border: 2px solid #c62828;
+                                color: #c62828;
+                                padding: 15px;
+                                border-radius: 8px;
+                                margin: 10px 0;
+                                font-weight: 500;
+                            `;
+                        } else {
+                            errorStyle = `
+                                background-color: #ffebee;
+                                border: 2px solid #c62828;
+                                color:#c62828;
+                                padding: 15px;
+                                border-radius: 8px;
+                                margin: 10px 0;
+                                font-weight: 500;
+                            `;
+                        }
                         
+                        // Create and show error element with smooth transition
+                        const errorDiv = document.createElement('div');
+                        errorDiv.style.cssText = errorStyle;
+                        errorDiv.textContent = errorMessage;
+                        
+                        analysisResultDiv.innerHTML = '';
+                        analysisResultDiv.appendChild(errorDiv);
+                        analysisResultDiv.style.display = 'block';
+                        analysisResultDiv.classList.remove('show');
+                        analysisResultDiv.classList.add('error-state'); // Add error styling to remove container border/background
+                        
+                        // Small delay for smooth transition
                         setTimeout(() => {
-                            analysisResultDiv.classList.add('analysis-render');
-                            analysisResultDiv.style.opacity = '1';
-                        }, 50);
-                    }, 1400); // Slightly longer for error case
+                            analysisResultDiv.classList.add('show');
+                        }, 250);
+                    });
                 });
         }
 
@@ -1543,6 +1637,36 @@ ${bloqueContexto}
                     spinnerIcon.className = 'fa fa-spinner spinner';
                 }, 800); // Match animation duration
             }, 800); // Show error state a bit longer
+        }
+
+        function completeStatusWorkflowWithErrorAndCallback(errorMessage, callback) {
+            // Cancel any pending timeouts
+            statusTimeouts.forEach(t => clearTimeout(t));
+            statusTimeouts = [];
+            console.log('[workflow] completing with error - showing custom message');
+            
+            // Show error status with custom message
+            const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
+            spinnerIcon.className = 'fa fa-exclamation-triangle'; // Change to error icon
+            statusTextSpan.classList.remove('slide');
+            void statusTextSpan.offsetWidth;
+            statusTextSpan.textContent = errorMessage;
+            statusTextSpan.classList.add('slide');
+            
+            // Animate out after showing error, then execute callback
+            setTimeout(() => {
+                analysisStatusDiv.classList.add('status-completed');
+                setTimeout(() => {
+                    analysisStatusDiv.style.display = 'none';
+                    analysisStatusDiv.classList.remove('status-completed');
+                    // Reset spinner for next time
+                    spinnerIcon.className = 'fa fa-spinner spinner';
+                    // Execute callback to show error in analysisResult
+                    if (callback && typeof callback === 'function') {
+                        callback();
+                    }
+                }, 800); // Match animation duration
+            }, 1200); // Show error state longer for user to read
         }
 
         function completeStatusWorkflow() {

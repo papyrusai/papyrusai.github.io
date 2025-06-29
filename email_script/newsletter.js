@@ -21,6 +21,9 @@ require('dotenv').config();
 const MONGODB_URI = process.env.DB_URI;
 const DB_NAME = 'papyrus';
 
+// Control whether to send emails to users without matches
+const SEND_EMAILS_TO_USERS_WITHOUT_MATCHES = false;
+
 // Take today's date in real time
 //const TODAY = moment().utc().subtract(3, 'days'); //moment().utc();
 const TODAY = moment().utc();
@@ -308,9 +311,12 @@ function buildDocumentHTMLWithCollectionRango(doc, isLastDoc) {
             Analizar documento
           </a>
         </div>
-        <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
-          Leer más: ${doc._id}
-        </a>
+        ${doc.url_pdf ? 
+          `<a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">Leer más: ${doc._id}</a>` :
+          doc.url_html ? 
+          `<a href="${doc.url_html}" target="_blank" style="color:#4ce3a7;">Leer más: ${doc._id}</a>` :
+          `<span style="color:#999;">Link no Identificado</span>`
+        }
         <span class="less-opacity">
           ${doc.num_paginas || 0} 
           ${doc.num_paginas === 1 ? 'página' : 'páginas'}
@@ -420,9 +426,12 @@ function buildDocumentHTML(doc, isLastDoc) {
             Analizar documento
           </a>
         </div>
-        <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
-          Leer más: ${doc._id}
-        </a>
+        ${doc.url_pdf ? 
+          `<a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">Leer más: ${doc._id}</a>` :
+          doc.url_html ? 
+          `<a href="${doc.url_html}" target="_blank" style="color:#4ce3a7;">Leer más: ${doc._id}</a>` :
+          `<span style="color:#999;">Link no Identificado</span>`
+        }
         <span class="less-opacity">
           ${doc.num_paginas || 0} 
           ${doc.num_paginas === 1 ? 'página' : 'páginas'}
@@ -483,9 +492,12 @@ function buildDocumentHTMLnoMatches(doc, isLastDoc) {
           Analizar documento
         </a>
       </div>
-      <a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">
-        Leer más: ${doc._id}
-      </a>
+      ${doc.url_pdf ? 
+        `<a href="${doc.url_pdf}" target="_blank" style="color:#4ce3a7;">Leer más: ${doc._id}</a>` :
+        doc.url_html ? 
+        `<a href="${doc.url_html}" target="_blank" style="color:#4ce3a7;">Leer más: ${doc._id}</a>` :
+        `<span style="color:#999;">Link no Identificado</span>`
+      }
       <span class="less-opacity">
         ${doc.num_paginas || 0} 
         ${doc.num_paginas === 1 ? 'página' : 'páginas'}
@@ -2582,6 +2594,20 @@ async function sendCollectionsReportEmail(db) {
       let hasMatches = finalGroups.length > 0;
       
       if (!hasMatches) {
+        // Add to statistics - users without matches
+        userStats.withoutMatches.push({
+          email: user.email,
+          etiquetasCount: userEtiquetasKeys.length,
+          etiquetas_personalizadas: user.etiquetas_personalizadas || {},
+          etiquetas_demo: user.etiquetas_demo || {}
+        });
+
+        // Check if we should send emails to users without matches
+        if (!SEND_EMAILS_TO_USERS_WITHOUT_MATCHES) {
+          console.log(`Skipping email for ${user.email} - no matches and SEND_EMAILS_TO_USERS_WITHOUT_MATCHES is false`);
+          continue; // Skip to next user
+        }
+
         // No matches => get BOE documents with seccion = "Disposiciones generales"
         const queryBoeGeneral = { 
           anio: anioToday, 
@@ -2616,14 +2642,6 @@ async function sendCollectionsReportEmail(db) {
             []
           );
         }
-        
-        // Add to statistics - users without matches
-        userStats.withoutMatches.push({
-          email: user.email,
-          etiquetasCount: userEtiquetasKeys.length,
-          etiquetas_personalizadas: user.etiquetas_personalizadas || {},
-          etiquetas_demo: user.etiquetas_demo || {}
-        });
       } else {
         htmlBody = buildNewsletterHTML(
           user.name || '',

@@ -556,6 +556,7 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
       anio: 1,
       resumen: 1,
       url_pdf: 1,
+      url_html: 1,
       _id: 1,
       seccion: 1,
       rango_titulo: 1
@@ -630,9 +631,14 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
               Analizar documento
             </a>
           </div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
-            Leer más: ${doc._id}
-          </a>
+          ${doc.url_pdf || doc.url_html ? 
+            `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>` : 
+            `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">
+              Leer más: ${doc._id} (No disponible)
+            </span>`
+          }
           <!-- Thumbs up/down icons -->
           <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
           <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
@@ -722,6 +728,7 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
       anio: 1,
       resumen: 1,
       url_pdf: 1,
+      url_html: 1,
       _id: 1,
       seccion: 1,
       rango_titulo: 1
@@ -789,9 +796,14 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
               Analizar documento
             </a>
           </div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
-            Leer más: ${doc._id}
-          </a>
+          ${doc.url_pdf || doc.url_html ? 
+            `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>` : 
+            `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">
+              Leer más: ${doc._id} (No disponible)
+            </span>`
+          }
           <!-- Thumbs up/down icons -->
           <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
           <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
@@ -1016,6 +1028,7 @@ console.log(`Query:`, query);
       mes: 1,
       anio: 1,
       url_pdf: 1,
+      url_html: 1,
       ramas_juridicas: 1,
       rango_titulo: 1,
       _id: 1,
@@ -1204,9 +1217,14 @@ console.log(`Query:`, query);
                  Analizar documento
               </a>
             </div>
-            <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
-              Leer más: ${doc._id}
-            </a>
+            ${doc.url_pdf || doc.url_html ? 
+              `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">
+                Leer más: ${doc._id}
+              </a>` : 
+              `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">
+                Leer más: ${doc._id} (No disponible)
+              </span>`
+            }
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
@@ -1572,6 +1590,7 @@ if (etiquetasKeys.length === 0) {
       mes: 1,
       anio: 1,
       url_pdf: 1,
+      url_html: 1,
       ramas_juridicas: 1,
       rango_titulo: 1,
       _id: 1,
@@ -1802,9 +1821,14 @@ if (etiquetasKeys.length === 0) {
                  Analizar documento
               </a>
             </div>
-            <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
-              Leer más: ${doc._id}
-            </a>
+            ${doc.url_pdf || doc.url_html ? 
+              `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">
+                Leer más: ${doc._id}
+              </a>` : 
+              `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">
+                Leer más: ${doc._id} (No disponible)
+              </span>`
+            }
             <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
             <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
                onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
@@ -1899,6 +1923,46 @@ if (etiquetasKeys.length === 0) {
   }
 });
 
+//------------------------- Available Collections for Boletin Diario -----------------------------
+app.get('/api/available-collections', async (req, res) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'User not authenticated' });
+  }
+
+  const client = new MongoClient(uri, mongodbOptions);
+  try {
+    await client.connect();
+    const database = client.db("papyrus");
+
+    // Get all collections from the database (similar to newsletter.js)
+    const allCollections = await database.listCollections().toArray();
+    const excludedCollections = ['logs', 'Feedback', 'Ramas boja', 'Ramas UE', 'users'];
+    
+    // Filter out excluded collections
+    const availableCollections = [];
+    for (const collection of allCollections) {
+      const collectionName = collection.name;
+      // Exclude specific collections and any collection ending with "_test"
+      if (!excludedCollections.includes(collectionName) && !collectionName.endsWith('_test')) {
+        availableCollections.push(collectionName.toUpperCase());
+      }
+    }
+
+    // Sort collections alphabetically
+    availableCollections.sort();
+
+    return res.json({
+      collections: availableCollections
+    });
+
+  } catch (error) {
+    console.error('Error fetching available collections:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  } finally {
+    await client.close();
+  }
+});
+
 //------------------------- Boletin Diario -----------------------------
 app.get('/api/boletin-diario', async (req, res) => {
   if (!req.isAuthenticated()) {
@@ -1972,6 +2036,7 @@ app.get('/api/boletin-diario', async (req, res) => {
       mes: 1,
       anio: 1,
       url_pdf: 1,
+      url_html: 1,
       ramas_juridicas: 1,
       rango_titulo: 1,
       _id: 1
@@ -2192,6 +2257,7 @@ app.get('/data', async (req, res) => {
       mes: 1,
       anio: 1,
       url_pdf: 1,
+      url_html: 1,
       rango_titulo: 1,
       etiquetas_personalizadas: 1,
       num_paginas: 1,
@@ -2524,9 +2590,14 @@ const queryWithoutEtiquetas = {
                Analizar documento
             </a>
           </div>
-          <a class="leer-mas" href="${doc.url_pdf}" target="_blank" style="margin-right: 15px;">
-            Leer más: ${doc._id}
-          </a>
+          ${doc.url_pdf || doc.url_html ? 
+            `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">
+              Leer más: ${doc._id}
+            </a>` : 
+            `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">
+              Leer más: ${doc._id} (No disponible)
+            </span>`
+          }
           <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
           <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
              onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
@@ -2957,6 +3028,28 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
           if (code !== 0) {
               console.error(`Python script exited with code ${code}`, errorOutput);
               return res.status(500).send(`Python script failed with error: ${errorOutput}`);
+          }
+
+          // Check for specific error types in the output
+          if (result.includes('PDF_ACCESS_ERROR')) {
+              console.log('PDF access error detected');
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              return res.status(400).json({ 
+                  error: 'PDF_ACCESS_ERROR', 
+                  message: 'Error al acceder al documento, análisis no disponible.' 
+              });
+          }
+
+          if (result.includes('Error: La respuesta del análisis no es un JSON válido.') ||
+              result.includes('Error: La respuesta del análisis no tiene el formato HTML esperado.') ||
+              result.includes('Error: Ocurrió un error inesperado al procesar la respuesta del análisis.') ||
+              result.includes('Error: Gemini did not respond.')) {
+              console.log('API processing error detected');
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              return res.status(500).json({ 
+                  error: 'API_PROCESSING_ERROR', 
+                  message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor' 
+              });
           }
 
           // Send the result back to the client with explicit UTF-8 encoding
@@ -5824,6 +5917,7 @@ TAREAS:
      • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, etc.).  
      • La etiqueta debe ser precisa y reflejar el área normativa más crítica para el cliente, evitando redundancias con categorías genéricas.  
      • La definición debe abarcar tanto disposiciones generales como específicas que puedan afectar al cliente (p. ej. requisitos de solvencia, protección de datos, comercialización, reporte).
+     • Se debe incluir el nombre del cliente en la definición.
 
 OBJETIVO DE SALIDA:
 Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
@@ -6110,6 +6204,176 @@ Ejemplo de estructura exacta (sin usar estos valores literales):
 
   } catch (error) {
     console.error('Error in generate-sector-agent endpoint:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Internal server error' 
+    });
+  }
+});
+
+// Generate Custom Agent endpoint
+app.post('/api/generate-custom-agent', ensureAuthenticated, async (req, res) => {
+  try {
+    const { customData } = req.body;
+    
+    if (!customData || !customData.description) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Custom description is required' 
+      });
+    }
+
+    console.log(`Generating custom agent for user: ${req.user._id}`);
+    console.log(`Custom data:`, customData);
+
+    /* ---------------- GET USER REGULATORY PROFILE ---------------- */
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    // Get current user data to access perfil_regulatorio
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      await client.close();
+      return res.status(404).json({ 
+        success: false, 
+        error: 'User not found' 
+      });
+    }
+
+    const perfilRegulatorio = user.perfil_regulatorio || '';
+
+    /* ---------------- BUILD DETAILED PROMPT WITH CUSTOM TEMPLATE ---------------- */
+    const prompt = `INSTRUCCIÓN PRINCIPAL:
+Generar **una única etiqueta jurídica** junto a su definición para clasificar documentos legales. Ten en cuenta el contexto de la empresa usuaria de la plataforma: ${perfilRegulatorio}
+
+Eres un experto jurídico en derecho español y de la Unión Europea; tus respuestas serán específicas para la normativa aplicable.
+
+DESCRIPCIÓN PERSONALIZADA (proporcionada por el usuario):
+${customData.description}
+
+TAREAS:
+1. ETIQUETA PERSONALIZADA:
+   - Basándote en la descripción anterior, genera **solo una etiqueta** que cumpla TODAS estas reglas:
+     • Adapta la etiqueta al contexto específico descrito por el usuario.
+     • No incluyas menciones a fuentes oficiales ni a jurisdicciones concretas (BOE, DOUE, etc.).
+     • La etiqueta debe ser precisa y abarcar el área normativa especificada por el usuario.
+     • La definición debe cubrir tanto disposiciones generales como específicas que puedan afectar al área descrita.
+
+OBJETIVO DE SALIDA:
+Devuelve **SOLO** un objeto JSON donde la clave "etiqueta_personalizada" contenga UN ÚNICO objeto con la etiqueta como clave y su definición como valor.
+
+Ejemplo de estructura exacta (sin usar estos valores literales):
+{
+  "etiqueta_personalizada": {
+    "Nombre descriptivo de la etiqueta jurídica": "Definición completa y precisa de qué abarca esta etiqueta en el contexto regulatorio"
+  }
+}`;
+
+    // Log the prompt being sent to the LLM
+    console.log('=== CUSTOM PROMPT SENT TO LLM ===');
+    console.log(prompt);
+    console.log('=== END CUSTOM PROMPT ===');
+
+    /* ---------------- GOOGLE GEMINI CONFIG ---------------- */
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Google Gemini API key not configured' 
+      });
+    }
+
+    const systemInstructions = `Eres un experto jurídico especializado en derecho español y de la Unión Europea. Tu tarea es generar etiquetas jurídicas precisas para clasificar documentos legales. Devuelve ÚNICAMENTE un objeto JSON válido con la estructura especificada en las instrucciones.`;
+
+    /* ---------------- CALL GEMINI 1.5 PRO ---------------- */
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`;
+
+    const body = {
+      systemInstruction: {
+        parts: [{ text: systemInstructions }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.7,
+        topP: 0.95,
+        topK: 64,
+        maxOutputTokens: 1024
+      }
+    };
+
+    const response = await fetch(geminiEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Gemini API error:', errorText);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Error generating custom agent with AI' 
+      });
+    }
+
+    const data = await response.json();
+    const aiContent = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    console.log('=== CUSTOM LLM RESPONSE ===');
+    console.log(aiContent);
+    console.log('=== END CUSTOM LLM RESPONSE ===');
+
+    let parsedAgent;
+    try {
+      parsedAgent = JSON.parse(aiContent);
+    } catch (err) {
+      console.error('Failed to parse Gemini response:', err, aiContent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid AI response format' 
+      });
+    }
+
+    // Validate the response structure
+    if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') {
+      console.error('Invalid agent structure:', parsedAgent);
+      await client.close();
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Invalid agent structure from AI' 
+      });
+    }
+
+    // Merge new agent with existing etiquetas_personalizadas
+    const existingEtiquetas = user.etiquetas_personalizadas || {};
+    const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
+
+    // Update user document
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { etiquetas_personalizadas: newEtiquetas } }
+    );
+
+    await client.close();
+
+    console.log('Custom agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
+
+    res.json({
+      success: true,
+      agent: parsedAgent,
+      message: 'Custom agent generated and saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in generate-custom-agent endpoint:', error);
     res.status(500).json({ 
       success: false,
       error: 'Internal server error' 
