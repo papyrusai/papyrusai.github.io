@@ -267,13 +267,17 @@
         /* Dropdown para selección de agentes */
         .analysis-dropdown {
             display: none;
-            position: relative;
+            position: absolute;
+            top: 100%;
+            left: 0;
             background: #ffffff;
             border: 1px solid #e0e0e0;
             border-radius: 12px;
-            padding: 20px;
-            margin-top: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 16px;
+            margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 300px;
             animation: dropdownSlide 0.3s ease-out;
         }
 
@@ -283,7 +287,7 @@
         }
 
         .dropdown-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             color: var(--text-color);
             margin-bottom: 12px;
@@ -418,7 +422,7 @@
         .bocg-banner {
             background: #fff3cd;
             color: #856404;
-            border: 1px solid #ffeeba;
+            border: 1px solid #856404;
             border-radius: 12px;
             padding: 12px 18px;
             text-align: center;
@@ -458,6 +462,97 @@
             text-align: center;
             font-size: 14px;
             margin-top: 16px;
+        }
+
+        /* ---------- Analysis Settings Dropdown ---------- */
+        .analysis-settings-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 2%;
+            /* Removed top margin to align with other buttons */
+            margin-top: 0;
+        }
+
+        .analysis-settings-btn {
+            background: transparent;
+            color: var(--text-color);
+            padding: 8px 16px;
+            border: 1px solid #999;
+            border-radius: 16px;
+            cursor: pointer;
+            /* Removed top margin to align with other buttons */
+            margin-top: 2%;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 36px;
+        }
+
+        .analysis-settings-btn:hover {
+            background-color: var(--text-color);
+            color: white;
+            border-color: var(--text-color);
+        }
+
+        .analysis-settings-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1000;
+            min-width: 200px;
+            animation: dropdownSlide 0.3s ease-out;
+        }
+
+        .analysis-settings-dropdown.show {
+            display: block;
+        }
+
+        .settings-dropdown-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 12px;
+            text-align: left;
+        }
+
+        .settings-item {
+            margin-bottom: 12px;
+        }
+
+        .settings-item label {
+            display: block;
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 4px;
+            text-align: left;
+        }
+
+        .settings-select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #dcdcdc;
+            border-radius: 6px;
+            font-size: 14px;
+            background-color: #ffffff;
+            color: var(--text-color);
+        }
+
+        .settings-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 3px rgba(4, 219, 141, 0.3);
         }
 
     </style>
@@ -506,7 +601,7 @@
 <textarea class="user-prompt" id="userPrompt" name="userPrompt" placeholder="Escribe aquí para analizar la norma..." spellcheck="false"></textarea>
 <button id="sendCustomPrompt" title="Enviar consulta personalizada">↑</button>
 </div>
-<div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+<div class="buttons-container" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; position: relative;">
     <button id="analyzeButton" class="analisis-impacto">
         <i class="fa fa-file-text-o icon"></i>
         <span>Realizar resumen</span>
@@ -519,15 +614,32 @@
         <span class="icon">⚠</span>
         <span>Riesgos y oportunidades</span>
     </button>
-</div>
-
-<!-- Dropdown para selección de agentes -->
-<div id="analysisDropdown" class="analysis-dropdown">
-    <div class="dropdown-title">Selecciona agentes</div>
-    <div id="etiquetasList" class="etiquetas-list">
-        <!-- Las etiquetas se llenarán dinámicamente -->
+    
+    <!-- Settings dropdown for analysis -->
+  <!--  <div class="analysis-settings-container"> -->
+        <button id="analysisSettingsBtn" class="analysis-settings-btn" title="Ajustes de análisis">
+            <i class="fa fa-cog"></i>
+        </button>
+        <div id="analysisSettingsDropdown" class="analysis-settings-dropdown">
+            <div class="settings-dropdown-title">Ajustes de análisis</div>
+            <div class="settings-item">
+                <label for="analysis-idioma-select">Idioma:</label>
+                <select id="analysis-idioma-select" class="settings-select">
+                    <option value="español">Español</option>
+                    <option value="inglés">Inglés</option>
+                </select>
+            </div>
+        </div>
+    <!-- </div> -->
+    
+    <!-- Dropdown para selección de agentes -->
+    <div id="analysisDropdown" class="analysis-dropdown">
+        <div class="dropdown-title">Selecciona agentes</div>
+        <div id="etiquetasList" class="etiquetas-list">
+            <!-- Las etiquetas se llenarán dinámicamente -->
+        </div>
+        <button id="startAnalysisBtn" class="start-analysis-btn">Empezar análisis</button>
     </div>
-    <button id="startAnalysisBtn" class="start-analysis-btn">Empezar análisis</button>
 </div>
 
 </div>
@@ -567,6 +679,9 @@
         const analysisDropdown = document.getElementById('analysisDropdown');
         const etiquetasList = document.getElementById('etiquetasList');
         const startAnalysisBtn = document.getElementById('startAnalysisBtn');
+        const analysisSettingsBtn = document.getElementById('analysisSettingsBtn');
+        const analysisSettingsDropdown = document.getElementById('analysisSettingsDropdown');
+        const analysisIdiomaSelect = document.getElementById('analysis-idioma-select');
         let statusTimeouts = [];
         let currentAnalysisType = null;
         let activeAnalysisButton = null;
@@ -600,6 +715,34 @@
         let documentUrlPdf = null;
         let documentUrlHtml = null;
 
+        // Analysis settings management
+        function loadAnalysisSettings() {
+            const savedIdioma = localStorage.getItem('analysis_idioma') || 'español';
+            if (analysisIdiomaSelect) {
+                analysisIdiomaSelect.value = savedIdioma;
+            }
+        }
+
+        function saveAnalysisSettings() {
+            if (analysisIdiomaSelect) {
+                localStorage.setItem('analysis_idioma', analysisIdiomaSelect.value);
+            }
+        }
+
+        function getSelectedAnalysisLanguage() {
+            return analysisIdiomaSelect ? analysisIdiomaSelect.value : 'español';
+        }
+
+        function toggleAnalysisSettingsDropdown() {
+            // Hide analysis dropdown if it's open
+            hideAnalysisDropdown();
+            analysisSettingsDropdown.classList.toggle('show');
+        }
+
+        function hideAnalysisSettingsDropdown() {
+            analysisSettingsDropdown.classList.remove('show');
+        }
+
         // Función para mostrar la sección de feedback
         function showFeedbackSection() {
           const feedbackSection = document.getElementById('feedbackSection');
@@ -627,7 +770,13 @@
                 return;
             }
             
+            // Obtener idioma seleccionado
+            const idiomaSeleccionado = getSelectedAnalysisLanguage();
+            const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
+            
             const customPrompt = `${userInput}
+
+${bloqueIdioma}
 
 === Formato de salida ===
 • Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
@@ -809,6 +958,9 @@
 
         // Function to show analysis dropdown with agent selection
         function showAnalysisDropdown(analysisType, buttonElement) {
+            // Hide settings dropdown if it's open
+            hideAnalysisSettingsDropdown();
+            
             currentAnalysisType = analysisType;
             activeAnalysisButton = buttonElement;
             
@@ -819,6 +971,12 @@
             
             // Set this button as active
             buttonElement.classList.add('active');
+            
+            // Position the dropdown relative to the pressed button
+            const buttonRect = buttonElement.getBoundingClientRect();
+            const containerRect = buttonElement.parentElement.getBoundingClientRect();
+            const leftOffset = buttonRect.left - containerRect.left;
+            analysisDropdown.style.left = `${leftOffset}px`;
             
             // Populate etiquetas list
             const etiquetasData = window.getEtiquetasData ? window.getEtiquetasData() : {};
@@ -890,6 +1048,8 @@
         // Function to hide analysis dropdown
         function hideAnalysisDropdown() {
             analysisDropdown.style.display = 'none';
+            // Reset position
+            analysisDropdown.style.left = '0';
             // Reset active button state
             document.querySelectorAll('.analisis-impacto').forEach(btn => {
                 btn.classList.remove('active');
@@ -1035,8 +1195,12 @@
                 contextoPerfilTexto = `\n=== CONTEXTO – PERFIL REGULATORIO DE LA EMPRESA ===\n${perfilRegulatorio}\n`;
             }
 
-            // Unir ambos contextos (perfil + etiqueta) para inyectarlos antes del resto del prompt
-            const bloqueContexto = `${contextoPerfilTexto}${contextoEtiquetaTexto}\n`;
+            // Obtener idioma seleccionado
+            const idiomaSeleccionado = getSelectedAnalysisLanguage();
+            const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
+
+            // Unir ambos contextos (perfil + etiqueta + idioma) para inyectarlos antes del resto del prompt
+            const bloqueContexto = `${contextoPerfilTexto}${contextoEtiquetaTexto}${bloqueIdioma}\n`;
 
             // Return the appropriate prompt based on type
             if (promptType === 'checklist') {
@@ -1538,7 +1702,30 @@ ${bloqueContexto}
                     !risksButton.contains(event.target)) {
                     hideAnalysisDropdown();
                 }
+                
+                // Close analysis settings dropdown if clicking outside
+                if (!analysisSettingsDropdown.contains(event.target) && 
+                    !analysisSettingsBtn.contains(event.target)) {
+                    hideAnalysisSettingsDropdown();
+                }
             });
+
+            // Analysis settings event listeners
+            if (analysisSettingsBtn) {
+                analysisSettingsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleAnalysisSettingsDropdown();
+                });
+            }
+
+            if (analysisIdiomaSelect) {
+                analysisIdiomaSelect.addEventListener('change', () => {
+                    saveAnalysisSettings();
+                });
+            }
+
+            // Load analysis settings on page load
+            loadAnalysisSettings();
 
         function startStatusWorkflow(analysisType = 'generic') {
             clearStatusWorkflow();

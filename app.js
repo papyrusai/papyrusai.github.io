@@ -80,8 +80,8 @@ const server = app.listen(port, () => {
 });
 */
 app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.set('trust proxy', 1); // IMPORTANT when behind a proxy (Render)
 
@@ -4978,6 +4978,7 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
       instructions, 
       language, 
       documentType,
+      idioma,
       colorPalette 
     } = req.body;
 
@@ -4997,23 +4998,95 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
     }
 
     console.log(`Generating marketing content for user: ${userEmail}`);
-    console.log(`Documents count: ${selectedDocuments.length}`);
     console.log(`Instructions: ${instructions.substring(0, 100)}...`);
+    console.log(`User ID: ${req.user._id}`);
+
+    // Enriquecer documentos con etiquetas personalizadas del usuario
+    const client = new MongoClient(uri, mongodbOptions);
+    let enrichedDocuments = [];
+
+    try {
+      await client.connect();
+      const database = client.db("papyrus");
+      const usersCollection = database.collection("users");
+      
+      // Obtener las definiciones de etiquetas del usuario
+      const user = await usersCollection.findOne(
+        { _id: new ObjectId(req.user._id) }, 
+        { projection: { etiquetas_personalizadas: 1 } }
+      );
+      const userEtiquetasDefiniciones = user?.etiquetas_personalizadas || {};
+      
+      console.log(`User tag definitions found: ${Object.keys(userEtiquetasDefiniciones).length} tags`);
+      
+      // Procesar cada documento para añadir etiquetas personalizadas
+      for (const doc of selectedDocuments) {
+        const enrichedDoc = { ...doc };
+        
+                 // Buscar el documento original en MongoDB para obtener etiquetas_personalizadas
+         if (doc.collectionName && doc.short_name) {
+           const collection = database.collection(doc.collectionName);
+           console.log(`Searching for document with short_name: ${doc.short_name} in collection: ${doc.collectionName}`);
+           const originalDoc = await collection.findOne(
+             { short_name: doc.short_name },
+             { projection: { etiquetas_personalizadas: 1, short_name: 1 } }
+           );
+          
+          if (originalDoc && originalDoc.etiquetas_personalizadas) {
+            const userId = req.user._id.toString();
+            console.log(`Checking etiquetas_personalizadas for doc ${doc.short_name}, userId: ${userId}`);
+            
+            if (originalDoc.etiquetas_personalizadas[userId]) {
+              console.log(`Found user tags for document: ${Object.keys(originalDoc.etiquetas_personalizadas[userId]).length} tags`);
+              enrichedDoc.etiquetas_personalizadas = {
+                [userId]: originalDoc.etiquetas_personalizadas[userId]
+              };
+            } else {
+              console.log(`No user tags found for document ${doc.short_name}`);
+              enrichedDoc.etiquetas_personalizadas = {};
+            }
+          } else {
+            console.log(`No etiquetas_personalizadas field in document ${doc.short_name}`);
+            enrichedDoc.etiquetas_personalizadas = {};
+          }
+                 } else {
+           console.log(`Missing short_name or collectionName for document ${doc.short_name}`);
+           enrichedDoc.etiquetas_personalizadas = {};
+         }
+        
+        enrichedDocuments.push(enrichedDoc);
+      }
+      
+    } catch (dbError) {
+      console.error('Error enriching documents with user tags:', dbError);
+      // En caso de error, usar documentos originales sin etiquetas
+      enrichedDocuments = selectedDocuments.map(doc => ({
+        ...doc,
+        etiquetas_personalizadas: {}
+      }));
+    } finally {
+      await client.close();
+    }
 
     // Preparar los datos para el script de Python
     const pythonInput = {
-      documents: selectedDocuments,
+      documents: enrichedDocuments,
       instructions: instructions.trim(),
       language: language || 'juridico',
-      documentType: documentType || 'whatsapp'
+      documentType: documentType || 'whatsapp',
+      idioma: idioma || 'español'
     };
 
     // Llamar al script de Python
     const { spawn } = require('child_process');
-    const pythonProcess = spawn('python', ['marketing.py', JSON.stringify(pythonInput)], {
+    const pythonProcess = spawn('python', ['marketing.py'], {
       encoding: 'utf8',
       env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
     });
+    
+    // Enviar los datos a través de stdin en lugar de argumentos para evitar ENAMETOOLONG
+    pythonProcess.stdin.write(JSON.stringify(pythonInput));
+    pythonProcess.stdin.end();
 
     let pythonOutput = '';
     let pythonError = '';
@@ -5026,7 +5099,9 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
     });
 
     pythonProcess.stderr.on('data', (data) => {
-      pythonError += data.toString('utf8');
+      const logData = data.toString('utf8');
+      console.log(logData); // Mostrar logs en tiempo real en la consola de Node.js
+      pythonError += logData;
     });
 
     pythonProcess.on('close', (code) => {
