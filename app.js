@@ -3038,49 +3038,110 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
            console.log(`Python stdout: ${data}`);
       });
 
-      // Capture errors from the Python script
-      pythonProcess.stderr.on('data', (data) => {
-          errorOutput += data; // data is now a UTF-8 string
-           console.error(`Python stderr: ${data}`);
-      });
+                // Capture errors from the Python script
+          pythonProcess.stderr.on('data', (data) => {
+              errorOutput += data; // data is now a UTF-8 string
+               console.error(`Python stderr: ${data}`);
+               
+               // Check for specific MongoDB timeout errors
+               if (data.includes('querySrv ETIMEOUT') || data.includes('grpc_wait_for_shutdown_with_timeout')) {
+                   console.log('MongoDB timeout error detected');
+               }
+          });
 
       // Handle process completion
       pythonProcess.on('close', (code) => {
-          if (code !== 0) {
-              console.error(`Python script exited with code ${code}`, errorOutput);
-              return res.status(500).send(`Python script failed with error: ${errorOutput}`);
+          // Prepare helper to send the clean result
+          const sendCleanResult = (cleanStr) => {
+              // Try to parse as JSON first (in case Python returns structured data)
+              try {
+                  const jsonResult = JSON.parse(cleanStr);
+                  if (jsonResult.html_response) {
+                      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                      res.send(jsonResult.html_response);
+                      return;
+                  } else if (jsonResult.error) {
+                      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                      return res.status(500).json(jsonResult);
+                  }
+              } catch (e) {
+                  // Not JSON, continue
+              }
+  
+              // Send as HTML or plain text depending on content
+              const isHtml = cleanStr.includes('<h2>') || cleanStr.includes('<p>') || cleanStr.includes('<table>') || cleanStr.includes('<html>');
+              if (isHtml) {
+                  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+              } else {
+                  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+              }
+              res.send(cleanStr);
+          };
+  
+          // First, check if we have valid content in stdout regardless of exit code
+          let cleanResult = result.trim();
+          const hasValidContent = cleanResult.length > 0 &&
+                                 (cleanResult.includes('<h2>') || cleanResult.includes('<p>') ||
+                                  cleanResult.includes('<table>') || cleanResult.includes('<html>'));
+  
+          // If process failed but we have valid HTML content, log warning but proceed with content
+          if (code !== 0 && hasValidContent) {
+              console.warn(`Python script exited with code ${code} but generated valid content. Proceeding with content.`);
+              console.warn(`Error output (ignored): ${errorOutput}`);
+              return sendCleanResult(cleanResult);
           }
-
-          // Check for specific error types in the output
+  
+          // If process failed and no valid content, return error
+          if (code !== 0) {
+              console.error(`Python script exited with code ${code} and no valid content`, errorOutput);
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              return res.status(500).json({
+                  error: 'PYTHON_SCRIPT_ERROR',
+                  message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
+                  details: errorOutput
+              });
+          }
+  
+          // ---------- NORMAL SUCCESS FLOW BELOW ----------
+  
+          // Check for specific error types in the output (only if script succeeded)
           if (result.includes('PDF_ACCESS_ERROR')) {
               console.log('PDF access error detected');
               res.setHeader('Content-Type', 'application/json; charset=utf-8');
-              return res.status(400).json({ 
-                  error: 'PDF_ACCESS_ERROR', 
-                  message: 'Error al acceder al documento, análisis no disponible.' 
+              return res.status(400).json({
+                  error: 'PDF_ACCESS_ERROR',
+                  message: 'Error al acceder al documento, análisis no disponible.'
               });
           }
-
-          if (result.includes('Error: La respuesta del análisis no es un JSON válido.') ||
-              result.includes('Error: La respuesta del análisis no tiene el formato HTML esperado.') ||
-              result.includes('Error: Ocurrió un error inesperado al procesar la respuesta del análisis.') ||
-              result.includes('Error: Gemini did not respond.')) {
-              console.log('API processing error detected');
+  
+          if (errorOutput.includes('querySrv ETIMEOUT') || errorOutput.includes('grpc_wait_for_shutdown_with_timeout') ||
+              result.includes('ETIMEOUT') || result.includes('timeout')) {
+              // Log but DO NOT fail – just warn and continue with result if valid
+              console.warn('Database timeout detected (ignored because script succeeded)');
+          }
+  
+          // Clean and validate the result before sending
+          if (!cleanResult) {
+              console.log('Empty result detected');
               res.setHeader('Content-Type', 'application/json; charset=utf-8');
-              return res.status(500).json({ 
-                  error: 'API_PROCESSING_ERROR', 
-                  message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor' 
+              return res.status(500).json({
+                  error: 'EMPTY_RESPONSE',
+                  message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor'
               });
           }
-
-          // Send the result back to the client with explicit UTF-8 encoding
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-          res.send(result);
+  
+          // Send the clean result (success path)
+          sendCleanResult(cleanResult);
       });
 
   } catch (error) {
       console.error('Error executing Python script:', error);
-      res.status(500).send('Error executing Python script');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.status(500).json({ 
+          error: 'SCRIPT_EXECUTION_ERROR', 
+          message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
+          details: error.message 
+      });
   }
 });
 
@@ -4310,72 +4371,6 @@ app.post('/update-subscription', ensureAuthenticated, async (req, res) => {
     res.status(500).send('Error updating subscription');
   }
 });
-/*old user details
-app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
-  try {
-    const client = new MongoClient(uri, mongodbOptions);
-    await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
-
-    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Return the relevant info
-    res.json({
-      name: user.name || '',
-      subscription_plan: user.subscription_plan || 'plan1',
-      industry_tags: user.industry_tags || [],       // array of strings
-      rama_juridicas: user.rama_juridicas || []      // array of strings
-    });
-  } catch (error) {
-    console.error('Error fetching current user:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-*/
-app.get('/api/current-user-details', ensureAuthenticated, async (req, res) => {
-  try {
-    const client = new MongoClient(uri, mongodbOptions);
-    await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
-
-    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Return all relevant user information for onboarding
-    res.json({
-      name: user.name || '',
-      web: user.web || '',
-      linkedin: user.linkedin || '',
-      perfil_profesional: user.perfil_profesional || '',
-      especializacion: user.especializacion || '',
-      otro_perfil: user.otro_perfil || '',
-      subscription_plan: user.subscription_plan || 'plan1',
-      profile_type: user.profile_type || 'individual',
-      company_name: user.company_name || '',
-      industry_tags: user.industry_tags || [],
-      sub_industria_map: user.sub_industria_map || [],
-      rama_juridicas: user.rama_juridicas || [],
-      sub_rama_map: user.sub_rama_map || {},
-      rangos: user.rangos || [],
-      cobertura_legal: user.cobertura_legal || {
-        "fuentes-gobierno": [],
-        "fuentes-reguladores": []
-      }
-    });
-    
-    await client.close();
-  } catch (error) {
-    console.error('Error fetching current user:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Actualización de la API existente para incluir los nuevos campos
 app.get('/api/get-user-data', ensureAuthenticated, async (req, res) => {
@@ -5126,40 +5121,87 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
     });
 
     pythonProcess.on('close', (code) => {
+      // Prepare helper to send the clean result
+      const sendCleanResult = (cleanStr) => {
+          // Try to parse as JSON first (in case Python returns structured data)
+          try {
+              const jsonResult = JSON.parse(cleanStr);
+              if (jsonResult.html_response) {
+                  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                  res.send(jsonResult.html_response);
+                  return;
+              } else if (jsonResult.error) {
+                  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                  return res.status(500).json(jsonResult);
+              }
+          } catch (e) {
+              // Not JSON, continue
+          }
+  
+          // Send as HTML or plain text depending on content
+          const isHtml = cleanStr.includes('<h2>') || cleanStr.includes('<p>') || cleanStr.includes('<table>') || cleanStr.includes('<html>');
+          if (isHtml) {
+              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          } else {
+              res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+          }
+          res.send(cleanStr);
+      };
+  
+      // First, check if we have valid content in stdout regardless of exit code
+      let cleanResult = pythonOutput.trim();
+      const hasValidContent = cleanResult.length > 0 &&
+                              (cleanResult.includes('<h2>') || cleanResult.includes('<p>') ||
+                               cleanResult.includes('<table>') || cleanResult.includes('<html>'));
+  
+      // If process failed but we have valid HTML content, log warning but proceed with content
+      if (code !== 0 && hasValidContent) {
+          console.warn(`Python script exited with code ${code} but generated valid content. Proceeding with content.`);
+          console.warn(`Error output (ignored): ${pythonError}`);
+          return sendCleanResult(cleanResult);
+      }
+  
+      // If process failed and no valid content, return error
       if (code !== 0) {
-        console.error(`Python script exited with code ${code}`);
-        console.error(`Python error: ${pythonError}`);
-        return res.status(500).json({ 
-          success: false, 
-          error: 'Error interno al generar el contenido' 
-        });
-      }
-
-      try {
-        // Parsear la respuesta del script de Python
-        const result = JSON.parse(pythonOutput.trim());
-        
-        if (result.success) {
-          console.log('Marketing content generated successfully');
-          res.json({
-            success: true,
-            content: result.content
+          console.error(`Python script exited with code ${code} and no valid content`, pythonError);
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          return res.status(500).json({
+              error: 'PYTHON_SCRIPT_ERROR',
+              message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
+              details: pythonError
           });
-        } else {
-          console.error('Python script returned error:', result.error);
-          res.status(400).json({
-            success: false,
-            error: result.error || 'Error al generar el contenido'
-          });
-        }
-      } catch (parseError) {
-        console.error('Error parsing Python output:', parseError);
-        console.error('Raw Python output:', pythonOutput);
-        res.status(500).json({ 
-          success: false, 
-          error: 'Error al procesar la respuesta del generador de contenido' 
-        });
       }
+  
+      // ---------- NORMAL SUCCESS FLOW BELOW ----------
+  
+      // Check for specific error types in the output (only if script succeeded)
+      if (cleanResult.includes('PDF_ACCESS_ERROR')) {
+          console.log('PDF access error detected');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          return res.status(400).json({
+              error: 'PDF_ACCESS_ERROR',
+              message: 'Error al acceder al documento, análisis no disponible.'
+          });
+      }
+  
+      if (pythonError.includes('querySrv ETIMEOUT') || pythonError.includes('grpc_wait_for_shutdown_with_timeout') ||
+          cleanResult.includes('ETIMEOUT') || cleanResult.includes('timeout')) {
+          // Log but DO NOT fail – just warn and continue with result if valid
+          console.warn('Database timeout detected (ignored because script succeeded)');
+      }
+  
+      // Clean and validate the result before sending
+      if (!cleanResult) {
+          console.log('Empty result detected');
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          return res.status(500).json({
+              error: 'EMPTY_RESPONSE',
+              message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor'
+          });
+      }
+  
+      // Send the clean result (success path)
+      sendCleanResult(cleanResult);
     });
 
     pythonProcess.on('error', (error) => {

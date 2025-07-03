@@ -827,23 +827,51 @@ ${bloqueIdioma}
                         });
                     } else {
                         return response.text().then(errorText => {
-                            throw new Error(errorText);
+                            // Try to parse as JSON even if content-type is not set correctly
+                            try {
+                                const jsonData = JSON.parse(errorText);
+                                throw new Error(JSON.stringify(jsonData));
+                            } catch (e) {
+                                // If it's not JSON, treat as plain text error
+                                throw new Error(errorText);
+                            }
                         });
                     }
                 }
                 
                 // Success case - parse as text/html
-                if (contentType && contentType.includes('charset=utf-8')) {
+                if (contentType && contentType.includes('text/html')) {
+                    return response.text();
+                } else if (contentType && contentType.includes('application/json')) {
+                    // Handle case where success response might be JSON
+                    return response.json().then(jsonData => {
+                        if (jsonData.html_response) {
+                            return jsonData.html_response;
+                        }
+                        return JSON.stringify(jsonData);
+                    });
+                } else if (contentType && contentType.includes('text/plain')) {
+                    // Handle plain text response
                     return response.text();
                 }
-                return response.arrayBuffer().then(buffer => {
-                    const decoder = new TextDecoder('utf-8');
-                    return decoder.decode(buffer);
-                });
+                
+                // Fallback - try to parse as text
+                return response.text();
             })
             .then(data => {
-                // Process the response
-                const htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                // Process the response - handle different types of content
+                let htmlContent = data;
+                
+                // If data is a string, clean it up
+                if (typeof data === 'string') {
+                    // Remove any HTML wrapper tags if present
+                    htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                    
+                    // If it's plain text (no HTML tags), wrap it in a paragraph
+                    if (!htmlContent.includes('<') && htmlContent.trim().length > 0) {
+                        htmlContent = `<p>${htmlContent}</p>`;
+                    }
+                }
                 
                 // Complete the status workflow
                 if (typeof completeStatusWorkflow === 'function') completeStatusWorkflow();
@@ -878,14 +906,51 @@ ${bloqueIdioma}
                     const errorData = JSON.parse(error.message);
                     errorType = errorData.error;
                     errorMessage = errorData.message;
+                    
+                    // Log additional details for debugging
+                    if (errorData.details) {
+                        console.log('Error details:', errorData.details);
+                    }
                 } catch (e) {
-                    // If error message is not JSON, use the default error message
+                    // If error message is not JSON, check if it contains useful information
                     console.error('Error parsing error response:', e);
+                    
+                    // Try to extract meaningful information from plain text errors
+                    const errorText = error.message || error.toString();
+                    
+                    // Check for common error patterns
+                    if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) {
+                        errorType = 'PDF_ACCESS_ERROR';
+                        errorMessage = 'Error al acceder al documento, análisis no disponible.';
+                                             } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) {
+                             errorType = 'TIMEOUT_ERROR';
+                             errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
+                         } else if (errorText.includes('DATABASE_TIMEOUT')) {
+                             errorType = 'DATABASE_TIMEOUT';
+                             errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
+                         } else if (errorText.includes('network') || errorText.includes('connection')) {
+                        errorType = 'NETWORK_ERROR';
+                        errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
+                    } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) {
+                        errorType = 'SERVER_ERROR';
+                        errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.';
+                    } else if (errorText.length > 0 && errorText.length < 200) {
+                        // If it's a short error message, show it directly
+                        errorMessage = errorText;
+                    }
                 }
                 
                 // Set specific status message based on error type
                 if (errorType === 'PDF_ACCESS_ERROR') {
                     statusMessage = 'Error accediendo al documento';
+                } else if (errorType === 'TIMEOUT_ERROR') {
+                    statusMessage = 'Tiempo de espera agotado';
+                } else if (errorType === 'DATABASE_TIMEOUT') {
+                    statusMessage = 'Tiempo de espera agotado';
+                } else if (errorType === 'NETWORK_ERROR') {
+                    statusMessage = 'Error de conexión';
+                } else if (errorType === 'SERVER_ERROR') {
+                    statusMessage = 'Error del servidor';
                 } else {
                     statusMessage = 'Error procesando análisis';
                 }
@@ -1119,22 +1184,51 @@ ${bloqueIdioma}
                             });
                         } else {
                             return response.text().then(errorText => {
-                                throw new Error(errorText);
+                                // Try to parse as JSON even if content-type is not set correctly
+                                try {
+                                    const jsonData = JSON.parse(errorText);
+                                    throw new Error(JSON.stringify(jsonData));
+                                } catch (e) {
+                                    // If it's not JSON, treat as plain text error
+                                    throw new Error(errorText);
+                                }
                             });
                         }
                     }
                     
                     // Success case - parse as text/html
-                    if (contentType && contentType.includes('charset=utf-8')) {
+                    if (contentType && contentType.includes('text/html')) {
+                        return response.text();
+                    } else if (contentType && contentType.includes('application/json')) {
+                        // Handle case where success response might be JSON
+                        return response.json().then(jsonData => {
+                            if (jsonData.html_response) {
+                                return jsonData.html_response;
+                            }
+                            return JSON.stringify(jsonData);
+                        });
+                    } else if (contentType && contentType.includes('text/plain')) {
+                        // Handle plain text response
                         return response.text();
                     }
-                    return response.arrayBuffer().then(buffer => {
-                        const decoder = new TextDecoder('utf-8');
-                        return decoder.decode(buffer);
-                    });
+                    
+                    // Fallback - try to parse as text
+                    return response.text();
                 })
                 .then(data => {
-                    const htmlResult = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                    // Process the response - handle different types of content
+                    let htmlResult = data;
+                    
+                    // If data is a string, clean it up
+                    if (typeof data === 'string') {
+                        // Remove any HTML wrapper tags if present
+                        htmlResult = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                        
+                        // If it's plain text (no HTML tags), wrap it in a paragraph
+                        if (!htmlResult.includes('<') && htmlResult.trim().length > 0) {
+                            htmlResult = `<p>${htmlResult}</p>`;
+                        }
+                    }
                     
                     // Show banner if analysis was based on HTML source
                     let finalHtml = htmlResult;
@@ -1154,9 +1248,38 @@ ${bloqueIdioma}
                         const errorData = JSON.parse(error.message);
                         errorType = errorData.error;
                         errorMessage = errorData.message;
+                        
+                        // Log additional details for debugging
+                        if (errorData.details) {
+                            console.log('Error details:', errorData.details);
+                        }
                     } catch (e) {
-                        // If error message is not JSON, use the raw error message
+                        // If error message is not JSON, check if it contains useful information
                         console.error('Error parsing error response:', e);
+                        
+                        // Try to extract meaningful information from plain text errors
+                        const errorText = error.message || error.toString();
+                        
+                        // Check for common error patterns
+                        if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) {
+                            errorType = 'PDF_ACCESS_ERROR';
+                            errorMessage = 'Error al acceder al documento, análisis no disponible.';
+                        } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) {
+                            errorType = 'TIMEOUT_ERROR';
+                            errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
+                        } else if (errorText.includes('DATABASE_TIMEOUT')) {
+                            errorType = 'DATABASE_TIMEOUT';
+                            errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
+                        } else if (errorText.includes('network') || errorText.includes('connection')) {
+                            errorType = 'NETWORK_ERROR';
+                            errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
+                        } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) {
+                            errorType = 'SERVER_ERROR';
+                            errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.';
+                        } else if (errorText.length > 0 && errorText.length < 200) {
+                            // If it's a short error message, show it directly
+                            errorMessage = errorText;
+                        }
                     }
                     
                     const errorObj = new Error(errorMessage);
