@@ -1440,6 +1440,7 @@ app.get('/profile', async (req, res) => {
     const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
     const documentosEliminados = user.documentos_eliminados || [];
     
+    // Formatear la registration_date del usuario para el banner
     let formattedRegDate = "01/04/2025"; // Fecha por defecto si no se encuentra o hay error
     if (user && user.registration_date) {
         try {
@@ -1501,6 +1502,32 @@ app.get('/profile', async (req, res) => {
     if (userBoletines.length === 0) {
       userBoletines = ["BOE"];
     }
+
+    // Calcular fechas por defecto antes de verificar etiquetas personalizadas
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // Primer día del mes actual
+    const endDate = now;
+
+    // Obtener parámetros de búsqueda de la URL
+    const { etiquetas, boletines, rangos, startDate: queryStartDate, endDate: queryEndDate } = req.query;
+    
+    // Parsear fechas si existen
+    const searchStartDate = queryStartDate ? new Date(queryStartDate) : startDate;
+    const searchEndDate = queryEndDate ? new Date(queryEndDate) : endDate;
+    
+    // Crear formato de fecha seguro para evitar problemas de zona horaria
+    const formatDateForFrontend = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    const searchStartDateFormatted = formatDateForFrontend(searchStartDate);
+    const searchEndDateFormatted = formatDateForFrontend(searchEndDate);
+    
+    console.log(`Fechas para frontend - Inicio: ${searchStartDateFormatted}, Fin: ${searchEndDateFormatted}`);
+
 // Verificar si el usuario tiene etiquetas personalizadas
 if (etiquetasKeys.length === 0) {
   // Preparar HTML con mensaje personalizado
@@ -1523,8 +1550,14 @@ if (etiquetasKeys.length === 0) {
     .replace('{{months_json}}', JSON.stringify([]))
     .replace('{{counts_json}}', JSON.stringify([]))
     .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
-    .replace('{{start_date}}', JSON.stringify(new Date()))
-    .replace('{{end_date}}', JSON.stringify(new Date()))
+    .replace('{{start_date}}', JSON.stringify((() => {
+      const d = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })()))
+    .replace('{{end_date}}', JSON.stringify((() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })()))
     .replace('{{user_boletines_json}}', JSON.stringify(userBoletines || []))
     .replace('{{user_rangos_json}}', JSON.stringify(userRangos || []))
     .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas))
@@ -1534,22 +1567,10 @@ if (etiquetasKeys.length === 0) {
   return res.send(profileHtml);
 }
 
-    // Default date range for "profile": from registration date to now
-    const now = new Date();
-    const startDate = new Date(user.registration_date || new Date());
-    const endDate = now;
-
-    // Obtener parámetros de búsqueda de la URL
-    const { etiquetas, boletines, rangos, startDate: queryStartDate, endDate: queryEndDate } = req.query;
-    
     // Parsear parámetros si existen
     const selectedEtiquetas = etiquetas ? JSON.parse(etiquetas) : etiquetasKeys;
     const selectedBoletines = boletines ? JSON.parse(boletines) : userBoletines;
     const selectedRangos = rangos ? JSON.parse(rangos) : userRangos;
-    
-    // Parsear fechas si existen
-    const searchStartDate = queryStartDate ? new Date(queryStartDate) : startDate;
-    const searchEndDate = queryEndDate ? new Date(queryEndDate) : endDate;
     const dateFilter = buildDateFilter(searchStartDate, searchEndDate);
 
     // NUEVA CONSULTA: Filtrar principalmente por etiquetas personalizadas
@@ -1907,8 +1928,8 @@ if (etiquetasKeys.length === 0) {
       .replace('{{months_json}}', JSON.stringify(monthsForChart))
       .replace('{{counts_json}}', JSON.stringify(countsForChart))
       .replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
-      .replace('{{start_date}}', JSON.stringify(searchStartDate))
-      .replace('{{end_date}}', JSON.stringify(searchEndDate))
+      .replace('{{start_date}}', JSON.stringify(searchStartDateFormatted))
+      .replace('{{end_date}}', JSON.stringify(searchEndDateFormatted))
       .replace('{{user_boletines_json}}', JSON.stringify(selectedBoletines))
       .replace('{{user_rangos_json}}', JSON.stringify(selectedRangos))
       .replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas))
