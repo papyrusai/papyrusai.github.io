@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boletín Diario</title>
+    
+    <style>
+        .boletin-tags { 
+            margin: 8px 0; 
+            font-size: 0.9em; 
+            line-height: 1.6; 
+        }
+        .boletin-tags strong { 
+            margin-right: 5px; 
+            font-weight: 600; 
+        }
+        .tag-rama, .tag-division {
+            display: inline-block;
+            padding: 3px 10px;
+            margin: 2px 4px 2px 0;
+            border-radius: 14px;
+            font-size: 0.85em;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .tag-rama { 
+            background-color: rgba(69, 88, 98, 0.1); 
+            color: rgb(69 88 98); 
+        }
+        .tag-division { 
+            background-color: rgba(4, 219, 141, 0.1); 
+            color: rgb(4 219 141); 
+        }
+
+        /* Ajustes para dropdowns del boletín */
+        #boletinDiarioDropdown, #rangoDiarioDropdown {
+            max-height: 200px;
+            overflow-y: auto;
+            position: absolute;
+            z-index: 1000;
+            background: #fff;
+            border: 1px solid #ccc;
+            padding: 5px;
+            display: none;
+            min-width: 200px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #boletinDiarioDropdown.show, #rangoDiarioDropdown.show {
+            display: block;
+        }
+        #boletinDiarioDropdown label, #rangoDiarioDropdown label {
+            display: block;
+            padding: 6px 8px;
+            margin: 0;
+            cursor: pointer;
+            font-size: 0.9em;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+            transition: background-color 0.2s ease;
+        }
+        #boletinDiarioDropdown label:hover, #rangoDiarioDropdown label:hover {
+            background-color: #f5f5f5;
+        }
+        #boletinDiarioDropdown label:last-child, #rangoDiarioDropdown label:last-child {
+            border-bottom: none;
+        }
+        #boletinDiarioDropdown input[type="checkbox"], #rangoDiarioDropdown input[type="checkbox"] {
+            width: 16px; 
+            height: 16px; 
+            transform: scale(0.9); 
+            accent-color: var(--primary-color, #04db8d); 
+            margin-right: 8px; 
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <h2>Boletín Diario</h2>
+    
+    <!-- Newsletter Subscription Banner (hidden by default) -->
+    <div id="newsletter-banner" style="display: none; background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="color: var(--text-color); margin-top: 0;">Suscribete a nuestra newsletter</h3>
+        <p style="color: var(--secondary-color); margin-bottom: 20px;">Accede a resúmenes diarios y clasificación por áreas de las disposiciones generales del BOE y DOUE de manera gratuita</p>
+        <div style="display: flex; gap: 10px;">
+            <button id="accept-newsletter" style="background-color: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Aceptar suscripción</button>
+            <button id="reject-newsletter" style="background-color: #f1f1f1; color: var(--text-color); border: 1px solid #ddd; padding: 8px 16px; border-radius: 4px; cursor: pointer;">No gracias</button>
+        </div>
+    </div>
+    
+    <div id="boletin-fecha" style="font-weight: bold; margin-bottom: 15px; font-size: 1.1em; color: var(--text-color);">Cargando fecha...</div>
+
+    <!-- Filtros para Boletín Diario -->
+    <div id="boletin-filtros" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; align-items: flex-end; border: 1px solid var(--border-color, #e0e0e0); padding: 15px; border-radius: 8px; background-color: rgba(69, 88, 98, 0.1);width:500px;">
+        <!-- Filtro Boletín (Fuente Oficial) -->
+        <div class="filter-item">
+            <div class="etiquetas-label">Fuente Oficial</div>
+            <div class="dropdown">
+                <button class="dropbtn" id="btnBoletinDiario" onclick="toggleBoletinDiarioDropdown()">
+                    <span id="selectedBoletinesDiario">Todas</span>
+                    <i class="fa fa-caret-down"></i>
+                </button>
+                <div id="boletinDiarioDropdown" class="dropdown-content">
+                    <!-- Opciones se poblarán dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtro Rango -->
+        <div class="filter-item">
+            <div class="etiquetas-label">Rango</div>
+            <div class="dropdown">
+                <button class="dropbtn" id="btnRangoDiario" onclick="toggleRangoDiarioDropdown()">
+                    <span id="selectedRangoDiario">Todos</span>
+                    <i class="fa fa-caret-down"></i>
+                </button>
+                <div id="rangoDiarioDropdown" class="dropdown-content">
+                    <!-- Opciones se poblarán dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Botón Aplicar Filtros -->
+        <button id="aplicarFiltrosBoletinBtn" onclick="fetchBoletinDiario()" style="padding: 8px 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 20px; cursor: pointer; height: fit-content; font-size: 14px;">Aplicar Filtros</button>
+    </div>
+
+    <!-- Contenedor para los documentos del boletín -->
+    <div id="boletin-loading-icon" style="display: block;">
+        <div class="loader"></div> <!-- Reutiliza tu clase loader existente -->
+    </div>
+    <div id="boletin-documentos-container">
+        <!-- Los documentos se cargarán aquí -->
+        <p id="boletin-initial-message" style="display: none;">Selecciona los filtros y pulsa "Aplicar Filtros" o espera a la carga inicial.</p>
+    </div>
+
+    <script src="boletindiario.js"></script>
+</body>
+</html>

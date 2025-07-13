@@ -172,20 +172,38 @@ app.get('/paso1.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'paso1.html'));
 });
 
-app.get('/paso0.html', ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'paso0.html'));
+app.get('/onboarding/paso0.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'onboarding', 'paso0.html'));
+});
+
+app.get('/onboarding/paso4.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'onboarding', 'paso4.html'));
+});
+
+app.get('/views/tuslistas/textEditor.js', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'views', 'tuslistas', 'textEditor.js'));
 });
 
 app.get('/profile.html', ensureAuthenticated, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'profile.html'));
 });
 
-app.get('/suscripcion.html', ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'suscripcion.html'));
+app.get('/features/suscripcion.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'features', 'suscripcion.html'));
 });
 
+app.get('/views/analisis/norma.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'views', 'analisis', 'norma.html'));
+});
+
+// Route for the old norma.html path - redirect to new location
 app.get('/norma.html', ensureAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'norma.html'));
+  res.sendFile(path.join(__dirname, 'public', 'views', 'analisis', 'norma.html'));
+});
+
+// Route for the old consultas_publicas.html path - redirect to new location
+app.get('/consultas_publicas.html', ensureAuthenticated, (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'views', 'consultas_publicas', 'consultas_publicas.html'));
 });
 
 // Serve static files from the "public" directory
@@ -376,7 +394,7 @@ app.post('/login', (req, res, next) => {
         return res.status(200).json({ redirectUrl: '/profile' });
         //return res.redirect('/profile');
       } else {
-        return res.status(200).json({ redirectUrl: '/paso0.html' });
+        return res.status(200).json({ redirectUrl: '/onboarding/paso0.html' });
       }
     });
   })(req, res, next);
@@ -467,7 +485,7 @@ app.post('/register', async (req, res) => {
       }
 
       // Otherwise normal new user flow
-      return res.status(200).json({ redirectUrl: '/paso0.html' });
+      return res.status(200).json({ redirectUrl: '/onboarding/paso0.html' });
     });
   } catch (err) {
     console.error("Error registering user:", err);
@@ -526,7 +544,7 @@ app.get('/auth/google/callback',
         }
         return res.redirect('/profile');
       } else {
-        return res.redirect('/paso0.html');
+        return res.redirect('/onboarding/paso0.html');
       }
     } catch (err) {
       console.error('Error connecting to MongoDB', err);
@@ -639,10 +657,6 @@ app.get('/profile_cuatrecasas', ensureAuthenticated, async (req, res) => {
               Leer más: ${doc._id} (No disponible)
             </span>`
           }
-          <!-- Thumbs up/down icons -->
-          <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
-          <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
-             onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
 
           <!-- Hidden for filters -->
           <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
@@ -804,10 +818,6 @@ app.get('/profile_a&o', ensureAuthenticated, async (req, res) => {
               Leer más: ${doc._id} (No disponible)
             </span>`
           }
-          <!-- Thumbs up/down icons -->
-          <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
-          <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
-             onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
 
           <span class="doc-seccion" style="display:none;">${doc.seccion || "Disposiciones generales"}</span>
           <span class="doc-rango" style="display:none;">${rangoToShow}</span>
@@ -1225,9 +1235,6 @@ console.log(`Query:`, query);
                 Leer más: ${doc._id} (No disponible)
               </span>`
             }
-            <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
-            <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
-               onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
 
             <!-- Botón de Guardar -->
             <div class="guardar-button">
@@ -1806,12 +1813,24 @@ if (etiquetasKeys.length === 0) {
                     nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
                   }
                   
+                  // Agregar iconos de feedback después del nivel de impacto
+                  const feedbackIcons = nivelImpacto ? `
+                    <span style="margin-left: 12px; display: inline-flex; align-items: center; gap: 8px;">
+                      <i class="fa fa-thumbs-up thumb-icon" 
+                         onclick="sendFeedback('${doc._id}', 'like', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')"
+                         style="cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;"></i>
+                      <i class="fa fa-thumbs-down thumb-icon" 
+                         onclick="sendFeedback('${doc._id}', 'dislike', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')"
+                         style="cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;"></i>
+                    </span>
+                  ` : '';
+                  
                   return `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
                     <svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;">
                       <path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path>
                     </svg>
                     <div style="flex: 1;">
-                      <span style="font-weight: 600;">${etiqueta}</span>${nivelTag}
+                      <span style="font-weight: 600;">${etiqueta}</span>${nivelTag}${feedbackIcons}
                       <div style="margin-top: 4px; color: #555;">${explicacion}</div>
                     </div>
                   </div>`;
@@ -1850,9 +1869,6 @@ if (etiquetasKeys.length === 0) {
                 Leer más: ${doc._id} (No disponible)
               </span>`
             }
-            <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
-            <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
-               onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
             
             <!-- Botón de Guardar -->
             <div class="guardar-button">
@@ -2575,12 +2591,24 @@ const queryWithoutEtiquetas = {
                   nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
                 }
                 
+                // Agregar iconos de feedback después del nivel de impacto
+                const feedbackIcons = nivelImpacto ? `
+                  <span style="margin-left: 12px; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fa fa-thumbs-up thumb-icon" 
+                       onclick="sendFeedback('${doc._id}', 'like', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')"
+                       style="cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;"></i>
+                    <i class="fa fa-thumbs-down thumb-icon" 
+                       onclick="sendFeedback('${doc._id}', 'dislike', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')"
+                       style="cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;"></i>
+                  </span>
+                ` : '';
+                
                 return `<div style="margin-bottom: 12px; display: flex; align-items: baseline;">
                   <svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;">
                     <path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path>
                   </svg>
                   <div style="flex: 1;">
-                    <span style="font-weight: 600;">${etiqueta}</span>${nivelTag}
+                    <span style="font-weight: 600;">${etiqueta}</span>${nivelTag}${feedbackIcons}
                     <div style="margin-top: 4px; color: #555;">${explicacion}</div>
                   </div>
                 </div>`;
@@ -2619,9 +2647,6 @@ const queryWithoutEtiquetas = {
               Leer más: ${doc._id} (No disponible)
             </span>`
           }
-          <i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this)"></i>
-          <i class="fa fa-thumbs-down thumb-icon" style="margin-left: 10px;"
-             onclick="sendFeedback('${doc._id}', 'dislike', this)"></i>
           
           <!-- Botón de Guardar -->
           <div class="guardar-button">
@@ -2686,24 +2711,41 @@ const queryWithoutEtiquetas = {
 // 5) FEEDBACK POST ROUTE
 //
 app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
-  const { docId, feedback } = req.body;
+  const { docId, feedback, agenteEtiquetado, coleccion, docUrl, docTitle, feedbackDetalle } = req.body;
+  
+
+  
   if (!docId || !feedback) {
     return res.status(400).json({ error: 'Missing docId or feedback' });
   }
 
   const userId = req.user._id;
   const userEmail = req.user.email;
-  const contentEvaluated = 'norma';
   const now = new Date();
   const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
-  const feedbackDoc = {
-    user_id: userId,
-    user_email: userEmail,
-    content_evaluated: contentEvaluated,
+  // Separar feedback del detalle
+  let feedbackType = feedback;
+  let feedbackDetail = feedbackDetalle || '';
+  
+  // Si el feedback contiene "dislike:" separar el tipo del detalle
+  if (feedback && feedback.includes('dislike:')) {
+    feedbackType = 'dislike';
+    feedbackDetail = feedback.split('dislike:')[1].trim();
+  } else if (feedback && feedback.includes('like')) {
+    feedbackType = 'like';
+  }
+  
+  // Crear nueva evaluación
+  const nuevaEvaluacion = {
+    content_evaluated: 'etiquetado',
     doc_id: docId,
-    fecha: dateStr,   // dd-mm-yyyy
-    feedback: feedback
+    coleccion: coleccion || 'No especificada',
+    fecha: dateStr,
+    feedback: feedbackType,
+    doc_url: docUrl || '',
+    agente_etiquetados: agenteEtiquetado || 'No especificado',
+    feedback_detalle: feedbackDetail
   };
 
   const client = new MongoClient(uri, mongodbOptions);
@@ -2712,7 +2754,65 @@ app.post('/feedback-thumbs', ensureAuthenticated, async (req, res) => {
     const database = client.db("papyrus");
     const feedbackCollection = database.collection("Feedback");
 
-    await feedbackCollection.insertOne(feedbackDoc);
+    // Solo buscar el documento si la información del frontend no está disponible
+    if (!coleccion || coleccion === 'No especificada' || !docUrl) {
+      // Buscar en las colecciones principales
+      const collectionNames = ['BOE', 'CEPC', 'CNMV', 'ESMA', 'EBA', 'DOUE', 'AEPD', 'BANCO_ESPANA', 'SEPBLAC', 'CNMC', 'INCIBE', 'NIST', 'BOJA', 'BOCM', 'DOGC', 'DOGV', 'DOG', 'BOIB', 'BOPV', 'BOCYL', 'DOE', 'BOA', 'BORM', 'BOPA', 'BOC', 'BOCa', 'BOCG', 'DGSFP', 'BCE', 'EIOPA', 'edpb', 'aepd_guias', 'eiopa_news', 'NIST_NEWS', 'EBA_QA', 'ESMA_QA'];
+      
+      for (const collName of collectionNames) {
+        try {
+          // Buscar por múltiples criterios para ser más flexible
+          const searchCriteria = {
+            $or: [
+              { _id: docId },
+              { short_name: docId },
+              { title: docId },
+              { _id: { $regex: docId, $options: 'i' } },
+              { short_name: { $regex: docId, $options: 'i' } }
+            ]
+          };
+          
+          const docFound = await database.collection(collName).findOne(searchCriteria);
+          if (docFound) {
+            // Solo sobrescribir si los valores del frontend no están disponibles
+            if (!coleccion || coleccion === 'No especificada') {
+              nuevaEvaluacion.coleccion = collName;
+            }
+            if (!docUrl) {
+              nuevaEvaluacion.doc_url = docFound.url_pdf || docFound.url_html || '';
+            }
+            break;
+          }
+        } catch (err) {
+          // Si la colección no existe, continuar con la siguiente
+          continue;
+        }
+      }
+    }
+
+    // Buscar si ya existe un documento de feedback para este usuario
+    const existingFeedback = await feedbackCollection.findOne({ user_email: userEmail });
+
+    if (existingFeedback) {
+      // Si existe, agregar la nueva evaluación al array
+      await feedbackCollection.updateOne(
+        { user_email: userEmail },
+        { 
+          $push: { evaluaciones: nuevaEvaluacion },
+          $set: { updated_at: now }
+        }
+      );
+    } else {
+      // Si no existe, crear un nuevo documento
+      const feedbackDoc = {
+        user_id: userId,
+        user_email: userEmail,
+        created_at: now,
+        updated_at: now,
+        evaluaciones: [nuevaEvaluacion]
+      };
+      await feedbackCollection.insertOne(feedbackDoc);
+    }
 
     return res.json({ success: true, message: 'Feedback saved successfully' });
   } catch (err) {
@@ -2952,6 +3052,7 @@ app.get('/logout', (req, res) => {
            rango_titulo: document.rango_titulo, // Nuevo: Añade esta línea
            url_pdf: document.url_pdf, // Nuevo: Añade esta línea
            url_html: document.url_html, // Add url_html to the response
+           contenido: document.contenido, // Add contenido to the response
            user_etiquetas_personalizadas: userEtiquetasPersonalizadas, // Enviar solo las etiquetas del usuario para esta norma
            perfil_regulatorio: perfilRegulatorioUser, // Perfil regulatorio del usuario para personalizar el análisis
            user_etiquetas_definiciones: etiquetasDefiniciones // Definiciones globales de las etiquetas
@@ -3055,17 +3156,56 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
           const sendCleanResult = (cleanStr) => {
               // Try to parse as JSON first (in case Python returns structured data)
               try {
-                  const jsonResult = JSON.parse(cleanStr);
+                  // Clean the string first to handle potential JSON parsing issues
+                  let jsonString = cleanStr.trim();
+                  
+                  // Try to extract JSON from the string if it's wrapped in other content
+                  const jsonMatch = jsonString.match(/\{[^}]*"html_response"[^}]*\}/s);
+                  if (jsonMatch) {
+                      jsonString = jsonMatch[0];
+                  }
+                  
+                  const jsonResult = JSON.parse(jsonString);
                   if (jsonResult.html_response) {
+                      // Clean the HTML response to remove escape characters
+                      let htmlContent = jsonResult.html_response;
+                      
+                      // Replace \n with actual newlines and clean up
+                      htmlContent = htmlContent.replace(/\\n/g, '\n');
+                      htmlContent = htmlContent.replace(/\\\"/g, '"');
+                      htmlContent = htmlContent.replace(/\\\\/g, '\\');
+                      
                       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                      res.send(jsonResult.html_response);
+                      res.send(htmlContent);
                       return;
                   } else if (jsonResult.error) {
                       res.setHeader('Content-Type', 'application/json; charset=utf-8');
                       return res.status(500).json(jsonResult);
                   }
               } catch (e) {
-                  // Not JSON, continue
+                  // If JSON parsing fails, check if the string contains JSON-like content
+                  if (cleanStr.includes('{"html_response"')) {
+                      try {
+                          // Try to extract and clean JSON from the string
+                          const startIndex = cleanStr.indexOf('{"html_response"');
+                          const endIndex = cleanStr.lastIndexOf('}') + 1;
+                          if (startIndex !== -1 && endIndex > startIndex) {
+                              const jsonStr = cleanStr.substring(startIndex, endIndex);
+                              const jsonResult = JSON.parse(jsonStr);
+                              if (jsonResult.html_response) {
+                                  let htmlContent = jsonResult.html_response;
+                                  htmlContent = htmlContent.replace(/\\n/g, '\n');
+                                  htmlContent = htmlContent.replace(/\\\"/g, '"');
+                                  htmlContent = htmlContent.replace(/\\\\/g, '\\');
+                                  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                                  res.send(htmlContent);
+                                  return;
+                              }
+                          }
+                      } catch (e2) {
+                          // Still not JSON, continue to fallback
+                      }
+                  }
               }
   
               // Send as HTML or plain text depending on content
@@ -3771,7 +3911,7 @@ const session = await stripe.checkout.sessions.create({
   },
   metadata: metadataChunks,
   success_url: `${BASE_URL}/save-user?session_id={CHECKOUT_SESSION_ID}`,
-  cancel_url: `${BASE_URL}/paso0.html`,
+  cancel_url: `${BASE_URL}/views/onboarding/paso0.html`,
 });
 
 console.log('[create-checkout-session] Stripe session created successfully');
@@ -4828,6 +4968,58 @@ app.post('/api/save-document-to-lists', ensureAuthenticated, async (req, res) =>
   }
 });
 
+// Ruta para quitar un documento de una lista específica
+app.post('/api/remove-document-from-list', ensureAuthenticated, async (req, res) => {
+  try {
+    const { documentId, listName } = req.body;
+    
+    if (!documentId || !listName) {
+      return res.status(400).json({ error: 'Parámetros requeridos: documentId, listName' });
+    }
+
+    const client = new MongoClient(uri, mongodbOptions);
+    await client.connect();
+    const database = client.db("papyrus");
+    const usersCollection = database.collection("users");
+
+    const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const guardados = user.guardados || {};
+    
+    // Verificar que la lista existe
+    if (!guardados[listName]) {
+      return res.status(404).json({ error: 'Lista no encontrada' });
+    }
+
+    // Verificar que el documento está en la lista
+    const listData = guardados[listName];
+    if (!listData[documentId]) {
+      return res.status(404).json({ error: 'Documento no encontrado en la lista' });
+    }
+
+    // Quitar el documento de la lista
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $unset: { [`guardados.${listName}.${documentId}`]: "" } }
+    );
+
+    await client.close();
+    
+    res.json({ 
+      success: true, 
+      message: 'Documento eliminado exitosamente de la lista',
+      documentId: documentId,
+      listName: listName
+    });
+  } catch (error) {
+    console.error('Error removing document from list:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // Ruta para eliminar una lista de usuario
 app.delete('/api/delete-user-list', ensureAuthenticated, async (req, res) => {
   try {
@@ -5125,17 +5317,56 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
       const sendCleanResult = (cleanStr) => {
           // Try to parse as JSON first (in case Python returns structured data)
           try {
-              const jsonResult = JSON.parse(cleanStr);
+              // Clean the string first to handle potential JSON parsing issues
+              let jsonString = cleanStr.trim();
+              
+              // Try to extract JSON from the string if it's wrapped in other content
+              const jsonMatch = jsonString.match(/\{[^}]*"html_response"[^}]*\}/s);
+              if (jsonMatch) {
+                  jsonString = jsonMatch[0];
+              }
+              
+              const jsonResult = JSON.parse(jsonString);
               if (jsonResult.html_response) {
+                  // Clean the HTML response to remove escape characters
+                  let htmlContent = jsonResult.html_response;
+                  
+                  // Replace \n with actual newlines and clean up
+                  htmlContent = htmlContent.replace(/\\n/g, '\n');
+                  htmlContent = htmlContent.replace(/\\\"/g, '"');
+                  htmlContent = htmlContent.replace(/\\\\/g, '\\');
+                  
                   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-                  res.send(jsonResult.html_response);
+                  res.send(htmlContent);
                   return;
               } else if (jsonResult.error) {
                   res.setHeader('Content-Type', 'application/json; charset=utf-8');
                   return res.status(500).json(jsonResult);
               }
           } catch (e) {
-              // Not JSON, continue
+              // If JSON parsing fails, check if the string contains JSON-like content
+              if (cleanStr.includes('{"html_response"')) {
+                  try {
+                      // Try to extract and clean JSON from the string
+                      const startIndex = cleanStr.indexOf('{"html_response"');
+                      const endIndex = cleanStr.lastIndexOf('}') + 1;
+                      if (startIndex !== -1 && endIndex > startIndex) {
+                          const jsonStr = cleanStr.substring(startIndex, endIndex);
+                          const jsonResult = JSON.parse(jsonStr);
+                          if (jsonResult.html_response) {
+                              let htmlContent = jsonResult.html_response;
+                              htmlContent = htmlContent.replace(/\\n/g, '\n');
+                              htmlContent = htmlContent.replace(/\\\"/g, '"');
+                              htmlContent = htmlContent.replace(/\\\\/g, '\\');
+                              res.setHeader('Content-Type', 'text/html; charset=utf-8');
+                              res.send(htmlContent);
+                              return;
+                          }
+                      }
+                  } catch (e2) {
+                      // Still not JSON, continue to fallback
+                  }
+              }
           }
   
           // Send as HTML or plain text depending on content
@@ -5513,9 +5744,18 @@ async function sendPasswordResetEmail(email, resetToken) {
 
 // Serve reset password page
 app.get('/reset-password.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'reset-password.html'));
+  res.sendFile(path.join(__dirname, 'public', 'features', 'reset-password.html'));
 });
 
+// Serve feedback form
+app.get('/feedback.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'features', 'feedback.html'));
+});
+
+// Serve subscription email template
+app.get('/suscripcion_email.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'features', 'suscripcion_email.html'));
+});
 
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 

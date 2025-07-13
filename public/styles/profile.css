@@ -1,0 +1,885 @@
+
+  html, body {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    *, *:before, *:after {
+      box-sizing: inherit;
+    }
+    /* Loader overlay styling */
+    #pageLoaderOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .page-loader {
+      width: 50px; height: 50px;
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Dropdown styling for multi-check logic */
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .dropbtn i {
+      margin-left: 6px;
+    }
+    /* Show subramas dropdown on hover */
+    .rama-label-container:hover .subramas-dropdown {
+      display: block;
+    }
+
+    /* The actual dropdown menus */
+    #myDropdown,
+    #ramaDropdown,
+    #boletinDropdown,
+    #etiquetasDropdown,
+    #rangoDropdown {
+      max-height: 200px;
+      overflow-y: auto;
+      position: absolute;
+      z-index: 1000;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+      display: none; /* hidden by default */
+    }
+    #myDropdown.show,
+    #ramaDropdown.show,
+    #etiquetasDropdown.show,
+    #boletinDropdown.show,
+    #rangoDropdown.show {
+      display: block;
+    }
+
+    /* Items inside the dropdown */
+    #myDropdown label,
+    #ramaDropdown label,
+    #etiquetasDropdown label,
+    #boletinDropdown label,
+    #rangoDropdown label {
+      display: block;
+      padding: 4px 2px;
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.85em;
+      border-bottom: 1px solid #ddd;
+    }
+    #myDropdown label:last-child,
+    #ramaDropdown label:last-child,
+    #etiquetasDropdown label:last-child,
+    #boletinDropdown label:last-child,
+    #rangoDropdown label:last-child {
+      border-bottom: none;
+    }
+    #myDropdown input[type="checkbox"],
+    #ramaDropdown input[type="checkbox"],
+    #etiquetasDropdown input[type="checkbox"],
+    #boletinDropdown input[type="checkbox"],
+    #rangoDropdown input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      transform: scale(0.9);
+      accent-color: #04db8d;
+      margin-right: 6px;
+    }
+
+    /* Sub-ramas container */
+    #subRamasCheckboxContainer {
+      margin: 10px 0;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      padding: 6px;
+      display: none; 
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    /* Estilos para los tags de nivel de impacto */
+    .nivel-impacto-tag {
+      display: inline-block;
+      font-size: 0.7em;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 12px;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+    
+    .nivel-impacto-alto {
+      background-color: #ffe6e6;
+      color: #dc3545;
+    }
+    
+    .nivel-impacto-medio {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .nivel-impacto-bajo {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    /* Estilos para los círculos del filtro de nivel de impacto */
+    .nivel-circulo {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      margin-left: 6px;
+    }
+    
+    .nivel-circulo-todos {
+      background-color: #e0e0e0;
+    }
+    
+    .nivel-circulo-alto {
+      background-color: #ffbaba;
+    }
+    
+    .nivel-circulo-medio {
+      background-color: #ffeb9c;
+    }
+    
+    .nivel-circulo-bajo {
+      background-color: #b3d9b3;
+    }
+    
+    /* Ajustes para los radio buttons en el dropdown de nivel de impacto */
+    #nivelImpactoDropdown input[type="radio"] {
+      margin-right: 8px;
+      accent-color: #04db8d;
+      width: 12px;
+    }
+    
+    /* Estilos para el dropdown de tipo de contenido en el sidebar */
+    .content-type-dropdown {
+      margin: 15px 0;
+      position: relative;
+      width: 100%;
+    }
+    
+    .content-type-dropbtn {
+      background-color: transparent;
+      color: white;
+      border: 1px solid white;
+      padding: 8px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      text-align: left;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 0.3s ease;
+    }
+    
+    .content-type-dropbtn:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .content-type-dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: #f9f9f9;
+      min-width: 100%;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+      z-index: 1001;
+      border-radius: 4px;
+      overflow: hidden;
+      top: 100%;
+      left: 0;
+    }
+    
+    .content-type-dropdown-content a {
+      color: black;
+      padding: 12px 16px;
+      text-decoration: none;
+      display: block;
+      transition: background-color 0.3s ease;
+    }
+    
+    .content-type-dropdown-content a:hover {
+      background-color: #f1f1f1;
+    }
+    
+    .content-type-dropdown.show .content-type-dropdown-content {
+      display: block;
+    }
+    
+    
+    /* Estilos específicos para el banner de consultas públicas */
+    .consultas-publicas-beta-banner {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background-color: white;
+      color: #0b2431;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1px solid #0b2431;
+    }
+    
+    #nivelImpactoDropdown input[type="radio"] {
+      height: 12px;
+      transform: scale(1);
+      border: 1px solid white;
+      outline: 1px solid #ccc;
+    }
+    
+    #nivelImpactoDropdown label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      cursor: pointer;
+      border-bottom: 1px solid #ddd;
+      position: relative;
+    }
+    
+    #nivelImpactoDropdown label:last-child {
+      border-bottom: none;
+    }
+    
+    #nivelImpactoDropdown label:hover {
+      background-color: #f5f5f5;
+    }
+    
+    /* Hide radio buttons */
+    #nivelImpactoDropdown input[type="radio"] {
+      display: none;
+    }
+    
+    /* Green tick for selected option */
+    #nivelImpactoDropdown input[type="radio"]:checked + .nivel-option-content::after {
+      content: "✓";
+      color: #04db8d;
+      font-weight: bold;
+      font-size: 14px;
+      margin-left: auto;
+    }
+    
+    .nivel-option-content {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    /* Estilos específicos para el botón de nivel de impacto */
+    #btnNivelImpacto {
+      display: flex;
+      align-items: center;
+      transition: none !important;
+      background-color: #f8f9fa !important;
+    }
+    
+    #btnNivelImpacto:hover,
+    #btnNivelImpacto:focus,
+    #btnNivelImpacto:active,
+    #btnNivelImpacto.show {
+      background-color: #f8f9fa !important;
+      color: inherit !important;
+      transform: none !important;
+      box-shadow: none !important;
+      border: 1px solid #ccc !important;
+      outline: none !important;
+    }
+    
+    /* Sobrescribir cualquier regla de .dropbtn para este botón específico */
+    .dropdown #btnNivelImpacto:hover,
+    .dropdown #btnNivelImpacto:focus,
+    .dropdown #btnNivelImpacto:active {
+      background: #f8f9fa !important;
+      color: #333 !important;
+      border-color: #ccc !important;
+      transform: translateY(0) !important;
+      box-shadow: none !important;
+    }
+    
+    #btnNivelImpacto #selectedNivelCirculo {
+      margin-right: 8px;
+      margin-left: 0;
+    }
+    
+    /* Hover para mostrar el dropdown */
+    .dropdown:hover #nivelImpactoDropdown {
+      display: block;
+    }
+    #subRamasCheckboxContainer label {
+      display: block;
+      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 0.85em;
+    }
+    #subRamasCheckboxContainer input[type="checkbox"] {
+      width: 16px; height: 16px; transform: scale(0.9); accent-color: #04db8d; margin-right: 6px;
+    }
+
+    /* Basic layout styling */
+    .analytics-label {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .detalle-cuenta {
+      gap: 50px;
+      margin-bottom: 20px;
+    }
+    .etiquetas-label {
+      font-weight: bold;
+    }
+    .filter-item {
+      margin-bottom: 10px;
+    }
+    .filter-section {
+      margin-bottom: 10px;
+    }
+    .collectionDocs {
+      margin-top: 10px;
+    }
+    .menu.active {
+      display: block;
+    }
+    .filter-banner-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+
+    .beta-banner {
+      background-color: white;
+    border: 1px solid #455862;
+    color: #455862;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Subramas dropdown styling */
+    .rama-label-container {
+      position: relative;
+      display: block;
+    }
+
+    .subramas-dropdown {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 5px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      min-width: 150px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+      z-index: 1100;
+      margin-left: 5px;
+    }
+
+    .subramas-dropdown.active {
+      display: block;
+    }
+
+    .subramas-toggle {
+      cursor: pointer;
+      margin-left: 5px;
+      color: #666;
+    }
+
+    .subramas-toggle:hover {
+      color: #04db8d;
+    }
+
+    .subramas-dropdown label {
+      display: block;
+      padding: 4px 2px;
+      margin: 0;
+      cursor: pointer;
+      font-size: 0.85em;
+      border-bottom: 1px solid #ddd;
+      white-space: nowrap;
+    }
+
+    .subramas-dropdown label:last-child {
+      border-bottom: none;
+    }
+
+    .subramas-dropdown input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      transform: scale(0.9);
+      accent-color: #04db8d;
+      margin-right: 6px;
+    }
+
+    #ramaDropdown {
+      overflow: visible !important;
+    }
+
+    /* Estilos para agentes */
+    .agente-item {
+      display: inline-block;
+      border-radius: 4px;
+      margin-top: 15px;
+      font-size: 0.9em;
+    }
+
+    .agente-nombre {
+      font-weight: 500;
+      color: #0b2431;
+    }
+
+    .agente-descripcion {
+      margin-left: 5px;
+      cursor: help;
+      color: #666;
+      display: inline-block; /* Asegura que esté en línea con el texto */
+    }
+
+
+    .tooltip {
+      position: absolute;
+      background-color: #333;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      max-width: 250px;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .no-agentes {
+      color: #666;
+      font-style: italic;
+    }
+
+    .etiqueta-personalizada-value {
+      box-shadow: 0 2px 4px rgba(4, 219, 141, 0.2);
+      margin: 5px 0;
+      background-color: rgba(4, 219, 141, 0.1); /* #04db8d1a */
+      --tw-text-opacity: 1;
+      color: rgb(4 219 141 / var(--tw-text-opacity));
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .plan-badge {
+      position: absolute;
+    color: #092534;
+    padding: 5px 10px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    z-index: 9999;
+    background-color: var(--border-color);
+    }
+
+    /* Estilos para el botón de guardar */
+    .guardar-button {
+      position: relative;
+      display: inline-block;
+      margin-left: 10px;
+    }
+
+    .save-btn {
+      background-color: transparent;
+      border: 1px solid #dee2e6;
+      color: #495057;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .save-btn:hover {
+      background-color: #e9ecef;
+      border-color: #adb5bd;
+    }
+
+    .save-btn i {
+      font-size: 12px;
+    }
+
+    /* Estilos para el desplegable de listas */
+    .lists-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 200px;
+      max-width: 300px;
+      z-index: 1000;
+      display: none;
+      max-height: 300px;
+      overflow: hidden;
+    }
+
+    .lists-dropdown.show {
+      display: block;
+    }
+
+    .lists-dropdown-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #dee2e6;
+      font-weight: 600;
+      color: #495057;
+      font-size: 14px;
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 1001;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .lists-content {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .list-item {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f8f9fa;
+      font-size: 14px;
+      color: #495057;
+      transition: background-color 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .list-item:hover {
+      background-color: #f8f9fa;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox-container {
+      width: 16px;
+      height: 16px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .list-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: #04db8d;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .checkbox-loader {
+      width: 16px;
+      height: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .checkbox-loader i {
+      font-size: 12px;
+      color: #6c757d;
+    }
+
+    .list-item label {
+      cursor: pointer;
+      flex: 1;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .list-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
+    .list-name {
+      flex: 1;
+    }
+
+    .list-loader {
+      display: none;
+      margin-left: 8px;
+    }
+
+    .add-new-list {
+      padding: 10px 16px;
+      cursor: pointer;
+      border-top: 1px solid #dee2e6;
+      font-size: 14px;
+      color: #04db8d;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .add-new-list:hover {
+      background-color: #f8f9fa;
+    }
+
+    .add-new-list i {
+      font-size: 12px;
+    }
+
+    /* Botón OK para guardar */
+    .save-ok-btn {
+      background-color: #04db8d;
+      color: white;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: none;
+    }
+
+    .save-ok-btn:hover {
+      background-color: #03c57f;
+    }
+
+    .save-ok-btn.show {
+      display: inline-block;
+    }
+
+    /* Estilos para el formulario de nueva lista */
+    .new-list-form {
+      padding: 12px 16px;
+      border-top: 1px solid #dee2e6;
+      display: none;
+    }
+/*
+    .new-list-form.show {
+      display: block;
+    }
+*/
+    .new-list-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .new-list-input:focus {
+      outline: none;
+      border-color: #04db8d;
+      box-shadow: 0 0 0 2px rgba(4, 219, 141, 0.2);
+    }
+
+    .new-list-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .new-list-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .new-list-btn.save {
+      background-color: #04db8d;
+      color: white;
+    }
+
+    .new-list-btn.save:hover {
+      background-color: #03c57f;
+    }
+
+    .new-list-btn.cancel {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .new-list-btn.cancel:hover {
+      background-color: #5a6268;
+    }
+
+    /* Mensaje cuando no hay listas */
+    .no-lists-message {
+      padding: 16px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    /* Estilos para la vista de nodos */
+    .nodos-container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+      margin-top: 10px;
+      width: 800px !important;
+      height: 400px !important;
+      max-width: 800px !important;
+      max-height: 400px !important;
+      position: relative;
+    }
+    
+    .nodos-menu {
+      display: flex;
+      border-bottom: 2px solid #f0f0f0;
+      font-size: 20px;
+      height: 60px;
+      flex-shrink: 0;
+    }
+    
+    .nodo-tab {
+      flex: 1;
+      padding: 15px 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 500;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+      color: #999;
+      text-align: center;
+    }
+    
+    .nodo-tab:hover {
+      color: #666;
+    }
+    
+    .nodo-tab.active {
+      color: #04db8d;
+      border-bottom-color: #04db8d;
+    }
+    
+    .nodo-tab i {
+      font-size: 1.1em;
+    }
+    
+    .nodo-content {
+      padding: 20px;
+      height: 340px !important;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: absolute;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+    
+    .nodo-agentes {
+      display: none;
+    }
+    
+    .nodo-agentes.active {
+      display: block;
+    }
+    
+    .nodo-agente-item {
+      display: inline-block;
+      margin: 5px 8px 5px 0;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 20px;
+      font-size: 0.85em;
+      color: #495057;
+      transition: all 0.2s ease;
+    }
+    
+    .nodo-agente-item:hover {
+      background: #e9ecef;
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 768px) {
+      .nodos-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 400px !important;
+      }
+      
+      .nodos-menu {
+        flex-direction: column;
+        height: auto;
+      }
+      
+      .nodo-tab {
+        justify-content: flex-start;
+        padding: 12px 15px;
+        height: 50px;
+      }
+      
+      .nodo-content {
+        top: auto;
+        position: relative;
+        height: 300px !important;
+      }
+    }
+  

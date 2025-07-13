@@ -418,17 +418,7 @@
             opacity: 0;
         }
 
-        /* ---------- BOCG banner ---------- */
-        .bocg-banner {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #856404;
-            border-radius: 12px;
-            padding: 12px 18px;
-            text-align: center;
-            font-size: 14px;
-            margin-top: 16px;
-        }
+
 
         /* ---------- HTML source banner ---------- */
         .html-source-banner {
@@ -691,29 +681,10 @@
         const documentId = urlParams.get('documentId');
         const collectionName = urlParams.get('collectionName'); // Get the collection from URL
 
-        // ----- Disable impact analysis for BOCG collections -----
-        const bocgCollections = ['BOCG', 'BOCG_test'];
-        if (bocgCollections.includes(collectionName)) {
-            const impactButtons = [analyzeButton, checklistButton, risksButton];
-            impactButtons.forEach(btn => {
-                btn.disabled = true;
-                btn.style.opacity = '0.6';
-                btn.style.cursor = 'not-allowed';
-            });
-
-            // Create and insert informational banner
-            const banner = document.createElement('div');
-            banner.className = 'bocg-banner';
-            banner.textContent = 'Análisis de impacto BOCG coming soon';
-
-            // Insert banner just after the impact buttons container
-            const buttonsContainer = analyzeButton.parentElement;
-            buttonsContainer.insertAdjacentElement('afterend', banner);
-        }
-
-        // Global variables to store document URLs
+        // Global variables to store document data
         let documentUrlPdf = null;
         let documentUrlHtml = null;
+        let documentContenido = null;
 
         // Analysis settings management
         function loadAnalysisSettings() {
@@ -807,13 +778,25 @@ ${bloqueIdioma}
             // Start status workflow for custom analysis
             if (typeof startStatusWorkflow === 'function') startStatusWorkflow('custom');
             
+            // Prepare request body with priority content sources
+            const requestBody = {
+                documentId: documentId,
+                userPrompt: customPrompt,
+                collectionName: collectionName
+            };
+            
+            // Add direct content if available (from "contenido" field)
+            if (documentContenido) {
+                requestBody.htmlContent = documentContenido;
+            }
+            
             fetch('/api/analyze-norma', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'text/html; charset=utf-8'
                 },
-                body: JSON.stringify({ documentId: documentId, userPrompt: customPrompt, collectionName: collectionName })
+                body: JSON.stringify(requestBody)
             })
             .then(response => {
                 // Check if response is JSON (error) or HTML (success)
@@ -862,37 +845,63 @@ ${bloqueIdioma}
                 // Process the response - handle different types of content
                 let htmlContent = data;
                 
-                // If data is a string, clean it up
+                // If data is a string, try to parse it as JSON first
                 if (typeof data === 'string') {
-                    // Remove any HTML wrapper tags if present
-                    htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                    
-                    // If it's plain text (no HTML tags), wrap it in a paragraph
-                    if (!htmlContent.includes('<') && htmlContent.trim().length > 0) {
-                        htmlContent = `<p>${htmlContent}</p>`;
+                    try {
+                        const jsonData = JSON.parse(data);
+                        if (jsonData.html_response) {
+                            htmlContent = jsonData.html_response;
+                        }
+                    } catch (e) {
+                        // If not JSON, clean it up as before
+                        htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                        
+                        // If it's plain text (no HTML tags), wrap it in a paragraph
+                        if (!htmlContent.includes('<') && htmlContent.trim().length > 0) {
+                            htmlContent = `<p>${htmlContent}</p>`;
+                        }
                     }
+                } else if (typeof data === 'object' && data.html_response) {
+                    // If data is already an object with html_response
+                    htmlContent = data.html_response;
                 }
                 
-                // Complete the status workflow
-                if (typeof completeStatusWorkflow === 'function') completeStatusWorkflow();
-                
-                // Show results immediately without delays
-                buttonElement.innerHTML = originalButtonText; // Restore original button text
-                
-                // Enable all buttons again
-                setAnalysisButtonsState(false);
-                
-                // Show content with smooth transition
-                analysisResultDiv.innerHTML = htmlContent;
-                analysisResultDiv.style.display = 'block';
-                analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
-                analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
-                
-                // Small delay for smooth transition
-                setTimeout(() => {
-                    analysisResultDiv.classList.add('show');
-                    if (typeof showFeedbackSection === 'function') showFeedbackSection();
-                }, 250);
+                // Complete the status workflow with callback to show results
+                if (typeof completeStatusWorkflow === 'function') {
+                    completeStatusWorkflow(() => {
+                        // This callback executes AFTER the status workflow is completely hidden
+                        
+                        // Show results immediately without delays
+                        buttonElement.innerHTML = originalButtonText; // Restore original button text
+                        
+                        // Enable all buttons again
+                        setAnalysisButtonsState(false);
+                        
+                        // Show content with smooth transition
+                        analysisResultDiv.innerHTML = htmlContent;
+                        analysisResultDiv.style.display = 'block';
+                        analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
+                        analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
+                        
+                        // Small delay for smooth transition
+                        setTimeout(() => {
+                            analysisResultDiv.classList.add('show');
+                            if (typeof showFeedbackSection === 'function') showFeedbackSection();
+                        }, 100); // Reduced delay since status is already hidden
+                    });
+                } else {
+                    // Fallback if completeStatusWorkflow is not available
+                    buttonElement.innerHTML = originalButtonText;
+                    setAnalysisButtonsState(false);
+                    analysisResultDiv.innerHTML = htmlContent;
+                    analysisResultDiv.style.display = 'block';
+                    analysisResultDiv.classList.remove('show');
+                    analysisResultDiv.classList.remove('error-state');
+                    setTimeout(() => {
+                        analysisResultDiv.classList.add('show');
+                        if (typeof showFeedbackSection === 'function') showFeedbackSection();
+                    }, 100);
+                }
             })
             .catch(error => {
                 console.error('Error analyzing norma:', error);
@@ -1123,7 +1132,7 @@ ${bloqueIdioma}
             activeAnalysisButton = null;
         }
 
-        // Function to handle webscraping and analysis
+        // Function to handle webscraping and analysis (for HTML URLs)
         async function performWebscrapingAnalysis(promptType, buttonElement, htmlUrl) {
             try {
                 // First, perform webscraping
@@ -1150,8 +1159,8 @@ ${bloqueIdioma}
             }
         }
 
-        // Function to perform analysis with content (either from PDF or HTML)
-        function performAnalysisWithContent(promptType, buttonElement, htmlContent = null, sourceUrl = null) {
+        // Function to perform analysis with content (either from PDF, HTML, or direct content)
+        function performAnalysisWithContent(promptType, buttonElement, directContent = null, sourceUrl = null) {
             return new Promise((resolve, reject) => {
                 const requestBody = {
                     documentId: documentId,
@@ -1159,9 +1168,9 @@ ${bloqueIdioma}
                     collectionName: collectionName
                 };
 
-                // Add HTML content if provided
-                if (htmlContent) {
-                    requestBody.htmlContent = htmlContent;
+                // Add direct content if provided (from "contenido" field)
+                if (directContent) {
+                    requestBody.htmlContent = directContent;
                 }
 
                 fetch('/api/analyze-norma', {
@@ -1219,20 +1228,30 @@ ${bloqueIdioma}
                     // Process the response - handle different types of content
                     let htmlResult = data;
                     
-                    // If data is a string, clean it up
+                    // If data is a string, try to parse it as JSON first
                     if (typeof data === 'string') {
-                        // Remove any HTML wrapper tags if present
-                        htmlResult = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                        
-                        // If it's plain text (no HTML tags), wrap it in a paragraph
-                        if (!htmlResult.includes('<') && htmlResult.trim().length > 0) {
-                            htmlResult = `<p>${htmlResult}</p>`;
+                        try {
+                            const jsonData = JSON.parse(data);
+                            if (jsonData.html_response) {
+                                htmlResult = jsonData.html_response;
+                            }
+                        } catch (e) {
+                            // If not JSON, clean it up as before
+                            htmlResult = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
+                            
+                            // If it's plain text (no HTML tags), wrap it in a paragraph
+                            if (!htmlResult.includes('<') && htmlResult.trim().length > 0) {
+                                htmlResult = `<p>${htmlResult}</p>`;
+                            }
                         }
+                    } else if (typeof data === 'object' && data.html_response) {
+                        // If data is already an object with html_response
+                        htmlResult = data.html_response;
                     }
                     
-                    // Show banner if analysis was based on HTML source
+                    // Show banner if analysis was based on HTML source (only for webscraping, not direct content)
                     let finalHtml = htmlResult;
-                    if (htmlContent && sourceUrl) {
+                    if (directContent && sourceUrl) {
                         const banner = `<div class="html-source-banner">Documento PDF no identificado para este documento, análisis basado en el texto publicado en la <a href="${sourceUrl}" target="_blank">fuente</a></div>`;
                         finalHtml = banner + htmlResult;
                     }
@@ -1495,18 +1514,21 @@ ${bloqueContexto}
             // Set this button as active
             buttonElement.classList.add('active');
 
-            // Determine analysis strategy based on available URLs
+            // Determine analysis strategy based on available content sources (priority order)
             let analysisPromise;
             
-            if (documentUrlPdf) {
-                // Scenario 3: PDF available - use normal workflow
+            if (documentContenido) {
+                // Priority 1: Direct content available - use content directly
+                analysisPromise = performAnalysisWithContent(promptType, buttonElement, documentContenido);
+            } else if (documentUrlPdf) {
+                // Priority 2: PDF available - use normal workflow
                 analysisPromise = performAnalysisWithContent(promptType, buttonElement);
             } else if (documentUrlHtml) {
-                // Scenario 1: No PDF but HTML available - use webscraping
+                // Priority 3: HTML available - use webscraping
                 analysisPromise = performWebscrapingAnalysis(promptType, buttonElement, documentUrlHtml);
             } else {
-                // Scenario 2: Neither PDF nor HTML available - should not reach here as buttons should be disabled
-                console.error('No PDF or HTML URL available for analysis');
+                // No content sources available - should not reach here as buttons should be disabled
+                console.error('No content sources available for analysis');
                 setAnalysisButtonsState(false);
                 buttonElement.innerHTML = originalButtonText;
                 buttonElement.classList.remove('active');
@@ -1518,27 +1540,44 @@ ${bloqueContexto}
              // Handle the analysis promise
              analysisPromise
                                  .then(htmlContent => {
-                    // Complete the status workflow
-                    if (typeof completeStatusWorkflow === 'function') completeStatusWorkflow();
-                    
-                    // Show results immediately without delays
-                    buttonElement.innerHTML = originalButtonText; // Restore original button text
-                    buttonElement.style.backgroundColor = ''; // Remove inline style
-                    
-                    // Enable all buttons again
-                    setAnalysisButtonsState(false);
-                    
-                    // Show content with smooth transition
-                    analysisResultDiv.innerHTML = htmlContent;
-                    analysisResultDiv.style.display = 'block';
-                    analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
-                    analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
-                    
-                    // Small delay for smooth transition
-                    setTimeout(() => {
-                        analysisResultDiv.classList.add('show');
-                        if (typeof showFeedbackSection === 'function') showFeedbackSection();
-                    }, 250);
+                    // Complete the status workflow with callback to show results
+                    if (typeof completeStatusWorkflow === 'function') {
+                        completeStatusWorkflow(() => {
+                            // This callback executes AFTER the status workflow is completely hidden
+                            
+                            // Show results immediately without delays
+                            buttonElement.innerHTML = originalButtonText; // Restore original button text
+                            buttonElement.style.backgroundColor = ''; // Remove inline style
+                            
+                            // Enable all buttons again
+                            setAnalysisButtonsState(false);
+                            
+                            // Show content with smooth transition
+                            analysisResultDiv.innerHTML = htmlContent;
+                            analysisResultDiv.style.display = 'block';
+                            analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
+                            analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
+                            
+                            // Small delay for smooth transition
+                            setTimeout(() => {
+                                analysisResultDiv.classList.add('show');
+                                if (typeof showFeedbackSection === 'function') showFeedbackSection();
+                            }, 100); // Reduced delay since status is already hidden
+                        });
+                    } else {
+                        // Fallback if completeStatusWorkflow is not available
+                        buttonElement.innerHTML = originalButtonText;
+                        buttonElement.style.backgroundColor = '';
+                        setAnalysisButtonsState(false);
+                        analysisResultDiv.innerHTML = htmlContent;
+                        analysisResultDiv.style.display = 'block';
+                        analysisResultDiv.classList.remove('show');
+                        analysisResultDiv.classList.remove('error-state');
+                        setTimeout(() => {
+                            analysisResultDiv.classList.add('show');
+                            if (typeof showFeedbackSection === 'function') showFeedbackSection();
+                        }, 100);
+                    }
                 })
                 .catch(error => {
                     console.error('Error analyzing norma:', error);
@@ -1622,13 +1661,14 @@ ${bloqueContexto}
                 .then(data => {
                     shortNameSpan.textContent = data.short_name;
                     
-                    // Store document URLs globally
+                    // Store document data globally
                     documentUrlPdf = data.url_pdf;
                     documentUrlHtml = data.url_html;
+                    documentContenido = data.contenido;
                     
-                    // Handle different scenarios based on available URLs
-                    if (!documentUrlPdf && !documentUrlHtml) {
-                        // Scenario 2: Neither PDF nor HTML available - disable analysis buttons and show banner
+                    // Handle different scenarios based on available content sources
+                    if (!documentContenido && !documentUrlPdf && !documentUrlHtml) {
+                        // No content sources available - disable analysis buttons and show banner
                         const impactButtons = [analyzeButton, checklistButton, risksButton];
                         impactButtons.forEach(btn => {
                             btn.disabled = true;
@@ -1979,7 +2019,7 @@ ${bloqueContexto}
             }, 1200); // Show error state longer for user to read
         }
 
-        function completeStatusWorkflow() {
+        function completeStatusWorkflow(onCompleteCallback) {
             // Cancel any pending timeouts but don't hide yet
             statusTimeouts.forEach(t => clearTimeout(t));
             statusTimeouts = [];
@@ -2001,6 +2041,11 @@ ${bloqueContexto}
                     analysisStatusDiv.classList.remove('status-completed');
                     // Reset spinner for next time
                     spinnerIcon.className = 'fa fa-spinner spinner';
+                    
+                    // Execute callback once status is completely hidden
+                    if (onCompleteCallback && typeof onCompleteCallback === 'function') {
+                        onCompleteCallback();
+                    }
                 }, 800); // Match animation duration
             }, 600); // Show completed state for 600ms
         }

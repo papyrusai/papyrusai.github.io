@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Cargar el contexto desde un archivo JSON
   async function cargarContexto() {
     try {
-      const respuesta = await fetch('contexto_clientes.json');
+      const respuesta = await fetch('views/configuracion/contexto_clientes.json');
       return await respuesta.json();
     } catch (error) {
       console.error('Error al cargar el contexto:', error);

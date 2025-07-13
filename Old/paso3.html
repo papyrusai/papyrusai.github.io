@@ -1426,7 +1426,7 @@ if (bannerMode === 'fuentes'){               // ---- FUENTES ----
   
   /* Proceder a pago */
   goPayBtn.addEventListener('click',()=>{
-    let url = 'paso4.html';
+    let url = 'views/onboarding/paso4.html';
     if(userPlan) url += `?plan=${userPlan}`;
     if(sessionStorage.getItem('extra_fuentes')){
       url += (url.includes('?')?'&':'?') + `extra_fuentes=${sessionStorage.getItem('extra_fuentes')}`;

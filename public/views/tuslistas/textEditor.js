@@ -1,4 +1,13 @@
-// ==================== TEXT EDITOR FUNCTIONS ====================
+/*Índice del archivo:
+1. Funciones para la barra de herramientas de edición
+2. Funciones para el formato del texto
+3. Funciones para la copia del contenido generado
+4. Funciones para la descarga como PDF
+5. Event listeners para la edición
+6. Funciones para el dropdown de exportar
+*/
+
+// ==================== FUNCIONES PARA EL EDITOR DE TEXTO ====================
 
 // Funciones para la barra de herramientas de edición
 function toggleEditing() {

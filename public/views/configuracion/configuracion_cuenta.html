@@ -2658,7 +2658,7 @@
                 if (profileView) profileView.style.display = 'block';
             } else {
                 // If not, fetch the form structure and start onboarding
-                return fetch('estructura_onboarding.json')
+                return fetch('/views/configuracion/estructura_onboarding.json')
                   .then(res=>res.json())
                   .then(json=>{
                     onboardingStructure=json;

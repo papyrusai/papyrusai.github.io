@@ -9,6 +9,7 @@ import io
 import pypdf
 import json
 import hashlib
+import time  # Add timing
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -38,28 +39,72 @@ except Exception as e:
     logging.exception(f"Error initializing Gemini model: {e}")
     model = None
 
+# Global reusable MongoDB client to avoid repeated SRV lookups
+_mongo_client = None
+
+# Performance timing
+_timings = []
+
+def _mark(step: str):
+    _timings.append((step, time.perf_counter()))
+
 def connect_to_mongodb():
-    """Connects to MongoDB and returns the database and collection objects."""
+    """Connects to MongoDB reusing a global client and returns the database object."""
+    global _mongo_client
     try:
-        client = pymongo.MongoClient(DB_URI)
-        db = client[DB_NAME]
-        collection = db[DB_COLLECTION]
-        logging.info(f"Connected to MongoDB database: {DB_NAME}, collection: {DB_COLLECTION}")
-        return db, collection
+        if _mongo_client is None:
+            # Use shorter timeouts to fail fast if DNS/connection issue
+            _mongo_client = pymongo.MongoClient(
+                DB_URI,
+                serverSelectionTimeoutMS=10000,   # 10s for DNS & initial handshake
+                connectTimeoutMS=10000,
+                socketTimeoutMS=20000,
+                retryWrites=False  # Avoid extra retries that add latency
+            )
+        db = _mongo_client[DB_NAME]
+        logging.info(f"Connected (or reused connection) to MongoDB database: {DB_NAME}")
+        return db
     except pymongo.errors.ConnectionFailure as e:
         logging.error(f"Could not connect to MongoDB: {e}")
-        return None, None
+        return None
 
 def get_pdf_url_from_mongodb(db, collection_name, id_value): #added db as param
     """Retrieves the PDF URL from the MongoDB document given the document ID ( _id field)."""
     try:
         collection = db[collection_name] #Added collecion
         document = collection.find_one({"_id": id_value}) # Find using _id
-        if document and "url_pdf" in document:
+        if document:
             logging.info(f"Document with id '{id_value}' found.")
-            return document["url_pdf"]
+            
+            # Priority 1: Check for "contenido" field first
+            if "contenido" in document and document["contenido"]:
+                logging.info("Found 'contenido' field in document. Using direct text content.")
+                return {
+                    "type": "contenido",
+                    "content": document["contenido"]
+                }
+            
+            # Priority 2: Check for "url_pdf" field
+            if "url_pdf" in document and document["url_pdf"]:
+                logging.info("Found 'url_pdf' field in document. Using PDF URL.")
+                return {
+                    "type": "url_pdf",
+                    "url": document["url_pdf"]
+                }
+            
+            # Priority 3: Check for "url_html" field
+            if "url_html" in document and document["url_html"]:
+                logging.info("Found 'url_html' field in document. Using HTML URL.")
+                return {
+                    "type": "url_html",
+                    "url": document["url_html"]
+                }
+            
+            # If none of the content sources are available
+            logging.warning(f"Document with id '{id_value}' found but no content sources available (contenido, url_pdf, url_html).")
+            return None
         else:
-            logging.warning(f"Document with id '{id_value}' or url_pdf field not found.")
+            logging.warning(f"Document with id '{id_value}' not found.")
             return None
     except Exception as e:
         logging.exception(f"Error retrieving document from MongoDB: {e}")
@@ -137,6 +182,7 @@ def ask_gemini(text, prompt):
 
 def main(document_id, user_prompt, collection_name, html_content=None): # Added html_content parameter
     """Main function to connect, retrieve PDF URL, extract text, and ask Gemini."""
+    _mark('script_start')
     logging.info(f"Starting main function with document_id: {document_id}")
     
     # Set stdout to use utf-8 encoding at the beginning to handle all outputs
@@ -147,96 +193,68 @@ def main(document_id, user_prompt, collection_name, html_content=None): # Added 
         logging.info("Using provided HTML content for analysis")
         text = html_content
     else:
-        db, collection = connect_to_mongodb()
-        if db is None or collection is None:
+        _mark('mongo_connect_start')
+        db = connect_to_mongodb()
+        _mark('mongo_connect_end')
+        if db is None:
             logging.error("Failed to connect to MongoDB")
             return
 
-        pdf_url = get_pdf_url_from_mongodb(db, collection_name, document_id) #Here is where we use user value
-        if not pdf_url:
-            logging.warning("No PDF URL found for document")
+        _mark('fetch_content_start')
+        content_info = get_pdf_url_from_mongodb(db, collection_name, document_id)
+        _mark('fetch_content_end')
+        if not content_info:
+            logging.warning("No content sources found for document")
             return
 
-        text = download_and_extract_text_from_pdf(pdf_url)
-        if not text:
-            logging.error("Failed to extract text from PDF")
-            # Don't print anything else, the error was already printed in download_and_extract_text_from_pdf
+        # Handle different content types based on priority
+        if content_info["type"] == "contenido":
+            # Priority 1: Use direct text content from database
+            logging.info("Using direct text content from 'contenido' field")
+            text = content_info["content"]
+        elif content_info["type"] == "url_pdf":
+            # Priority 2: Download and extract text from PDF
+            logging.info("Using PDF URL to extract text")
+            _mark('download_pdf_start')
+            text = download_and_extract_text_from_pdf(content_info["url"])
+            _mark('download_pdf_end')
+            if not text:
+                logging.error("Failed to extract text from PDF")
+                return
+        elif content_info["type"] == "url_html":
+            # Priority 3: For HTML URLs, we need to inform the caller to handle webscraping
+            logging.info("HTML URL found - this should be handled by webscraping in the frontend")
+            # For now, this case should not happen as the frontend handles HTML URLs
+            # through the webscraping endpoint before calling this script
+            logging.warning("HTML URL handling not implemented in this script")
+            return
+        else:
+            logging.error(f"Unknown content type: {content_info['type']}")
             return
 
-    system_prompt = """Eres un Asistente Legal de primer nivel, con profundo conocimiento en leyes y normativas. Tu tarea es analizar el documento proporcionado (PDF o texto HTML) y responder a la pregunta del usuario basándote *única y exclusivamente* en la información contenida en ese documento.
+    _mark('gemini_call_start')
+    response_text = ask_gemini(text, user_prompt)
+    _mark('gemini_call_end')
 
-**Instrucciones Críticas de Formato de Salida:**
-1.  **OBLIGATORIO: Formato JSON Estricto:** Tu respuesta DEBE ser SIEMPRE un objeto JSON válido.
-2.  **Esquema JSON Requerido:** El objeto JSON debe tener UNA SOLA CLAVE llamada `html_response`. El valor de esta clave DEBE ser un string conteniendo el fragmento de HTML bien formado.
-3.  **Contenido del HTML (`html_response`):**
-    *   El HTML debe seguir estas reglas: NO utilices NINGÚN OTRO FORMATO que no sea HTML para el valor de `html_response`. NO utilices Markdown dentro del string HTML.
-    *   **Etiquetas HTML Permitidas y Uso (dentro del string `html_response`):**
-        *   **Títulos Principales:** Usa UNA SOLA etiqueta `<h2>` para el título principal de tu respuesta. Ejemplo: `<h2>Análisis del Artículo 5</h2>`
-        *   **Párrafos:** Envuelve cada párrafo de texto con etiquetas `<p>`. Ejemplo: `<p>El documento establece que...</p>`
-        *   **Listas con Viñetas (Bullets):** Usa etiquetas `<ul>` para la lista y `<li>` para cada elemento. Ejemplo: `<ul><li>Primer punto.</li><li>Segundo punto.</li></ul>`
-        *   **Texto en Negrita:** Usa etiquetas `<b>` para resaltar palabras o frases importantes. Ejemplo: `<p>Es <b>fundamental</b> considerar...</p>`
-        *   **Tablas:** Para estructurar datos tabulares, puedes usar `<table>`, `<tr>`, `<th>` y `<td>`. Ejemplo: `<table><tr><th>Encabezado 1</th><th>Encabezado 2</th></tr><tr><td>Dato 1</td><td>Dato 2</td></tr></table>`
-        *   **NO USES OTRAS ETIQUETAS HTML** (ej. no `<h3>`, `<a>`, `<span>`, `<div>`, etc.).
-    *   **Prohibición de Markdown (dentro del string `html_response`):** NO uses sintaxis Markdown. No `*` o `_` para énfasis (usa `<b>`), no `#` para encabezados (usa `<h2>`), no `* ` para listas (usa `<ul><li>`), no `[texto](url)`.
-
-**Contenido y Estilo de la Respuesta (para el HTML en `html_response`):**
-4.  **Basado en el documento:** No inventes información. Si la respuesta no está en el documento, indícalo cortésmente (ej: `<p>El documento no proporciona información específica sobre este tema.</p>`).
-5.  **Citas:** Cita referencias internas del documento (artículos, secciones, etc.) cuando fundamentes tu respuesta.
-6.  **Extensión:** Máximo aproximado de 300 palabras.
-7.  **Estilo "Mike Ross":** Claro, analítico, preciso, lenguaje accesible pero demostrando conocimiento.
-8.  **Resúmenes:** Si se pide un resumen, que sea preciso, ordenado y conciso.
-9.  **Sensibilidad e Implicaciones:** Al evaluar el impacto de la ley en industrias, sectores o casos concretos, utiliza la información disponible en el PDF. Mantén un nivel mínimo de sensibilidad para inferir implicaciones, pero sin sesgos.
-10. **Sin Opiniones Personales:** No ofrezcas opiniones personales ni especulaciones, realiza un análisis aséptico. Recuerda que tu respuesta debe estar respaldada por la información provista en el documento. Cualquier tema no contemplado en el documento será declarado como "No disponible"
-
-**Ejemplo de Respuesta JSON Esperada:**
-```json
-{
-  "html_response": "<h2>Análisis de la Cláusula de Confidencialidad</h2><p>La cláusula de confidencialidad <b>(Sección 3.A)</b>, establece las obligaciones de las partes respecto a la información sensible compartida.</p><p>Los puntos clave incluyen:</p><ul><li>La definición de qué se considera <b>información confidencial</b>.</li><li>El período durante el cual las obligaciones de confidencialidad permanecen vigentes, que es de <b>cinco años</b> post-contrato.</li><li>Las excepciones permitidas para la divulgación de información.</li></ul><p>Es <b>crucial</b> que ambas partes comprendan y adhieran estrictamente a estas disposiciones para evitar incumplimientos.</p>"
-}
-```
-
-**Recuerda: Tu salida debe ser únicamente el objeto JSON como el del ejemplo anterior, sin nada antes ni después. El string HTML dentro de `html_response` no debe contener saltos de línea innecesarios, solo el HTML puro.**
-"""
-
-    final_prompt = user_prompt + ". " + system_prompt
-
-    gemini_response_json_str = ask_gemini(text, final_prompt)
-
-    if gemini_response_json_str:
-        try:
-            # Strip potential markdown fences before parsing
-            cleaned_json_str = gemini_response_json_str.strip()
-            if cleaned_json_str.startswith("```json"):
-                cleaned_json_str = cleaned_json_str[7:] # Remove ```json
-            if cleaned_json_str.startswith("```"):
-                 cleaned_json_str = cleaned_json_str[3:] # Remove ``` (if ```json wasn't caught)
-            if cleaned_json_str.endswith("```"):
-                cleaned_json_str = cleaned_json_str[:-3]
-            cleaned_json_str = cleaned_json_str.strip() # clean any trailing/leading whitespaces after stripping
-
-            gemini_data = json.loads(cleaned_json_str)
-            html_output = gemini_data.get("html_response")
-
-            if html_output:
-                # Set stdout to use utf-8 encoding
-                sys.stdout.reconfigure(encoding='utf-8')
-                
-                print(html_output)  # Print only the HTML content
-                logging.info("Gemini HTML response printed to standard output")
-            else:
-                logging.error("Key 'html_response' not found in Gemini JSON output.")
-                print("Error: La respuesta del análisis no tiene el formato HTML esperado.")
-        except json.JSONDecodeError as e:
-            logging.error(f"Failed to decode JSON response from Gemini: {e}")
-            logging.error(f"Raw Gemini response: {gemini_response_json_str}") # Log the original raw response
-            logging.error(f"Cleaned JSON string attempt: {cleaned_json_str}") # Log the string we tried to parse
-            print("Error: La respuesta del análisis no es un JSON válido.")
-        except Exception as e:
-            logging.exception(f"An unexpected error occurred while processing Gemini response: {e}")
-            print("Error: Ocurrió un error inesperado al procesar la respuesta del análisis.")
+    if response_text is not None:
+        print(response_text)
     else:
-        print("Error: Gemini did not respond.")  # print error
-        logging.error("Gemini API did not respond.")
+        print("Error: Gemini did not respond.")
+
+    # Final timing output
+    _mark('script_end')
+    if len(_timings) > 1:
+        base = _timings[0][1]
+        logging.info("\n=== PERFORMANCE TIMINGS (ms) ===")
+        logging.info(f"{'Step':35} | Duration")
+        logging.info("-"*50)
+        for i in range(1, len(_timings)):
+            step_name = _timings[i][0]
+            duration_ms = (_timings[i][1] - _timings[i-1][1]) * 1000
+            logging.info(f"{step_name:35} | {duration_ms:8.1f}")
+        total_ms = (_timings[-1][1] - base) * 1000
+        logging.info("-"*50)
+        logging.info(f"{'TOTAL':35} | {total_ms:8.1f}")
 
 if __name__ == "__main__":
     import sys
