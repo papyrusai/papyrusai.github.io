@@ -72,13 +72,7 @@ const uri = process.env.DB_URI;
 // Define a base URL for development and production
 const BASE_URL = process.env.BASE_URL || 'https://app.reversa.ai';
 
-/*const port = process.env.PORT || 0;
-const server = app.listen(port, () => {
-  const actualPort = server.address().port;
-  console.log(`Server is running on port ${actualPort}`);
-  console.log(`Access the app at http://localhost:${actualPort}/profile`);
-});
-*/
+
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -3118,13 +3112,39 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
   console.log(`Analyzing norma with documentId: ${documentId}, User Prompt: ${userPrompt}, Collection Name: ${collectionName}, HTML Content: ${htmlContent ? 'provided' : 'not provided'}`); //Log the document ID
 
   try {
-      // Pass htmlContent as 4th argument if provided
-      const args = htmlContent ? 
-        [pythonScriptPath, documentId, userPrompt, collectionName, htmlContent] :
-        [pythonScriptPath, documentId, userPrompt, collectionName];
-        
-      // Spawn a new process to execute the Python script
-      const pythonProcess = spawn('python', args); // Pass documentId, userPrompt, collectionName, and optionally htmlContent as arguments
+      // Calculate total command length to avoid ENAMETOOLONG error on Windows
+      const baseCommandLength = 'python '.length + pythonScriptPath.length + documentId.length + collectionName.length + 20; // 20 for spaces and quotes
+      const promptLength = userPrompt.length;
+      const htmlContentLength = htmlContent ? htmlContent.length : 0;
+      const totalLength = baseCommandLength + promptLength + htmlContentLength;
+      
+      // Windows command line limit is ~8191 chars, use 5000 as safe threshold
+      const useStdin = totalLength > 5000;
+      
+      let pythonProcess;
+      
+      if (useStdin) {
+          console.log(`Command too long (${totalLength} chars), using stdin instead`);
+          // Use stdin for large data
+          const args = [pythonScriptPath, documentId, '--stdin'];
+          pythonProcess = spawn('python', args);
+          
+          // Send data via stdin
+          const stdinData = JSON.stringify({
+              user_prompt: userPrompt,
+              collection_name: collectionName,
+              html_content: htmlContent
+          });
+          
+          pythonProcess.stdin.write(stdinData);
+          pythonProcess.stdin.end();
+      } else {
+          // Use command line arguments as before for smaller commands
+          const args = htmlContent ? 
+            [pythonScriptPath, documentId, userPrompt, collectionName, htmlContent] :
+            [pythonScriptPath, documentId, userPrompt, collectionName];
+          pythonProcess = spawn('python', args);
+      }
 
       // Explicitly set encoding for stdout and stderr
       pythonProcess.stdout.setEncoding('utf8');
@@ -3133,10 +3153,24 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
       let result = '';
       let errorOutput = '';
 
+      // Handle process errors (including ENAMETOOLONG)
+      pythonProcess.on('error', (error) => {
+          console.error('Error executing Python script:', error);
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.status(500).json({ 
+              error: 'SCRIPT_EXECUTION_ERROR', 
+              message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
+              details: error.message 
+          });
+      });
+
       // Capture the output from the Python script
       pythonProcess.stdout.on('data', (data) => {
           result += data; // data is now a UTF-8 string
-           console.log(`Python stdout: ${data}`);
+          // Log a sample to check encoding
+          if (data.includes('Título') || data.includes('TÃ­tulo')) {
+              console.log(`Encoding check - received: ${data.substring(0, 100)}`);
+          }
       });
 
                 // Capture errors from the Python script
@@ -3149,6 +3183,142 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
                    console.log('MongoDB timeout error detected');
                }
           });
+
+      // Function to fix UTF-8 encoding issues dynamically including replacement characters
+      const fixUTF8Encoding = (text) => {
+          try {
+              let fixedText = text;
+              
+              // Detect and fix double-encoding issues first (common when UTF-8 is misinterpreted as Latin-1)
+              if (fixedText.includes('Ã¡') || fixedText.includes('Ã©') || fixedText.includes('Ã­') || 
+                  fixedText.includes('Ã³') || fixedText.includes('Ãº') || fixedText.includes('Ã±') || 
+                  fixedText.includes('Ã') || fixedText.includes('Ã‰') || fixedText.includes('Ã') || 
+                  fixedText.includes('Ã"') || fixedText.includes('Ãš')) {
+                  console.log('Detected double UTF-8 encoding, attempting to fix...');
+                  
+                  try {
+                      // Convert string to bytes using Latin-1 interpretation then decode as UTF-8
+                      const latin1Bytes = new Uint8Array(fixedText.length);
+                      for (let i = 0; i < fixedText.length; i++) {
+                          latin1Bytes[i] = fixedText.charCodeAt(i) & 0xFF;
+                      }
+                      
+                      const decoder = new TextDecoder('utf-8');
+                      const utf8Fixed = decoder.decode(latin1Bytes);
+                      
+                      // Verify the fix worked by checking for Spanish characters
+                      if (utf8Fixed.match(/[áéíóúñÁÉÍÓÚÑ]/)) {
+                          console.log('✓ Double UTF-8 encoding fixed successfully');
+                          fixedText = utf8Fixed;
+                      } else {
+                          console.log('Double UTF-8 fix didn\'t improve text, keeping original');
+                      }
+                  } catch (e) {
+                      console.warn('Could not fix double encoding:', e);
+                  }
+              }
+              
+              // Fix Unicode replacement characters (�) dynamically
+              if (fixedText.includes('\ufffd')) {
+                  console.log('Detected Unicode replacement characters, attempting dynamic fix...');
+                  
+                  // Dynamic replacement function based on Spanish orthography
+                  fixedText = fixedText.replace(/\ufffd([a-záéíóúñ]*)/gi, (match, followingChars) => {
+                      // Common Spanish word patterns that start with accented letters
+                      const vowelPatterns = {
+                          // Patterns for Á
+                          'mbito': 'Ámbito',
+                          'rea': 'Área',
+                          'rbol': 'Árbol',
+                          'ngel': 'Ángel',
+                          'frica': 'África',
+                          'vila': 'Ávila',
+                          'lvaro': 'Álvaro',
+                          'lex': 'Álex',
+                          'ngeles': 'Ángeles',
+                          'msterdam': 'Ámsterdam',
+                          
+                          // Patterns for É  
+                          'poca': 'Época',
+                          'tica': 'Ética',
+                          'xito': 'Éxito',
+                          'ste': 'Éste',
+                          'sta': 'Ésta',
+                          'stos': 'Éstos',
+                          'stas': 'Éstas',
+                          'l': 'Él',
+                          'lvez': 'Élvez',
+                          
+                          // Patterns for Í
+                          'ndice': 'Índice',
+                          'talo': 'Ítalo',
+                          
+                          // Patterns for Ó
+                          'scar': 'Óscar',
+                          'pera': 'Ópera',
+                          'rgano': 'Órgano',
+                          'ptimo': 'Óptimo',
+                          
+                          // Patterns for Ú
+                          'ltimo': 'Último',
+                          'nico': 'Único',
+                          'til': 'Útil',
+                          'rsula': 'Úrsula'
+                      };
+                      
+                      // Check if the following characters match any known pattern
+                      const lowerFollowing = followingChars.toLowerCase();
+                      if (vowelPatterns[lowerFollowing]) {
+                          console.log(`✓ Dynamic fix: �${followingChars} → ${vowelPatterns[lowerFollowing]}`);
+                          return vowelPatterns[lowerFollowing];
+                      }
+                      
+                      // If no specific pattern matches, try to infer the correct accented letter
+                      // based on Spanish phonetic patterns
+                      if (followingChars) {
+                          const firstChar = followingChars[0].toLowerCase();
+                          
+                          // Heuristic: consonants that commonly follow accented vowels in Spanish
+                          if (['m', 'r', 'n', 'l', 's', 't', 'p', 'g'].includes(firstChar)) {
+                              // Most common accented vowel at the beginning of Spanish words is Á
+                              const potentialFix = 'Á' + followingChars;
+                              console.log(`✓ Heuristic fix: �${followingChars} → ${potentialFix}`);
+                              return potentialFix;
+                          }
+                      }
+                      
+                      // If no pattern matches, leave as is
+                      return match;
+                  });
+              }
+              
+                             // Remove surrogate characters (critical for UTF-8 encoding)
+               // These characters (0xD800-0xDFFF) are valid in UTF-16 but not in UTF-8
+               fixedText = fixedText.split('').filter(char => {
+                   const code = char.charCodeAt(0);
+                   return !(code >= 0xD800 && code <= 0xDFFF);
+               }).join('');
+               
+               // Normalize Unicode to ensure consistent representation
+               if (typeof fixedText.normalize === 'function') {
+                   fixedText = fixedText.normalize('NFC');
+               }
+               
+               // Remove any remaining replacement characters and BOM
+               fixedText = fixedText.replace(/[\ufffd\ufeff]/g, '');
+               
+               // Remove other problematic control characters while preserving normal whitespace
+               fixedText = fixedText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+               
+               // Clean up excessive whitespace
+               fixedText = fixedText.replace(/\s+/g, ' ').trim();
+               
+               return fixedText;
+          } catch (error) {
+              console.warn('Could not fix UTF-8 encoding:', error);
+              return text;
+          }
+      };
 
       // Handle process completion
       pythonProcess.on('close', (code) => {
@@ -3175,6 +3345,9 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
                       htmlContent = htmlContent.replace(/\\\"/g, '"');
                       htmlContent = htmlContent.replace(/\\\\/g, '\\');
                       
+                      // Fix double UTF-8 encoding issues
+                      htmlContent = fixUTF8Encoding(htmlContent);
+                      
                       res.setHeader('Content-Type', 'text/html; charset=utf-8');
                       res.send(htmlContent);
                       return;
@@ -3197,6 +3370,10 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
                                   htmlContent = htmlContent.replace(/\\n/g, '\n');
                                   htmlContent = htmlContent.replace(/\\\"/g, '"');
                                   htmlContent = htmlContent.replace(/\\\\/g, '\\');
+                                  
+                                  // Fix double UTF-8 encoding issues
+                                  htmlContent = fixUTF8Encoding(htmlContent);
+                                  
                                   res.setHeader('Content-Type', 'text/html; charset=utf-8');
                                   res.send(htmlContent);
                                   return;
@@ -3208,14 +3385,17 @@ app.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
                   }
               }
   
+              // Fix double UTF-8 encoding issues before sending
+              const fixedContent = fixUTF8Encoding(cleanStr);
+              
               // Send as HTML or plain text depending on content
-              const isHtml = cleanStr.includes('<h2>') || cleanStr.includes('<p>') || cleanStr.includes('<table>') || cleanStr.includes('<html>');
+              const isHtml = fixedContent.includes('<h2>') || fixedContent.includes('<p>') || fixedContent.includes('<table>') || fixedContent.includes('<html>');
               if (isHtml) {
                   res.setHeader('Content-Type', 'text/html; charset=utf-8');
               } else {
                   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
               }
-              res.send(cleanStr);
+              res.send(fixedContent);
           };
   
           // First, check if we have valid content in stdout regardless of exit code
@@ -5452,9 +5632,27 @@ app.post('/api/generate-marketing-content', ensureAuthenticated, async (req, res
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+// Function to find an available port
+function startServer(currentPort) {
+  const server = app.listen(currentPort, () => {
+    console.log(`Server is running on port ${currentPort}`);
+    console.log(`Access the app at http://localhost:${currentPort}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${currentPort} is busy, trying ${currentPort + 1}...`);
+      startServer(currentPort + 1);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+
+  return server;
+}
+
+// Start the server with error handling
+startServer(port);
 
 // Password reset request route
 app.post('/forgot-password', async (req, res) => {
@@ -5818,13 +6016,16 @@ app.post('/api/regulatory-profile', async (req, res) => {
           .replace(/\s+/g, ' ') // collapse whitespace
           .trim();
           
-        const finalContent = cleaned.slice(0, 5000); // limit to 5k chars
+        // No limit content - send the full cleaned text to ensure complete analysis
+        const finalContent = cleaned;
         
         // Verificar si después de la limpieza queda contenido útil
         if (finalContent.length < 100) {
           console.warn(`Cleaned content too short for URL: ${fullUrl}`);
           return { success: false, content: finalContent, error: 'Contenido insuficiente' };
         }
+        
+        console.log(`✓ Full content length: ${finalContent.length} characters (no truncation)`);
         
         return { success: true, content: finalContent, error: null };
       } catch (err) {

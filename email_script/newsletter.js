@@ -1212,7 +1212,8 @@ function buildNewsletterHTMLNoMatches(userName, userId, dateString, boeDocs) {
 
 /**
  * Check if first shipment already exists for today and get previously shipped collections
- * Now uses datetime_run instead of date_range.start
+ * FIXED: Busca CUALQUIER log del día que tenga first_shipment, no necesariamente el más reciente
+ * Esto evita que envíos duplicados ocurran cuando hay múltiples runs de webscraping en el día
  */
 async function getFirstShipmentInfo(db) {
   try {
@@ -1223,7 +1224,11 @@ async function getFirstShipmentInfo(db) {
     const startOfDay = targetDate.clone().startOf('day').toDate();
     const endOfDay = targetDate.clone().endOf('day').toDate();
     
-    // Find the most recent log entry by datetime_run for the specified date with production environment
+    console.log(`Checking for ANY log with first_shipment between ${startOfDay} and ${endOfDay} with environment = production`);
+    
+    // CAMBIO CLAVE: Busca CUALQUIER log que YA tenga first_shipment, no el más reciente del webscraping
+    // Esto evita que si hay un nuevo run de webscraping después del primer envío, 
+    // el segundo envío piense que es la primera vez
     const logEntry = await logsCollection.findOne(
       { 
         datetime_run: { 
@@ -1231,9 +1236,10 @@ async function getFirstShipmentInfo(db) {
           $gte: startOfDay,
           $lte: endOfDay
         },
-        "run_info.environment": "production"
+        "run_info.environment": "production",
+        "first_shipment": { $exists: true }  // ← BUSCAR SOLO LOGS QUE YA TENGAN first_shipment
       },
-      { sort: { datetime_run: -1 } }
+      { sort: { "first_shipment.time_stamp": -1 } }  // ← Ordenar por timestamp del envío, no del run
     );
     
     if (logEntry && logEntry.first_shipment) {
@@ -2719,7 +2725,8 @@ async function sendCollectionsReportEmail(db) {
     
     // Log the first shipment information
     if (isExtraVersion) {
-      // For extra versions, update the existing first_shipment to include new collections
+      // FIXED: Para extra versions, actualizar el MISMO LOG que tiene first_shipment (consistente con getFirstShipmentInfo)
+      // Esto asegura que siempre actualizamos el mismo log que usamos para detectar envíos previos
       try {
         const logsCollection = db.collection('logs');
         const currentTimestamp = moment().toDate();
@@ -2729,7 +2736,8 @@ async function sendCollectionsReportEmail(db) {
         const startOfDay = targetDate.clone().startOf('day').toDate();
         const endOfDay = targetDate.clone().endOf('day').toDate();
         
-        // Find the most recent log entry by datetime_run for the specified date with production environment
+        // CAMBIO: Buscar el MISMO log que tiene first_shipment (igual que getFirstShipmentInfo)
+        // No buscar el más reciente, sino el que ya tiene información de envío
         const currentLog = await logsCollection.findOne(
           { 
             datetime_run: { 
@@ -2737,13 +2745,14 @@ async function sendCollectionsReportEmail(db) {
               $gte: startOfDay,
               $lte: endOfDay
             },
-            "run_info.environment": "production"
+            "run_info.environment": "production",
+            "first_shipment": { $exists: true }  // ← MISMO CRITERIO que getFirstShipmentInfo
           },
-          { sort: { datetime_run: -1 } }
+          { sort: { "first_shipment.time_stamp": -1 } }  // ← Consistente con getFirstShipmentInfo
         );
         
         if (currentLog) {
-          const existingCollections = currentLog?.first_shipment?.collections || [];
+          const existingCollections = currentLog.first_shipment.collections || [];
           
           // Merge existing collections with new ones
           const updatedCollections = [...new Set([...existingCollections, ...collectionsToProcess])];
@@ -2763,10 +2772,11 @@ async function sendCollectionsReportEmail(db) {
             newCollections: collectionsToProcess,
             allCollections: updatedCollections,
             timestamp: currentTimestamp,
-            logId: currentLog._id
+            logId: currentLog._id,
+            originalShipmentTime: currentLog.first_shipment.time_stamp
           });
         } else {
-          console.warn('No recent log entry found to update with extra shipment info');
+          console.warn('No log entry with first_shipment found to update with extra shipment info');
         }
       } catch (err) {
         console.error('Error logging extra shipment:', err);
