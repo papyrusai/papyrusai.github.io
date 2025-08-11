@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototipo - Agentes Regulatorios</title>
+    <link rel="stylesheet" href="../styles/agentes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-users"></i> Agentes Regulatorios</h1>
+            <p class="subtitle">Gestiona tus agentes personalizados que analizarán automáticamente toda la normativa</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Agent Grid -->
+            <div class="agents-grid" id="agentsGrid">
+                <!-- Agent Card 1 -->
+                <div class="agent-box" data-agent="proteccion-datos">
+                    <div class="agent-header">
+                        <h3>Protección de Datos MAZ</h3>
+                        <div class="agent-status active">
+                            <i class="fas fa-circle"></i>
+                            <span>Activo</span>
+                        </div>
+                    </div>
+                    <p class="agent-objective">Monitorear novedades en protección de datos para empresas tecnológicas</p>
+                    <div class="agent-stats">
+                        <div class="stat">
+                            <i class="fas fa-bell"></i>
+                            <span>15 alertas</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-calendar"></i>
+                            <span>Último mes</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Card 2 -->
+                <div class="agent-box" data-agent="sostenibilidad">
+                    <div class="agent-header">
+                        <h3>Sostenibilidad Ambiental MAZ</h3>
+                        <div class="agent-status inactive">
+                            <i class="fas fa-circle"></i>
+                            <span>Pausado</span>
+                        </div>
+                    </div>
+                    <p class="agent-objective">Detectar regulaciones ambientales para sector industrial</p>
+                    <div class="agent-stats">
+                        <div class="stat">
+                            <i class="fas fa-bell"></i>
+                            <span>7 alertas</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-calendar"></i>
+                            <span>Última semana</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Card 3 -->
+                <div class="agent-box" data-agent="fintech">
+                    <div class="agent-header">
+                        <h3>Fintech & Pagos MAZ</h3>
+                        <div class="agent-status active">
+                            <i class="fas fa-circle"></i>
+                            <span>Activo</span>
+                        </div>
+                    </div>
+                    <p class="agent-objective">Seguimiento regulatorio para servicios financieros digitales</p>
+                    <div class="agent-stats">
+                        <div class="stat">
+                            <i class="fas fa-bell"></i>
+                            <span>23 alertas</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-calendar"></i>
+                            <span>Esta semana</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create New Agent Card -->
+                <div class="agent-box new-agent" id="newAgentBox">
+                    <div class="new-agent-content">
+                        <i class="fas fa-plus"></i>
+                        <h3>Crear Nuevo Agente</h3>
+                        <p>Configura un agente personalizado</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay Modal for Agent Details -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="agent-modal" id="agentModal">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Protección de Datos</h2>
+                    <button class="close-modal" id="closeModal">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="modal-content">
+                    <!-- Objetivo del Agente -->
+                    <div class="form-section">
+                        <h3>Objetivo del agente</h3>
+                        <div class="input-group">
+                            <input type="text" id="agentObjective" placeholder="Notificar novedades normativas materialmente relevantes para MAZ sobre protección de datos">
+                        </div>
+                    </div>
+
+                    <!-- Contenido -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>Contenido</h3>
+                            <div class="toggle-section">
+                                <div class="toggle-container">
+                                    <label class="toggle">
+                                        <input type="checkbox" id="contenidoToggle">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="toggle-label" id="toggleLabel">Ilustrativo</span>
+                                </div>
+                                <div class="info-icon" id="contenidoInfo">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <textarea id="contenidoText" placeholder="Incluye Reglamentos, leyes u órdenes que modifiquen la LOPDGDD, el RGPD o su desarrollo sectorial. Resoluciones, guías y circulares de la AEPD, EDPB o CEPD con alcance general."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Geografía -->
+                    <div class="form-section">
+                        <div class="section-header">
+                            <h3>Geografía</h3>
+                            <div class="geography-select">
+                                <select id="geographySelect">
+                                    <option value="españa">🇪🇸 España</option>
+                                    <option value="ecuador">🇪🇨 Ecuador</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="info-text">Es importante tener en cuenta que el parámetro geográfico sirve para filtrar dentro de las fuentes seleccionadas.</p>
+                        
+                        <div class="geography-options">
+                            <div class="checkbox-group">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" checked>
+                                    <span class="checkmark"></span>
+                                    <span>Novedades nacionales</span>
+                                    <div class="info-icon" data-tooltip="Novedades de aplicación que afectan a todo el ámbito nacional. Ej: reforma de la ley protección de datos">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                </label>
+
+                                <label class="checkbox-option">
+                                    <input type="checkbox" checked>
+                                    <span class="checkmark"></span>
+                                    <span>Novedades regionales</span>
+                                    <div class="info-icon" data-tooltip="Novedades de aplicación que afectan a una región o ciudad concreta Ej: resolución sobre el nuevo regimen de tasas de residuos de Zaragoza">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                </label>
+
+                                <label class="checkbox-option">
+                                    <input type="checkbox">
+                                    <span class="checkmark"></span>
+                                    <span>Novedades municipales</span>
+                                    <div class="info-icon" data-tooltip="Novedades de aplicación que afectan a un pueblo o pequeño municipio concreto. Ej: resolución sobre el nuevo regimen de tasas de residuos de Comillas">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                </label>
+
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="personalizadoGeo">
+                                    <span class="checkmark"></span>
+                                    <span>Personalizado</span>
+                                    <div class="info-icon" data-tooltip="Personaliza el ámbito de aplicación como prefieras. Ej: Novedades de ámbito nacional, novedades regionales y municipales de Madrid y novedades municipales de Burgos">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="custom-input" id="customGeoInput" style="display: none;">
+                                <input type="text" placeholder="Novedades de ámbito nacional, novedades regionales y municipales de Madrid...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sujetos Afectados -->
+                    <div class="form-section">
+                        <h3>Sujetos afectados</h3>
+                        <div class="checkbox-group">
+                            <label class="checkbox-option">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                <span>Textos normativos impersonales con efectos jurídicos generales en el ámbito de aplicación</span>
+                            </label>
+
+                            <label class="checkbox-option">
+                                <input type="checkbox" checked>
+                                <span class="checkmark"></span>
+                                <span>Jurisprudencia y sanciones sobre particulares concretos relevantes para el contenido del agente</span>
+                            </label>
+
+                            <label class="checkbox-option">
+                                <input type="checkbox">
+                                <span class="checkmark"></span>
+                                <span>Convenios, resoluciones órdenes, autorizaciones que afecten a particulares o empresas concretas</span>
+                            </label>
+
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="personalizadoSujetos">
+                                <span class="checkmark"></span>
+                                <span>Personalizado</span>
+                                <div class="info-icon" data-tooltip="Personaliza el ámbito de aplicación como prefieras. Útil para seguir tendencias y detectar oportunidades, aunque puede introducir ruido">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="custom-input" id="customSujetosInput" style="display: none;">
+                            <input type="text" placeholder="Novedades de aplicación general, sanciones y jurisprudencia y resoluciones (generales y particulares) sobre explotaciones porcinas">
+                        </div>
+                    </div>
+
+                    <!-- Normativa a excluir -->
+                    <div class="form-section">
+                        <h3>Normativa a excluir</h3>
+                        <div class="input-group">
+                            <input type="text" id="normativaExcluir" placeholder="Reglamentos reglados, medidas restrictivas, convenios">
+                        </div>
+                    </div>
+
+                    <!-- Feedback -->
+                    <div class="form-section">
+                        <h3>Feedback</h3>
+                        <p class="info-text">Aquí se irá guardando el feedback que otorgues al agente para ir afinando su búsqueda</p>
+                    </div>
+
+                    <!-- Scoring -->
+                    <div class="form-section">
+                        <h3>Scoring</h3>
+                        <div class="scoring-container">
+                            <div class="score-bar">
+                                <h4>Foco del agente</h4>
+                                <div class="score-labels">
+                                    <span class="label-left">Específico</span>
+                                    <span class="label-center">Equilibrio</span>
+                                    <span class="label-right">General</span>
+                                </div>
+                                <div class="score-track">
+                                    <div class="score-fill" style="width: 65%;"></div>
+                                    <div class="score-thumb" style="left: 65%;"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="activity-section">
+                                <h4>Actividad normativa último mes</h4>
+                                <div class="activity-bar">
+                                    <div class="activity-labels">
+                                        <span class="label-left">Baja</span>
+                                        <span class="label-center">Media</span>
+                                        <span class="label-right">Alta</span>
+                                    </div>
+                                    <div class="activity-track">
+                                        <div class="activity-fill" style="width: 75%;"></div>
+                                        <div class="activity-thumb" style="left: 75%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tooltip -->
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+    <script src="agentes.js"></script>
+</body>
+</html>

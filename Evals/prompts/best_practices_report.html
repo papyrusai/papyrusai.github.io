@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>Best Practices – System Prompts LLM</title>
+<style>
+  body{font-family:Segoe UI,Arial,sans-serif;margin:2rem;background:#f9f9fb;color:#333}
+  h1,h2,h3{color:#2c3e50}
+  table{border-collapse:collapse;width:100%;margin:1.2rem 0}
+  th,td{border:1px solid #ddd;padding:0.6rem;text-align:left}
+  th{background:#34495e;color:#ecf0f1}
+  tr:nth-child(even){background:#f2f2f2}
+  code{background:#eef;border-radius:3px;padding:0 4px}
+  aside{background:#fffbdd;border-left:4px solid #ffd33d;padding:1rem;margin:1.5rem 0}
+  details summary{cursor:pointer;font-weight:bold}
+</style>
+</head>
+<body>
+
+<h1>Best Practices en System Prompts de Aplicaciones LLM</h1>
+<div id="md-content">Cargando reporte completo...</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+  // Carga y renderiza el archivo Markdown completo dentro del div #md-content
+  fetch('best_practices_report.md')
+    .then(resp => resp.text())
+    .then(md => {
+      document.getElementById('md-content').innerHTML = marked.parse(md);
+    })
+    .catch(err => {
+      document.getElementById('md-content').textContent = 'Error al cargar el reporte: ' + err;
+    });
+</script>
+</body>
+</html> 

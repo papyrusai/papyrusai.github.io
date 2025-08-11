@@ -737,24 +737,75 @@
         #configuracion-iframe-container .field-label {
            display: block;
            font-size: 14px;
+           font-weight: 700;
            color: var(--dark-color);
            margin-bottom: 8px;
            line-height: 1.4;
            text-align: left;
         }
 
-        #configuracion-iframe-container .product-input,
-        #configuracion-iframe-container .product-select {
-           width: 100%;
-           border: 2px solid #e0e0e0;
-           border-radius: 8px;
-           padding: 12px 16px;
-           font-size: 14px;
-           color: var(--text-color);
-           transition: border-color 0.3s ease;
-           background: white;
-           resize: vertical;
+        #configuracion-iframe-container .field-label-with-info {
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
+        #configuracion-iframe-container .info-icon {
+           width: 16px;
+           height: 16px;
+           border-radius: 50%;
+           background: rgba(11,36,49,0.9);
+           color: white;
+           display: inline-flex;
+           align-items: center;
+           justify-content: center;
+           font-size: 10px;
+           font-weight: 600;
+           cursor: pointer;
+           position: relative;
+           transition: all 0.2s ease;
+           margin-bottom: 5px;
+         }
+        #configuracion-iframe-container .info-icon:hover::after {
+           content: attr(data-tooltip);
+           position: absolute;
+           bottom: 120%;
+           left: 0;
+           background: var(--dark-color);
+           color: white;
+           padding: 8px 12px;
+           border-radius: 6px;
+           font-size: 12px;
+           line-height: 1.4;
+           white-space: normal;
+           z-index: 1000;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+           width: 300px;
+           min-height: 100px;
+         }
+        #configuracion-iframe-container .info-icon:hover::before {
+          content: '';
+          position: absolute;
+          bottom: 110%;
+          left: 8px;
+          width: 0;
+          height: 0;
+          border-left: 5px solid transparent;
+          border-right: 5px solid transparent;
+          border-top: 5px solid var(--dark-color);
+        }
+
+        #configuracion-iframe-container .product-input,
+         #configuracion-iframe-container .product-select {
+            width: 100%;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px 16px;
+            font-size: 15px;
+            color: var(--text-color);
+            transition: border-color 0.3s ease;
+            background: white;
+            resize: vertical;
+         }
 
         #configuracion-iframe-container .product-input:focus,
         #configuracion-iframe-container .product-select:focus {
@@ -1196,6 +1247,185 @@
       opacity: 1;
       visibility: visible;
     }
+
+    /* Scoped styles for Agents UI */
+    #configuracion-iframe-container .agents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      width: 100%;
+      margin: 12px 0 24px 0;
+    }
+    #configuracion-iframe-container .agent-box {
+      background: #fff;
+      border: 2px solid #e0e0e0;
+      border-radius: 14px;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    #configuracion-iframe-container .agent-box:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary-color);
+      box-shadow: 0 6px 14px rgba(4,219,141,0.18);
+    }
+    #configuracion-iframe-container .agent-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    #configuracion-iframe-container .agent-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: var(--dark-color);
+      font-weight: 700;
+      max-width: 75%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #configuracion-iframe-container .agent-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      background: rgba(69,88,98,0.1);
+      color: var(--text-color);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    #configuracion-iframe-container .agent-status i { color: #18b27d; font-size: 10px; }
+    #configuracion-iframe-container .agent-objective {
+      color: var(--text-color);
+      font-size: 13px;
+      margin: 0;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-height: 58px;
+    }
+
+    /* Overlay & modal */
+    #configuracion-iframe-container .agent-detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11,36,49,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 3000;
+    }
+    #configuracion-iframe-container .agent-modal {
+      width: min(920px, 94%);
+      max-height: calc(100vh - 120px);
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+      overflow: hidden;
+      animation: fadeInUp 0.25s ease-out;
+      display: flex;
+      flex-direction: column;
+    }
+    #configuracion-iframe-container .agent-modal.small { width: min(520px, 92%); }
+    #configuracion-iframe-container .agent-modal .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    #configuracion-iframe-container #agentModalTitle {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 0;
+    }
+    #configuracion-iframe-container #agentModalTitle #agentTitleText {
+      background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-size: 20px;
+      font-weight: 700;
+      margin-left: 4px;
+    }
+    #configuracion-iframe-container .edit-name-btn {
+      background: rgba(69,88,98,0.1);
+      border: none;
+      color: var(--dark-color);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    #configuracion-iframe-container .edit-name-btn:hover {
+      background: rgba(69,88,98,0.15);
+    }
+    #configuracion-iframe-container .agent-modal .modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--dark-color);
+    }
+    #configuracion-iframe-container .agent-modal .close-modal {
+      background: transparent;
+      border: none;
+      color: #999;
+      font-size: 16px;
+      cursor: pointer;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    #configuracion-iframe-container .agent-modal .close-modal:hover {
+      background: #f5f5f5;
+      color: var(--dark-color);
+    }
+    #configuracion-iframe-container .agent-detail-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    #configuracion-iframe-container #saveAgentChangesBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #configuracion-iframe-container .agent-detail-actions .generate-agent-btn,
+    #configuracion-iframe-container .agent-detail-actions .cancel-edit-btn,
+    #configuracion-iframe-container .agent-detail-actions .crear-agente-btn {
+      border-radius: 20px !important;
+    }
+    #configuracion-iframe-container #saveAgentChangesBtn {
+      background: #0b2431 !important;
+      color: white !important;
+    }
+    #configuracion-iframe-container #saveAgentChangesBtn:hover {
+      background: #081a24 !important;
+    }
+    #configuracion-iframe-container #saveAgentChangesBtn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #configuracion-iframe-container .agent-skeleton {
+      background: #f3f5f6;
+      border-radius: 12px;
+      height: 120px;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%{opacity:.6} 50%{opacity:1} 100%{opacity:.6} }
   </style>
 </head>
 <body>
@@ -1309,12 +1539,283 @@
         </div>
         <div class="content-title">Crea tus agentes personalizados que automáticamente analizarán toda la normativa por ti</div>
         
-        <!-- Generated agents will be dynamically inserted here -->
+        <!-- Scoped styles for Agents UI -->
+        <style>
+          #configuracion-iframe-container .agents-grid {
+             display: grid;
+             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+             gap: 20px;
+             width: 100%;
+             margin: 12px 0 24px 0;
+           }
+           #configuracion-iframe-container .agent-box {
+             background: #fff;
+             border: 2px solid #e0e0e0;
+             border-radius: 14px;
+             padding: 18px;
+             cursor: pointer;
+             transition: all 0.2s ease;
+             box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+           }
+          #configuracion-iframe-container .agent-box:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+            box-shadow: 0 6px 14px rgba(4,219,141,0.18);
+          }
+          #configuracion-iframe-container .agent-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+          }
+          #configuracion-iframe-container .agent-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--dark-color);
+            font-weight: 700;
+            max-width: 75%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          #configuracion-iframe-container .agent-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 14px;
+            background: rgba(69,88,98,0.1);
+            color: var(--text-color);
+            font-size: 12px;
+            font-weight: 600;
+          }
+          #configuracion-iframe-container .agent-status i { color: #18b27d; font-size: 10px; }
+          #configuracion-iframe-container .agent-objective {
+            color: var(--text-color);
+            font-size: 13px;
+            margin: 0;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            min-height: 58px;
+          }
 
+          /* Overlay & modal */
+          #configuracion-iframe-container .agent-detail-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(11,36,49,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+          }
+                    #configuracion-iframe-container .agent-modal {
+             width: min(920px, 94%);
+             max-height: calc(100vh - 120px);
+             background: #fff;
+             border-radius: 14px;
+             box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+             overflow: hidden;
+             animation: fadeInUp 0.25s ease-out;
+             display: flex;
+             flex-direction: column;
+           }
+          #configuracion-iframe-container .agent-modal.small { width: min(520px, 92%); }
+                     #configuracion-iframe-container .agent-modal .modal-header {
+             display: flex;
+             align-items: center;
+             justify-content: space-between;
+             padding: 10px 12px;
+             border-bottom: 1px solid #f0f0f0;
+           }
+           #configuracion-iframe-container #agentModalTitle {
+             display: flex;
+             align-items: center;
+             gap: 16px;
+             margin: 0;
+           }
+           #configuracion-iframe-container #agentModalTitle #agentTitleText {
+             background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+             -webkit-background-clip: text;
+             -webkit-text-fill-color: transparent;
+             font-size: 20px;
+             font-weight: 700;
+             margin-left: 4px;
+           }
+           #configuracion-iframe-container .edit-name-btn {
+             background: rgba(69,88,98,0.1);
+             border: none;
+             color: var(--dark-color);
+             width: 28px;
+             height: 28px;
+             border-radius: 50%;
+             display: inline-flex;
+             align-items: center;
+             justify-content: center;
+             cursor: pointer;
+             transition: all 0.2s ease;
+           }
+           #configuracion-iframe-container .edit-name-btn:hover {
+             background: rgba(69,88,98,0.15);
+           }
+          #configuracion-iframe-container .agent-modal .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--dark-color);
+          }
+          #configuracion-iframe-container .agent-modal .close-modal {
+            background: transparent;
+            border: none;
+            color: #999;
+            font-size: 16px;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+          }
+          #configuracion-iframe-container .agent-modal .close-modal:hover {
+            background: #f5f5f5;
+            color: var(--dark-color);
+          }
+          #configuracion-iframe-container .agent-detail-actions {
+             display: flex;
+             align-items: center;
+             gap: 10px;
+             justify-content: flex-end;
+           }
+           #configuracion-iframe-container .agent-detail-actions .generate-agent-btn,
+           #configuracion-iframe-container .agent-detail-actions .cancel-edit-btn,
+           #configuracion-iframe-container .agent-detail-actions .crear-agente-btn {
+             border-radius: 20px !important;
+           }
+           #configuracion-iframe-container #saveAgentChangesBtn {
+             background: #0b2431 !important;
+             color: white !important;
+           }
+           #configuracion-iframe-container #saveAgentChangesBtn:hover {
+             background: #081a24 !important;
+           }
+           #configuracion-iframe-container #saveAgentChangesBtn:disabled {
+             opacity: 0.6;
+             cursor: not-allowed;
+           }
+           
+           /* Contact info box styles */
+           #configuracion-iframe-container .contact-info-box {
+             background: #f5f5f5;
+             border: 1px solid #e0e0e0;
+             border-radius: 12px;
+             padding: 20px;
+             margin: 20px 0;
+             text-align: center;
+           }
+           
+           #configuracion-iframe-container .contact-info-box p {
+             margin: 0;
+             color: #666;
+             font-size: 14px;
+             line-height: 1.5;
+           }
+           
+           #configuracion-iframe-container .contact-info-box a {
+             color: var(--primary-color);
+             text-decoration: none;
+             font-weight: 600;
+           }
+           
+           #configuracion-iframe-container .contact-info-box a:hover {
+             text-decoration: underline;
+           }
+         </style>
+        
+        <!-- Agents grid -->
+        <div id="agentsGrid" class="agents-grid"></div>
+
+        <!-- Contact information box -->
+        <div class="contact-info-box">
+          <p>Estamos trabajando en desarrollar la funcionalidad para automatizar la creación de agentes. Mientras tanto, si quiere crear un nuevo agente póngase en contacto con el equipo de Reversa en <a href="mailto:tomas@reversa.ai">tomas@reversa.ai</a> o <a href="mailto:info@reversa.ai">info@reversa.ai</a>. ¡Gracias!</p>
+        </div>
+
+        <!-- Toast notifications -->
+        <div id="agentsToast" style="position: fixed; top: 20px; right: 20px; z-index: 4000; display: none; background: #e8f5e8; color: var(--dark-color); border: 1px solid var(--primary-color); padding: 12px 16px; border-radius: 10px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); font-weight: 600; font-size: 14px; min-width: 280px; align-items:center; gap:10px;"></div>
+
+        <!-- Agent detail overlay -->
+        <div id="agentDetailOverlay" class="agent-detail-overlay" style="display: none;">
+          <div class="agent-modal">
+            <div class="modal-header">
+              <h2 id="agentModalTitle"><span id="agentTitleText">Detalle del agente</span> <button class="edit-name-btn" id="editAgentNameBtn" title="Editar nombre"><i class="fas fa-edit"></i></button></h2>
+              <button class="close-modal" id="closeAgentModal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="product-details-form" style="margin: 0; box-shadow: none; padding-top: 10px; padding-bottom: 10px; flex: 1 1 auto; overflow: auto;">
+              <div class="product-form-fields">
+                
+               <div class="form-field">
+                   <div class="field-label-with-info">
+                     <label class="field-label">Contexto</label>
+                     <span class="info-icon" data-tooltip="Introduce un breve contexto sobre la actividad económica de tu empresa (sector en el que opera, tipo de clientes a los que da servicio...) que ayude al agente a personalizar el impacto normativo.">i</span>
+                   </div>
+                   <textarea class="product-input" id="agentContexto" rows="3" placeholder="Contexto"></textarea>
+                 </div>
+                 <div class="form-field">
+                   <div class="field-label-with-info">
+                     <label class="field-label">Objetivo</label>
+                     <span class="info-icon" data-tooltip="Describe el objetivo general de este agente (ej: detectar cambios normativos relevantes en protección de datos).">i</span>
+                   </div>
+                   <textarea class="product-input" id="agentObjetivo" rows="3" placeholder="Objetivo"></textarea>
+                 </div>
+                 <div class="form-field">
+                   <div class="field-label-with-info">
+                     <label class="field-label">Contenido (criterios de inclusión)</label>
+                     <span class="info-icon" data-tooltip="Para asegurar que el agente detecta lo relevante, detalla los supuestos en los que quieres recibir notificaciones, especificando rango normativo y efectos jurídicos.">i</span>
+                   </div>
+                   <textarea class="product-input" id="agentContenido" rows="8" placeholder="Contenido"></textarea>
+                 </div>
+                 <div class="form-field">
+                   <div class="field-label-with-info">
+                     <label class="field-label">Documentos no incluidos</label>
+                     <span class="info-icon" data-tooltip="Para asegurar que el agente elimina el ruido, determina qué tipo de contenido no debe ser incluido.">i</span>
+                   </div>
+                   <textarea class="product-input" id="agentNoIncluidos" rows="8" placeholder="Documentos no incluidos"></textarea>
+                 </div>
+             </div>
+             <div class="agent-detail-actions">
+                <button id="saveAgentChangesBtn" class="generate-agent-btn" disabled><i class="fas fa-save"></i> Guardar</button>
+              </div>
+           </div>
+         </div>
+        </div>
+
+        <!-- Unsaved changes confirmation -->
+        <div id="unsavedConfirmOverlay" class="agent-detail-overlay" style="display: none;">
+          <div class="agent-modal small">
+            <div class="modal-header">
+              <h2>¿Guardar cambios?</h2>
+              <button class="close-modal" id="closeUnsavedConfirm"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="product-details-form" style="margin: 0; box-shadow: none;">
+              <p style="color: var(--text-color); margin: 0 0 16px 0;">Tienes cambios sin guardar. ¿Quieres guardarlos antes de cerrar?</p>
+              <div class="agent-detail-actions">
+                <button id="discardChangesBtn" class="cancel-edit-btn">Descartar</button>
+                <button id="saveAndCloseBtn" class="generate-agent-btn"><i class="fas fa-save"></i> Guardar y cerrar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Generated agents will be dynamically inserted here -->
+ <!--
         <button id="crearAgenteBtn" class="crear-agente-btn">
           <i class="fas fa-plus"></i> Crear agente
         </button>
-
+ -->
         <!-- Agent Template Selection Box -->
         <div id="agentTemplateBox" class="agent-template-box" style="display: none;">
           <button class="close-template-box" id="closeTemplateBox">
@@ -1588,20 +2089,79 @@
     // Agent management functions (moved outside to be globally accessible)
     
     // Function to load existing agents from database
-    async function loadExistingAgents() {
-        try {
-            const response = await fetch('/api/get-user-data');
-            const userData = await response.json();
-            
-            // Update usage trackers
-            updateUsageTrackers(userData);
-            
-            if (userData.etiquetas_personalizadas && Object.keys(userData.etiquetas_personalizadas).length > 0) {
-                displayExistingAgents(userData.etiquetas_personalizadas);
-            }
-        } catch (error) {
-            console.error('Error loading existing agents:', error);
-        }
+    const AGENTS_STATE = { currentAgentKey: null, originalXml: '', originalVars: null, isEditing: false, isDirty: false };
+
+    function extractTag(xmlString, tagName){
+      if(!xmlString) return '';
+      try{
+        const regex = new RegExp(`<${tagName}>([\\s\\S]*?)<\\/${tagName}>`, 'i');
+        const match = xmlString.match(regex);
+        return match ? match[1].trim() : '';
+      } catch(e){
+        return '';
+      }
+    }
+
+    function parseEtiquetaDefinition(xmlString){
+      return {
+        NombreEtiqueta: extractTag(xmlString, 'NombreEtiqueta'),
+        tipo: extractTag(xmlString, 'tipo'),
+        Contexto: extractTag(xmlString, 'Contexto'),
+        Objetivo: extractTag(xmlString, 'Objetivo'),
+        Contenido: extractTag(xmlString, 'Contenido'),
+        DocumentosNoIncluidos: extractTag(xmlString, 'DocumentosNoIncluidos')
+      };
+    }
+
+    function buildEtiquetaXml(vars){
+      const s = v => (v ?? '').toString().trim();
+      return `<Etiqueta>\n<NombreEtiqueta>${s(vars.NombreEtiqueta)}</NombreEtiqueta>\n<tipo>${s(vars.tipo)}</tipo>\n<Contexto>${s(vars.Contexto)}</Contexto>\n<Objetivo>${s(vars.Objetivo)}</Objetivo>\n<Contenido>\n${s(vars.Contenido)}\n</Contenido>\n<DocumentosNoIncluidos>\n${s(vars.DocumentosNoIncluidos)}\n</DocumentosNoIncluidos>\n</Etiqueta>`;
+    }
+
+    function renderAgentsGrid(etiquetas){
+      const grid = document.getElementById('agentsGrid');
+      if(!grid) return;
+      // Show 6 skeletons while loading
+      grid.innerHTML = '<div class="agent-skeleton"></div>'.repeat(6);
+      const entries = Object.entries(etiquetas || {});
+      if(entries.length===0){
+        grid.innerHTML = '<div style="color:#7a8a93; font-size:14px;">No tienes agentes aún. Crea tu primer agente.</div>';
+        return;
+      }
+      // Build HTML first, then attach events to reduce reflow
+      let html = '';
+      const data = [];
+      entries.reverse().forEach(([key, xml])=>{
+        const parsed = parseEtiquetaDefinition(xml);
+        const name = parsed.NombreEtiqueta || key;
+        const obj = parsed.Objetivo || '';
+        data.push({key, xml});
+        html += `
+          <div class="agent-box" data-key="${encodeURIComponent(key)}">
+            <div class="agent-header">
+              <h3>${name}</h3>
+              <div class="agent-status"><i class="fas fa-circle"></i><span>Activo</span></div>
+            </div>
+            <p class="agent-objective">${obj}</p>
+          </div>`;
+      });
+      grid.innerHTML = html;
+      grid.querySelectorAll('.agent-box').forEach(box=>{
+        const key = decodeURIComponent(box.getAttribute('data-key'));
+        const xml = etiquetas[key];
+        box.addEventListener('click', ()=> window.openAgentDetail && window.openAgentDetail(key, xml));
+      });
+    }
+
+    async function loadExistingAgents(){
+      try{
+        const response = await fetch('/api/get-user-data');
+        const userData = await response.json();
+        updateUsageTrackers(userData);
+        renderAgentsGrid(userData.etiquetas_personalizadas || {});
+      }catch(error){
+        console.error('Error loading existing agents:', error);
+      }
     }
 
     
@@ -1982,11 +2542,9 @@
               if (sectorDetailsForm) sectorDetailsForm.style.display = 'none';
               if (customDetailsForm) customDetailsForm.style.display = 'none';
               
-              // Hide existing agent boxes
-              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
-              existingAgentBoxes.forEach(box => {
-                  box.style.display = 'none';
-              });
+              // Hide agents grid while creating from template
+              const agentsGrid = document.getElementById('agentsGrid');
+              if (agentsGrid) agentsGrid.style.display = 'none';
               
               // Scroll to the box smoothly
               setTimeout(() => {
@@ -2003,11 +2561,9 @@
               if (sectorDetailsForm) sectorDetailsForm.style.display = 'none';
               if (customDetailsForm) customDetailsForm.style.display = 'none';
               
-              // Show existing agent boxes again
-              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
-              existingAgentBoxes.forEach(box => {
-                  box.style.display = 'block';
-              });
+              // Show agents grid again
+              const agentsGrid = document.getElementById('agentsGrid');
+              if (agentsGrid) agentsGrid.style.display = 'grid';
           }
 
           // Function to show product details form
@@ -2119,11 +2675,9 @@
               if (productDetailsForm) productDetailsForm.style.display = 'none';
               crearAgenteBtn.style.display = 'flex';
               
-              // Show existing agent boxes again
-              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
-              existingAgentBoxes.forEach(box => {
-                  box.style.display = 'block';
-              });
+              // Show agents grid again
+              const agentsGrid = document.getElementById('agentsGrid');
+              if (agentsGrid) agentsGrid.style.display = 'grid';
           }
 
           // Function to hide client details form
@@ -2131,11 +2685,9 @@
               if (clientDetailsForm) clientDetailsForm.style.display = 'none';
               crearAgenteBtn.style.display = 'flex';
               
-              // Show existing agent boxes again
-              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
-              existingAgentBoxes.forEach(box => {
-                  box.style.display = 'block';
-              });
+              // Show agents grid again
+              const agentsGrid = document.getElementById('agentsGrid');
+              if (agentsGrid) agentsGrid.style.display = 'grid';
           }
 
           // Function to hide sector details form
@@ -2143,11 +2695,9 @@
               if (sectorDetailsForm) sectorDetailsForm.style.display = 'none';
               crearAgenteBtn.style.display = 'flex';
               
-              // Show existing agent boxes again
-              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
-              existingAgentBoxes.forEach(box => {
-                  box.style.display = 'block';
-              });
+              // Show agents grid again
+              const agentsGrid = document.getElementById('agentsGrid');
+              if (agentsGrid) agentsGrid.style.display = 'grid';
           }
 
           // Function to hide custom details form
@@ -2155,11 +2705,9 @@
               if (customDetailsForm) customDetailsForm.style.display = 'none';
               crearAgenteBtn.style.display = 'flex';
               
-              // Show existing agent boxes again
-              const existingAgentBoxes = document.querySelectorAll('.generated-agent-box');
-              existingAgentBoxes.forEach(box => {
-                  box.style.display = 'block';
-              });
+              // Show agents grid again
+              const agentsGrid = document.getElementById('agentsGrid');
+              if (agentsGrid) agentsGrid.style.display = 'grid';
           }
 
           // Note: Agent boxes are now managed dynamically with individual delete buttons
@@ -2180,10 +2728,10 @@
                 return;
               }
               
-              showTemplateBox();
+              openNewAgentModal();
             } catch (error) {
               console.error('Error checking agent limits:', error);
-              showTemplateBox(); // Show anyway if there's an error
+              openNewAgentModal(); // Show anyway if there's an error
             }
           });
 
@@ -2618,12 +3166,7 @@
     // Expose functions globally so they can be called from dynamic HTML
     window.initializeConfigurationMenu = initializeConfigurationMenu;
     window.loadExistingAgents = loadExistingAgents;
-    window.displayExistingAgents = displayExistingAgents;
-    window.createAgentBox = createAgentBox;
-    window.editAgent = editAgent;
-    window.saveAgent = saveAgent;
-    window.cancelEdit = cancelEdit;
-    window.deleteAgent = deleteAgent;
+    window.renderAgentsGrid = renderAgentsGrid;
     window.showGeneratedAgent = showGeneratedAgent;
     window.updateUsageTrackers = updateUsageTrackers;
 
@@ -3008,7 +3551,34 @@
           { sigla: "CEPC", nombre: "Comisión Europea Press Corner", tipo: "fuentes-gobierno" },
           { sigla: "NIST_NEWS", nombre: "National Institute of Standards and Technology News", tipo: "fuentes-reguladores" },
           { sigla: "EIOPA_news", nombre: "European Insurance and Occupational Pensions Authority News", tipo: "fuentes-reguladores" },
-          ]
+          { "sigla": "EUROPARL_NOTICIAS", "nombre": "Sala de prensa del Parlamento Europeo", "tipo": "fuentes-gobierno" },
+          { "sigla": "CEPC", "nombre": "Sala de prensa de la Comisión Europea", "tipo": "fuentes-gobierno" },
+          { "sigla": "CE_ALL_NOTICIAS", "nombre": "Noticias de la Comisión Europea", "tipo": "fuentes-gobierno" },
+          { "sigla": "DANISH_PRESIDENCY_NOTICIAS", "nombre": "Web de la Presidencia danesa del Consejo de la UE", "tipo": "fuentes-gobierno" },
+          ],
+          "Ministerios": [
+          { "sigla": "MITES_NOTICIAS", "nombre": "Ministerio de Trabajo", "tipo": "fuentes-gobierno" },
+          { "sigla": "MITECO_NOTICIAS", "nombre": "Ministerio de Transición Ecológica", "tipo": "fuentes-gobierno" },
+          { "sigla": "MAPA_NOTICIAS", "nombre": "Ministerio de Agricultura, Pesca y Alimentación", "tipo": "fuentes-gobierno" },
+          { "sigla": "EXTERIORES_NOTICIAS", "nombre": "Ministerio de Asuntos Exteriores", "tipo": "fuentes-gobierno" },
+          { "sigla": "MICIU_NOTICIAS", "nombre": "Ministerio de Ciencia, Innovación y Universidades", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_CULTURA_NOTICIAS", "nombre": "Ministerio de Cultura", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_DEFENSA_NOTICIAS", "nombre": "Ministerio de Defensa", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_DCSA_NOTICIAS", "nombre": "Ministerio de Derechos Sociales, Consumo y Agenda 2030", "tipo": "fuentes-gobierno" },
+          { "sigla": "MINECO_NOTICIAS", "nombre": "Ministerio de Economía, Comercio y Empresa", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_EDUCACIONFPYDEPORTES_NOTICIAS", "nombre": "Ministerio de Educación", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_HACIENDA_NOTICIAS", "nombre": "Ministerio de Hacienda", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_INDUSTRIAYTURISMO_NOTICIAS", "nombre": "Ministerio de Industria y Turismo", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_INTERIOR_NOTICIAS", "nombre": "Ministerio del Interior", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_JUSTICIA_NOTICIAS", "nombre": "Ministerio de Justicia", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_MPT_NOTICIAS", "nombre": "Ministerio de Política Territorial", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_SANIDAD_NOTICIAS", "nombre": "Ministerio de Sanidad", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_DIGITAL_NOTICIAS", "nombre": "Ministerio de Transformación Digital", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_MIVAU_NOTICIAS", "nombre": "Ministerio de Vivienda", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_INCLUSION_NOTICIAS", "nombre": "Ministerio de Inclusión", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_JUVENTUDEINFANCIA_NOTICIAS", "nombre": "Ministerio de Juventud e Infancia", "tipo": "fuentes-gobierno" },
+          { "sigla": "MIN_TRANSPORTES_NOTICIAS", "nombre": "Ministerio de Transportes", "tipo": "fuentes-gobierno" }
+        ]
         };
         
         let html = '';
@@ -3887,6 +4457,451 @@
         generateFromNode({tipo_empresa:onboardingStructure.tipo_empresa});
       }
     }
+
+    function openAgentDetail(agentKey, xml){
+      const overlay = document.getElementById('agentDetailOverlay');
+      const title = document.getElementById('agentModalTitle');
+      const titleText = document.getElementById('agentTitleText');
+      const editNameBtn = document.getElementById('editAgentNameBtn');
+      const ctxInput = document.getElementById('agentContexto');
+      const objInput = document.getElementById('agentObjetivo');
+      const contInput = document.getElementById('agentContenido');
+      const noInclInput = document.getElementById('agentNoIncluidos');
+      const saveBtn = document.getElementById('saveAgentChangesBtn');
+      const closeBtn = document.getElementById('closeAgentModal');
+
+      const vars = parseEtiquetaDefinition(xml);
+      titleText.textContent = vars.NombreEtiqueta || agentKey;
+      ctxInput.value = vars.Contexto || '';
+      objInput.value = vars.Objetivo || '';
+      contInput.value = vars.Contenido || '';
+      noInclInput.value = vars.DocumentosNoIncluidos || '';
+
+      // Inputs editables por defecto
+      const setDisabled = (disabled)=>{
+        [ctxInput, objInput, contInput, noInclInput].forEach(el=>{
+          el.disabled = disabled;
+          if(el.tagName === 'TEXTAREA') el.readOnly = disabled;
+        });
+      };
+      setDisabled(false);
+      saveBtn.disabled = true;
+
+      AGENTS_STATE.currentAgentKey = agentKey;
+      AGENTS_STATE.originalXml = xml;
+      AGENTS_STATE.originalVars = vars;
+      AGENTS_STATE.isDirty = false;
+      AGENTS_STATE.isEditing = true; // siempre en modo edición
+
+      const markDirty = ()=>{
+        AGENTS_STATE.isDirty = true;
+        saveBtn.disabled = false;
+      };
+      [ctxInput, objInput, contInput, noInclInput].forEach(el=>{ el.oninput = markDirty; });
+
+      // Edición de nombre en el título
+      if (editNameBtn){
+        editNameBtn.onclick = ()=>{
+          // Cambiar a modo edición inline del título (usar span actual para evitar referencias obsoletas)
+          const spanNow = document.getElementById('agentTitleText');
+          const current = (spanNow?.textContent) || '';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = current;
+          input.className = 'product-input';
+          input.style.height = '32px';
+          input.style.fontSize = '16px';
+          input.style.padding = '6px 10px';
+          input.style.marginLeft = '0';
+          // Reemplazar el span por el input temporalmente
+          (spanNow || titleText).replaceWith(input);
+          input.focus();
+          const commit = ()=>{
+            const trimmed = (input.value || '').trim();
+            const newSpan = document.createElement('span');
+            newSpan.id = 'agentTitleText';
+            newSpan.textContent = trimmed || current;
+            input.replaceWith(newSpan);
+            // Actualizar referencia local y marcar dirty si cambió
+            if ((trimmed || current) !== current) {
+              AGENTS_STATE.isDirty = true;
+              const saveBtn = document.getElementById('saveAgentChangesBtn');
+              if (saveBtn) saveBtn.disabled = false;
+            }
+          };
+          input.addEventListener('blur', commit);
+          input.addEventListener('keydown', (e)=>{
+            if(e.key === 'Enter'){ e.preventDefault(); input.blur(); }
+            if(e.key === 'Escape'){ input.value = current; input.blur(); }
+          });
+        };
+      }
+
+      saveBtn.onclick = ()=> {
+        // Cambio inmediato del botón ANTES de cualquier await
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<div class="button-spinner"></div> Guardando...';
+        saveAgentChanges(false, saveBtn);
+      };
+      closeBtn.onclick = ()=> attemptCloseAgentModal();
+
+      overlay.style.display = 'flex';
+    }
+
+    function attemptCloseAgentModal(){
+      if(AGENTS_STATE.isEditing && AGENTS_STATE.isDirty){
+        const confirmOverlay = document.getElementById('unsavedConfirmOverlay');
+        const discardBtn = document.getElementById('discardChangesBtn');
+        const saveAndCloseBtn = document.getElementById('saveAndCloseBtn');
+        const closeConfirmBtn = document.getElementById('closeUnsavedConfirm');
+        confirmOverlay.style.display = 'flex';
+        discardBtn.onclick = ()=>{ confirmOverlay.style.display='none'; closeAgentOverlay(); };
+        saveAndCloseBtn.textContent = 'Guardar';
+        saveAndCloseBtn.style.background = '#0b2431';
+        saveAndCloseBtn.onclick = async ()=>{
+          // Cambio inmediato del botón ANTES de cualquier await
+          saveAndCloseBtn.disabled = true;
+          saveAndCloseBtn.innerHTML = '<div class="button-spinner"></div> Guardando...';
+          try {
+            await saveAgentChanges(true, saveAndCloseBtn);
+            // Mostrar tick por 1 segundo antes de cerrar
+            saveAndCloseBtn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+              confirmOverlay.style.display='none';
+              // Mostrar toast tras cerrar el modal de confirmación
+              showAgentsToast('Agente actualizado correctamente', 'success');
+              // NO cerrar el modal principal, mantenerlo abierto para seguir editando
+            }, 1000);
+          } catch(err) {
+            console.error('Error saving from confirm modal:', err);
+            saveAndCloseBtn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+            // Mostrar toast de error tras 1s
+            setTimeout(() => {
+              showAgentsToast('Problema actualizando el agente, pruebe de nuevo por favor', 'error');
+            }, 1000);
+          }
+          saveAndCloseBtn.disabled = false;
+        };
+        closeConfirmBtn.onclick = ()=>{ confirmOverlay.style.display='none'; };
+      } else {
+        closeAgentOverlay();
+      }
+    }
+
+    function closeAgentOverlay(){
+      const overlay = document.getElementById('agentDetailOverlay');
+      const saveBtn = document.getElementById('saveAgentChangesBtn');
+      AGENTS_STATE.currentAgentKey = null;
+      AGENTS_STATE.originalXml = '';
+      AGENTS_STATE.originalVars = null;
+      AGENTS_STATE.isDirty = false;
+      AGENTS_STATE.isEditing = false;
+      if(saveBtn) saveBtn.disabled = true;
+      overlay.style.display = 'none';
+    }
+
+    function showAgentsToast(message, type){
+      const el = document.getElementById('agentsToast');
+      if(!el) return;
+      // reset base styles
+      el.style.display = 'flex';
+      el.style.background = type === 'error' ? '#fff9e6' : '#e8f5e8';
+      el.style.border = type === 'error' ? '1px solid #ff9800' : '1px solid var(--primary-color)';
+      el.style.color = 'var(--dark-color)';
+      el.innerHTML = type === 'error' ? '⚠️ ' + message : '✓ ' + message;
+      setTimeout(()=>{ el.style.display = 'none'; }, 2000);
+    }
+
+    async function saveAgentChanges(closeAfterSave, triggerBtn){
+      try{
+        if (AGENTS_STATE.isSaving) return; // prevent duplicate saves
+        AGENTS_STATE.isSaving = true;
+        const titleText = document.getElementById('agentTitleText');
+        const ctxInput = document.getElementById('agentContexto');
+        const objInput = document.getElementById('agentObjetivo');
+        const contInput = document.getElementById('agentContenido');
+        const noInclInput = document.getElementById('agentNoIncluidos');
+        const saveBtn = document.getElementById('saveAgentChangesBtn');
+
+        const newVars = {
+          NombreEtiqueta: (titleText.textContent||'').trim(),
+          tipo: '',
+          Contexto: (ctxInput.value||'').trim(),
+          Objetivo: (objInput.value||'').trim(),
+          Contenido: (contInput.value||'').trim(),
+          DocumentosNoIncluidos: (noInclInput.value||'').trim()
+        };
+
+        if(!newVars.NombreEtiqueta){
+          alert('El nombre del agente es obligatorio.');
+          AGENTS_STATE.isSaving = false;
+          const btn = triggerBtn || document.getElementById('saveAgentChangesBtn');
+          if(btn){ btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.disabled = false; }
+          return;
+        }
+
+        const newXml = buildEtiquetaXml(newVars);
+        const response = await fetch('/api/get-user-data');
+        const userData = await response.json();
+        const etiquetas = userData.etiquetas_personalizadas || {};
+
+        const oldKey = AGENTS_STATE.currentAgentKey;
+        const newKey = newVars.NombreEtiqueta;
+        if(oldKey !== newKey){ delete etiquetas[oldKey]; }
+        etiquetas[newKey] = newXml;
+
+
+
+        const updateResponse = await fetch('/api/update-user-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ etiquetas_personalizadas: etiquetas })
+        });
+        if(!updateResponse.ok) throw new Error('HTTP '+updateResponse.status);
+
+        AGENTS_STATE.isDirty = false;
+        // Mantener isEditing = true para que los campos sigan editables
+        // AGENTS_STATE.isEditing = false;
+        AGENTS_STATE.currentAgentKey = newKey;
+        AGENTS_STATE.originalXml = newXml;
+        AGENTS_STATE.originalVars = newVars;
+
+        await loadExistingAgents();
+
+        // NO bloquear campos después de guardar, mantener editables
+        // const setDisabled = (disabled)=>{
+        //   [ctxInput, objInput, contInput, noInclInput].forEach(el=>{ el.disabled = disabled; if(el.tagName==='TEXTAREA') el.readOnly = disabled; });
+        // };
+        // setDisabled(true);
+        const titleSpan = document.getElementById('agentTitleText'); if (titleSpan) { titleSpan.textContent = newVars.NombreEtiqueta; }
+
+        const btn = triggerBtn || document.getElementById('saveAgentChangesBtn');
+        if (btn){
+          btn.innerHTML = '<i class="fas fa-check"></i>';
+        }
+        // Mostrar toast 1s después
+        if (!closeAfterSave) {
+          // Solo mostrar toast si NO viene del modal de confirmación
+          setTimeout(()=>{
+            showAgentsToast('Agente actualizado correctamente', 'success');
+            // Revertir botón a Guardar tras ocultar toast (2s)
+            setTimeout(()=>{
+              if (btn){ btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.disabled = true; }
+              // Mantener estado de edición activo tras guardar
+              AGENTS_STATE.isEditing = true;
+              AGENTS_STATE.isDirty = false;
+            }, 2000);
+          }, 1000);
+        } else {
+          // Para el modal de confirmación, solo mantener estado activo
+          AGENTS_STATE.isEditing = true;
+          AGENTS_STATE.isDirty = false;
+        }
+
+        // No cerrar el modal automáticamente
+        AGENTS_STATE.isSaving = false;
+      }catch(err){
+        console.error('Error al guardar el agente:', err);
+        const btn = triggerBtn || document.getElementById('saveAgentChangesBtn');
+        if(btn){ btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.disabled = false; }
+        // Mostrar toast 1s después
+        setTimeout(()=>{
+          showAgentsToast('Problema actualizando el agente, pruebe de nuevo por favor', 'error');
+          // No deshabilitamos el botón en error
+        }, 1000);
+        AGENTS_STATE.isSaving = false;
+      }
+    }
+
+    function showGeneratedAgent(agentData){
+      if(agentData && agentData.etiqueta_personalizada){
+        setTimeout(()=> loadExistingAgents(), 100);
+        setTimeout(()=>{
+          const configMenu = document.querySelector('.config-menu');
+          if(configMenu) configMenu.scrollIntoView({behavior:'smooth', block:'start'});
+        }, 200);
+      }
+    }
+    // Expose agents functions globally
+    window.openAgentDetail = openAgentDetail;
+    window.saveAgentChanges = saveAgentChanges;
+    window.attemptCloseAgentModal = attemptCloseAgentModal;
+    window.closeAgentOverlay = closeAgentOverlay;
+
+    function openNewAgentModal(){
+      const overlay = document.getElementById('agentDetailOverlay');
+      const title = document.getElementById('agentModalTitle');
+      const titleText = document.getElementById('agentTitleText');
+      const editNameBtn = document.getElementById('editAgentNameBtn');
+      const ctxInput = document.getElementById('agentContexto');
+      const objInput = document.getElementById('agentObjetivo');
+      const contInput = document.getElementById('agentContenido');
+      const noInclInput = document.getElementById('agentNoIncluidos');
+      const saveBtn = document.getElementById('saveAgentChangesBtn');
+      const closeBtn = document.getElementById('closeAgentModal');
+
+      // Set placeholders based on Protección de Datos example
+      titleText.textContent = 'Protección de Datos';
+      ctxInput.value = '';
+      ctxInput.placeholder = 'Ejemplo: Es una empresa del sector sanitario que presta servicios médicos y asistenciales.';
+      objInput.value = '';
+      objInput.placeholder = 'Ejemplo: Detectar novedades normativas relevantes en protección de datos e IA';
+      contInput.value = '';
+      contInput.placeholder = `Ejemplo:  Se debe etiquetar el <DOCUMENTO> si cumple al menos uno de los siguientes supuestos:
+a) Impone nuevas obligaciones, prohibiciones o medidas que obliguen a empresas a adaptar su operativa o sistemas.
+b) Establece sanciones económicas o decisiones judiciales en materia de protección de datos.
+c) Es una ley general u orgánica relevante para la etiqueta
+d) Establece novedades normativas en materia de datos sanitarios.
+e) Establece una recomendación o guía de mejores prácticas relevantes para protección de datos o aplicación de la IA.`;
+      noInclInput.value = '';
+      noInclInput.placeholder = `Ejemplo: EL <DOCUMENTO> No DEBE SER ETIQUETADO por esta etiqueta SI CUMPLE ALGUNO DE LOS SIGUIENTES SUPUESTOS:
+Lista exhaustiva (no ampliar):
+a) Nombramientos o ceses individuales de Delegados de Protección de Datos (DPO).
+b) Convenios o resoluciones no sancionadoras que afectan a particulares concretos, empresas concretas o interadministrativos sin efectos jurídicos generales
+c) Subvenciones sin impacto en la regulación del tratamiento de datos.
+d) Documentos de otra materia cuya "inclusión" derive solo de menciones tangenciales al RGPD/LOPDGDD.`;
+
+      // Enable all inputs for creation
+      [ctxInput, objInput, contInput, noInclInput].forEach(el=>{
+        el.disabled = false;
+        if(el.tagName === 'TEXTAREA') el.readOnly = false;
+      });
+      saveBtn.disabled = false;
+
+      // Set state for new agent creation
+      AGENTS_STATE.currentAgentKey = null; // null indicates new agent
+      AGENTS_STATE.originalXml = '';
+      AGENTS_STATE.originalVars = null;
+      AGENTS_STATE.isDirty = false;
+      AGENTS_STATE.isEditing = true;
+
+      const markDirty = ()=>{
+        AGENTS_STATE.isDirty = true;
+        saveBtn.disabled = false;
+      };
+      [ctxInput, objInput, contInput, noInclInput].forEach(el=>{ el.oninput = markDirty; });
+
+      // Edición de nombre en el título
+      if (editNameBtn){
+        editNameBtn.onclick = ()=>{
+          const spanNow = document.getElementById('agentTitleText');
+          const current = (spanNow?.textContent) || '';
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = current;
+          input.className = 'product-input';
+          input.style.height = '32px';
+          input.style.fontSize = '16px';
+          input.style.padding = '6px 10px';
+          input.style.marginLeft = '0';
+          (spanNow || titleText).replaceWith(input);
+          input.focus();
+          const commit = ()=>{
+            const trimmed = (input.value || '').trim();
+            const newSpan = document.createElement('span');
+            newSpan.id = 'agentTitleText';
+            newSpan.textContent = trimmed || current;
+            input.replaceWith(newSpan);
+            if ((trimmed || current) !== current) {
+              AGENTS_STATE.isDirty = true;
+              const saveBtn = document.getElementById('saveAgentChangesBtn');
+              if (saveBtn) saveBtn.disabled = false;
+            }
+          };
+          input.addEventListener('blur', commit);
+          input.addEventListener('keydown', (e)=>{
+            if(e.key === 'Enter'){ e.preventDefault(); input.blur(); }
+            if(e.key === 'Escape'){ input.value = current; input.blur(); }
+          });
+        };
+      }
+
+      saveBtn.onclick = ()=> {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<div class="button-spinner"></div> Guardando...';
+        saveNewAgent(saveBtn);
+      };
+      closeBtn.onclick = ()=> attemptCloseAgentModal();
+
+      overlay.style.display = 'flex';
+    }
+
+    async function saveNewAgent(triggerBtn){
+      try{
+        if (AGENTS_STATE.isSaving) return;
+        AGENTS_STATE.isSaving = true;
+        const titleText = document.getElementById('agentTitleText');
+        const ctxInput = document.getElementById('agentContexto');
+        const objInput = document.getElementById('agentObjetivo');
+        const contInput = document.getElementById('agentContenido');
+        const noInclInput = document.getElementById('agentNoIncluidos');
+
+        const newVars = {
+          NombreEtiqueta: (titleText.textContent||'').trim(),
+          tipo: '',
+          Contexto: (ctxInput.value||'').trim(),
+          Objetivo: (objInput.value||'').trim(),
+          Contenido: (contInput.value||'').trim(),
+          DocumentosNoIncluidos: (noInclInput.value||'').trim()
+        };
+
+        if(!newVars.NombreEtiqueta){
+          alert('El nombre del agente es obligatorio.');
+          AGENTS_STATE.isSaving = false;
+          const btn = triggerBtn || document.getElementById('saveAgentChangesBtn');
+          if(btn){ btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.disabled = false; }
+          return;
+        }
+
+        const newXml = buildEtiquetaXml(newVars);
+        const response = await fetch('/api/get-user-data');
+        const userData = await response.json();
+        const etiquetas = userData.etiquetas_personalizadas || {};
+
+        const newKey = newVars.NombreEtiqueta;
+        etiquetas[newKey] = newXml;
+
+        const updateResponse = await fetch('/api/update-user-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ etiquetas_personalizadas: etiquetas })
+        });
+        if(!updateResponse.ok) throw new Error('HTTP '+updateResponse.status);
+
+        AGENTS_STATE.isDirty = false;
+        AGENTS_STATE.currentAgentKey = newKey;
+        AGENTS_STATE.originalXml = newXml;
+        AGENTS_STATE.originalVars = newVars;
+
+        await loadExistingAgents();
+
+        const btn = triggerBtn || document.getElementById('saveAgentChangesBtn');
+        if (btn){
+          btn.innerHTML = '<i class="fas fa-check"></i>';
+        }
+        setTimeout(()=>{
+          showAgentsToast('Agente creado correctamente', 'success');
+          setTimeout(()=>{
+            if (btn){ btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.disabled = true; }
+            closeAgentOverlay(); // Cerrar modal tras crear
+          }, 2000);
+        }, 1000);
+
+        AGENTS_STATE.isSaving = false;
+      }catch(err){
+        console.error('Error al crear el agente:', err);
+        const btn = triggerBtn || document.getElementById('saveAgentChangesBtn');
+        if(btn){ btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.disabled = false; }
+        setTimeout(()=>{
+          showAgentsToast('Problema creando el agente, pruebe de nuevo por favor', 'error');
+        }, 1000);
+        AGENTS_STATE.isSaving = false;
+      }
+    }
+
+    // Expose new agent creation functions globally
+    window.openNewAgentModal = openNewAgentModal;
+    window.saveNewAgent = saveNewAgent;
   })();
   </script>
   

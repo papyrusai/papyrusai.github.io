@@ -1,0 +1,730 @@
+/* Variables from styles.css */
+:root {
+  --primary-color: #04db8d;
+  --secondary-color: #455862;
+  --border-color: #e0e0e0;
+  --text-color: #0b2431;
+  --placeholder-color: #999;
+  --active-color: #04db8d;
+  --error-color: #d32f2f;
+  --background-color: #ffffff;
+  --dark-color: #0b2431;
+}
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Satoshi', 'Candara', sans-serif;
+}
+
+body {
+  background: white;
+  min-height: 100vh;
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  color: var(--dark-color);
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header h1 i {
+  margin-right: 1rem;
+  color: var(--primary-color);
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  color: var(--secondary-color);
+  font-weight: 400;
+}
+
+/* Main Content */
+.main-content {
+  margin-bottom: 2rem;
+}
+
+/* Agents Grid */
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Agent Box */
+.agent-box {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.agent-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.agent-box:hover {
+  transform: translateY(-12px);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  border-color: var(--primary-color);
+}
+
+.agent-box:hover::before {
+  opacity: 1;
+}
+
+/* Agent Header */
+.agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.agent-header h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--dark-color);
+  line-height: 1.3;
+}
+
+/* Agent Status */
+.agent-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.agent-status.active {
+  background: rgba(4, 219, 141, 0.1);
+  color: var(--primary-color);
+}
+
+.agent-status.inactive {
+  background: rgba(153, 153, 153, 0.1);
+  color: #666;
+}
+
+.agent-status i {
+  font-size: 0.5rem;
+}
+
+/* Agent Objective */
+.agent-objective {
+  color: var(--secondary-color);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+/* Agent Stats */
+.agent-stats {
+  display: flex;
+  gap: 1rem;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--secondary-color);
+  font-size: 0.875rem;
+}
+
+.stat i {
+  color: var(--primary-color);
+}
+
+/* New Agent Box */
+.new-agent {
+  border: 2px dashed var(--primary-color);
+  background: rgba(4, 219, 141, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  box-shadow: 0 8px 32px rgba(4, 219, 141, 0.1);
+}
+
+.new-agent:hover {
+  box-shadow: 0 16px 48px rgba(4, 219, 141, 0.2);
+  transform: translateY(-8px);
+}
+
+.new-agent-content {
+  text-align: center;
+  color: var(--primary-color);
+}
+
+.new-agent-content i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.new-agent-content h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-color);
+}
+
+.new-agent-content p {
+  opacity: 0.8;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Agent Modal */
+.agent-modal {
+  background: white;
+  border-radius: 20px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+  transform: scale(0.9) translateY(50px);
+  transition: all 0.3s ease;
+}
+
+.modal-overlay.active .agent-modal {
+  transform: scale(1) translateY(0);
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem 2rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--dark-color);
+  background: linear-gradient(90deg, var(--dark-color), var(--primary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.close-modal {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--secondary-color);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+  background: rgba(69, 88, 98, 0.1);
+  color: var(--dark-color);
+}
+
+/* Modal Content */
+.modal-content {
+  padding: 2rem;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 1rem;
+}
+
+.form-section h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 0.75rem;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+/* Input Group */
+.input-group {
+  margin-bottom: 1rem;
+}
+
+.input-group input,
+.input-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+.input-group input:focus,
+.input-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(4, 219, 141, 0.1);
+}
+
+.input-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Toggle Section */
+.toggle-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 26px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+.toggle-label {
+  font-weight: 600;
+  color: var(--dark-color);
+}
+
+/* Info Icon */
+.info-icon {
+  position: relative;
+  color: var(--secondary-color);
+  cursor: pointer;
+}
+
+.info-icon:hover {
+  color: var(--primary-color);
+}
+
+/* Geography Select */
+.geography-select select {
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: white;
+  color: var(--dark-color);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* Info Text */
+.info-text {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+/* Geography Options */
+.geography-options {
+  margin-top: 1rem;
+}
+
+/* Checkbox Group */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Checkbox Option */
+.checkbox-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+}
+
+.checkbox-option:hover {
+  background: rgba(4, 219, 141, 0.05);
+}
+
+/* Custom Checkbox */
+.checkmark {
+  position: relative;
+  height: 20px;
+  width: 20px;
+  background-color: white;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checkbox-option input:checked ~ .checkmark {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  border-color: var(--primary-color);
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-option input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.checkbox-option input {
+  display: none;
+}
+
+.checkbox-option span:not(.checkmark) {
+  flex: 1;
+  line-height: 1.4;
+  color: var(--dark-color);
+}
+
+/* Custom Input */
+.custom-input {
+  margin-top: 1rem;
+  padding-left: 2rem;
+}
+
+.custom-input input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  background: rgba(4, 219, 141, 0.05);
+}
+
+/* Scoring Container */
+.scoring-container {
+  background: rgba(69, 88, 98, 0.05);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+/* Score Bar */
+.score-bar {
+  margin-bottom: 2rem;
+}
+
+.score-bar h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--dark-color);
+  margin-bottom: 0.75rem;
+}
+
+.score-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--secondary-color);
+}
+
+.label-center {
+  font-weight: 600;
+  color: var(--dark-color);
+}
+
+.score-track {
+  position: relative;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+  border-radius: 4px;
+}
+
+.score-thumb {
+  position: absolute;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 3px solid var(--primary-color);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Activity Section */
+.activity-section {
+  margin-top: 1.5rem;
+}
+
+.activity-bar {
+  margin-top: 0.75rem;
+}
+
+.activity-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--secondary-color);
+}
+
+.activity-labels .label-center {
+  font-weight: 600;
+  color: var(--dark-color);
+}
+
+.activity-track {
+  position: relative;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.activity-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+  border-radius: 4px;
+}
+
+.activity-thumb {
+  position: absolute;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border: 3px solid var(--primary-color);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Tooltip */
+.tooltip {
+  position: absolute;
+  background: rgba(11, 36, 49, 0.95);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  max-width: 250px;
+  z-index: 1001;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  pointer-events: none;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .agents-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .agent-modal {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .modal-content {
+    padding: 1.5rem;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .checkbox-option {
+    align-items: flex-start;
+  }
+  
+  .progress-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
+
+/* Animation for modal */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-overlay.active .agent-modal {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Scrollbar styling for modal */
+.agent-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.agent-modal::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.agent-modal::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+
+.agent-modal::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary-color);
+}
