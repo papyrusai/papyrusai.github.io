@@ -502,6 +502,28 @@
       addNewButton.style.display = 'flex';
     }
     
+    // Función para ocultar el formulario de nueva lista con animación suave
+    function hideNewListFormAnimated(element) {
+      const dropdown = element.closest('.lists-dropdown');
+      const newListForm = dropdown.querySelector('.new-list-form');
+      const addNewButton = dropdown.querySelector('.add-new-list');
+      
+      // Animación simple y directa
+      newListForm.style.transition = 'opacity 0.2s ease-out';
+      newListForm.style.opacity = '0';
+      
+      setTimeout(() => {
+        newListForm.classList.remove('show');
+        newListForm.style.transition = '';
+        newListForm.style.opacity = '';
+        addNewButton.style.display = 'flex';
+        
+        // Limpiar el input
+        const input = newListForm.querySelector('.new-list-input');
+        if (input) input.value = '';
+      }, 200);
+    }
+    
     // Función para crear una nueva lista
     async function createNewList(element, documentId, collectionName) {
       const dropdown = element.closest('.lists-dropdown');
@@ -520,6 +542,12 @@
         input.focus();
         return;
       }
+      
+      // Aplicar estado de loading al botón
+      const originalButtonContent = element.innerHTML;
+      element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+      element.disabled = true;
+      input.disabled = true;
       
       try {
         // Debug: Imprimir datos que se van a enviar
@@ -560,8 +588,15 @@
             updateSaveButton(newCheckbox);
           }
           
-          // Ocultar el formulario
-          hideNewListForm(element);
+          // Mostrar éxito temporalmente antes de ocultar el formulario
+          element.innerHTML = '<i class="fas fa-check"></i> ¡Creada!';
+          element.style.backgroundColor = '#04db8d';
+          element.style.color = 'white';
+          
+          setTimeout(() => {
+            // Ocultar el formulario con animación suave
+            hideNewListFormAnimated(element);
+          }, 500);
         } else {
           let errorMessage = `Error ${response.status}: ${response.statusText}`;
           try {
@@ -577,6 +612,13 @@
       } catch (error) {
         console.error('Error creating list:', error);
         alert('Error al crear la lista. Por favor, inténtalo de nuevo.');
+      } finally {
+        // Restaurar estado original del botón y input
+        element.innerHTML = originalButtonContent;
+        element.disabled = false;
+        element.style.backgroundColor = '';
+        element.style.color = '';
+        input.disabled = false;
       }
     }
     
@@ -691,8 +733,123 @@
     
     // Función para eliminar una lista
     async function deleteUserList(listName) {
-      if (!confirm(`¿Estás seguro de que quieres eliminar la lista "${listName}"? Esta acción no se puede deshacer.`)) {
-        return;
+      showDeleteListModal(listName);
+    }
+    
+    // Función para mostrar el modal de eliminación de lista
+    function showDeleteListModal(listName) {
+      // Crear overlay del modal
+      const overlay = document.createElement('div');
+      overlay.id = 'delete-list-overlay';
+      Object.assign(overlay.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: '10000'
+      });
+      
+      // Crear modal
+      const modal = document.createElement('div');
+      modal.id = 'delete-list-modal';
+      Object.assign(modal.style, {
+        backgroundColor: '#fff',
+        padding: '30px',
+        borderRadius: '12px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+        maxWidth: '450px',
+        width: '90%',
+        textAlign: 'center',
+        fontFamily: 'Satoshi, sans-serif'
+      });
+      
+      modal.innerHTML = `
+        <div style="margin-bottom: 20px;">
+          <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #ff6b6b; margin-bottom: 15px;"></i>
+          <h3 style="margin: 0 0 10px 0; color: #0b2431; font-size: 20px;">Eliminar lista</h3>
+          <p style="margin: 0; color: #666; font-size: 16px; line-height: 1.4;">
+            ¿Estás seguro de que quieres eliminar la lista "<strong>${listName}</strong>"?
+          </p>
+          <p style="margin: 10px 0 0 0; color: #999; font-size: 14px;">
+            Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="cancel-delete-btn" style="
+            background: #fff;
+            color: #0b2431;
+            border: 2px solid #e0e0e0;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            min-width: 100px;
+            transition: all 0.2s ease;
+          " onmouseover="this.style.borderColor='#0b2431'" onmouseout="this.style.borderColor='#e0e0e0'">
+            Cancelar
+          </button>
+          <button id="confirm-delete-btn" style="
+            background: #0b2431;
+            color: #fff;
+            border: 2px solid #0b2431;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            min-width: 100px;
+            transition: all 0.2s ease;
+          " onmouseover="this.style.backgroundColor='#1a3542'" onmouseout="this.style.backgroundColor='#0b2431'">
+            Eliminar
+          </button>
+        </div>
+      `;
+      
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+      
+      // Manejar eventos de los botones
+      const cancelBtn = modal.querySelector('#cancel-delete-btn');
+      const confirmBtn = modal.querySelector('#confirm-delete-btn');
+      
+      // Cerrar modal al hacer clic en cancelar o en el overlay
+      const closeModal = () => {
+        document.body.removeChild(overlay);
+      };
+      
+      cancelBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
+      });
+      
+      // Manejar confirmación de eliminación
+      confirmBtn.addEventListener('click', async () => {
+        await handleDeleteConfirmation(listName, confirmBtn, closeModal);
+      });
+    }
+    
+    // Función para manejar la confirmación de eliminación con loading
+    async function handleDeleteConfirmation(listName, confirmBtn, closeModal) {
+      // Aplicar estado de loading al botón de confirmación
+      const originalButtonContent = confirmBtn.innerHTML;
+      confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+      confirmBtn.disabled = true;
+      confirmBtn.style.backgroundColor = '#999';
+      confirmBtn.style.borderColor = '#999';
+      confirmBtn.style.cursor = 'not-allowed';
+      
+      // Deshabilitar también el botón de cancelar
+      const cancelBtn = document.querySelector('#cancel-delete-btn');
+      if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.style.opacity = '0.5';
+        cancelBtn.style.cursor = 'not-allowed';
       }
       
       try {
@@ -709,21 +866,117 @@
         });
         
         if (response.ok) {
+          // Mostrar éxito temporalmente
+          confirmBtn.innerHTML = '<i class="fas fa-check"></i> ¡Eliminada!';
+          confirmBtn.style.backgroundColor = '#0b2431';
+          confirmBtn.style.borderColor = '#0b2431';
+          
           // Actualizar el cache local
           userLists = userLists.filter(list => list.name !== listName);
           updateUserListsInStorage(userLists);
           
-          // Recargar la vista de listas
-          loadDetailedUserLists();
-          
           console.log('Lista eliminada exitosamente:', listName);
+          
+          // Cerrar modal después de mostrar éxito
+          setTimeout(() => {
+            closeModal();
+            // Eliminar solo la tarjeta específica de forma animada
+            removeListCardAnimated(listName);
+          }, 1500);
         } else {
           const error = await response.json();
           alert('Error al eliminar la lista: ' + (error.message || 'Error desconocido'));
+          
+          // Restaurar estado del botón en caso de error
+          confirmBtn.innerHTML = originalButtonContent;
+          confirmBtn.disabled = false;
+          confirmBtn.style.backgroundColor = '#0b2431';
+          confirmBtn.style.borderColor = '#0b2431';
+          confirmBtn.style.cursor = 'pointer';
+          
+          if (cancelBtn) {
+            cancelBtn.disabled = false;
+            cancelBtn.style.opacity = '1';
+            cancelBtn.style.cursor = 'pointer';
+          }
         }
       } catch (error) {
         console.error('Error deleting list:', error);
         alert('Error al eliminar la lista. Por favor, inténtalo de nuevo.');
+        
+        // Restaurar estado del botón en caso de error
+        confirmBtn.innerHTML = originalButtonContent;
+        confirmBtn.disabled = false;
+        confirmBtn.style.backgroundColor = '#0b2431';
+        confirmBtn.style.borderColor = '#0b2431';
+        confirmBtn.style.cursor = 'pointer';
+        
+        if (cancelBtn) {
+          cancelBtn.disabled = false;
+          cancelBtn.style.opacity = '1';
+          cancelBtn.style.cursor = 'pointer';
+        }
+      }
+    }
+    
+    // Función para eliminar solo la tarjeta de la lista de forma animada
+    function removeListCardAnimated(listName) {
+      // Encontrar la tarjeta específica por el nombre de la lista
+      const listCards = document.querySelectorAll('.lista-card');
+      let targetCard = null;
+      
+      listCards.forEach(card => {
+        const titleElement = card.querySelector('.lista-title');
+        if (titleElement && titleElement.textContent.trim() === listName) {
+          targetCard = card;
+        }
+      });
+      
+      if (targetCard) {
+        // Preparar las tarjetas restantes para una transición suave
+        const allCards = document.querySelectorAll('.lista-card');
+        allCards.forEach(card => {
+          if (card !== targetCard) {
+            card.style.transition = 'transform 0.3s ease-out';
+          }
+        });
+        
+        // Aplicar animación de salida a la tarjeta objetivo
+        targetCard.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out, margin 0.3s ease-out, height 0.3s ease-out';
+        targetCard.style.opacity = '0';
+        targetCard.style.transform = 'translateX(-15px) scale(0.9)';
+        targetCard.style.marginBottom = '0';
+        targetCard.style.height = '0';
+        targetCard.style.overflow = 'hidden';
+        
+        setTimeout(() => {
+          targetCard.remove();
+          
+          // Limpiar transiciones de las tarjetas restantes
+          setTimeout(() => {
+            const remainingCards = document.querySelectorAll('.lista-card');
+            remainingCards.forEach(card => {
+              card.style.transition = '';
+            });
+            
+            // Verificar si quedan tarjetas, si no mostrar mensaje de "no hay listas"
+            if (remainingCards.length === 0) {
+              const noListasMessage = document.getElementById('no-listas-message');
+              if (noListasMessage) {
+                noListasMessage.style.display = 'block';
+                noListasMessage.style.opacity = '0';
+                noListasMessage.style.transition = 'opacity 0.3s ease-in';
+                setTimeout(() => {
+                  noListasMessage.style.opacity = '1';
+                }, 50);
+              }
+            }
+          }, 100);
+        }, 300);
+      } else {
+        console.warn(`No se encontró la tarjeta para la lista: ${listName}`);
+        // Fallback: recargar la vista completa si no se encuentra la tarjeta
+        loadDetailedUserLists();
       }
     }
     

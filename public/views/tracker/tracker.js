@@ -1376,28 +1376,42 @@ function handleBuscar() {
 // Función para enviar feedback
 async function sendFeedback(docId, feedbackType, element, agenteEtiquetado = '', coleccion = '', docUrl = '', docTitle = '') {
   try {
+    console.log('=== SENDING FEEDBACK ===');
+    console.log('Params:', { docId, feedbackType, agenteEtiquetado, coleccion, docUrl, docTitle });
+    
     // Si es thumbs down, mostrar dropdown
     if (feedbackType === 'dislike') {
+      console.log('Showing dislike dropdown');
       showFeedbackDropdown(docId, element, agenteEtiquetado, coleccion, docUrl, docTitle);
       return;
     }
+    
+    const requestBody = {
+      docId,
+      feedback: feedbackType,
+      agenteEtiquetado,
+      coleccion,
+      docUrl,
+      docTitle
+    };
+    
+    console.log('Request body:', requestBody);
     
     const response = await fetch('/feedback-thumbs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        docId,
-        feedback: feedbackType,
-        agenteEtiquetado,
-        coleccion,
-        docUrl,
-        docTitle
-      })
+      body: JSON.stringify(requestBody)
     });
     
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    
     if (response.ok) {
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+      
       // Cambiar color del icono
       if (feedbackType === 'like') {
         element.style.color = '#04db8d';
@@ -1407,9 +1421,13 @@ async function sendFeedback(docId, feedbackType, element, agenteEtiquetado = '',
       }
       // Mostrar feedback visual
       showFeedbackSuccess(element, feedbackType);
+    } else {
+      const errorData = await response.text();
+      console.error('Response not ok:', response.status, errorData);
     }
   } catch (error) {
-    console.error('Error sending feedback:', error);
+    console.error('=== ERROR SENDING FEEDBACK ===');
+    console.error('Error details:', error);
   }
 }
 
@@ -1432,9 +1450,13 @@ function showFeedbackDropdown(docId, element, agenteEtiquetado = '', coleccion =
         <button class="feedback-option-btn" data-option="otro">Otro</button>
       </div>
       <div class="feedback-otro-container" style="display: none;">
-        <input type="text" class="feedback-otro-input" placeholder="Otro" maxlength="200">
-        <button class="feedback-submit-btn">Enviar</button>
+        <input type="text" class="feedback-otro-input" placeholder="Escribe tu razón aquí..." maxlength="200">
+        <div style="display: flex; gap: 8px; margin-top: 10px;">
+          <button class="feedback-submit-btn">Enviar</button>
+          <button class="feedback-cancel-btn">Cancelar</button>
+        </div>
       </div>
+      <button class="feedback-cancel-btn" style="margin-top: 15px; width: 100%;">Cancelar</button>
     </div>
   `;
   
@@ -1461,8 +1483,8 @@ function showFeedbackDropdown(docId, element, agenteEtiquetado = '', coleccion =
         otroContainer.style.display = 'block';
         otroInput.focus();
       } else {
-        // Enviar feedback directamente
-        sendNegativeFeedback(docId, option, element, dropdown, agenteEtiquetado, coleccion, docUrl, docTitle);
+        // Enviar feedback directamente y mostrar loader en el botón pulsado
+        sendNegativeFeedback(docId, option, element, dropdown, agenteEtiquetado, coleccion, docUrl, docTitle, this);
       }
     });
   });
@@ -1470,8 +1492,17 @@ function showFeedbackDropdown(docId, element, agenteEtiquetado = '', coleccion =
   submitBtn.addEventListener('click', function() {
     const customReason = otroInput.value.trim();
     if (customReason) {
-      sendNegativeFeedback(docId, customReason, element, dropdown, agenteEtiquetado, coleccion, docUrl, docTitle);
+      // Mostrar loader en el botón Enviar mientras se guarda
+      sendNegativeFeedback(docId, customReason, element, dropdown, agenteEtiquetado, coleccion, docUrl, docTitle, submitBtn);
     }
+  });
+  
+  // Event listeners para los botones de cancelar
+  const cancelButtons = dropdown.querySelectorAll('.feedback-cancel-btn');
+  cancelButtons.forEach(cancelBtn => {
+    cancelBtn.addEventListener('click', function() {
+      dropdown.remove();
+    });
   });
   
   // Cerrar al hacer clic fuera
@@ -1484,25 +1515,48 @@ function showFeedbackDropdown(docId, element, agenteEtiquetado = '', coleccion =
 }
 
 // Función para enviar feedback negativo con razón
-async function sendNegativeFeedback(docId, reason, element, dropdown, agenteEtiquetado = '', coleccion = '', docUrl = '', docTitle = '') {
+async function sendNegativeFeedback(docId, reason, element, dropdown, agenteEtiquetado = '', coleccion = '', docUrl = '', docTitle = '', loadingButtonEl = null) {
+  let originalInnerHTML;
   try {
+    console.log('=== SENDING NEGATIVE FEEDBACK ===');
+    console.log('Params:', { docId, reason, agenteEtiquetado, coleccion, docUrl, docTitle });
+    
+    // Si tenemos botón origen, ponerlo en estado loading
+    if (loadingButtonEl) {
+      originalInnerHTML = loadingButtonEl.innerHTML;
+      loadingButtonEl.disabled = true;
+      loadingButtonEl.style.opacity = '0.7';
+      loadingButtonEl.style.cursor = 'not-allowed';
+      loadingButtonEl.innerHTML = '<span class="btn-spinner" style="display:inline-block;width:16px;height:16px;border:2px solid rgba(11, 36, 49, 0.2);border-top-color:#0b2431;border-radius:50%;animation:spin 1s linear infinite;"></span>';
+    }
+    
+    const requestBody = {
+      docId,
+      feedback: `dislike: ${reason}`,
+      agenteEtiquetado,
+      coleccion,
+      docUrl,
+      docTitle,
+      feedbackDetalle: reason
+    };
+    
+    console.log('Request body:', requestBody);
+    
     const response = await fetch('/feedback-thumbs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        docId,
-        feedback: `dislike: ${reason}`,
-        agenteEtiquetado,
-        coleccion,
-        docUrl,
-        docTitle,
-        feedbackDetalle: reason
-      })
+      body: JSON.stringify(requestBody)
     });
     
+    console.log('Response status:', response.status);
+    console.log('Response ok:', response.ok);
+    
     if (response.ok) {
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
+      
       // Cambiar color del icono
       element.style.color = '#ff6b6b';
       // Resetear el like si existe
@@ -1514,9 +1568,21 @@ async function sendNegativeFeedback(docId, reason, element, dropdown, agenteEtiq
       
       // Cerrar dropdown
       dropdown.remove();
+    } else {
+      const errorData = await response.text();
+      console.error('Response not ok:', response.status, errorData);
     }
   } catch (error) {
-    console.error('Error sending negative feedback:', error);
+    console.error('=== ERROR SENDING NEGATIVE FEEDBACK ===');
+    console.error('Error details:', error);
+  } finally {
+    // Restaurar el estado del botón si aún existe en el DOM (si no se cerró el dropdown)
+    if (loadingButtonEl && document.body.contains(loadingButtonEl)) {
+      loadingButtonEl.innerHTML = originalInnerHTML;
+      loadingButtonEl.disabled = false;
+      loadingButtonEl.style.opacity = '';
+      loadingButtonEl.style.cursor = '';
+    }
   }
 }
 
@@ -1526,7 +1592,7 @@ function showFeedbackSuccess(element, type) {
   message.className = 'feedback-success-message';
   
   // Crear el contenido con el tick verde
-  const textContent = type === 'like' ? '¡Gracias por tu feedback!' : 'Feedback enviado';
+  const textContent = type === 'like' ? '¡Gracias por tu feedback positivo!' : '¡Gracias por tu feedback!';
   message.innerHTML = `
     <span>${textContent}</span>
     <svg width="16" height="16" viewBox="0 0 24 24" style="margin-left: 8px; color: #04db8d;">
@@ -1901,3 +1967,495 @@ function loadInitialChart() {
 
 // Hacer funciones globales para llamadas desde HTML
 window.sendFeedback = sendFeedback;
+
+// ==================== SAVE TO LISTS FUNCTIONALITY ====================
+
+// Variables globales para listas de usuario
+let userLists = [];
+let userListsData = {};
+
+// Función para cargar listas del usuario desde el backend
+async function loadUserListsFromBackend(forceRefresh = false) {
+  // No cargar si ya están en memoria y no se fuerza el refresh
+  if (!forceRefresh && userLists.length > 0) {
+    console.log('[loadUserListsFromBackend] Usando datos en memoria');
+    return;
+  }
+  
+  try {
+    console.log('[loadUserListsFromBackend] Cargando desde backend...');
+    const response = await fetch('/api/get-user-lists');
+    if (response.ok) {
+      const data = await response.json();
+      console.log('[loadUserListsFromBackend] Datos recibidos:', data);
+      
+      userListsData = data;
+      userLists = data.lists || [];
+      
+      // Guardar en sessionStorage para acceso rápido
+      sessionStorage.setItem('userLists', JSON.stringify(userLists));
+      sessionStorage.setItem('userListsData', JSON.stringify(userListsData));
+      
+      console.log(`[loadUserListsFromBackend] ${userLists.length} listas cargadas exitosamente`);
+    } else {
+      console.error('[loadUserListsFromBackend] Error en la respuesta:', response.status);
+      userLists = [];
+      userListsData = {};
+    }
+  } catch (error) {
+    console.error('[loadUserListsFromBackend] Error:', error);
+    userLists = [];
+    userListsData = {};
+  }
+}
+
+// Función para mostrar/ocultar el desplegable de listas
+async function toggleListsDropdown(buttonElement, documentId, collectionName) {
+  // Cerrar otros desplegables abiertos
+  document.querySelectorAll('.lists-dropdown.show').forEach(dropdown => {
+    if (dropdown !== buttonElement.nextElementSibling) {
+      dropdown.classList.remove('show');
+    }
+  });
+  
+  const dropdown = buttonElement.nextElementSibling;
+  const isShowing = dropdown.classList.contains('show');
+  
+  if (!isShowing) {
+    // Mostrar loader en el botón mientras carga
+    const originalButtonContent = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
+    buttonElement.disabled = true;
+    
+    try {
+      // CRÍTICO: Forzar refresh de datos para asegurar estado actual
+      console.log(`[toggleListsDropdown] Abriendo dropdown para documento ${documentId}`);
+      await loadUserListsFromBackend(true);
+      
+      // Cargar las listas del usuario antes de mostrar
+      loadUserLists(dropdown);
+      
+      // Ocultar el botón OK permanentemente (ya no se usa)
+      const saveButton = dropdown.querySelector('.save-ok-btn');
+      if (saveButton) saveButton.style.display = 'none';
+      
+      dropdown.classList.add('show');
+    } finally {
+      // Restaurar botón original
+      buttonElement.innerHTML = originalButtonContent;
+      buttonElement.disabled = false;
+    }
+  } else {
+    dropdown.classList.remove('show');
+  }
+  
+  // Prevenir que el evento se propague
+  event?.stopPropagation();
+}
+
+// Función para cargar las listas del usuario en el desplegable
+function loadUserLists(dropdown) {
+  const listsContainer = dropdown.querySelector('.lists-container');
+  
+  if (userLists.length === 0) {
+    listsContainer.innerHTML = '<div class="no-lists-message">No tienes listas creadas</div>';
+  } else {
+    // Obtener información del documento actual
+    const saveButton = dropdown.closest('.guardar-button');
+    const mainButton = saveButton.querySelector('.save-btn');
+    const onclickAttr = mainButton.getAttribute('onclick');
+    const matches = onclickAttr.match(/toggleListsDropdown\(this, '([^']+)', '([^']+)'\)/);
+    const documentId = matches ? matches[1] : null;
+    
+    console.log(`[loadUserLists] Cargando listas para documento ${documentId}`);
+    
+    listsContainer.innerHTML = userLists.map(list => {
+      // Verificar si el documento ya está guardado en esta lista
+      const isDocumentSaved = checkIfDocumentSaved(list.name, documentId);
+      const checkedAttribute = isDocumentSaved ? 'checked' : '';
+      
+      console.log(`[loadUserLists] Lista "${list.name}" (${list.id}): documento ${isDocumentSaved ? 'SÍ' : 'NO'} guardado`);
+      
+      return `<div class="list-item">
+        <div class="checkbox-container">
+          <input type="checkbox" id="list_${list.id}" value="${list.id}" ${checkedAttribute} onchange="handleListCheckboxChange(this, '${documentId}')">
+          <div class="checkbox-loader" style="display: none;">
+            <i class="fas fa-spinner fa-spin"></i>
+          </div>
+        </div>
+        <label for="list_${list.id}" class="list-label">
+          <span class="list-name">${list.name}</span>
+        </label>
+      </div>`;
+    }).join('');
+  }
+}
+
+// Función para verificar si un documento está guardado en una lista específica
+function checkIfDocumentSaved(listName, documentId) {
+  if (!documentId || !userListsData || !userListsData.guardados) {
+    return false;
+  }
+  
+  const listData = userListsData.guardados[listName];
+  if (!listData) {
+    return false;
+  }
+  
+  // Verificar si el documento existe en esta lista
+  return listData.hasOwnProperty(documentId);
+}
+
+// Función para manejar el cambio de checkbox de lista (acción directa)
+async function handleListCheckboxChange(checkbox, documentId) {
+  const dropdown = checkbox.closest('.lists-dropdown');
+  const saveButton = dropdown.closest('.guardar-button');
+  const dataItem = saveButton.closest('.data-item');
+  const listId = checkbox.value;
+  
+  // Obtener información del documento y lista
+  const mainButton = saveButton.querySelector('.save-btn');
+  const onclickAttr = mainButton.getAttribute('onclick');
+  const matches = onclickAttr.match(/toggleListsDropdown\(this, '([^']+)', '([^']+)'\)/);
+  const collectionName = matches ? matches[2] : null;
+  
+  if (!collectionName) {
+    alert('Error: No se pudo obtener la información del documento');
+    checkbox.checked = !checkbox.checked; // Revertir cambio
+    return;
+  }
+  
+  const listName = userLists.find(list => list.id === listId)?.name;
+  if (!listName) {
+    alert('Error: No se pudo encontrar la lista');
+    checkbox.checked = !checkbox.checked; // Revertir cambio
+    return;
+  }
+  
+  // Aplicar feedback visual inmediato - sustituir checkbox por loader
+  const checkboxContainer = checkbox.closest('.checkbox-container');
+  const loader = checkboxContainer.querySelector('.checkbox-loader');
+  
+  // Ocultar checkbox y mostrar loader en su lugar
+  checkbox.style.display = 'none';
+  loader.style.display = 'inline-block';
+  
+  if (checkbox.checked) {
+    // Guardar documento en lista
+    await saveDocumentToList(documentId, collectionName, listId, dataItem, checkbox, loader);
+  } else {
+    // Quitar documento de lista
+    await removeDocumentFromList(documentId, listName, checkbox, loader);
+  }
+}
+
+// Función para guardar documento en lista
+async function saveDocumentToList(documentId, collectionName, listId, dataItem, checkbox, loader) {
+  try {
+    const documentData = extractDocumentDataFromItem(dataItem);
+    
+    const response = await fetch('/api/save-document-to-lists', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        documentId,
+        collectionName,
+        listIds: [listId],
+        documentData
+      })
+    });
+    
+    if (response.ok) {
+      console.log('Documento guardado exitosamente');
+      
+      // Actualizar datos locales
+      const listName = userLists.find(list => list.id === listId)?.name;
+      if (listName && userListsData.guardados) {
+        if (!userListsData.guardados[listName]) {
+          userListsData.guardados[listName] = {};
+        }
+        userListsData.guardados[listName][documentId] = documentData;
+      }
+      
+      // Mostrar feedback de éxito
+      showSaveSuccess(checkbox, true);
+    } else {
+      const errorData = await response.json();
+      console.error('Error al guardar:', errorData);
+      alert('Error al guardar el documento: ' + (errorData.error || 'Error desconocido'));
+      checkbox.checked = false; // Revertir estado
+    }
+  } catch (error) {
+    console.error('Error saving document:', error);
+    alert('Error al guardar el documento. Por favor, inténtalo de nuevo.');
+    checkbox.checked = false; // Revertir estado
+  } finally {
+    // Restaurar checkbox y ocultar loader
+    checkbox.style.display = 'inline-block';
+    loader.style.display = 'none';
+  }
+}
+
+// Función para quitar documento de lista
+async function removeDocumentFromList(documentId, listName, checkbox, loader) {
+  try {
+    const response = await fetch('/api/remove-document-from-list', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        documentId,
+        listName
+      })
+    });
+    
+    if (response.ok) {
+      console.log('Documento quitado exitosamente');
+      
+      // Actualizar datos locales
+      if (userListsData.guardados && userListsData.guardados[listName]) {
+        delete userListsData.guardados[listName][documentId];
+      }
+      
+      // Mostrar feedback de éxito
+      showSaveSuccess(checkbox, false);
+    } else {
+      const errorData = await response.json();
+      console.error('Error al quitar:', errorData);
+      alert('Error al quitar el documento: ' + (errorData.error || 'Error desconocido'));
+      checkbox.checked = true; // Revertir estado
+    }
+  } catch (error) {
+    console.error('Error removing document:', error);
+    alert('Error al quitar el documento. Por favor, inténtalo de nuevo.');
+    checkbox.checked = true; // Revertir estado
+  } finally {
+    // Restaurar checkbox y ocultar loader
+    checkbox.style.display = 'inline-block';
+    loader.style.display = 'none';
+  }
+}
+
+// Función para extraer datos del documento desde el DOM
+function extractDocumentDataFromItem(dataItem) {
+  const documentData = {};
+  
+  try {
+    // Extraer short_name del encabezado
+    const shortNameElement = dataItem.querySelector('.id-values');
+    if (shortNameElement) {
+      documentData.short_name = shortNameElement.textContent.trim();
+    }
+    
+    // Extraer fecha
+    const dateElement = dataItem.querySelector('.date');
+    if (dateElement) {
+      const dateText = dateElement.textContent.trim();
+      const dateMatch = dateText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (dateMatch) {
+        documentData.dia = parseInt(dateMatch[1]);
+        documentData.mes = parseInt(dateMatch[2]);
+        documentData.anio = parseInt(dateMatch[3]);
+      }
+    }
+    
+    // Extraer resumen
+    const resumenElement = dataItem.querySelector('.resumen-content');
+    if (resumenElement) {
+      documentData.resumen = resumenElement.textContent.trim();
+    }
+    
+    // Extraer rango_titulo
+    const rangoElement = dataItem.querySelector('.doc-rango');
+    if (rangoElement) {
+      documentData.rango_titulo = rangoElement.textContent.trim();
+    }
+    
+    // Extraer URL del PDF
+    const pdfLink = dataItem.querySelector('.leer-mas[href]');
+    if (pdfLink) {
+      documentData.url_pdf = pdfLink.getAttribute('href');
+    }
+    
+    // Extraer etiquetas personalizadas
+    const etiquetas = [];
+    const etiquetaElements = dataItem.querySelectorAll('.etiqueta-personalizada-value');
+    etiquetaElements.forEach(element => {
+      etiquetas.push(element.textContent.trim());
+    });
+    documentData.etiquetas_personalizadas = etiquetas;
+    
+  } catch (error) {
+    console.error('Error extracting document data:', error);
+  }
+  
+  return documentData;
+}
+
+// Función para mostrar feedback de guardado
+function showSaveSuccess(element, isSaved) {
+  const message = document.createElement('div');
+  message.className = 'save-success-message';
+  message.style.cssText = `
+    position: fixed;
+    background: white;
+    color: #1a365d;
+    border: 2px solid #04db8d;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+  `;
+  
+  const text = isSaved ? 'Guardado en lista' : 'Quitado de lista';
+  message.innerHTML = `
+    <span>${text}</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" style="margin-left: 8px; color: #04db8d;">
+      <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+    </svg>
+  `;
+  
+  const rect = element.getBoundingClientRect();
+  message.style.top = (rect.bottom + 10) + 'px';
+  message.style.left = (rect.left - 50) + 'px';
+  
+  document.body.appendChild(message);
+  
+  setTimeout(() => {
+    message.remove();
+  }, 2000);
+}
+
+// Función para mostrar formulario de nueva lista
+function showNewListForm(element) {
+  const newListForm = element.nextElementSibling;
+  newListForm.style.display = 'block';
+  const input = newListForm.querySelector('.new-list-input');
+  input.focus();
+}
+
+// Función para ocultar formulario de nueva lista
+function hideNewListForm(element) {
+  const newListForm = element.closest('.new-list-form');
+  newListForm.style.display = 'none';
+  const input = newListForm.querySelector('.new-list-input');
+  input.value = '';
+}
+
+// Función para ocultar el formulario de nueva lista con animación suave
+function hideNewListFormAnimated(element) {
+  const newListForm = element.closest('.new-list-form');
+  const input = newListForm.querySelector('.new-list-input');
+  
+  // Animación simple y directa
+  newListForm.style.transition = 'opacity 0.2s ease-out';
+  newListForm.style.opacity = '0';
+  
+  setTimeout(() => {
+    newListForm.style.display = 'none';
+    newListForm.style.transition = '';
+    newListForm.style.opacity = '';
+    input.value = '';
+  }, 200);
+}
+
+// Función para crear nueva lista
+async function createNewList(element, documentId, collectionName) {
+  const newListForm = element.closest('.new-list-form');
+  const input = newListForm.querySelector('.new-list-input');
+  const listName = input.value.trim();
+  
+  if (!listName) {
+    alert('Por favor, introduce un nombre para la lista');
+    return;
+  }
+  
+  // Aplicar estado de loading al botón
+  const originalButtonContent = element.innerHTML;
+  element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+  element.disabled = true;
+  input.disabled = true;
+  
+  try {
+    const response = await fetch('/api/create-user-list', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        listName: listName
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Lista creada exitosamente:', result);
+      
+      // Añadir la nueva lista al array local
+      const newList = {
+        id: result.listId,
+        name: listName
+      };
+      userLists.push(newList);
+      
+      // Recargar las listas en el desplegable
+      const dropdown = element.closest('.lists-dropdown');
+      loadUserLists(dropdown);
+      
+      // Mostrar éxito temporalmente antes de ocultar el formulario
+      element.innerHTML = '<i class="fas fa-check"></i> ¡Creada!';
+      element.style.backgroundColor = '#04db8d';
+      element.style.color = 'white';
+      
+      setTimeout(() => {
+        // Ocultar el formulario con animación suave
+        hideNewListFormAnimated(element);
+      }, 500);
+    } else {
+      const errorData = await response.json();
+      alert('Error al crear la lista: ' + (errorData.error || 'Error desconocido'));
+    }
+  } catch (error) {
+    console.error('Error creating list:', error);
+    alert('Error al crear la lista. Por favor, inténtalo de nuevo.');
+  } finally {
+    // Restaurar estado original del botón y input
+    element.innerHTML = originalButtonContent;
+    element.disabled = false;
+    element.style.backgroundColor = '';
+    element.style.color = '';
+    input.disabled = false;
+  }
+}
+
+// Cerrar desplegables al hacer clic fuera
+document.addEventListener('click', function(event) {
+  if (event.target && !event.target.closest('.guardar-button')) {
+    document.querySelectorAll('.lists-dropdown.show').forEach(dropdown => {
+      dropdown.classList.remove('show');
+    });
+  }
+});
+
+// Manejar Enter en el input de nueva lista
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter' && event.target.classList.contains('new-list-input')) {
+    const saveButton = event.target.closest('.new-list-form').querySelector('.new-list-btn.save');
+    if (saveButton) {
+      saveButton.click();
+    }
+  }
+});
+
+// Hacer funciones globales para compatibilidad con HTML
+window.toggleListsDropdown = toggleListsDropdown;
+window.handleListCheckboxChange = handleListCheckboxChange;
+window.showNewListForm = showNewListForm;
+window.hideNewListForm = hideNewListForm;
+window.createNewList = createNewList;

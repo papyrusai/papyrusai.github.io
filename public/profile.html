@@ -413,11 +413,22 @@
            }
          });
          
-         // Cargar el contenido del tracker si la sección de agentes está activa por defecto
-         const agentesSection = document.getElementById('content-agentes');
-         if (agentesSection && agentesSection.classList.contains('active')) {
-           loadTrackerContent();
-         }
+                 // Cargar el contenido del tracker si la sección de agentes está activa por defecto
+        const agentesSection = document.getElementById('content-agentes');
+        if (agentesSection && agentesSection.classList.contains('active')) {
+          loadTrackerContent();
+        }
+        
+        // Safety net: si después de 5 segundos el overlay sigue visible, ocultarlo
+        setTimeout(() => {
+          const overlay = document.getElementById('pageLoaderOverlay');
+          if (overlay && overlay.style.display !== 'none') {
+            console.log('[DOMContentLoaded] Safety net: hiding page loader overlay after 5 seconds');
+            if (typeof window.hidePageLoaderOverlay === 'function') {
+              window.hidePageLoaderOverlay();
+            }
+          }
+        }, 5000);
        }
     });
     
@@ -471,6 +482,7 @@
     
     // ==================== FUNCION PARA LOAD TRACKER (AGENTES) ====================
     let trackerContentLoaded = false;
+    let trackerContentLoading = false;
     function loadTrackerContent(callback) {
         console.log('[loadTrackerContent] Function called.');
         const container = document.getElementById('content-agentes');
@@ -483,11 +495,25 @@
         if (trackerContentLoaded) {
             console.log('[loadTrackerContent] Content already loaded. Running callback if it exists.');
             if (typeof window.initializeTracker === 'function') {
+                console.log('[loadTrackerContent] Calling existing initializeTracker function.');
                 window.initializeTracker();
+            } else {
+                console.warn('[loadTrackerContent] initializeTracker function not available, but content was loaded.');
+                // Fallback: ocultar overlay si el tracker está cargado pero no funciona
+                if (typeof window.hidePageLoaderOverlay === 'function') {
+                    window.hidePageLoaderOverlay();
+                }
             }
             if (callback) callback();
             return;
         }
+
+        if (trackerContentLoading) {
+            console.log('[loadTrackerContent] Content is already loading, skipping duplicate call.');
+            return;
+        }
+
+        trackerContentLoading = true;
 
         console.log('[loadTrackerContent] Starting fetch for tracker.html');
         fetch('views/tracker/tracker.html')
@@ -518,6 +544,7 @@
                 const loadScript = (index) => {
                     if (index >= scripts.length) {
                         trackerContentLoaded = true;
+                        trackerContentLoading = false;
                         console.log('[loadTrackerContent] All scripts loaded. trackerContentLoaded set to true.');
                         
                         // Inicializar el tracker después de cargar los scripts
@@ -527,7 +554,19 @@
                                 window.initializeTracker();
                             } else {
                                 console.warn('[loadTrackerContent] initializeTracker function not found after loading scripts.');
+                                // Fallback: ocultar overlay si initializeTracker no está disponible
+                                if (typeof window.hidePageLoaderOverlay === 'function') {
+                                    window.hidePageLoaderOverlay();
+                                }
                             }
+                            
+                            // Safety timeout: asegurar que el overlay se oculte después de 3 segundos máximo
+                            setTimeout(() => {
+                                if (typeof window.hidePageLoaderOverlay === 'function') {
+                                    console.log('[loadTrackerContent] Safety timeout: hiding page loader overlay');
+                                    window.hidePageLoaderOverlay();
+                                }
+                            }, 3000);
                         }, 100);
                         
                         if (callback) callback();
@@ -563,6 +602,14 @@
             .catch(error => {
                 console.error('[loadTrackerContent] Fetch error:', error);
                 if (container) container.innerHTML = `<p style="color:red;">Error al cargar la sección de Agentes.</p>`;
+                
+                // Reset loading state on error
+                trackerContentLoading = false;
+                
+                // Ocultar overlay principal en caso de error
+                if (typeof window.hidePageLoaderOverlay === 'function') {
+                    window.hidePageLoaderOverlay();
+                }
             });
     }
 
@@ -657,10 +704,15 @@
                 };
                 loadScript(0);
             })
-            .catch(error => {
-                console.error('[loadTusListasContent] Fetch error:', error);
-                if (container) container.innerHTML = `<p style="color:red;">Error al cargar la sección de Tus Listas.</p>`;
-            });
+                    .catch(error => {
+            console.error('[loadTusListasContent] Fetch error:', error);
+            if (container) container.innerHTML = `<p style="color:red;">Error al cargar la sección de Tus Listas.</p>`;
+            
+            // Ocultar overlay principal en caso de error
+            if (typeof window.hidePageLoaderOverlay === 'function') {
+                window.hidePageLoaderOverlay();
+            }
+        });
     }
 
     // ==================== FUNCION PARA LOAD BUSQUEDA / ESTADISTICAS ====================
@@ -702,6 +754,11 @@
             .catch(error => {
                 console.error('[loadBusquedaContent] Fetch error:', error);
                 container.innerHTML = '<p style="color:red;text-align:center;">Error al cargar la sección.</p>';
+                
+                // Ocultar overlay principal en caso de error
+                if (typeof window.hidePageLoaderOverlay === 'function') {
+                    window.hidePageLoaderOverlay();
+                }
             });
     }
 
@@ -1010,6 +1067,11 @@ function loadBoletinDiarioContent(callback) {
         .catch(error => {
             console.error('[loadBoletinDiarioContent] Fetch error:', error);
             if (container) container.innerHTML = `<p style="color:red;">Error al cargar la sección de Boletín Diario.</p>`;
+            
+            // Ocultar overlay principal en caso de error
+            if (typeof window.hidePageLoaderOverlay === 'function') {
+                window.hidePageLoaderOverlay();
+            }
         });
 }
 
@@ -1561,13 +1623,14 @@ function loadBoletinDiarioContent(callback) {
     // ==================== FUNCIONES PARA MANEJO DE LISTAS ====================
     
     // Variables globales para almacenar las listas del usuario
-    let userLists = [];
-    let userListsData = {};
+    // Nota: userLists y userListsData se declaran en tracker.js para evitar conflictos
+    window.userLists = window.userLists || [];
+    window.userListsData = window.userListsData || {};
     
     // Función para añadir una nueva lista al storage
     function addListToStorage(newList) {
-      userLists.push(newList);
-      sessionStorage.setItem('userLists', JSON.stringify(userLists));
+      window.userLists.push(newList);
+      sessionStorage.setItem('userLists', JSON.stringify(window.userLists));
       sessionStorage.setItem('userListsTimestamp', Date.now().toString());
     }
     
@@ -1576,8 +1639,8 @@ function loadBoletinDiarioContent(callback) {
       sessionStorage.removeItem('userLists');
       sessionStorage.removeItem('userListsData');
       sessionStorage.removeItem('userListsTimestamp');
-      userLists = [];
-      userListsData = {};
+      window.userLists = [];
+      window.userListsData = {};
       console.log('Cache de listas limpiado');
     }
     
@@ -1608,9 +1671,9 @@ function loadBoletinDiarioContent(callback) {
         const cachedLists = sessionStorage.getItem('userLists');
         const cachedListsData = sessionStorage.getItem('userListsData');
         if (cachedLists && cachedListsData && !forceRefresh && isCacheValid()) {
-          userLists = JSON.parse(cachedLists);
-          userListsData = JSON.parse(cachedListsData);
-          console.log('[loadUserListsFromBackend] Listas cargadas desde sessionStorage:', userLists);
+          window.userLists = JSON.parse(cachedLists);
+          window.userListsData = JSON.parse(cachedListsData);
+          console.log('[loadUserListsFromBackend] Listas cargadas desde sessionStorage:', window.userLists);
           return;
         }
         
@@ -1621,40 +1684,36 @@ function loadBoletinDiarioContent(callback) {
         });
         if (response.ok) {
           const data = await response.json();
-          userLists = data.lists || [];
-          userListsData = data; // Almacenar los datos completos incluyendo 'guardados'
+          window.userLists = data.lists || [];
+          window.userListsData = data; // Almacenar los datos completos incluyendo 'guardados'
           
           // Guardar en sessionStorage con timestamp para futuras cargas
-          sessionStorage.setItem('userLists', JSON.stringify(userLists));
-          sessionStorage.setItem('userListsData', JSON.stringify(userListsData));
+          sessionStorage.setItem('userLists', JSON.stringify(window.userLists));
+          sessionStorage.setItem('userListsData', JSON.stringify(window.userListsData));
           sessionStorage.setItem('userListsTimestamp', Date.now().toString());
-          console.log('[loadUserListsFromBackend] Listas cargadas desde servidor y guardadas en sessionStorage:', userLists);
-          console.log('[loadUserListsFromBackend] Datos guardados completos:', userListsData);
+          console.log('[loadUserListsFromBackend] Listas cargadas desde servidor y guardadas en sessionStorage:', window.userLists);
+          console.log('[loadUserListsFromBackend] Datos guardados completos:', window.userListsData);
         } else {
           console.error('[loadUserListsFromBackend] Error loading user lists:', response.statusText);
-          userLists = [];
-          userListsData = {};
+          window.userLists = [];
+          window.userListsData = {};
         }
       } catch (error) {
         console.error('[loadUserListsFromBackend] Error loading user lists:', error);
-        userLists = [];
-        userListsData = {};
+        window.userLists = [];
+        window.userListsData = {};
       }
     }
     
     // Función para actualizar las listas en sessionStorage
     function updateUserListsInStorage(newLists) {
-      userLists = newLists;
-      sessionStorage.setItem('userLists', JSON.stringify(userLists));
+      window.userLists = newLists;
+      sessionStorage.setItem('userLists', JSON.stringify(window.userLists));
       sessionStorage.setItem('userListsTimestamp', Date.now().toString());
     }
     
-    // Función para añadir una nueva lista al storage
-    function addListToStorage(newList) {
-      userLists.push(newList);
-      sessionStorage.setItem('userLists', JSON.stringify(userLists));
-      sessionStorage.setItem('userListsTimestamp', Date.now().toString());
-    }
+    // NOTA: Función addListToStorage duplicada - eliminando esta duplicación
+    // (Ya está definida arriba)
     
     // Función para extraer información del documento desde el DOM
     function extractDocumentData(dataItem) {
@@ -1809,7 +1868,7 @@ function loadBoletinDiarioContent(callback) {
     function loadUserLists(dropdown) {
       const listsContainer = dropdown.querySelector('.lists-container');
       
-      if (userLists.length === 0) {
+      if (window.userLists.length === 0) {
         listsContainer.innerHTML = '<div class="no-lists-message">No tienes listas creadas</div>';
       } else {
         // Obtener información del documento actual
@@ -1820,9 +1879,9 @@ function loadBoletinDiarioContent(callback) {
         const documentId = matches ? matches[1] : null;
         
         console.log(`[loadUserLists] Cargando listas para documento ${documentId}`);
-        console.log(`[loadUserLists] Datos de userListsData:`, userListsData);
+        console.log(`[loadUserLists] Datos de userListsData:`, window.userListsData);
         
-        listsContainer.innerHTML = userLists.map(list => {
+        listsContainer.innerHTML = window.userLists.map(list => {
           // Verificar si el documento ya está guardado en esta lista
           const isDocumentSaved = checkIfDocumentSaved(list.name, documentId);
           const checkedAttribute = isDocumentSaved ? 'checked' : '';
@@ -1846,12 +1905,12 @@ function loadBoletinDiarioContent(callback) {
     
     // Función para verificar si un documento está guardado en una lista específica
     function checkIfDocumentSaved(listName, documentId) {
-      if (!documentId || !userListsData || !userListsData.guardados) {
-        console.log(`[checkIfDocumentSaved] Missing data - documentId: ${documentId}, userListsData: ${!!userListsData}, guardados: ${!!userListsData?.guardados}`);
+      if (!documentId || !window.userListsData || !window.userListsData.guardados) {
+        console.log(`[checkIfDocumentSaved] Missing data - documentId: ${documentId}, userListsData: ${!!window.userListsData}, guardados: ${!!window.userListsData?.guardados}`);
         return false;
       }
       
-      const listData = userListsData.guardados[listName];
+      const listData = window.userListsData.guardados[listName];
       if (!listData) {
         console.log(`[checkIfDocumentSaved] Lista "${listName}" no encontrada`);
         return false;
@@ -1882,7 +1941,7 @@ function loadBoletinDiarioContent(callback) {
         return;
       }
       
-      const listName = userLists.find(list => list.id === listId)?.name;
+      const listName = window.userLists.find(list => list.id === listId)?.name;
       if (!listName) {
         alert('Error: No se pudo encontrar la lista');
         checkbox.checked = !checkbox.checked; // Revertir cambio
@@ -1938,12 +1997,12 @@ function loadBoletinDiarioContent(callback) {
           await loadUserListsFromBackend(true);
           
           // Actualizar cache local inmediatamente para reflejar el cambio
-          const listName = userLists.find(list => list.id === listId)?.name;
-          if (listName && userListsData.guardados) {
-            if (!userListsData.guardados[listName]) {
-              userListsData.guardados[listName] = {};
+          const listName = window.userLists.find(list => list.id === listId)?.name;
+          if (listName && window.userListsData.guardados) {
+            if (!window.userListsData.guardados[listName]) {
+              window.userListsData.guardados[listName] = {};
             }
-            userListsData.guardados[listName][documentId] = {
+            window.userListsData.guardados[listName][documentId] = {
               documentId: documentId,
               collectionName: collectionName,
               savedAt: new Date(),
@@ -1951,7 +2010,7 @@ function loadBoletinDiarioContent(callback) {
             };
             
             // Actualizar sessionStorage con los nuevos datos
-            sessionStorage.setItem('userListsData', JSON.stringify(userListsData));
+            sessionStorage.setItem('userListsData', JSON.stringify(window.userListsData));
           }
           
           // Estado final exitoso: mostrar checkbox marcado y ocultar loader
@@ -2003,11 +2062,11 @@ function loadBoletinDiarioContent(callback) {
           await loadUserListsFromBackend(true);
           
           // Actualizar cache local inmediatamente para reflejar el cambio
-          if (listName && userListsData.guardados && userListsData.guardados[listName]) {
-            delete userListsData.guardados[listName][documentId];
+          if (listName && window.userListsData.guardados && window.userListsData.guardados[listName]) {
+            delete window.userListsData.guardados[listName][documentId];
             
             // Actualizar sessionStorage con los nuevos datos
-            sessionStorage.setItem('userListsData', JSON.stringify(userListsData));
+            sessionStorage.setItem('userListsData', JSON.stringify(window.userListsData));
           }
           
           // Estado final exitoso: mostrar checkbox desmarcado y ocultar loader
@@ -2150,6 +2209,28 @@ function loadBoletinDiarioContent(callback) {
       addNewButton.style.display = 'flex';
     }
     
+    // Función para ocultar el formulario de nueva lista con animación suave
+    function hideNewListFormAnimated(element) {
+      const dropdown = element.closest('.lists-dropdown');
+      const newListForm = dropdown.querySelector('.new-list-form');
+      const addNewButton = dropdown.querySelector('.add-new-list');
+      
+      // Animación simple y directa
+      newListForm.style.transition = 'opacity 0.2s ease-out';
+      newListForm.style.opacity = '0';
+      
+      setTimeout(() => {
+        newListForm.classList.remove('show');
+        newListForm.style.transition = '';
+        newListForm.style.opacity = '';
+        addNewButton.style.display = 'flex';
+        
+        // Limpiar el input
+        const input = newListForm.querySelector('.new-list-input');
+        if (input) input.value = '';
+      }, 200);
+    }
+    
     // Función para crear una nueva lista
     async function createNewList(element, documentId, collectionName) {
       const dropdown = element.closest('.lists-dropdown');
@@ -2163,11 +2244,17 @@ function loadBoletinDiarioContent(callback) {
       }
       
       // Verificar que no existe una lista con el mismo nombre
-      if (userLists.some(list => list.name.toLowerCase() === listName.toLowerCase())) {
+      if (window.userLists.some(list => list.name.toLowerCase() === listName.toLowerCase())) {
         alert('Ya existe una lista con ese nombre');
         input.focus();
         return;
       }
+      
+      // Aplicar estado de loading al botón
+      const originalButtonContent = element.innerHTML;
+      element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+      element.disabled = true;
+      input.disabled = true;
       
       try {
         // Debug: Imprimir datos que se van a enviar
@@ -2217,8 +2304,15 @@ function loadBoletinDiarioContent(callback) {
             updateSaveButton(newCheckbox);
           }
           
-          // Ocultar el formulario
-          hideNewListForm(element);
+          // Mostrar éxito temporalmente antes de ocultar el formulario
+          element.innerHTML = '<i class="fas fa-check"></i> ¡Creada!';
+          element.style.backgroundColor = '#04db8d';
+          element.style.color = 'white';
+          
+          setTimeout(() => {
+            // Ocultar el formulario con animación suave
+            hideNewListFormAnimated(element);
+          }, 500);
         } else {
           let errorMessage = `Error ${response.status}: ${response.statusText}`;
           try {
@@ -2234,6 +2328,13 @@ function loadBoletinDiarioContent(callback) {
       } catch (error) {
         console.error('Error creating list:', error);
         alert('Error al crear la lista. Por favor, inténtalo de nuevo.');
+      } finally {
+        // Restaurar estado original del botón y input
+        element.innerHTML = originalButtonContent;
+        element.disabled = false;
+        element.style.backgroundColor = '';
+        element.style.color = '';
+        input.disabled = false;
       }
     }
     
@@ -2350,6 +2451,11 @@ function loadBoletinDiarioContent(callback) {
               <p>Por favor, inténtalo de nuevo más tarde.</p>
             </div>
           `;
+          
+          // Ocultar overlay principal en caso de error
+          if (typeof window.hidePageLoaderOverlay === 'function') {
+            window.hidePageLoaderOverlay();
+          }
         });
     }
     

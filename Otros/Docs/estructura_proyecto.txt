@@ -1,0 +1,176 @@
+# 📁 ESTRUCTURA ACTUAL DEL PROYECTO PAPYRUS AI
+# Estado: Post-Refactoring Completo (Enero 2025)
+# Reducción: 7000 líneas → 175 líneas en app.js (98% optimización)
+
+papyrusai.github.io/
+├── 📄 app.js                         # ⭐ BOOTSTRAP PRINCIPAL (175 líneas)
+│                                     # Configuración Express, middlewares, montaje routers
+├── 📄 auth.js                        # Configuración estrategias Passport
+├── 📄 index.html                     # Landing page principal
+├── 📄 package.json                   # Dependencias Node.js
+├── 📄 package-lock.json              # Lock de dependencias
+├── 📄 requirements.txt               # Dependencias Python
+
+├── 📂 routes/                        # 🎯 ROUTERS MODULARES (12 archivos)
+│   ├── 📄 auth.routes.js             # Autenticación: login, register, OAuth (286 líneas)
+│   ├── 📄 profile.routes.js          # Perfil usuario: dashboard, datos (470 líneas)
+│   ├── 📄 static.routes.js           # Páginas HTML estáticas (71 líneas)
+│   ├── 📄 normativa.routes.js        # Análisis normativo + Python integration (260 líneas)
+│   ├── 📄 feedback.routes.js         # Sistema de feedback (227 líneas)
+│   ├── 📄 billing.routes.js          # Stripe + facturación (468 líneas)
+│   ├── 📄 user.routes.js             # CRUD usuarios (253 líneas)
+│   ├── 📄 generacioncontenido.routes.js # Marketing content + Python (268 líneas)
+│   ├── 📄 agentes.routes.js          # Generación agentes IA (284 líneas)
+│   ├── 📄 listas.routes.js           # Gestión listas documentos (294 líneas)
+│   ├── 📄 onboarding.routes.js       # Onboarding + perfil regulatorio (312 líneas)
+│   └── 📄 boletin.routes.js          # Boletín diario (183 líneas)
+
+├── 📂 services/                      # 🔧 SERVICIOS BACKEND
+│   ├── 📄 email.service.js           # SendGrid: password reset, subscription (518 líneas)
+│   ├── 📄 users.service.js           # Gestión usuarios especiales + límites (198 líneas)
+│   └── 📄 db.utils.js                # MongoDB utilities compartidas (61 líneas)
+
+├── 📂 middleware/                    # ⚡ MIDDLEWARE COMPARTIDO
+│   └── 📄 ensureAuthenticated.js     # Middleware autenticación
+
+├── 📂 python/                        # 🐍 SCRIPTS IA (ORGANIZADOS)
+│   ├── 📄 questionsMongo.py          # Análisis documentos con Google Gemini
+│   └── 📄 marketing.py               # Generación contenido marketing
+
+├── 📂 prompts/                       # 🤖 CONFIGURACIÓN IA
+│   ├── 📄 contexto_regulatorio.md    # Prompt perfil regulatorio (YAML)
+│   ├── 📄 analisis_normativo.md      # Prompts análisis documentos
+│   ├── 📄 generacion_contenido.md    # Prompts marketing content
+│   └── 📄 generacion_agentes.md      # Prompts generación agentes
+
+├── 📂 Docs/                          # 📚 DOCUMENTACIÓN
+│   ├── 📄 Account_creation.md        # Proceso creación cuentas
+│   └── 📄 Arquitectura_Codigo.md     # ⭐ ARQUITECTURA COMPLETA POST-REFACTORING
+
+├── 📄 refactoring_planning.md        # 📋 Planning y progreso refactoring
+
+├── 📂 public/                        # 🌐 FRONTEND
+│   ├── 📄 profile.html               # ⭐ DASHBOARD PRINCIPAL (SPA shell)
+│   │
+│   ├── 📂 views/                     # Vistas especializadas
+│   │   ├── 📂 analisis/
+│   │   │   └── 📄 norma.html         # Vista análisis normativo
+│   │   ├── 📂 boletindiario/
+│   │   │   ├── 📄 boletin.html       # Vista boletín diario
+│   │   │   └── 📄 boletin.js         # JavaScript boletín
+│   │   ├── 📂 configuracion/
+│   │   │   ├── 📄 configuracion_cuenta.html  # Configuración cuenta
+│   │   │   ├── 📄 contexto.js        # JavaScript onboarding
+│   │   │   ├── 📄 agentes.js         # JavaScript agentes
+│   │   │   ├── 📄 fuentes.js         # JavaScript fuentes
+│   │   │   └── 📄 estructura_onboarding.json # Estructura onboarding
+│   │   ├── 📂 consultas_publicas/
+│   │   │   ├── 📄 consultas_publicas.html # Radar consultas públicas
+│   │   │   └── 📄 consultas_publicas.json # Datos consultas
+│   │   ├── 📂 tracker/
+│   │   │   ├── 📄 tracker.html       # Vista tracker
+│   │   │   └── 📄 tracker.js         # JavaScript tracker
+│   │   ├── 📂 tuslistas/
+│   │   │   ├── 📄 tuslistas.html     # Vista listas + generación contenido
+│   │   │   ├── 📄 tuslistas.js       # JavaScript listas
+│   │   │   ├── 📄 textEditor.js      # Editor de texto
+│   │   │   └── 📄 generacionContenido.js # JavaScript generación
+│   │   └── 📂 busqueda_estadisticas/
+│   │       └── 📄 busqueda.html      # Vista búsqueda
+│   │
+│   ├── 📂 styles/                    # CSS modular organizado
+│   │   ├── 📄 styles.css             # Estilos base generales
+│   │   ├── 📄 menu.css               # Navegación y menús
+│   │   ├── 📄 profile.css            # Dashboard perfil
+│   │   ├── 📄 tuslistas.css          # Listas de documentos
+│   │   ├── 📄 agentes.css            # Página agentes
+│   │   ├── 📄 dropdown.css           # Componentes dropdown
+│   │   ├── 📄 login.css              # Páginas autenticación
+│   │   ├── 📄 toggle.css             # Componentes toggle
+│   │   ├── 📄 radio_menu.css         # Menús radio
+│   │   ├── 📄 mobile.css             # Responsive móvil
+│   │   ├── 📄 sidebar_styles.css     # Sidebar navegación
+│   │   ├── 📄 foot.css               # Footer
+│   │   ├── 📄 menu_index.css         # Menú landing page
+│   │   ├── 📄 suscripcion.css        # Páginas suscripción
+│   │   └── 📄 configuracion.css      # Páginas configuración
+│   │
+│   ├── 📂 assets/                    # Recursos estáticos
+│   │   ├── 📂 fonts/                 # Fuentes personalizadas
+│   │   │   ├── 📄 Azonix.woff        # Fuente Azonix
+│   │   │   └── 📄 Azonix.woff2       # Fuente Azonix v2
+│   │   ├── 🖼️ papyrus_app_white.png  # Logo blanco
+│   │   ├── 🖼️ papyrus_app.png        # Logo principal
+│   │   ├── 🖼️ compliance.png         # Imagen compliance
+│   │   ├── 🖼️ cuatrecasas_logo.png   # Logo Cuatrecasas
+│   │   ├── 🖼️ a&o_logo.png           # Logo A&O
+│   │   └── 📂 other_files/           # Otros recursos (75+ archivos)
+│   │
+│   ├── 📂 features/                  # Páginas funcionalidades
+│   │   ├── 📄 feedback.html          # Página feedback
+│   │   ├── 📄 reset-password.html    # Reset contraseña
+│   │   └── 📄 suscripcion_email.html # Suscripción email
+│   │
+│   ├── 📂 onboarding/                # Páginas onboarding
+│   │   ├── 📄 paso0.html             # Onboarding paso 0
+│   │   └── 📄 paso4.html             # Onboarding paso 4
+│   │
+│   ├── 📂 test_agentes/              # Testing agentes
+│   │   ├── 📄 agentes.html           # Test HTML agentes
+│   │   └── 📄 agentes.js             # Test JavaScript agentes
+│   │
+│   └── 📄 editarsuscripcion2.js      # Script edición suscripción
+
+└── 📂 assets/ (raíz)                 # Assets nivel raíz
+    ├── 🖼️ papyrus_app_white.png      # Logo blanco principal
+    ├── 🖼️ compliance.png             # Compliance badge
+    └── 🖼️ google_trans-removebg-preview.png # Google Translate
+
+
+# 🚫 CARPETAS EXCLUIDAS DEL ANÁLISIS (según especificación):
+# ├── 📂 __pycache__/              # Cache Python - EXCLUIDO
+# ├── 📂 .vscode/                  # Configuración VS Code - EXCLUIDO  
+# ├── 📂 boletin/                  # Legacy - EXCLUIDO
+# ├── 📂 boletin - copia/          # Copia legacy - EXCLUIDO
+# ├── 📂 Data Analytics/           # Análisis datos - EXCLUIDO
+# ├── 📂 email_script/             # Scripts email legacy - EXCLUIDO
+# ├── 📂 email_script - copia/     # Copia scripts email - EXCLUIDO
+# ├── 📂 Evals/                    # Evaluaciones IA - EXCLUIDO
+# ├── 📂 node_modules/             # Dependencias npm - EXCLUIDO
+# ├── 📂 node_modules - copia/     # Copia dependencias - EXCLUIDO
+# ├── 📂 notes/                    # Notas desarrollo - EXCLUIDO
+# └── 📂 Old/                      # Archivos antiguos - EXCLUIDO
+
+# ═══════════════════════════════════════════════════════════════
+# 📊 MÉTRICAS DE REFACTORING CONSEGUIDAS:
+# ═══════════════════════════════════════════════════════════════
+# ✅ Reducción app.js: 7000 → 175 líneas (98% optimización)
+# ✅ Modularización: 12 routers + 5 servicios + 1 middleware  
+# ✅ Organización Python: Scripts movidos a carpeta dedicada
+# ✅ Prompts externos: Configuración IA en archivos YAML
+# ✅ Servicios centralizados: Email, usuarios, DB utils
+# ✅ Frontend organizado: Views especializadas + CSS modular
+# ✅ Documentación completa: Arquitectura + planning actualizado
+
+# ═══════════════════════════════════════════════════════════════
+# 🎯 ARQUITECTURA RESULTANTE:
+# ═══════════════════════════════════════════════════════════════
+# 🏗️ BACKEND: Express modular + MongoDB + Python IA
+# 🌐 FRONTEND: SPA con carga dinámica + CSS modular  
+# 🤖 IA: Google Gemini + prompts externos organizados
+# 💳 BILLING: Stripe integrado + planes de suscripción
+# 🔐 AUTH: Passport local + Google OAuth + usuarios especiales
+# 📧 EMAIL: SendGrid centralizado + plantillas HTML
+# 🐍 PYTHON: Scripts organizados + integración spawn
+# 📚 DOCS: Arquitectura completa documentada
+
+# ═══════════════════════════════════════════════════════════════
+# ✨ BENEFICIOS CONSEGUIDOS:
+# ═══════════════════════════════════════════════════════════════
+# 🔧 Mantenibilidad: Código organizado por dominio
+# ⚡ Escalabilidad: Fácil agregar nuevas funcionalidades  
+# 🧪 Testing: Cada módulo testeable independientemente
+# 👥 Desarrollo: Múltiples desarrolladores simultáneos
+# 🚀 Deploy: Posibilidad de deploy granular por módulo
+# 🐛 Debug: Errores localizados por dominio específico
+# 📖 Documentación: Cada módulo con responsabilidades claras

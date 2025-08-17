@@ -196,6 +196,208 @@
   .feedback-success-message {
     animation: fadeInOut 2s ease-in-out;
   }
+
+  /* Estilos para botón Guardar y dropdown de listas */
+  .guardar-button {
+    position: relative;
+    display: inline-block;
+    margin-top: 10px;
+  }
+
+  .save-btn {
+    background: transparent;
+    color: #666;
+    border: 2px solid transparent;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .save-btn:hover {
+    color: #0b2431;
+    border-color: #0b2431;
+    background: transparent;
+  }
+
+  .save-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    color: #999;
+    border-color: transparent;
+  }
+
+  .lists-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    min-width: 280px;
+    z-index: 1000;
+    display: none;
+  }
+
+  .lists-dropdown.show {
+    display: block;
+  }
+
+  .lists-dropdown-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #0b2431;
+  }
+
+  .save-ok-btn {
+    background: #04db8d;
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .lists-content {
+    /* Solo contiene el padding, no scroll */
+    padding: 8px 0 0 0;
+  }
+
+  .lists-container {
+    max-height: 120px; /* Altura fija para las listas solamente */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 16px;
+  }
+
+  /* Estilo del scrollbar para el contenedor de listas */
+  .lists-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .lists-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .lists-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .lists-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    cursor: pointer;
+  }
+
+  .list-item:hover {
+    background-color: #f8f9fa;
+  }
+
+  .checkbox-container {
+    position: relative;
+    margin-right: 12px;
+  }
+
+  .checkbox-loader {
+    display: none;
+    color: #04db8d;
+  }
+
+  .list-label {
+    flex: 1;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .list-name {
+    font-size: 14px;
+    color: #0b2431;
+  }
+
+  .add-new-list {
+    padding: 12px 16px;
+    border-top: 1px solid #e9ecef;
+    cursor: pointer;
+    color: #04db8d;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+  }
+
+  .add-new-list:hover {
+    background-color: #f8f9fa;
+  }
+
+  .new-list-form {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid #e9ecef;
+    background-color: #f8f9fa;
+  }
+
+  .new-list-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  .new-list-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .new-list-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .new-list-btn.cancel {
+    background: white;
+    border-color: #dee2e6;
+    color: #6c757d;
+  }
+
+  .new-list-btn.save {
+    background: #04db8d;
+    color: white;
+  }
+
+  .no-lists-message {
+    padding: 16px;
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+  }
   </style>
 </head>
 <body>

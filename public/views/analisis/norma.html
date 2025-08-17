@@ -654,1402 +654,783 @@
 
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const shortNameSpan = document.getElementById('normaShortName');
-        const analyzeButton = document.getElementById('analyzeButton');
-        const checklistButton = document.getElementById('checklistButton');
-        const risksButton = document.getElementById('risksButton');
-        const sendCustomPromptButton = document.getElementById('sendCustomPrompt');
-        const analysisResultDiv = document.getElementById('analysisResult');
-        const loaderDiv = document.getElementById('loader');
-        const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
-        const userPromptInput = document.getElementById('userPrompt');
-        const analysisStatusDiv = document.getElementById('analysisStatus');
-        const statusTextSpan = analysisStatusDiv.querySelector('.shimmer-text');
-        const analysisDropdown = document.getElementById('analysisDropdown');
-        const etiquetasList = document.getElementById('etiquetasList');
-        const startAnalysisBtn = document.getElementById('startAnalysisBtn');
-        const analysisSettingsBtn = document.getElementById('analysisSettingsBtn');
-        const analysisSettingsDropdown = document.getElementById('analysisSettingsDropdown');
-        const analysisIdiomaSelect = document.getElementById('analysis-idioma-select');
-        let statusTimeouts = [];
-        let currentAnalysisType = null;
-        let activeAnalysisButton = null;
-
-        // Get the document ID from the URL (you can change this if you pass it differently)
-        const urlParams = new URLSearchParams(window.location.search);
-        const documentId = urlParams.get('documentId');
-        const collectionName = urlParams.get('collectionName'); // Get the collection from URL
-
-        // Global variables to store document data
-        let documentUrlPdf = null;
-        let documentUrlHtml = null;
-        let documentContenido = null;
-
-        // Analysis settings management
-        function loadAnalysisSettings() {
-            const savedIdioma = localStorage.getItem('analysis_idioma') || 'español';
-            if (analysisIdiomaSelect) {
-                analysisIdiomaSelect.value = savedIdioma;
-            }
-        }
-
-        function saveAnalysisSettings() {
-            if (analysisIdiomaSelect) {
-                localStorage.setItem('analysis_idioma', analysisIdiomaSelect.value);
-            }
-        }
-
-        function getSelectedAnalysisLanguage() {
-            return analysisIdiomaSelect ? analysisIdiomaSelect.value : 'español';
-        }
-
-        function toggleAnalysisSettingsDropdown() {
-            // Hide analysis dropdown if it's open
-            hideAnalysisDropdown();
-            analysisSettingsDropdown.classList.toggle('show');
-        }
-
-        function hideAnalysisSettingsDropdown() {
-            analysisSettingsDropdown.classList.remove('show');
-        }
-
-        // Función para mostrar la sección de feedback
-        function showFeedbackSection() {
-          const feedbackSection = document.getElementById('feedbackSection');
-          feedbackSection.style.display = 'block';
-        }
-
-        // Add event listener for custom prompt button
-        sendCustomPromptButton.addEventListener('click', () => {
-            handleCustomPrompt();
-        });
-
-        // Also allow pressing Enter in the textarea to submit
-        userPromptInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleCustomPrompt();
-            }
-        });
-
-        // Function to handle custom prompt submissions
-        function handleCustomPrompt() {
-            const userInput = userPromptInput.value.trim();
-            if (!userInput) {
-                alert('Por favor, escribe una consulta antes de enviar.');
-                return;
-            }
-            
-            // Obtener idioma seleccionado
-            const idiomaSeleccionado = getSelectedAnalysisLanguage();
-            const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
-            
-            const customPrompt = `${userInput}
-
-${bloqueIdioma}
-
-=== Formato de salida ===
-• Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
-• El string HTML solo puede incluir <h2>, <p>, <ul>, <li>, <b>. Nada más.  
-• Sin saltos de línea innecesarios ni Markdown.`;
-            
-            performCustomAnalysis(customPrompt, sendCustomPromptButton);
-        }
-
-        // Function for custom prompt analysis
-        function performCustomAnalysis(customPrompt, buttonElement) {
-            analysisResultDiv.textContent = ''; // Clear previous results
-            analysisResultDiv.classList.remove('show'); // Reset transition class
-            analysisResultDiv.classList.remove('error-state'); // Reset error styling
-            analysisResultDiv.style.display = 'none'; // Hide initially
-            
-            // Disable all buttons during analysis
-            setAnalysisButtonsState(true);
-            
-            const originalButtonText = buttonElement.innerHTML;
-            buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; // Show loading icon
-            
-            // Reset any active button state
-            document.querySelectorAll('.analisis-impacto').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Start status workflow for custom analysis
-            if (typeof startStatusWorkflow === 'function') startStatusWorkflow('custom');
-            
-            // Prepare request body with priority content sources
-            const requestBody = {
-                documentId: documentId,
-                userPrompt: customPrompt,
-                collectionName: collectionName
-            };
-            
-            // Add direct content if available (from "contenido" field)
-            if (documentContenido) {
-                requestBody.htmlContent = documentContenido;
-            }
-            
-            fetch('/api/analyze-norma', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'text/html; charset=utf-8'
-                },
-                body: JSON.stringify(requestBody)
-            })
-            .then(response => {
-                // Check if response is JSON (error) or HTML (success)
-                const contentType = response.headers.get('content-type');
-                
-                if (!response.ok) {
-                    // If response is not ok, try to parse as JSON for error details
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json().then(errorData => {
-                            throw new Error(JSON.stringify(errorData));
-                        });
-                    } else {
-                        return response.text().then(errorText => {
-                            // Try to parse as JSON even if content-type is not set correctly
-                            try {
-                                const jsonData = JSON.parse(errorText);
-                                throw new Error(JSON.stringify(jsonData));
-                            } catch (e) {
-                                // If it's not JSON, treat as plain text error
-                                throw new Error(errorText);
-                            }
-                        });
-                    }
-                }
-                
-                // Success case - parse as text/html
-                if (contentType && contentType.includes('text/html')) {
-                    return response.text();
-                } else if (contentType && contentType.includes('application/json')) {
-                    // Handle case where success response might be JSON
-                    return response.json().then(jsonData => {
-                        if (jsonData.html_response) {
-                            return jsonData.html_response;
-                        }
-                        return JSON.stringify(jsonData);
-                    });
-                } else if (contentType && contentType.includes('text/plain')) {
-                    // Handle plain text response
-                    return response.text();
-                }
-                
-                // Fallback - try to parse as text
-                return response.text();
-            })
-            .then(data => {
-                // Process the response - handle different types of content
-                let htmlContent = data;
-                
-                // If data is a string, try to parse it as JSON first
-                if (typeof data === 'string') {
-                    try {
-                        const jsonData = JSON.parse(data);
-                        if (jsonData.html_response) {
-                            htmlContent = jsonData.html_response;
-                        }
-                    } catch (e) {
-                        // If not JSON, clean it up as before
-                        htmlContent = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                        
-                        // If it's plain text (no HTML tags), wrap it in a paragraph
-                        if (!htmlContent.includes('<') && htmlContent.trim().length > 0) {
-                            htmlContent = `<p>${htmlContent}</p>`;
-                        }
-                    }
-                } else if (typeof data === 'object' && data.html_response) {
-                    // If data is already an object with html_response
-                    htmlContent = data.html_response;
-                }
-                
-                // Complete the status workflow with callback to show results
-                if (typeof completeStatusWorkflow === 'function') {
-                    completeStatusWorkflow(() => {
-                        // This callback executes AFTER the status workflow is completely hidden
-                        
-                        // Show results immediately without delays
-                        buttonElement.innerHTML = originalButtonText; // Restore original button text
-                        
-                        // Enable all buttons again
-                        setAnalysisButtonsState(false);
-                        
-                        // Show content with smooth transition
-                        analysisResultDiv.innerHTML = htmlContent;
-                        analysisResultDiv.style.display = 'block';
-                        analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
-                        analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
-                        
-                        // Small delay for smooth transition
-                        setTimeout(() => {
-                            analysisResultDiv.classList.add('show');
-                            if (typeof showFeedbackSection === 'function') showFeedbackSection();
-                        }, 100); // Reduced delay since status is already hidden
-                    });
-                } else {
-                    // Fallback if completeStatusWorkflow is not available
-                    buttonElement.innerHTML = originalButtonText;
-                    setAnalysisButtonsState(false);
-                    analysisResultDiv.innerHTML = htmlContent;
-                    analysisResultDiv.style.display = 'block';
-                    analysisResultDiv.classList.remove('show');
-                    analysisResultDiv.classList.remove('error-state');
-                    setTimeout(() => {
-                        analysisResultDiv.classList.add('show');
-                        if (typeof showFeedbackSection === 'function') showFeedbackSection();
-                    }, 100);
-                }
-            })
-            .catch(error => {
-                console.error('Error analyzing norma:', error);
-                
-                // Parse error details if it's a JSON error
-                let errorType = 'GENERIC_ERROR';
-                let errorMessage = 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor';
-                let statusMessage = 'Error en el análisis';
-                
-                try {
-                    const errorData = JSON.parse(error.message);
-                    errorType = errorData.error;
-                    errorMessage = errorData.message;
-                    
-                    // Log additional details for debugging
-                    if (errorData.details) {
-                        console.log('Error details:', errorData.details);
-                    }
-                } catch (e) {
-                    // If error message is not JSON, check if it contains useful information
-                    console.error('Error parsing error response:', e);
-                    
-                    // Try to extract meaningful information from plain text errors
-                    const errorText = error.message || error.toString();
-                    
-                    // Check for common error patterns
-                    if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) {
-                        errorType = 'PDF_ACCESS_ERROR';
-                        errorMessage = 'Error al acceder al documento, análisis no disponible.';
-                                             } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) {
-                             errorType = 'TIMEOUT_ERROR';
-                             errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
-                         } else if (errorText.includes('DATABASE_TIMEOUT')) {
-                             errorType = 'DATABASE_TIMEOUT';
-                             errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
-                         } else if (errorText.includes('network') || errorText.includes('connection')) {
-                        errorType = 'NETWORK_ERROR';
-                        errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
-                    } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) {
-                        errorType = 'SERVER_ERROR';
-                        errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.';
-                    } else if (errorText.length > 0 && errorText.length < 200) {
-                        // If it's a short error message, show it directly
-                        errorMessage = errorText;
-                    }
-                }
-                
-                // Set specific status message based on error type
-                if (errorType === 'PDF_ACCESS_ERROR') {
-                    statusMessage = 'Error accediendo al documento';
-                } else if (errorType === 'TIMEOUT_ERROR') {
-                    statusMessage = 'Tiempo de espera agotado';
-                } else if (errorType === 'DATABASE_TIMEOUT') {
-                    statusMessage = 'Tiempo de espera agotado';
-                } else if (errorType === 'NETWORK_ERROR') {
-                    statusMessage = 'Error de conexión';
-                } else if (errorType === 'SERVER_ERROR') {
-                    statusMessage = 'Error del servidor';
-                } else {
-                    statusMessage = 'Error procesando análisis';
-                }
-                
-                // Show error in status first, then in result div
-                completeStatusWorkflowWithErrorAndCallback(statusMessage, () => {
-                    // This callback executes after status is hidden
-                    
-                    // Restore button state
-                    buttonElement.innerHTML = originalButtonText;
-                    setAnalysisButtonsState(false);
-                    
-                    // Determine styling based on error type
-                    let errorStyle = '';
-                    if (errorType === 'PDF_ACCESS_ERROR') {
-                        errorStyle = `
-                            background-color: #ffebee;
-                            border: 2px solid #c62828;
-                            color: #c62828;
-                            padding: 15px;
-                            border-radius: 8px;
-                            margin: 10px 0;
-                            font-weight: 500;
-                        `;
-                    } else {
-                        errorStyle = `
-                            background-color: #ffebee;
-                            border: 2px solid #c62828;
-                            color: #f57f17;
-                            padding: 15px;
-                            border-radius: 8px;
-                            margin: 10px 0;
-                            font-weight: 500;
-                        `;
-                    }
-                    
-                    // Create and show error element with smooth transition
-                    const errorDiv = document.createElement('div');
-                    errorDiv.style.cssText = errorStyle;
-                    errorDiv.textContent = errorMessage;
-                    
-                    analysisResultDiv.innerHTML = '';
-                    analysisResultDiv.appendChild(errorDiv);
-                    analysisResultDiv.style.display = 'block';
-                    analysisResultDiv.classList.remove('show');
-                    analysisResultDiv.classList.add('error-state'); // Add error styling to remove container border/background
-                    
-                    // Small delay for smooth transition
-                    setTimeout(() => {
-                        analysisResultDiv.classList.add('show');
-                    }, 250);
-                });
-            });
-        }
-
-        // Function to disable/enable analysis buttons
-        function setAnalysisButtonsState(disabled) {
-            const buttons = [analyzeButton, checklistButton, risksButton, sendCustomPromptButton];
-            buttons.forEach(btn => {
-                btn.disabled = disabled;
-                if (disabled) {
-                    btn.style.opacity = '0.6';
-                    btn.style.cursor = 'not-allowed';
-                } else {
-                    btn.style.opacity = '1';
-                    btn.style.cursor = 'pointer';
-                }
-            });
-        }
-
-        // Function to show analysis dropdown with agent selection
-        function showAnalysisDropdown(analysisType, buttonElement) {
-            // Hide settings dropdown if it's open
-            hideAnalysisSettingsDropdown();
-            
-            currentAnalysisType = analysisType;
-            activeAnalysisButton = buttonElement;
-            
-            // Reset any active button state
-            document.querySelectorAll('.analisis-impacto').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Set this button as active
-            buttonElement.classList.add('active');
-            
-            // Position the dropdown relative to the pressed button
-            const buttonRect = buttonElement.getBoundingClientRect();
-            const containerRect = buttonElement.parentElement.getBoundingClientRect();
-            const leftOffset = buttonRect.left - containerRect.left;
-            analysisDropdown.style.left = `${leftOffset}px`;
-            
-            // Populate etiquetas list
-            const etiquetasData = window.getEtiquetasData ? window.getEtiquetasData() : {};
-            etiquetasList.innerHTML = '';
-            
-            if (etiquetasData && Object.keys(etiquetasData).length > 0) {
-                Object.keys(etiquetasData).forEach(etiqueta => {
-                    const btn = document.createElement('button');
-                    btn.className = 'etiqueta-btn';
-                    btn.textContent = etiqueta;
-                                        btn.addEventListener('click', () => {
-                        const isAlreadySelected = btn.classList.contains('selected');
-                        
-                        // Toggle selection
-                        etiquetasList.querySelectorAll('.etiqueta-btn').forEach(b => b.classList.remove('selected'));
-                        
-                        const startBtn = document.getElementById('startAnalysisBtn');
-                        const analysisTypeText = {
-                            'summary': 'resumen',
-                            'checklist': 'cuadro de obligaciones', 
-                            'risks': 'riesgos y oportunidades'
-                        };
-                        
-                        if (isAlreadySelected) {
-                            // Deselect - reset to generic
-                            if (window.setSelectedEtiqueta) {
-                                window.setSelectedEtiqueta(null, null);
-                            }
-                            if (startBtn) {
-                                startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} genérico`;
-                            }
-                        } else {
-                            // Select this etiqueta
-                            btn.classList.add('selected');
-                            
-                            // Update global selection
-                            if (window.setSelectedEtiqueta) {
-                                window.setSelectedEtiqueta(etiqueta, etiquetasData[etiqueta]);
-                            }
-                            
-                            // Update start button text to show personalized
-                            if (startBtn) {
-                                startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} personalizado`;
-                            }
-                        }
-                    });
-                    etiquetasList.appendChild(btn);
-                });
-            } else {
-                const noEtiquetasMsg = document.createElement('div');
-                noEtiquetasMsg.style.color = '#999';
-                noEtiquetasMsg.style.fontStyle = 'italic';
-                noEtiquetasMsg.textContent = 'No hay agentes disponibles para este documento';
-                etiquetasList.appendChild(noEtiquetasMsg);
-            }
-            
-            // Reset start button text - initially shows "genérico"
-            const analysisTypeText = {
-                'summary': 'resumen',
-                'checklist': 'cuadro de obligaciones', 
-                'risks': 'riesgos y oportunidades'
-            };
-            startAnalysisBtn.textContent = `Generar ${analysisTypeText[analysisType] || 'análisis'} genérico`;
-            
-            // Show dropdown
-            analysisDropdown.style.display = 'block';
-        }
-
-        // Function to hide analysis dropdown
-        function hideAnalysisDropdown() {
-            analysisDropdown.style.display = 'none';
-            // Reset position
-            analysisDropdown.style.left = '0';
-            // Reset active button state
-            document.querySelectorAll('.analisis-impacto').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            currentAnalysisType = null;
-            activeAnalysisButton = null;
-        }
-
-        // Function to handle webscraping and analysis (for HTML URLs)
-        async function performWebscrapingAnalysis(promptType, buttonElement, htmlUrl) {
-            try {
-                // First, perform webscraping
-                const webscrapingResponse = await fetch('/api/webscrape', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ url: htmlUrl })
-                });
-
-                if (!webscrapingResponse.ok) {
-                    throw new Error('Error during webscraping');
-                }
-
-                const webscrapingData = await webscrapingResponse.json();
-                const htmlContent = webscrapingData.text;
-
-                // Now perform analysis with the scraped content
-                return performAnalysisWithContent(promptType, buttonElement, htmlContent, htmlUrl);
-            } catch (error) {
-                console.error('Error during webscraping:', error);
-                throw error;
-            }
-        }
-
-        // Function to perform analysis with content (either from PDF, HTML, or direct content)
-        function performAnalysisWithContent(promptType, buttonElement, directContent = null, sourceUrl = null) {
-            return new Promise((resolve, reject) => {
-                const requestBody = {
-                    documentId: documentId,
-                    userPrompt: buildUserPrompt(promptType),
-                    collectionName: collectionName
-                };
-
-                // Add direct content if provided (from "contenido" field)
-                if (directContent) {
-                    requestBody.htmlContent = directContent;
-                }
-
-                fetch('/api/analyze-norma', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'text/html; charset=utf-8'
-                    },
-                    body: JSON.stringify(requestBody)
-                })
-                .then(response => {
-                    // Check if response is JSON (error) or HTML (success)
-                    const contentType = response.headers.get('content-type');
-                    
-                    if (!response.ok) {
-                        // If response is not ok, try to parse as JSON for error details
-                        if (contentType && contentType.includes('application/json')) {
-                            return response.json().then(errorData => {
-                                throw new Error(JSON.stringify(errorData));
-                            });
-                        } else {
-                            return response.text().then(errorText => {
-                                // Try to parse as JSON even if content-type is not set correctly
-                                try {
-                                    const jsonData = JSON.parse(errorText);
-                                    throw new Error(JSON.stringify(jsonData));
-                                } catch (e) {
-                                    // If it's not JSON, treat as plain text error
-                                    throw new Error(errorText);
-                                }
-                            });
-                        }
-                    }
-                    
-                    // Success case - parse as text/html
-                    if (contentType && contentType.includes('text/html')) {
-                        return response.text();
-                    } else if (contentType && contentType.includes('application/json')) {
-                        // Handle case where success response might be JSON
-                        return response.json().then(jsonData => {
-                            if (jsonData.html_response) {
-                                return jsonData.html_response;
-                            }
-                            return JSON.stringify(jsonData);
-                        });
-                    } else if (contentType && contentType.includes('text/plain')) {
-                        // Handle plain text response
-                        return response.text();
-                    }
-                    
-                    // Fallback - try to parse as text
-                    return response.text();
-                })
-                .then(data => {
-                    // Process the response - handle different types of content
-                    let htmlResult = data;
-                    
-                    // If data is a string, try to parse it as JSON first
-                    if (typeof data === 'string') {
-                        try {
-                            const jsonData = JSON.parse(data);
-                            if (jsonData.html_response) {
-                                htmlResult = jsonData.html_response;
-                            }
-                        } catch (e) {
-                            // If not JSON, clean it up as before
-                            htmlResult = data.replace(/^```html\s*|\s*```|^<\!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<\!DOCTYPE html>/g, '');
-                            
-                            // If it's plain text (no HTML tags), wrap it in a paragraph
-                            if (!htmlResult.includes('<') && htmlResult.trim().length > 0) {
-                                htmlResult = `<p>${htmlResult}</p>`;
-                            }
-                        }
-                    } else if (typeof data === 'object' && data.html_response) {
-                        // If data is already an object with html_response
-                        htmlResult = data.html_response;
-                    }
-                    
-                    // Show banner if analysis was based on HTML source (only for webscraping, not direct content)
-                    let finalHtml = htmlResult;
-                    if (directContent && sourceUrl) {
-                        const banner = `<div class="html-source-banner">Documento PDF no identificado para este documento, análisis basado en el texto publicado en la <a href="${sourceUrl}" target="_blank">fuente</a></div>`;
-                        finalHtml = banner + htmlResult;
-                    }
-                    
-                    resolve(finalHtml);
-                })
-                .catch(error => {
-                    // Parse error details if it's a JSON error
-                    let errorType = 'GENERIC_ERROR';
-                    let errorMessage = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
-                    
-                    try {
-                        const errorData = JSON.parse(error.message);
-                        errorType = errorData.error;
-                        errorMessage = errorData.message;
-                        
-                        // Log additional details for debugging
-                        if (errorData.details) {
-                            console.log('Error details:', errorData.details);
-                        }
-                    } catch (e) {
-                        // If error message is not JSON, check if it contains useful information
-                        console.error('Error parsing error response:', e);
-                        
-                        // Try to extract meaningful information from plain text errors
-                        const errorText = error.message || error.toString();
-                        
-                        // Check for common error patterns
-                        if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) {
-                            errorType = 'PDF_ACCESS_ERROR';
-                            errorMessage = 'Error al acceder al documento, análisis no disponible.';
-                        } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) {
-                            errorType = 'TIMEOUT_ERROR';
-                            errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
-                        } else if (errorText.includes('DATABASE_TIMEOUT')) {
-                            errorType = 'DATABASE_TIMEOUT';
-                            errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.';
-                        } else if (errorText.includes('network') || errorText.includes('connection')) {
-                            errorType = 'NETWORK_ERROR';
-                            errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.';
-                        } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) {
-                            errorType = 'SERVER_ERROR';
-                            errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.';
-                        } else if (errorText.length > 0 && errorText.length < 200) {
-                            // If it's a short error message, show it directly
-                            errorMessage = errorText;
-                        }
-                    }
-                    
-                    const errorObj = new Error(errorMessage);
-                    errorObj.errorType = errorType;
-                    reject(errorObj);
-                });
-            });
-        }
-
-        // Function to build user prompt based on analysis type
-        function buildUserPrompt(promptType) {
-            // Obtener contexto de etiqueta seleccionada, si existe
-            const etiquetaContext = window.getSelectedEtiquetaContext ? window.getSelectedEtiquetaContext() : null;
-            let contextoEtiquetaTexto = '';
-            if (etiquetaContext) {
-                const { name, data } = etiquetaContext;
-                let definicion = '';
-                let nivelImpacto = '';
-                if (typeof data === 'string') {
-                    definicion = data;
-                } else if (data && typeof data === 'object') {
-                    definicion = data.explicacion || data.definicion || '';
-                    nivelImpacto = data.nivel_impacto || '';
-                }
-                const definicionGlobal = window.getDefinicionEtiqueta ? window.getDefinicionEtiqueta(name) : '';
-                if (!definicion || definicion.trim() === '') {
-                    definicion = definicionGlobal;
-                }
-                contextoEtiquetaTexto = `\n=== CONTEXTO ESPECÍFICO DEL USUARIO – ETIQUETA SELECCIONADA ===\nEtiqueta: "${name}"\nDefinición global: ${definicionGlobal || 'No especificada'}\nDescripción / explicación específica: ${definicion || 'No especificada'}\nGrado de impacto en este documento: ${nivelImpacto || 'No especificado'}\n`;
-            }
-
-            // Obtener perfil regulatorio del usuario
-            const perfilRegulatorio = window.getPerfilRegulatorio ? window.getPerfilRegulatorio() : '';
-            let contextoPerfilTexto = '';
-            if (perfilRegulatorio && perfilRegulatorio.trim() !== '') {
-                contextoPerfilTexto = `\n=== CONTEXTO – PERFIL REGULATORIO DE LA EMPRESA ===\n${perfilRegulatorio}\n`;
-            }
-
-            // Obtener idioma seleccionado
-            const idiomaSeleccionado = getSelectedAnalysisLanguage();
-            const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
-
-            // Unir ambos contextos (perfil + etiqueta + idioma) para inyectarlos antes del resto del prompt
-            const bloqueContexto = `${contextoPerfilTexto}${contextoEtiquetaTexto}${bloqueIdioma}\n`;
-
-            // Return the appropriate prompt based on type
-            if (promptType === 'checklist') {
-                return `Eres un abogado senior especializado en compliance. Utiliza el contexto proporcionado para adaptar tu análisis.
-
-${bloqueContexto}
-
-Lee el siguiente documento PDF y genera un checklist de obligaciones:
-
-IMPORTANTE: Ten en cuenta la etiqueta personalizada seleccionada. Si el *perfil regulatorio* indica que la empresa es una **consultora** o un **despacho de abogados**, el checklist debe estar orientado a los **clientes** de la empresa que estén afectados por dicha etiqueta, no a la empresa directamente.
-
-INSTRUCCIONES CRÍTICAS DE FORMATO DE SALIDA  
-1. **OBLIGATORIO – JSON estricto:** responde SIEMPRE con un objeto JSON válido.  
-2. **Esquema único:** el objeto JSON debe tener UNA SOLA clave llamada \`html_response\`, cuyo valor sea un string que contenga SOLO el fragmento HTML.  
-3. **Sin saltos de línea innecesarios:** el string HTML irá en una sola línea continua (o con los mínimos saltos indispensables para la legibilidad).  
-4. **Basado en el PDF:** no inventes información. Si algo no figura, indica cortésmente: \`<p>El documento no proporciona información específica sobre este tema.</p>\`.  
-5. **Citas internas:** cita siempre el artículo o sección del PDF cuando fundamentes tu respuesta.  
-6. **Extensión:** máximo aproximado de 300 palabras dentro del string HTML.    
-7. **Resúmenes concisos:** cuando se pida un resumen, que sea ordenado y breve.  
-8. **Sensibilidad e implicaciones:** evalúa el impacto usando solo la información disponible; sin sesgos ni especulaciones.  
-9. **Sin opiniones personales:** cualquier dato no contenido en el documento deberá declararse "No disponible".
-
-REQUERIMIENTOS DEL CONTENIDO HTML  
-• Dentro de \`html_response\` usa ÚNICAMENTE estas etiquetas: \`<h2>\`, \`<p>\`, \`<table>\`, \`<tr>\`, \`<th>\`, \`<td>\` y \`<b>\` donde resulte necesario.  
-• Estructura de salida:  
-  * \`<h2>Checklist de Cumplimiento</h2>\`  
-  * \`<p>Resumen ejecutivo</p>\` (máx. 100 palabras con nº total de obligaciones y fecha de entrada en vigor).  
-  * \`<table>\` con cinco columnas en este orden:  
-    1. Obligación / Acción a realizar (≤ 25 palabras)  
-    2. Artículo o disposición que la impone  
-    3. Departamento interno responsable (Compliance, RR.HH., IT, Dirección Financiera, etc.)  
-    4. Plazo exacto o frecuencia (fecha fija, "30 días", "trimestral"…).  
-    5. Sanción o consecuencia por incumplimiento (importe o referencia al art.).  
-  * Máximo 10 filas; si algún dato no aparece, escribe "No especificado".  
-• No utilices ninguna otra etiqueta HTML ni Markdown.
-
-**RECUERDA:** Tu salida debe ser únicamente el objeto JSON como el del ejemplo anterior, sin nada antes ni después. El string HTML dentro de \`html_response\` no debe contener saltos de línea innecesarios, solo el HTML puro.`;
-            } else if (promptType === 'risks') {
-                return `Eres un socio de un despacho de abogados en España. Analiza la norma dentro de <PDF></PDF> y extrae riesgos, oportunidades para la empresa y servicios que el despacho puede ofrecer.
-
-${bloqueContexto}
-
-=== Indicaciones adicionales (contextualización por tipo de empresa) ===
-• Si el *perfil regulatorio* indica que la empresa es una **empresa regulada** (por ejemplo, entidad financiera, aseguradora, eléctrica, etc.), genera **únicamente** los riesgos y oportunidades que afectan a **esa empresa**.  
-  – Prioriza siempre la **etiqueta personalizada seleccionada**; si no se seleccionó ninguna, haz el análisis genérico sobre la norma.  
-• Si el perfil indica que la empresa es un **despacho de abogados** o **consultora**, divide la respuesta en DOS grandes bloques diferenciados:  
-  A) **Riesgos y oportunidades para clientes** (centrado en los clientes afectados por la etiqueta seleccionada; si no hay etiqueta, hazlo genérico) con sub-apartados 1. *Riesgos para clientes* y 2. *Oportunidades para clientes*.  
-  B) **Riesgos y oportunidades para servicios profesionales** (oportunidades comerciales para la propia firma: captación de clientes, nuevos servicios, notificaciones proactivas, etc.).
-
-=== Formato de salida ===
-• Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
-• El string HTML solo puede incluir <h2>, <p>, <table>, <tr>, <th>, <td>, <b>. Nada más.  
-• Sin saltos de línea innecesarios ni Markdown.  
-
-=== Contenido HTML requerido (≤ 400 palabras) ===
-<p>Introducción (≤ 60 palabras) situando la relevancia de la norma.</p>
-
-<h2>1. Riesgos</h2>
-<table>
-<tr><th>Riesgo</th><th>Artículo</th><th>Probabilidad</th><th>Impacto</th><th>Mitigación</th></tr>
-<!-- hasta 6 filas de riesgos -->
-</table>
-
-<!-- SOLO si hay oportunidades empresariales reales -->
-<h2>[NÚMERO]. Oportunidades para empresas</h2>
-<table>
-<tr><th>Oportunidad Empresarial</th><th>Sector</th><th>Beneficio</th></tr>
-<!-- hasta 4 filas de oportunidades empresariales -->
-</table>
-
-<!-- SOLO si hay oportunidades para servicios legales -->
-<h2>[NÚMERO]. Oportunidades para servicios legales</h2>
-<table>
-<tr><th>Oportunidad de servicio legal</th><th>Etapa</th><th>Valor para el cliente</th></tr>
-<!-- hasta 6 filas de servicios legales -->
-</table>
-
-<p><b>Conclusión:</b> Prioriza los 3 principales riesgos y las oportunidades más relevantes.</p>
-
-=== Instrucciones específicas ===
-• **Riesgos:** Siempre incluye la tabla de riesgos si existen en la norma (siempre será "1. Riesgos").
-• **Numeración dinámica:** Los números de los títulos deben ajustarse según las tablas que realmente se muestren:
-  - Si solo hay riesgos: solo "1. Riesgos"
-  - Si hay riesgos + oportunidades empresariales: "1. Riesgos" y "2. Oportunidades para empresas"
-  - Si hay riesgos + servicios legales: "1. Riesgos" y "2. Oportunidades para servicios legales"
-  - Si hay las tres tablas: "1. Riesgos", "2. Oportunidades para empresas", "3. Oportunidades para servicios legales"
-• **Oportunidades empresariales:** SOLO incluye esta tabla si la norma genera oportunidades reales para empresas (nuevos mercados, cambios regulatorios favorables, etc.). Si no hay oportunidades empresariales claras, omite completamente esta sección.
-• **Oportunidades para servicios legales:** SOLO incluye esta tabla si la norma genera oportunidades de servicios para despachos de abogados (asesoramiento, implementación, compliance, litigios, etc.). Si no hay oportunidades para servicios legales, omite completamente esta sección.
-• Si no hay ningún tipo de oportunidades, indica: <p>Esta norma no presenta oportunidades empresariales o de servicios legales evidentes.</p>
-• Indica "No especificado" en las celdas donde el PDF carece de información necesaria.
-
-=== Criterios analíticos ===
-• Basado únicamente en el PDF; cita artículos concretos.  
-• Estilo claro y preciso, sin opiniones personales ni especulación.
-• Evalúa de forma realista si existen verdaderas oportunidades antes de incluir las tablas correspondientes.`;
-            } else if (promptType === 'summary') {
-                const tieneEtiqueta = !!etiquetaContext;
-                const tituloImpacto = tieneEtiqueta ? `Impacto en ${etiquetaContext.name}` : 'Aspectos clave y puntos importantes';
-
-                return `Eres un abogado experto. Analiza el documento PDF y genera un resumen claro y conciso.
-
-${bloqueContexto}
-
-=== Formato de salida ===
-• Responde EXCLUSIVAMENTE con un objeto JSON que contenga la clave \`html_response\`.  
-• El string HTML puede incluir <h2>, <p>, <ul>, <li>, <b>, <hr>. Nada más.  
-• Usa <hr> (o dos saltos de línea) para separar visualmente secciones. No utilices Markdown.
-
-=== Contenido HTML requerido (≤ 600 palabras) ===
-<h2 style="font-size:1.3em; margin-bottom:12px;">Resumen de la Norma</h2>
-<table style="width:100%; border-collapse:collapse; font-size:0.95em;">
-  <tr style="background:#f8f8f8;">
-    <th style="text-align:left; padding:6px 8px; color:#0b2431;">Concepto</th>
-    <th style="text-align:left; padding:6px 8px; color:#455862;">Detalle</th>
-  </tr>
-  <tr><td style="padding:6px 8px;">Título completo</td><td style="padding:6px 8px;"></td></tr>
-  <tr style="background:#fafafa;"><td style="padding:6px 8px;">Fecha de publicación</td><td style="padding:6px 8px;"></td></tr>
-  <tr><td style="padding:6px 8px;">Entrada en vigor</td><td style="padding:6px 8px;"></td></tr>
-  <tr style="background:#fafafa;"><td style="padding:6px 8px;">Ámbito de aplicación</td><td style="padding:6px 8px;"></td></tr>
-</table>
-<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
-<h3>Propósito principal de la norma</h3>
-<p>Contenido de propósito principal de la norma</p>	
-<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
-<h3>Sujetos afectados</h3>
-<p>Contenido de sujetos afectados</p>
-<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
-<h2 style="font-size:1.3em;">${tituloImpacto}</h2>
-<h3>Implicaciones generales</h3>
-<h3>Aspectos clave y puntos importantes a considerar.</h3>
-<ul>
-  <li style="margin:6px 0;">Principales disposiciones (máximo 5 puntos)</li>
-</ul>
-<hr style="border:none; border-top:1px solid #e0e0e0; margin:20px 0;" />
-<h3>Próximos pasos recomendados</h3>
-
-=== Criterios analíticos ===
-• Basado únicamente en el PDF y el contexto proporcionado; cita artículos concretos.
-• Estilo claro y preciso, sin opiniones personales ni especulación.`;
-            }
-        }
-
-        // Function to handle all analysis requests
-        function performAnalysis(promptType, buttonElement) {
-            // Validate buttonElement
-            if (!buttonElement || typeof buttonElement.innerHTML === 'undefined') {
-                console.error('Error: buttonElement is null or invalid in performAnalysis');
-                alert('Error: Elemento de botón no válido. Por favor, inténtalo de nuevo.');
-                return;
-            }
-            
-            analysisResultDiv.textContent = ''; // Clear previous results
-            analysisResultDiv.classList.remove('show'); // Reset transition class
-            analysisResultDiv.classList.remove('error-state'); // Reset error styling
-            analysisResultDiv.style.display = 'none'; // Hide initially
-            
-            // Disable all buttons during analysis
-            setAnalysisButtonsState(true);
-            
-            if (typeof startStatusWorkflow === 'function') startStatusWorkflow(promptType);
-            const originalButtonText = buttonElement.innerHTML;
-            buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...'; // Show loading icon
-            
-            // Reset any active button state
-            document.querySelectorAll('.analisis-impacto').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Set this button as active
-            buttonElement.classList.add('active');
-
-            // Determine analysis strategy based on available content sources (priority order)
-            let analysisPromise;
-            
-            if (documentContenido) {
-                // Priority 1: Direct content available - use content directly
-                analysisPromise = performAnalysisWithContent(promptType, buttonElement, documentContenido);
-            } else if (documentUrlPdf) {
-                // Priority 2: PDF available - use normal workflow
-                analysisPromise = performAnalysisWithContent(promptType, buttonElement);
-            } else if (documentUrlHtml) {
-                // Priority 3: HTML available - use webscraping
-                analysisPromise = performWebscrapingAnalysis(promptType, buttonElement, documentUrlHtml);
-            } else {
-                // No content sources available - should not reach here as buttons should be disabled
-                console.error('No content sources available for analysis');
-                setAnalysisButtonsState(false);
-                buttonElement.innerHTML = originalButtonText;
-                buttonElement.classList.remove('active');
-                clearStatusWorkflow();
-                alert('No hay fuentes disponibles para el análisis de este documento.');
-                return;
-                         }
-
-             // Handle the analysis promise
-             analysisPromise
-                                 .then(htmlContent => {
-                    // Complete the status workflow with callback to show results
-                    if (typeof completeStatusWorkflow === 'function') {
-                        completeStatusWorkflow(() => {
-                            // This callback executes AFTER the status workflow is completely hidden
-                            
-                            // Show results immediately without delays
-                            buttonElement.innerHTML = originalButtonText; // Restore original button text
-                            buttonElement.style.backgroundColor = ''; // Remove inline style
-                            
-                            // Enable all buttons again
-                            setAnalysisButtonsState(false);
-                            
-                            // Show content with smooth transition
-                            analysisResultDiv.innerHTML = htmlContent;
-                            analysisResultDiv.style.display = 'block';
-                            analysisResultDiv.classList.remove('show'); // Ensure it starts hidden
-                            analysisResultDiv.classList.remove('error-state'); // Remove error styling for normal content
-                            
-                            // Small delay for smooth transition
-                            setTimeout(() => {
-                                analysisResultDiv.classList.add('show');
-                                if (typeof showFeedbackSection === 'function') showFeedbackSection();
-                            }, 100); // Reduced delay since status is already hidden
-                        });
-                    } else {
-                        // Fallback if completeStatusWorkflow is not available
-                        buttonElement.innerHTML = originalButtonText;
-                        buttonElement.style.backgroundColor = '';
-                        setAnalysisButtonsState(false);
-                        analysisResultDiv.innerHTML = htmlContent;
-                        analysisResultDiv.style.display = 'block';
-                        analysisResultDiv.classList.remove('show');
-                        analysisResultDiv.classList.remove('error-state');
-                        setTimeout(() => {
-                            analysisResultDiv.classList.add('show');
-                            if (typeof showFeedbackSection === 'function') showFeedbackSection();
-                        }, 100);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error analyzing norma:', error);
-                    
-                    // Parse error details if it's a JSON error
-                    let errorType = 'GENERIC_ERROR';
-                    let errorMessage = 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor';
-                    let statusMessage = 'Error en el análisis';
-                    
-                    try {
-                        const errorData = JSON.parse(error.message);
-                        errorType = errorData.error;
-                        errorMessage = errorData.message;
-                    } catch (e) {
-                        // If error message is not JSON, use the default error message
-                        console.error('Error parsing error response:', e);
-                    }
-                    
-                    // Set specific status message based on error type
-                    if (errorType === 'PDF_ACCESS_ERROR') {
-                        statusMessage = 'Error accediendo al documento';
-                    } else {
-                        statusMessage = 'Error procesando análisis';
-                    }
-                    
-                    // Show error in status first, then in result div
-                    completeStatusWorkflowWithErrorAndCallback(statusMessage, () => {
-                        // This callback executes after status is hidden
-                        
-                        // Restore button state
-                        buttonElement.innerHTML = originalButtonText;
-                        buttonElement.classList.remove('active');
-                        setAnalysisButtonsState(false);
-                        
-                        // Determine styling based on error type
-                        let errorStyle = '';
-                        if (errorType === 'PDF_ACCESS_ERROR') {
-                            errorStyle = `
-                                background-color: #ffebee;
-                                border: 2px solid #c62828;
-                                color: #c62828;
-                                padding: 15px;
-                                border-radius: 8px;
-                                margin: 10px 0;
-                                font-weight: 500;
-                            `;
-                        } else {
-                            errorStyle = `
-                                background-color: #ffebee;
-                                border: 2px solid #c62828;
-                                color:#c62828;
-                                padding: 15px;
-                                border-radius: 8px;
-                                margin: 10px 0;
-                                font-weight: 500;
-                            `;
-                        }
-                        
-                        // Create and show error element with smooth transition
-                        const errorDiv = document.createElement('div');
-                        errorDiv.style.cssText = errorStyle;
-                        errorDiv.textContent = errorMessage;
-                        
-                        analysisResultDiv.innerHTML = '';
-                        analysisResultDiv.appendChild(errorDiv);
-                        analysisResultDiv.style.display = 'block';
-                        analysisResultDiv.classList.remove('show');
-                        analysisResultDiv.classList.add('error-state'); // Add error styling to remove container border/background
-                        
-                        // Small delay for smooth transition
-                        setTimeout(() => {
-                            analysisResultDiv.classList.add('show');
-                        }, 250);
-                    });
-                });
-        }
-
-        // Fetch the document details (only the short_name for this example)
-        fetch(`/api/norma-details?documentId=${documentId}&collectionName=${collectionName}`) // New endpoint in app.js
-                .then(response => response.json())
-                .then(data => {
-                    shortNameSpan.textContent = data.short_name;
-                    
-                    // Store document data globally
-                    documentUrlPdf = data.url_pdf;
-                    documentUrlHtml = data.url_html;
-                    documentContenido = data.contenido;
-                    
-                    // Handle different scenarios based on available content sources
-                    if (!documentContenido && !documentUrlPdf && !documentUrlHtml) {
-                        // No content sources available - disable analysis buttons and show banner
-                        const impactButtons = [analyzeButton, checklistButton, risksButton];
-                        impactButtons.forEach(btn => {
-                            btn.disabled = true;
-                            btn.style.opacity = '0.6';
-                            btn.style.cursor = 'not-allowed';
-                        });
-
-                        // Create and insert no analysis available banner
-                        const banner = document.createElement('div');
-                        banner.className = 'no-analysis-banner';
-                        banner.textContent = 'Documento con análisis de impacto no disponible';
-
-                        // Insert banner just after the impact buttons container
-                        const buttonsContainer = analyzeButton.parentElement;
-                        buttonsContainer.insertAdjacentElement('afterend', banner);
-                    }
-                    
-                     // Nuevo código para mostrar detalles adicionales
-                    const extraDetailsDiv = document.getElementById('normaExtraDetails');
-                    if (extraDetailsDiv) {
-                        let detailsParts = [];
-
-                        // data.collectionName ya lo estás recibiendo de la API
-                        if (data.collectionName) {
-                            detailsParts.push(data.collectionName);
-                        }
-
-                        if (data.rango_titulo) {
-                            detailsParts.push(data.rango_titulo);
-                        }
-
-                        // Prioritize PDF URL, but show HTML URL if PDF is not available
-                        if (data.url_pdf) {
-                            detailsParts.push(`<a href="${data.url_pdf}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`);
-                        } else if (data.url_html) {
-                            detailsParts.push(`<a href="${data.url_html}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`);
-                        }
-                        
-                        // Une las partes con ' | ', filtrando las que estén vacías o nulas
-                        extraDetailsDiv.innerHTML = detailsParts.filter(part => part !== null && part !== undefined && part !== '').join(' | ');
-
-                        /* =========  NUEVO: Selector de etiquetas personalizadas  ========= */
-                        const etiquetasData = data.user_etiquetas_personalizadas;
-                        const perfilRegulatorioUser = data.perfil_regulatorio || '';
-                        // Mapa de definiciones de todas las etiquetas del usuario
-                        const definicionesMap = data.user_etiquetas_definiciones || {};
-
-                        // Expose profile getter globally
-                        window.getPerfilRegulatorio = () => perfilRegulatorioUser;
-                        window.getDefinicionEtiqueta = (et) => definicionesMap[et] || '';
-                        
-                        // Expose etiquetas data and selection functions globally
-                        let selectedEtiquetaName = null;
-                        let selectedEtiquetaData = null;
-                        
-                        window.getEtiquetasData = () => etiquetasData || {};
-                        window.setSelectedEtiqueta = (name, data) => {
-                            selectedEtiquetaName = name;
-                            selectedEtiquetaData = data;
-                        };
-                        window.getSelectedEtiquetaContext = () => {
-                            if (!selectedEtiquetaName) return null;
-                            return { name: selectedEtiquetaName, data: selectedEtiquetaData };
-                        };
-                        /* ==================================================================== */
-                    }
-                    pageLoaderOverlay.style.display = 'none';
-    // Fin del nuevo código
-                })
-                .catch(error => {
-                    console.error('Error fetching norma details:', error);
-                    analysisResultDiv.textContent = 'Error fetching norma details.'; // show error if there's a problem
-                    pageLoaderOverlay.style.display = 'none';// Hide the overlay even if there's an error
-                });
-
-        // Add click handlers for each button - now show dropdown instead of direct analysis
-        analyzeButton.addEventListener('click', () => {
-            showAnalysisDropdown('summary', analyzeButton);
-        });
-
-        checklistButton.addEventListener('click', () => {
-            showAnalysisDropdown('checklist', checklistButton);
-        });
-
-        risksButton.addEventListener('click', () => {
-            showAnalysisDropdown('risks', risksButton);
-        });
-
-        // Add click handler for start analysis button
-        startAnalysisBtn.addEventListener('click', () => {
-            if (currentAnalysisType && activeAnalysisButton && activeAnalysisButton.innerHTML) {
-                // Store references before hiding dropdown (which resets them)
-                const analysisType = currentAnalysisType;
-                const buttonElement = activeAnalysisButton;
-                
-                hideAnalysisDropdown();
-                performAnalysis(analysisType, buttonElement);
-            } else {
-                console.error('Error: activeAnalysisButton is null or invalid');
-                alert('Error: No se pudo identificar el botón de análisis. Por favor, inténtalo de nuevo.');
-            }
-        });
-            
-
-            // Configurar los listeners para el feedback
-            function setupFeedbackListeners() {
-              // Toggle para mostrar/ocultar el contenido de feedback
-              document.getElementById('feedbackToggle').addEventListener('click', function() {
-                const feedbackContent = document.getElementById('feedbackContent');
-                const chevron = this.querySelector('.fa');
-                
-                if (feedbackContent.style.display === 'none') {
-                  feedbackContent.style.display = 'block';
-                  chevron.classList.remove('fa-chevron-down');
-                  chevron.classList.add('fa-chevron-up');
-                } else {
-                  feedbackContent.style.display = 'none';
-                  chevron.classList.remove('fa-chevron-up');
-                  chevron.classList.add('fa-chevron-down');
-                }
-              });
-
-              // Enviar feedback
-              document.getElementById('sendFeedbackBtn').addEventListener('click', function() {
-                const feedbackText = document.getElementById('feedbackText').value.trim();
-                
-                if (!feedbackText) {
-                  alert('Por favor, introduce tu feedback antes de enviar.');
-                  return;
-                }
-                
-                this.disabled = true;
-                this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                const documentId = urlParams.get('documentId');
-                const collectionName = urlParams.get('collectionName');
-                const userPrompt = document.getElementById('userPrompt').value;
-                const analysisResults = document.getElementById('analysisResult').innerHTML;
-                
-                // Obtener fecha actual en formato yyyy-mm-dd
-                const now = new Date();
-                const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                
-                fetch('/api/feedback-analisis', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({
-                    documentId: documentId,
-                    collectionName: collectionName,
-                    userPrompt: userPrompt,
-                    analysisResults: analysisResults,
-                    fecha: dateStr,
-                    feedback: feedbackText,
-                    content_evaluated: 'analisis_impacto'
-                  })
-                })
-                .then(response => response.json())
-                .then(data => {
-                  this.disabled = false;
-                  this.innerHTML = 'Enviar feedback';
-                  
-                  if (data.success) {
-                    const successMsg = document.createElement('div');
-                    successMsg.className = 'feedback-success';
-                    successMsg.textContent = '¡Gracias por tu feedback!';
-                    document.getElementById('feedbackContent').appendChild(successMsg);
-                    
-                    // Limpiar el textarea
-                    document.getElementById('feedbackText').value = '';
-                  
-                  } else {
-                    alert('Error al enviar el feedback. Por favor, inténtalo de nuevo.');
-                  }
-                })
-                .catch(error => {
-                  console.error('Error sending feedback:', error);
-                  this.disabled = false;
-                  this.innerHTML = 'Enviar feedback';
-                  alert('Error al enviar el feedback. Por favor, inténtalo de nuevo.');
-                });
-              });
-            }
-            // Inicializar los listeners
-            setupFeedbackListeners();
-
-            // Add click outside to close dropdown
-            document.addEventListener('click', function(event) {
-                if (!analysisDropdown.contains(event.target) && 
-                    !analyzeButton.contains(event.target) && 
-                    !checklistButton.contains(event.target) && 
-                    !risksButton.contains(event.target)) {
-                    hideAnalysisDropdown();
-                }
-                
-                // Close analysis settings dropdown if clicking outside
-                if (!analysisSettingsDropdown.contains(event.target) && 
-                    !analysisSettingsBtn.contains(event.target)) {
-                    hideAnalysisSettingsDropdown();
-                }
-            });
-
-            // Analysis settings event listeners
-            if (analysisSettingsBtn) {
-                analysisSettingsBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleAnalysisSettingsDropdown();
-                });
-            }
-
-            if (analysisIdiomaSelect) {
-                analysisIdiomaSelect.addEventListener('change', () => {
-                    saveAnalysisSettings();
-                });
-            }
-
-            // Load analysis settings on page load
-            loadAnalysisSettings();
-
-        function startStatusWorkflow(analysisType = 'generic') {
-            clearStatusWorkflow();
-            console.log('[workflow] starting for type:', analysisType);
-            analysisStatusDiv.style.display = 'flex';
-            statusTextSpan.classList.remove('slide');
-            void statusTextSpan.offsetWidth;
-            statusTextSpan.textContent = 'Pensando…';
-            
-            // Define specific steps based on analysis type
-            let specificSteps = [];
-            
-            if (analysisType === 'summary') {
-                specificSteps = [
-                    { text: 'Resumiendo aspectos generales…', duration: 2500 },
-                    { text: 'Analizando el objetivo de la norma…', duration: 2500 },
-                    { text: 'Identificando sujetos afectados…', duration: 2500 },
-                    { text: 'Recomendando próximos pasos…', duration: 2500 }
-                ];
-            } else if (analysisType === 'checklist') {
-                specificSteps = [
-                    { text: 'Identificando cuadro de obligaciones…', duration: 2500 },
-                    { text: 'Referenciando los artículos…', duration: 2500 },
-                    { text: 'Analizando sanciones por incumplimiento…', duration: 2500 }
-                ];
-            } else if (analysisType === 'risks') {
-                specificSteps = [
-                    { text: 'Identificando oportunidades…', duration: 2500 },
-                    { text: 'Analizando riesgos…', duration: 2500 }
-                ];
-                         } else {
-                 // Generic fallback for custom prompts
-                 specificSteps = [
-                     { text: 'Procesando tu consulta…', duration: 2500 },
-                     { text: 'Buscando información relevante…', duration: 2500 },
-                     { text: 'Estructurando la respuesta…', duration: 2500 }
-                 ];
-             }
-            
-            // Common initial steps
-            const commonSteps = [
-                { text: 'Pensando…', duration: 3000 },
-                { text: 'Accediendo a la fuente oficial…', duration: 2000 },
-                { text: 'Analizando el documento…', duration: 3000 }
-            ];
-            
-            // Combine common steps with specific steps
-            const steps = [
-                ...commonSteps,
-                ...specificSteps,
-                { text: 'Personalizando el análisis…', duration: null } // stays until done
-            ];
-
-            let cumulative = 0;
-            steps.forEach((step, idx) => {
-                const t = setTimeout(() => {
-                    console.log('[workflow] step', step.text);
-                    statusTextSpan.classList.remove('slide');
-                    void statusTextSpan.offsetWidth;
-                    statusTextSpan.textContent = step.text;
-                    statusTextSpan.classList.add('slide');
-                }, cumulative);
-                statusTimeouts.push(t);
-                if (step.duration) cumulative += step.duration;
-            });
-        }
-
-        function clearStatusWorkflow() {
-            statusTimeouts.forEach(t => clearTimeout(t));
-            statusTimeouts = [];
-            console.log('[workflow] cleared');
-            analysisStatusDiv.style.display = 'none';
-        }
-
-        function completeStatusWorkflowWithError() {
-            // Cancel any pending timeouts
-            statusTimeouts.forEach(t => clearTimeout(t));
-            statusTimeouts = [];
-            console.log('[workflow] completing with error - API error received');
-            
-            // Show error status
-            const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
-            spinnerIcon.className = 'fa fa-exclamation-triangle'; // Change to error icon
-            statusTextSpan.classList.remove('slide');
-            void statusTextSpan.offsetWidth;
-            statusTextSpan.textContent = 'Error en el análisis';
-            statusTextSpan.classList.add('slide');
-            
-            // Animate out after showing error
-            setTimeout(() => {
-                analysisStatusDiv.classList.add('status-completed');
-                setTimeout(() => {
-                    analysisStatusDiv.style.display = 'none';
-                    analysisStatusDiv.classList.remove('status-completed');
-                    // Reset spinner for next time
-                    spinnerIcon.className = 'fa fa-spinner spinner';
-                }, 800); // Match animation duration
-            }, 800); // Show error state a bit longer
-        }
-
-        function completeStatusWorkflowWithErrorAndCallback(errorMessage, callback) {
-            // Cancel any pending timeouts
-            statusTimeouts.forEach(t => clearTimeout(t));
-            statusTimeouts = [];
-            console.log('[workflow] completing with error - showing custom message');
-            
-            // Show error status with custom message
-            const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
-            spinnerIcon.className = 'fa fa-exclamation-triangle'; // Change to error icon
-            statusTextSpan.classList.remove('slide');
-            void statusTextSpan.offsetWidth;
-            statusTextSpan.textContent = errorMessage;
-            statusTextSpan.classList.add('slide');
-            
-            // Animate out after showing error, then execute callback
-            setTimeout(() => {
-                analysisStatusDiv.classList.add('status-completed');
-                setTimeout(() => {
-                    analysisStatusDiv.style.display = 'none';
-                    analysisStatusDiv.classList.remove('status-completed');
-                    // Reset spinner for next time
-                    spinnerIcon.className = 'fa fa-spinner spinner';
-                    // Execute callback to show error in analysisResult
-                    if (callback && typeof callback === 'function') {
-                        callback();
-                    }
-                }, 800); // Match animation duration
-            }, 1200); // Show error state longer for user to read
-        }
-
-        function completeStatusWorkflow(onCompleteCallback) {
-            // Cancel any pending timeouts but don't hide yet
-            statusTimeouts.forEach(t => clearTimeout(t));
-            statusTimeouts = [];
-            console.log('[workflow] completing with success - API response received');
-            
-            // Show completion status with tick immediately
-            const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
-            spinnerIcon.className = 'fa fa-check'; // Change to tick
-            statusTextSpan.classList.remove('slide');
-            void statusTextSpan.offsetWidth;
-            statusTextSpan.textContent = 'Análisis Finalizado';
-            statusTextSpan.classList.add('slide');
-            
-            // Animate out after showing completion
-            setTimeout(() => {
-                analysisStatusDiv.classList.add('status-completed');
-                setTimeout(() => {
-                    analysisStatusDiv.style.display = 'none';
-                    analysisStatusDiv.classList.remove('status-completed');
-                    // Reset spinner for next time
-                    spinnerIcon.className = 'fa fa-spinner spinner';
-                    
-                    // Execute callback once status is completely hidden
-                    if (onCompleteCallback && typeof onCompleteCallback === 'function') {
-                        onCompleteCallback();
-                    }
-                }, 800); // Match animation duration
-            }, 600); // Show completed state for 600ms
-        }
-    });
+    document.addEventListener('DOMContentLoaded', async () => {
+		const shortNameSpan = document.getElementById('normaShortName');
+		const analyzeButton = document.getElementById('analyzeButton');
+		const checklistButton = document.getElementById('checklistButton');
+		const risksButton = document.getElementById('risksButton');
+		const sendCustomPromptButton = document.getElementById('sendCustomPrompt');
+		const analysisResultDiv = document.getElementById('analysisResult');
+		const loaderDiv = document.getElementById('loader');
+		const pageLoaderOverlay = document.getElementById('pageLoaderOverlay'); // Select the overlay
+		const userPromptInput = document.getElementById('userPrompt');
+		const analysisStatusDiv = document.getElementById('analysisStatus');
+		const statusTextSpan = analysisStatusDiv.querySelector('.shimmer-text');
+		const analysisDropdown = document.getElementById('analysisDropdown');
+		const etiquetasList = document.getElementById('etiquetasList');
+		const startAnalysisBtn = document.getElementById('startAnalysisBtn');
+		const analysisSettingsBtn = document.getElementById('analysisSettingsBtn');
+		const analysisSettingsDropdown = document.getElementById('analysisSettingsDropdown');
+		const analysisIdiomaSelect = document.getElementById('analysis-idioma-select');
+		let statusTimeouts = [];
+		let currentAnalysisType = null;
+		let activeAnalysisButton = null;
+
+		// ===== Prompts loader =====
+		let PROMPTS = {};
+		function parsePrompts(mdText) {
+			const text = mdText || '';
+			const trimmed = text.trimStart();
+			// Try YAML front matter first
+			if (trimmed.startsWith('---')) {
+				const endIdx = trimmed.indexOf('\n---');
+				if (endIdx !== -1) {
+					const yamlBlock = trimmed.substring(3, endIdx + 1); // exclude starting '---' and include trailing newline
+					const lines = yamlBlock.split('\n');
+					const result = {};
+					let currentKey = null;
+					let collectingBlock = false;
+					let buffer = [];
+					for (let i = 0; i < lines.length; i++) {
+						const line = lines[i];
+						const keyMatch = line.match(/^([A-Z_]+):\s*(\|)?\s*$/);
+						if (keyMatch) {
+							// flush previous
+							if (currentKey) {
+								result[currentKey] = buffer.join('\n').replace(/\s+$/, '');
+							}
+							currentKey = keyMatch[1].trim();
+							collectingBlock = !!keyMatch[2];
+							buffer = [];
+						} else if (currentKey) {
+							if (collectingBlock) {
+								// part of block scalar: expect indentation
+								const contentLine = line.replace(/^\s{2}/, '');
+								buffer.push(contentLine);
+							} else if (line.trim().length === 0) {
+								// allow empty line between simple scalars (unused here)
+								continue;
+							} else {
+								// treat as single-line value
+								result[currentKey] = line.trim();
+								currentKey = null;
+								buffer = [];
+							}
+						}
+					}
+					if (currentKey) {
+						result[currentKey] = buffer.join('\n').replace(/\s+$/, '');
+					}
+					// If YAML parsed into non-empty object, return it
+					if (Object.keys(result).length > 0) return result;
+				}
+			}
+			// Fallback: parse by markdown sections ## NAME
+			const sections = {};
+			let currentKey = null;
+			let buffer = [];
+			for (const line of text.split('\n')) {
+				if (line.startsWith('## ')) {
+					if (currentKey) sections[currentKey] = buffer.join('\n').trim();
+					currentKey = line.substring(3).trim().toUpperCase();
+					buffer = [];
+				} else {
+					buffer.push(line);
+				}
+			}
+			if (currentKey) sections[currentKey] = buffer.join('\n').trim();
+			return sections;
+		}
+		async function loadPromptsFromServer() {
+			try {
+				const res = await fetch('/prompts/analisis_normativo.md', { cache: 'no-store' });
+				if (!res.ok) throw new Error('No se pudieron cargar los prompts');
+				const md = await res.text();
+				PROMPTS = parsePrompts(md);
+			} catch (e) {
+				console.error('Error cargando prompts:', e);
+			}
+		}
+		function renderTemplate(key, replacements) {
+			let tpl = (PROMPTS[key] || '').slice();
+			if (!tpl) {
+				throw new Error('Plantilla no disponible: ' + key);
+			}
+			for (const [k, v] of Object.entries(replacements || {})) {
+				const token = new RegExp('\\{\\{'+k+'\\}\\}', 'g');
+				tpl = tpl.replace(token, v || '');
+			}
+			return tpl;
+		}
+
+		await loadPromptsFromServer();
+		// ===== End prompts loader =====
+
+		// Get the document ID from the URL (you can change this if you pass it differently)
+		const urlParams = new URLSearchParams(window.location.search);
+		const documentId = urlParams.get('documentId');
+		const collectionName = urlParams.get('collectionName'); // Get the collection from URL
+
+		// Global variables to store document data
+		let documentUrlPdf = null;
+		let documentUrlHtml = null;
+		let documentContenido = null;
+
+		// Analysis settings management
+		function loadAnalysisSettings() {
+			const savedIdioma = localStorage.getItem('analysis_idioma') || 'español';
+			if (analysisIdiomaSelect) {
+				analysisIdiomaSelect.value = savedIdioma;
+			}
+		}
+
+		function saveAnalysisSettings() {
+			if (analysisIdiomaSelect) {
+				localStorage.setItem('analysis_idioma', analysisIdiomaSelect.value);
+			}
+		}
+
+		function getSelectedAnalysisLanguage() {
+			return analysisIdiomaSelect ? analysisIdiomaSelect.value : 'español';
+		}
+
+		function toggleAnalysisSettingsDropdown() {
+			// Hide analysis dropdown if it's open
+			hideAnalysisDropdown();
+			analysisSettingsDropdown.classList.toggle('show');
+		}
+
+		function hideAnalysisSettingsDropdown() {
+			analysisSettingsDropdown.classList.remove('show');
+		}
+
+		// Función para mostrar la sección de feedback
+		function showFeedbackSection() {
+			const feedbackSection = document.getElementById('feedbackSection');
+			feedbackSection.style.display = 'block';
+		}
+
+		// Add event listener for custom prompt button
+		sendCustomPromptButton.addEventListener('click', () => {
+			handleCustomPrompt();
+		});
+
+		// Also allow pressing Enter in the textarea to submit
+		userPromptInput.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				handleCustomPrompt();
+			}
+		});
+
+		// Function to handle custom prompt submissions
+		function handleCustomPrompt() {
+			const userInput = userPromptInput.value.trim();
+			if (!userInput) {
+				alert('Por favor, escribe una consulta antes de enviar.');
+				return;
+			}
+			// Obtener idioma seleccionado
+			const idiomaSeleccionado = getSelectedAnalysisLanguage();
+			const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
+			const customSuffix = renderTemplate('CUSTOM_SUFFIX', { BLOQUE_IDIOMA: bloqueIdioma });
+			const customPrompt = `${userInput}\n\n${customSuffix}`;
+			performCustomAnalysis(customPrompt, sendCustomPromptButton);
+		}
+
+		// Function to build user prompt based on analysis type
+		function buildUserPrompt(promptType) {
+			// Obtener contexto de etiqueta seleccionada, si existe
+			const etiquetaContext = window.getSelectedEtiquetaContext ? window.getSelectedEtiquetaContext() : null;
+			let contextoEtiquetaTexto = '';
+			if (etiquetaContext) {
+				const { name, data } = etiquetaContext;
+				let definicion = '';
+				let nivelImpacto = '';
+				if (typeof data === 'string') {
+					definicion = data;
+				} else if (data && typeof data === 'object') {
+					definicion = data.explicacion || data.definicion || '';
+					nivelImpacto = data.nivel_impacto || '';
+				}
+				const definicionGlobal = window.getDefinicionEtiqueta ? window.getDefinicionEtiqueta(name) : '';
+				if (!definicion || definicion.trim() === '') {
+					definicion = definicionGlobal;
+				}
+				contextoEtiquetaTexto = `\n=== CONTEXTO ESPECÍFICO DEL USUARIO – ETIQUETA SELECCIONADA ===\nEtiqueta: "${name}"\nDefinición global: ${definicionGlobal || 'No especificada'}\nDescripción / explicación específica: ${definicion || 'No especificada'}\nGrado de impacto en este documento: ${nivelImpacto || 'No especificado'}\n`;
+			}
+			// Obtener perfil regulatorio del usuario
+			const perfilRegulatorio = window.getPerfilRegulatorio ? window.getPerfilRegulatorio() : '';
+			let contextoPerfilTexto = '';
+			if (perfilRegulatorio && perfilRegulatorio.trim() !== '') {
+				contextoPerfilTexto = `\n=== CONTEXTO – PERFIL REGULATORIO DE LA EMPRESA ===\n${perfilRegulatorio}\n`;
+			}
+			// Obtener idioma seleccionado
+			const idiomaSeleccionado = getSelectedAnalysisLanguage();
+			const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
+			// Unir ambos contextos (perfil + etiqueta + idioma)
+			const bloqueContexto = `${contextoPerfilTexto}${contextoEtiquetaTexto}${bloqueIdioma}\n`;
+
+			if (promptType === 'checklist') {
+				return renderTemplate('CHECKLIST', { BLOQUE_CONTEXTO: bloqueContexto });
+			} else if (promptType === 'risks') {
+				return renderTemplate('RISKS', { BLOQUE_CONTEXTO: bloqueContexto });
+			} else if (promptType === 'summary') {
+				const etiquetaContext = window.getSelectedEtiquetaContext ? window.getSelectedEtiquetaContext() : null;
+				const tieneEtiqueta = !!etiquetaContext;
+				const tituloImpacto = tieneEtiqueta ? `Impacto en ${etiquetaContext.name}` : 'Aspectos clave y puntos importantes';
+				return renderTemplate('SUMMARY', { BLOQUE_CONTEXTO: bloqueContexto, TITULO_IMPACTO: tituloImpacto });
+			}
+		}
+
+		// ===== Analysis logic =====
+		function performCustomAnalysis(customPrompt, buttonElement) {
+			analysisResultDiv.textContent = '';
+			analysisResultDiv.classList.remove('show');
+			analysisResultDiv.classList.remove('error-state');
+			analysisResultDiv.style.display = 'none';
+			setAnalysisButtonsState(true);
+			const originalButtonText = buttonElement.innerHTML;
+			buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+			document.querySelectorAll('.analisis-impacto').forEach(btn => { btn.classList.remove('active'); });
+			if (typeof startStatusWorkflow === 'function') startStatusWorkflow('custom');
+			const requestBody = { documentId: documentId, userPrompt: customPrompt, collectionName: collectionName };
+			if (documentContenido) { requestBody.htmlContent = documentContenido; }
+			fetch('/api/analyze-norma', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', 'Accept': 'text/html; charset=utf-8' },
+				body: JSON.stringify(requestBody)
+			})
+			.then(response => {
+				const contentType = response.headers.get('content-type');
+				if (!response.ok) {
+					if (contentType && contentType.includes('application/json')) {
+						return response.json().then(errorData => { throw new Error(JSON.stringify(errorData)); });
+					} else {
+						return response.text().then(errorText => { try { const jsonData = JSON.parse(errorText); throw new Error(JSON.stringify(jsonData)); } catch (e) { throw new Error(errorText); } });
+					}
+				}
+				if (contentType && contentType.includes('text/html')) { return response.text(); }
+				else if (contentType && contentType.includes('application/json')) { return response.json().then(jsonData => jsonData.html_response ? jsonData.html_response : JSON.stringify(jsonData)); }
+				else if (contentType && contentType.includes('text/plain')) { return response.text(); }
+				return response.text();
+			})
+			.then(data => {
+				let htmlContent = data;
+				if (typeof data === 'string') {
+					try { const jsonData = JSON.parse(data); if (jsonData.html_response) { htmlContent = jsonData.html_response; } }
+					catch (e) {
+						htmlContent = data.replace(/^```html\s*|\s*```|^<!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<!DOCTYPE html>/g, '');
+						if (!htmlContent.includes('<') && htmlContent.trim().length > 0) { htmlContent = `<p>${htmlContent}</p>`; }
+					}
+				} else if (typeof data === 'object' && data.html_response) { htmlContent = data.html_response; }
+				if (typeof completeStatusWorkflow === 'function') {
+					completeStatusWorkflow(() => {
+						buttonElement.innerHTML = originalButtonText;
+						setAnalysisButtonsState(false);
+						analysisResultDiv.innerHTML = htmlContent;
+						analysisResultDiv.style.display = 'block';
+						analysisResultDiv.classList.remove('show');
+						analysisResultDiv.classList.remove('error-state');
+						setTimeout(() => {
+							analysisResultDiv.classList.add('show');
+							if (typeof showFeedbackSection === 'function') showFeedbackSection();
+						}, 100);
+					});
+				} else {
+					buttonElement.innerHTML = originalButtonText;
+					setAnalysisButtonsState(false);
+					analysisResultDiv.innerHTML = htmlContent;
+					analysisResultDiv.style.display = 'block';
+					analysisResultDiv.classList.remove('show');
+					analysisResultDiv.classList.remove('error-state');
+					setTimeout(() => {
+						analysisResultDiv.classList.add('show');
+						if (typeof showFeedbackSection === 'function') showFeedbackSection();
+					}, 100);
+				}
+			})
+			.catch(error => {
+				console.error('Error analyzing norma:', error);
+				let errorType = 'GENERIC_ERROR';
+				let errorMessage = 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor';
+				let statusMessage = 'Error en el análisis';
+				try { const errorData = JSON.parse(error.message); errorType = errorData.error; errorMessage = errorData.message; if (errorData.details) { console.log('Error details:', errorData.details); } }
+				catch (e) { console.error('Error parsing error response:', e); const errorText = error.message || error.toString(); if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) { errorType = 'PDF_ACCESS_ERROR'; errorMessage = 'Error al acceder al documento, análisis no disponible.'; } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) { errorType = 'TIMEOUT_ERROR'; errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.'; } else if (errorText.includes('DATABASE_TIMEOUT')) { errorType = 'DATABASE_TIMEOUT'; errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.'; } else if (errorText.includes('network') || errorText.includes('connection')) { errorType = 'NETWORK_ERROR'; errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.'; } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) { errorType = 'SERVER_ERROR'; errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.'; } else if (errorText.length > 0 && errorText.length < 200) { errorMessage = errorText; } }
+				if (errorType === 'PDF_ACCESS_ERROR') { statusMessage = 'Error accediendo al documento'; }
+				else if (errorType === 'TIMEOUT_ERROR') { statusMessage = 'Tiempo de espera agotado'; }
+				else if (errorType === 'DATABASE_TIMEOUT') { statusMessage = 'Tiempo de espera agotado'; }
+				else if (errorType === 'NETWORK_ERROR') { statusMessage = 'Error de conexión'; }
+				else if (errorType === 'SERVER_ERROR') { statusMessage = 'Error del servidor'; }
+				else { statusMessage = 'Error procesando análisis'; }
+				completeStatusWorkflowWithErrorAndCallback(statusMessage, () => {
+					buttonElement.innerHTML = originalButtonText;
+					setAnalysisButtonsState(false);
+					let errorStyle = '';
+					if (errorType === 'PDF_ACCESS_ERROR') { errorStyle = `
+						background-color: #ffebee;
+						border: 2px solid #c62828;
+						color: #c62828;
+						padding: 15px;
+						border-radius: 8px;
+						margin: 10px 0;
+						font-weight: 500;
+					`; } else { errorStyle = `
+						background-color: #ffebee;
+						border: 2px solid #c62828;
+						color: #f57f17;
+						padding: 15px;
+						border-radius: 8px;
+						margin: 10px 0;
+						font-weight: 500;
+					`; }
+					const errorDiv = document.createElement('div');
+					errorDiv.style.cssText = errorStyle;
+					errorDiv.textContent = errorMessage;
+					analysisResultDiv.innerHTML = '';
+					analysisResultDiv.appendChild(errorDiv);
+					analysisResultDiv.style.display = 'block';
+					analysisResultDiv.classList.remove('show');
+					analysisResultDiv.classList.add('error-state');
+					setTimeout(() => { analysisResultDiv.classList.add('show'); }, 250);
+				});
+			});
+		}
+
+		function setAnalysisButtonsState(disabled) {
+			const buttons = [analyzeButton, checklistButton, risksButton, sendCustomPromptButton];
+			buttons.forEach(btn => { btn.disabled = disabled; if (disabled) { btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; } else { btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } });
+		}
+
+		function showAnalysisDropdown(analysisType, buttonElement) {
+			hideAnalysisSettingsDropdown();
+			currentAnalysisType = analysisType;
+			activeAnalysisButton = buttonElement;
+			document.querySelectorAll('.analisis-impacto').forEach(btn => { btn.classList.remove('active'); });
+			buttonElement.classList.add('active');
+			const buttonRect = buttonElement.getBoundingClientRect();
+			const containerRect = buttonElement.parentElement.getBoundingClientRect();
+			const leftOffset = buttonRect.left - containerRect.left;
+			analysisDropdown.style.left = `${leftOffset}px`;
+			const etiquetasData = window.getEtiquetasData ? window.getEtiquetasData() : {};
+			etiquetasList.innerHTML = '';
+			if (etiquetasData && Object.keys(etiquetasData).length > 0) {
+				Object.keys(etiquetasData).forEach(etiqueta => {
+					const btn = document.createElement('button');
+					btn.className = 'etiqueta-btn';
+					btn.textContent = etiqueta;
+					btn.addEventListener('click', () => {
+						const isAlreadySelected = btn.classList.contains('selected');
+						etiquetasList.querySelectorAll('.etiqueta-btn').forEach(b => b.classList.remove('selected'));
+						const startBtn = document.getElementById('startAnalysisBtn');
+						const analysisTypeText = { 'summary': 'resumen', 'checklist': 'cuadro de obligaciones', 'risks': 'riesgos y oportunidades' };
+						if (isAlreadySelected) {
+							if (window.setSelectedEtiqueta) { window.setSelectedEtiqueta(null, null); }
+							if (startBtn) { startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} genérico`; }
+						} else {
+							btn.classList.add('selected');
+							if (window.setSelectedEtiqueta) { window.setSelectedEtiqueta(etiqueta, etiquetasData[etiqueta]); }
+							if (startBtn) { startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} personalizado`; }
+						}
+					});
+					etiquetasList.appendChild(btn);
+				});
+			} else {
+				const noEtiquetasMsg = document.createElement('div');
+				noEtiquetasMsg.style.color = '#999';
+				noEtiquetasMsg.style.fontStyle = 'italic';
+				noEtiquetasMsg.textContent = 'No hay agentes disponibles para este documento';
+				etiquetasList.appendChild(noEtiquetasMsg);
+			}
+			const analysisTypeText = { 'summary': 'resumen', 'checklist': 'cuadro de obligaciones', 'risks': 'riesgos y oportunidades' };
+			startAnalysisBtn.textContent = `Generar ${analysisTypeText[analysisType] || 'análisis'} genérico`;
+			analysisDropdown.style.display = 'block';
+		}
+
+		function hideAnalysisDropdown() {
+			analysisDropdown.style.display = 'none';
+			analysisDropdown.style.left = '0';
+			document.querySelectorAll('.analisis-impacto').forEach(btn => { btn.classList.remove('active'); });
+			currentAnalysisType = null;
+			activeAnalysisButton = null;
+		}
+
+		async function performWebscrapingAnalysis(promptType, buttonElement, htmlUrl) {
+			try {
+				const webscrapingResponse = await fetch('/api/webscrape', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: htmlUrl }) });
+				if (!webscrapingResponse.ok) throw new Error('Error during webscraping');
+				const webscrapingData = await webscrapingResponse.json();
+				const htmlContent = webscrapingData.text;
+				return performAnalysisWithContent(promptType, buttonElement, htmlContent, htmlUrl);
+			} catch (error) { console.error('Error during webscraping:', error); throw error; }
+		}
+
+		function performAnalysisWithContent(promptType, buttonElement, directContent = null, sourceUrl = null) {
+			return new Promise((resolve, reject) => {
+				const requestBody = { documentId: documentId, userPrompt: buildUserPrompt(promptType), collectionName: collectionName };
+				if (directContent) { requestBody.htmlContent = directContent; }
+				fetch('/api/analyze-norma', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'text/html; charset=utf-8' }, body: JSON.stringify(requestBody) })
+				.then(response => {
+					const contentType = response.headers.get('content-type');
+					if (!response.ok) {
+						if (contentType && contentType.includes('application/json')) { return response.json().then(errorData => { throw new Error(JSON.stringify(errorData)); }); }
+						else { return response.text().then(errorText => { try { const jsonData = JSON.parse(errorText); throw new Error(JSON.stringify(jsonData)); } catch (e) { throw new Error(errorText); } }); }
+					}
+					if (contentType && contentType.includes('text/html')) { return response.text(); }
+					else if (contentType && contentType.includes('application/json')) { return response.json().then(jsonData => jsonData.html_response ? jsonData.html_response : JSON.stringify(jsonData)); }
+					else if (contentType && contentType.includes('text/plain')) { return response.text(); }
+					return response.text();
+				})
+				.then(data => {
+					let htmlResult = data;
+					if (typeof data === 'string') {
+						try { const jsonData = JSON.parse(data); if (jsonData.html_response) { htmlResult = jsonData.html_response; } }
+						catch (e) {
+							htmlResult = data.replace(/^```html\s*|\s*```|^<!DOCTYPE html>\s*<html>\s*<head>.*?<\/head>\s*<body>|<\/html>\s*<\/body>|<\/body>|<\/html>|<html>|<\/html>|<!DOCTYPE html>/g, '');
+							if (!htmlResult.includes('<') && htmlResult.trim().length > 0) { htmlResult = `<p>${htmlResult}</p>`; }
+						}
+					} else if (typeof data === 'object' && data.html_response) { htmlResult = data.html_response; }
+					let finalHtml = htmlResult;
+					if (directContent && sourceUrl) { const banner = `<div class=\"html-source-banner\">Documento PDF no identificado para este documento, análisis basado en el texto publicado en la <a href=\"${sourceUrl}\" target=\"_blank\">fuente</a></div>`; finalHtml = banner + htmlResult; }
+					resolve(finalHtml);
+				})
+				.catch(error => {
+					let errorType = 'GENERIC_ERROR';
+					let errorMessage = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
+					try { const errorData = JSON.parse(error.message); errorType = errorData.error; errorMessage = errorData.message; if (errorData.details) { console.log('Error details:', errorData.details); } }
+					catch (e) { console.error('Error parsing error response:', e); const errorText = error.message || error.toString(); if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) { errorType = 'PDF_ACCESS_ERROR'; errorMessage = 'Error al acceder al documento, análisis no disponible.'; } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) { errorType = 'TIMEOUT_ERROR'; errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.'; } else if (errorText.includes('DATABASE_TIMEOUT')) { errorType = 'DATABASE_TIMEOUT'; errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.'; } else if (errorText.includes('network') || errorText.includes('connection')) { errorType = 'NETWORK_ERROR'; errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.'; } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) { errorType = 'SERVER_ERROR'; errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.'; } else if (errorText.length > 0 && errorText.length < 200) { errorMessage = errorText; } }
+					const errorObj = new Error(errorMessage); errorObj.errorType = errorType; reject(errorObj);
+				});
+			});
+		}
+
+		function performAnalysis(promptType, buttonElement) {
+			if (!buttonElement || typeof buttonElement.innerHTML === 'undefined') { console.error('Error: buttonElement is null or invalid in performAnalysis'); alert('Error: Elemento de botón no válido. Por favor, inténtalo de nuevo.'); return; }
+			analysisResultDiv.textContent = '';
+			analysisResultDiv.classList.remove('show');
+			analysisResultDiv.classList.remove('error-state');
+			analysisResultDiv.style.display = 'none';
+			setAnalysisButtonsState(true);
+			if (typeof startStatusWorkflow === 'function') startStatusWorkflow(promptType);
+			const originalButtonText = buttonElement.innerHTML;
+			buttonElement.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Analizando...';
+			document.querySelectorAll('.analisis-impacto').forEach(btn => { btn.classList.remove('active'); });
+			buttonElement.classList.add('active');
+			let analysisPromise;
+			if (documentContenido) {
+				analysisPromise = performAnalysisWithContent(promptType, buttonElement, documentContenido);
+			} else if (documentUrlPdf) {
+				analysisPromise = performAnalysisWithContent(promptType, buttonElement);
+			} else if (documentUrlHtml) {
+				analysisPromise = performWebscrapingAnalysis(promptType, buttonElement, documentUrlHtml);
+			} else {
+				console.error('No content sources available for analysis');
+				setAnalysisButtonsState(false);
+				buttonElement.innerHTML = originalButtonText;
+				buttonElement.classList.remove('active');
+				clearStatusWorkflow();
+				alert('No hay fuentes disponibles para el análisis de este documento.');
+				return;
+			}
+			analysisPromise.then(htmlContent => {
+				if (typeof completeStatusWorkflow === 'function') {
+					completeStatusWorkflow(() => {
+						buttonElement.innerHTML = originalButtonText;
+						buttonElement.style.backgroundColor = '';
+						setAnalysisButtonsState(false);
+						analysisResultDiv.innerHTML = htmlContent;
+						analysisResultDiv.style.display = 'block';
+						analysisResultDiv.classList.remove('show');
+						analysisResultDiv.classList.remove('error-state');
+						setTimeout(() => { analysisResultDiv.classList.add('show'); if (typeof showFeedbackSection === 'function') showFeedbackSection(); }, 100);
+					});
+				} else {
+					buttonElement.innerHTML = originalButtonText;
+					buttonElement.style.backgroundColor = '';
+					setAnalysisButtonsState(false);
+					analysisResultDiv.innerHTML = htmlContent;
+					analysisResultDiv.style.display = 'block';
+					analysisResultDiv.classList.remove('show');
+					analysisResultDiv.classList.remove('error-state');
+					setTimeout(() => { analysisResultDiv.classList.add('show'); if (typeof showFeedbackSection === 'function') showFeedbackSection(); }, 100);
+				}
+			}).catch(error => {
+				console.error('Error analyzing norma:', error);
+				let errorType = 'GENERIC_ERROR';
+				let errorMessage = 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor';
+				let statusMessage = 'Error en el análisis';
+				try { const errorData = JSON.parse(error.message); errorType = errorData.error; errorMessage = errorData.message; }
+				catch (e) { console.error('Error parsing error response:', e); }
+				if (errorType === 'PDF_ACCESS_ERROR') { statusMessage = 'Error accediendo al documento'; } else { statusMessage = 'Error procesando análisis'; }
+				completeStatusWorkflowWithErrorAndCallback(statusMessage, () => {
+					buttonElement.innerHTML = originalButtonText;
+					buttonElement.classList.remove('active');
+					setAnalysisButtonsState(false);
+					let errorStyle = '';
+					if (errorType === 'PDF_ACCESS_ERROR') { errorStyle = `
+						background-color: #ffebee;
+						border: 2px solid #c62828;
+						color: #c62828;
+						padding: 15px;
+						border-radius: 8px;
+						margin: 10px 0;
+						font-weight: 500;
+					`; } else { errorStyle = `
+						background-color: #ffebee;
+						border: 2px solid #c62828;
+						color:#c62828;
+						padding: 15px;
+						border-radius: 8px;
+						margin: 10px 0;
+						font-weight: 500;
+					`; }
+					const errorDiv = document.createElement('div');
+					errorDiv.style.cssText = errorStyle;
+					errorDiv.textContent = errorMessage;
+					analysisResultDiv.innerHTML = '';
+					analysisResultDiv.appendChild(errorDiv);
+					analysisResultDiv.style.display = 'block';
+					analysisResultDiv.classList.remove('show');
+					analysisResultDiv.classList.add('error-state');
+					setTimeout(() => { analysisResultDiv.classList.add('show'); }, 250);
+				});
+			});
+		}
+
+		// ===== Event listeners =====
+		fetch(`/api/norma-details?documentId=${documentId}&collectionName=${collectionName}`)
+			.then(response => response.json())
+			.then(data => {
+				shortNameSpan.textContent = data.short_name;
+				documentUrlPdf = data.url_pdf;
+				documentUrlHtml = data.url_html;
+				documentContenido = data.contenido;
+				if (!documentContenido && !documentUrlPdf && !documentUrlHtml) {
+					const impactButtons = [analyzeButton, checklistButton, risksButton];
+					impactButtons.forEach(btn => { btn.disabled = true; btn.style.opacity = '0.6'; btn.style.cursor = 'not-allowed'; });
+					const banner = document.createElement('div');
+					banner.className = 'no-analysis-banner';
+					banner.textContent = 'Documento con análisis de impacto no disponible';
+					const buttonsContainer = analyzeButton.parentElement;
+					buttonsContainer.insertAdjacentElement('afterend', banner);
+				}
+				const extraDetailsDiv = document.getElementById('normaExtraDetails');
+				if (extraDetailsDiv) {
+					let detailsParts = [];
+					if (data.collectionName) { detailsParts.push(data.collectionName); }
+					if (data.rango_titulo) { detailsParts.push(data.rango_titulo); }
+					if (data.url_pdf) { detailsParts.push(`<a href="${data.url_pdf}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`); }
+					else if (data.url_html) { detailsParts.push(`<a href="${data.url_html}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`); }
+					extraDetailsDiv.innerHTML = detailsParts.filter(part => part !== null && part !== undefined && part !== '').join(' | ');
+					const etiquetasData = data.user_etiquetas_personalizadas;
+					const perfilRegulatorioUser = data.perfil_regulatorio || '';
+					const definicionesMap = data.user_etiquetas_definiciones || {};
+					window.getPerfilRegulatorio = () => perfilRegulatorioUser;
+					window.getDefinicionEtiqueta = (et) => definicionesMap[et] || '';
+					let selectedEtiquetaName = null;
+					let selectedEtiquetaData = null;
+					window.getEtiquetasData = () => etiquetasData || {};
+					window.setSelectedEtiqueta = (name, data) => { selectedEtiquetaName = name; selectedEtiquetaData = data; };
+					window.getSelectedEtiquetaContext = () => { if (!selectedEtiquetaName) return null; return { name: selectedEtiquetaName, data: selectedEtiquetaData }; };
+				}
+				pageLoaderOverlay.style.display = 'none';
+			})
+			.catch(error => { console.error('Error fetching norma details:', error); analysisResultDiv.textContent = 'Error fetching norma details.'; pageLoaderOverlay.style.display = 'none'; });
+
+		analyzeButton.addEventListener('click', () => { showAnalysisDropdown('summary', analyzeButton); });
+		checklistButton.addEventListener('click', () => { showAnalysisDropdown('checklist', checklistButton); });
+		risksButton.addEventListener('click', () => { showAnalysisDropdown('risks', risksButton); });
+		startAnalysisBtn.addEventListener('click', () => { if (currentAnalysisType && activeAnalysisButton && activeAnalysisButton.innerHTML) { const analysisType = currentAnalysisType; const buttonElement = activeAnalysisButton; hideAnalysisDropdown(); performAnalysis(analysisType, buttonElement); } else { console.error('Error: activeAnalysisButton is null or invalid'); alert('Error: No se pudo identificar el botón de análisis. Por favor, inténtalo de nuevo.'); } });
+
+		// ===== Status workflow and helpers remain as defined below =====
+
+		// Configurar los listeners para el feedback
+		function setupFeedbackListeners() {
+			document.getElementById('feedbackToggle').addEventListener('click', function() {
+				const feedbackContent = document.getElementById('feedbackContent');
+				const chevron = this.querySelector('.fa');
+				if (feedbackContent.style.display === 'none') {
+					feedbackContent.style.display = 'block';
+					chevron.classList.remove('fa-chevron-down');
+					chevron.classList.add('fa-chevron-up');
+				} else {
+					feedbackContent.style.display = 'none';
+					chevron.classList.remove('fa-chevron-up');
+					chevron.classList.add('fa-chevron-down');
+				}
+			});
+			document.getElementById('sendFeedbackBtn').addEventListener('click', function() {
+				const feedbackText = document.getElementById('feedbackText').value.trim();
+				if (!feedbackText) { alert('Por favor, introduce tu feedback antes de enviar.'); return; }
+				this.disabled = true; this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+				const urlParams = new URLSearchParams(window.location.search);
+				const documentId = urlParams.get('documentId');
+				const collectionName = urlParams.get('collectionName');
+				const userPrompt = document.getElementById('userPrompt').value;
+				const analysisResults = document.getElementById('analysisResult').innerHTML;
+				const now = new Date();
+				const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+				fetch('/api/feedback-analisis', {
+					method: 'POST', headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ documentId, collectionName, userPrompt, analysisResults, fecha: dateStr, feedback: feedbackText, content_evaluated: 'analisis_impacto' })
+				})
+				.then(response => response.json())
+				.then(data => {
+					this.disabled = false; this.innerHTML = 'Enviar feedback';
+					if (data.success) {
+						const successMsg = document.createElement('div');
+						successMsg.className = 'feedback-success';
+						successMsg.textContent = '¡Gracias por tu feedback!';
+						document.getElementById('feedbackContent').appendChild(successMsg);
+						document.getElementById('feedbackText').value = '';
+					} else { alert('Error al enviar el feedback. Por favor, inténtalo de nuevo.'); }
+				})
+				.catch(error => { console.error('Error sending feedback:', error); this.disabled = false; this.innerHTML = 'Enviar feedback'; alert('Error al enviar el feedback. Por favor, inténtalo de nuevo.'); });
+			});
+		}
+		setupFeedbackListeners();
+
+		// Add click outside to close dropdown
+		document.addEventListener('click', function(event) {
+			if (!analysisDropdown.contains(event.target) && !analyzeButton.contains(event.target) && !checklistButton.contains(event.target) && !risksButton.contains(event.target)) {
+				hideAnalysisDropdown();
+			}
+			if (!analysisSettingsDropdown.contains(event.target) && !analysisSettingsBtn.contains(event.target)) {
+				hideAnalysisSettingsDropdown();
+			}
+		});
+
+		// Analysis settings event listeners
+		if (analysisSettingsBtn) {
+			analysisSettingsBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleAnalysisSettingsDropdown(); });
+		}
+		if (analysisIdiomaSelect) {
+			analysisIdiomaSelect.addEventListener('change', () => { saveAnalysisSettings(); });
+		}
+		loadAnalysisSettings();
+
+		function startStatusWorkflow(analysisType = 'generic') {
+			clearStatusWorkflow();
+			console.log('[workflow] starting for type:', analysisType);
+			analysisStatusDiv.style.display = 'flex';
+			statusTextSpan.classList.remove('slide');
+			void statusTextSpan.offsetWidth;
+			statusTextSpan.textContent = 'Pensando…';
+			let specificSteps = [];
+			if (analysisType === 'summary') {
+				specificSteps = [
+					{ text: 'Resumiendo aspectos generales…', duration: 2500 },
+					{ text: 'Analizando el objetivo de la norma…', duration: 2500 },
+					{ text: 'Identificando sujetos afectados…', duration: 2500 },
+					{ text: 'Recomendando próximos pasos…', duration: 2500 }
+				];
+			} else if (analysisType === 'checklist') {
+				specificSteps = [
+					{ text: 'Identificando cuadro de obligaciones…', duration: 2500 },
+					{ text: 'Referenciando los artículos…', duration: 2500 },
+					{ text: 'Analizando sanciones por incumplimiento…', duration: 2500 }
+				];
+			} else if (analysisType === 'risks') {
+				specificSteps = [
+					{ text: 'Identificando oportunidades…', duration: 2500 },
+					{ text: 'Analizando riesgos…', duration: 2500 }
+				];
+			} else {
+				specificSteps = [
+					{ text: 'Procesando tu consulta…', duration: 2500 },
+					{ text: 'Buscando información relevante…', duration: 2500 },
+					{ text: 'Estructurando la respuesta…', duration: 2500 }
+				];
+			}
+			const commonSteps = [
+				{ text: 'Pensando…', duration: 3000 },
+				{ text: 'Accediendo a la fuente oficial…', duration: 2000 },
+				{ text: 'Analizando el documento…', duration: 3000 }
+			];
+			const steps = [ ...commonSteps, ...specificSteps, { text: 'Personalizando el análisis…', duration: null } ];
+			let cumulative = 0;
+			steps.forEach((step) => {
+				const t = setTimeout(() => {
+					console.log('[workflow] step', step.text);
+					statusTextSpan.classList.remove('slide');
+					void statusTextSpan.offsetWidth;
+					statusTextSpan.textContent = step.text;
+					statusTextSpan.classList.add('slide');
+				}, cumulative);
+				statusTimeouts.push(t);
+				if (step.duration) cumulative += step.duration;
+			});
+		}
+
+		function clearStatusWorkflow() {
+			statusTimeouts.forEach(t => clearTimeout(t));
+			statusTimeouts = [];
+			console.log('[workflow] cleared');
+			analysisStatusDiv.style.display = 'none';
+		}
+
+		function completeStatusWorkflowWithError() {
+			statusTimeouts.forEach(t => clearTimeout(t));
+			statusTimeouts = [];
+			console.log('[workflow] completing with error - API error received');
+			const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
+			spinnerIcon.className = 'fa fa-exclamation-triangle';
+			statusTextSpan.classList.remove('slide');
+			void statusTextSpan.offsetWidth;
+			statusTextSpan.textContent = 'Error en el análisis';
+			statusTextSpan.classList.add('slide');
+			setTimeout(() => {
+				analysisStatusDiv.classList.add('status-completed');
+				setTimeout(() => {
+					analysisStatusDiv.style.display = 'none';
+					analysisStatusDiv.classList.remove('status-completed');
+					spinnerIcon.className = 'fa fa-spinner spinner';
+				}, 800);
+			}, 800);
+		}
+
+		function completeStatusWorkflowWithErrorAndCallback(errorMessage, callback) {
+			statusTimeouts.forEach(t => clearTimeout(t));
+			statusTimeouts = [];
+			console.log('[workflow] completing with error - showing custom message');
+			const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
+			spinnerIcon.className = 'fa fa-exclamation-triangle';
+			statusTextSpan.classList.remove('slide');
+			void statusTextSpan.offsetWidth;
+			statusTextSpan.textContent = errorMessage;
+			statusTextSpan.classList.add('slide');
+			setTimeout(() => {
+				analysisStatusDiv.classList.add('status-completed');
+				setTimeout(() => {
+					analysisStatusDiv.style.display = 'none';
+					analysisStatusDiv.classList.remove('status-completed');
+					spinnerIcon.className = 'fa fa-spinner spinner';
+					if (callback && typeof callback === 'function') { callback(); }
+				}, 800);
+			}, 1200);
+		}
+
+		function completeStatusWorkflow(onCompleteCallback) {
+			statusTimeouts.forEach(t => clearTimeout(t));
+			statusTimeouts = [];
+			console.log('[workflow] completing with success - API response received');
+			const spinnerIcon = analysisStatusDiv.querySelector('.spinner');
+			spinnerIcon.className = 'fa fa-check';
+			statusTextSpan.classList.remove('slide');
+			void statusTextSpan.offsetWidth;
+			statusTextSpan.textContent = 'Análisis Finalizado';
+			statusTextSpan.classList.add('slide');
+			setTimeout(() => {
+				analysisStatusDiv.classList.add('status-completed');
+				setTimeout(() => {
+					analysisStatusDiv.style.display = 'none';
+					analysisStatusDiv.classList.remove('status-completed');
+					spinnerIcon.className = 'fa fa-spinner spinner';
+					if (onCompleteCallback && typeof onCompleteCallback === 'function') { onCompleteCallback(); }
+				}, 800);
+			}, 600);
+		}
+	});
 </script>
 <script>
         function toggleMenu() {

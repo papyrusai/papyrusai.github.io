@@ -1,0 +1,121 @@
+Caso de uso de IA en Reversa (versión cliente)
+1) Resumen ejecutivo
+Reversa emplea Inteligencia Artificial (IA) para analizar documentos oficiales
+(boletines, resoluciones, noticias) y generar anotaciones estructuradas que habilitan
+búsqueda avanzada, alertas y priorización. Salidas principales: - resumen: síntesis
+breve del contenido. - divisiones: sectores económicos afectados. - ramas_juridicas:
+ramas del Derecho impactadas. - rango_normativo: jerarquía normativa inferida a
+partir del título. - etiquetas_personalizadas: etiquetas definidas por el cliente con
+explicación y nivel de impacto (Alto/Medio/Bajo).
+El procesamiento es asíncrono, concurrente y robusto ante errores, con control de
+cuotas y reintentos.
+2) Flujo de alto nivel
+graph TD
+ A["ETLs de scraping"] --> B["Extracción y normalización\n(HTM
+ B --> C["Motor de IA"]
+ C --> C1["Salidas IA:\nresumen, divisiones,\nramas_juridicas,
+ C --> D["Almacenamiento"]
+ D --> E["Notificaciones"]
+ D --> F["Consumo posterior\n(buscador/analítica)"]
+ A --> G["Orquestación general"]
+ G --> C
+ G --> D
+3) Componentes funcionales
+Orquestación: coordina el scraping, el análisis IA y la persistencia en paralelo.
+Procesamiento IA: aplica prompts y taxonomías para generar metadatos
+estructurados y resumen.
+14/8/25, 20:42
+file:///Users/santiago/Documents/papyrus/docs/IA_Caso_de_Uso_Cliente.html 1/4
+Persistencia: almacena resultados con trazabilidad básica de uso (p. ej.,
+contadores de tokens).
+Notificaciones: comunica el avance y el resultado del procesamiento.
+4) Modelos, prompts y salidas
+Modelos de IA: modelos de lenguaje de propósito general, configurables.
+Prompts (gestionados por configuración):
+Resumen: salida JSON con clave resumen .
+Divisiones: salida JSON {"divisiones": [...]} de un catálogo
+predefinido.
+Ramas jurídicas: salida JSON {"ramas_juridicas": [...]} de un
+catálogo predefinido.
+Rango normativo: salida JSON {"rango_normativo": "..."} a partir del
+título.
+Etiquetas personalizadas: salida JSON por etiqueta detectada con
+{explicacion, nivel_impacto} .
+Salidas por documento
+ai_results : { resumen, divisiones[], ramas_juridicas[],
+rango_titulo, etiquetas_personalizadas{...}, short_name } .
+token_usage : { input_tokens, output_tokens, total_tokens } .
+5) Entradas, chunking y paralelismo
+Entrada: texto íntegro del documento (HTML o PDF extraído) y metadatos
+mínimos (p. ej., título).
+Documentos extensos se dividen en fragmentos adecuados; cada fragmento se
+procesa en paralelo y se agregan los resultados.
+Clasificaciones adicionales (divisiones, ramas, etiquetas) se ejecutan
+concurrentemente.
+6) Robustez: cuotas y reintentos
+Límite de concurrencia, suavizado de ráfagas y reintentos con espera
+exponencial ante errores transitorios del proveedor.
+14/8/25, 20:42
+file:///Users/santiago/Documents/papyrus/docs/IA_Caso_de_Uso_Cliente.html 2/4
+Validación de salidas en formato JSON y reintento controlado si la respuesta es
+vacía o inválida.
+7) Persistencia, auditoría y observabilidad
+Almacenamiento de documentos con ai_results y token_usage .
+Registro opcional de estadísticas de ejecución (volumen, progreso, métricas de
+etiquetas) para auditoría.
+Seguimiento de progreso durante procesamiento y subida.
+8) Privacidad y seguridad
+Naturaleza de los datos: documentos públicos oficiales. Pueden incluir
+referencias a personas en su contenido público.
+Minimización: se envía al proveedor de IA solo el texto necesario y catálogos
+acotados. No se envían identificadores de clientes/usuarios ni PII añadida por el
+sistema.
+Proveedor de IA: tratamiento conforme a las condiciones contractuales vigentes
+del proveedor seleccionado por el cliente o por Reversa.
+Transferencias: el proveedor de IA puede operar fuera del EEE; se aplican
+garantías contractuales adecuadas según el caso (p. ej., cláusulas contractuales
+tipo).
+Retención: los resultados IA se almacenan en la base operativa. No se persisten
+prompts ni respuestas fuera del ámbito del sistema.
+Seguridad: comunicaciones cifradas y controles de cuota/reintentos para mitigar
+riesgos operativos.
+9) Calidad y gobernanza
+Catálogos cerrados y validación estricta del formato de salida garantizan
+coherencia.
+Para etiquetas personalizadas, se exige {explicacion, nivel_impacto}
+por etiqueta detectada para favorecer la trazabilidad.
+Versionado de prompts y revisiones periódicas para calibración.
+10) Uso responsable y limitaciones
+14/8/25, 20:42
+file:///Users/santiago/Documents/papyrus/docs/IA_Caso_de_Uso_Cliente.html 3/4
+Las salidas de IA son asistivas y no constituyen dictamen jurídico.
+La clasificación se centra en el texto dispositivo; preámbulos y motivos se
+ponderan según criterios del prompt.
+Pueden existir ambigüedades en textos muy breves o genéricos.
+11) Configuración y despliegue (alto nivel)
+Parámetros clave (proveedor, modelo, longitudes de contexto, prompts y
+catálogos) se gestionan por configuración.
+Integración con el pipeline existente de scraping y almacenamiento del cliente.
+Salida: ai_results y token_usage adjuntos a cada documento procesado.
+12) Anexo: Esquema de salidas
+{
+ "ai_results": {
+ "resumen": "string",
+ "divisiones": ["string"],
+ "ramas_juridicas": ["string"],
+ "rango_titulo": "string",
+ "etiquetas_personalizadas": {
+ "<user_id>": {
+ "<EtiquetaA>": {"explicacion": "string", "nivel_impacto
+ }
+ },
+ "short_name": "string"
+ },
+ "token_usage": {
+ "input_tokens": 0,
+ "output_tokens": 0,
+ "total_tokens": 0
+ }
+}
+14/8/25, 20:42
+file:///Users/santiago/Documents/papyrus/docs/IA_Caso_de_Uso_Cliente.html 4/4

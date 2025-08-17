@@ -7,13 +7,14 @@
     }
 
     .save-btn {
-      background-color: transparent;
-      border: 1px solid #dee2e6;
-      color: #495057;
-      padding: 6px 12px;
-      border-radius: 4px;
+      background: transparent;
+      color: #666;
+      border: 2px solid transparent;
+      padding: 8px 12px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 14px;
+      font-weight: 500;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -21,8 +22,16 @@
     }
 
     .save-btn:hover {
-      background-color: #e9ecef;
-      border-color: #adb5bd;
+      color: #0b2431;
+      border-color: #0b2431;
+      background: transparent;
+    }
+
+    .save-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      color: #999;
+      border-color: transparent;
     }
 
     .save-btn i {
@@ -40,9 +49,10 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       min-width: 200px;
       max-width: 300px;
+      width: 280px; /* Tamaño fijo */
       z-index: 1000;
       display: none;
-      max-height: 300px;
+      max-height: 280px; /* Altura fija */
       overflow: hidden;
     }
 
@@ -66,8 +76,34 @@
     }
 
     .lists-content {
-      max-height: 200px;
+      /* Solo contiene el padding, no scroll */
+      padding: 8px 0 0 0;
+    }
+
+    .lists-container {
+      max-height: 120px; /* Altura fija para las listas solamente */
       overflow-y: auto;
+      overflow-x: hidden;
+      padding: 0 16px;
+    }
+
+    /* Estilo del scrollbar para el contenedor de listas */
+    .lists-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .lists-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+
+    .lists-container::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+
+    .lists-container::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
     }
 
     .list-item {
@@ -267,6 +303,12 @@
       padding: 8px;
     }
 
+    /* Contenedor principal de las tarjetas de listas */
+    #listas-container {
+      transition: height 0.3s ease-out;
+      overflow: visible; /* Permitir que las animaciones se vean */
+    }
+
     .lista-card {
       background: white;
       border: 1px solid #e8ecf0;
@@ -276,6 +318,10 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
+      margin-bottom: 20px;
+      /* Propiedades para transiciones suaves al eliminar */
+      transform-origin: center center;
+      will-change: transform, opacity, height, margin;
     }
 
     .lista-card::before {
