@@ -117,8 +117,14 @@ function ensureAuthenticated(req, res, next) {
   return res.redirect('/');
 }
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static files from the "public" directory with proper MIME types
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+  }
+}));
 app.use('/prompts', express.static(path.join(__dirname, 'prompts')));
 app.use('/dist', express.static(path.join(__dirname, 'public/dist')));
 

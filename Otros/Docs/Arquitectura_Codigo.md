@@ -58,6 +58,12 @@ El sistema sigue las siguientes mejores prácticas de desarrollo que sirven como
 - ✅ **API externa integration**: Servicios como Stripe, SendGrid, Google APIs
 - ✅ **Error handling centralizado**: Patrones consistentes de manejo de errores
 
+#### **7. UX/UI Consistente**
+- ✅ **Confirmaciones estandarizadas**: SIEMPRE usar modal estándar para confirmaciones de usuario (eliminar, cancelar, etc.) - NUNCA alerts del navegador
+- ✅ **Feedback visual coherente**: Loaders, spinners y estados de carga unificados
+- ✅ **Design system aplicado**: Colores, tipografía y componentes según estándar Reversa
+- ✅ **Responsive design**: Adaptabilidad a diferentes dispositivos y tamaños de pantalla
+
 ---
 
 ## 📖 ESQUEMA DEL DOCUMENTO
@@ -835,6 +841,36 @@ POST /save-free-plan         # Downgrade a gratuito
 - **Debugging Simplificado**: Errores localizados por dominio
 - **Documentación Clara**: Cada módulo con responsabilidades bien definidas
 
+### 🎨 **Estándares UX/UI Implementados**
+
+#### **A. Sistema de Confirmaciones**
+```javascript
+// ❌ INCORRECTO - No usar alerts del navegador
+if (confirm('¿Estás seguro de que quieres eliminar esta lista?')) {
+    deleteList();
+}
+
+// ✅ CORRECTO - Usar modal estándar
+showConfirmationModal({
+    title: 'Eliminar Lista',
+    message: '¿Estás seguro de que quieres eliminar esta lista? Esta acción no se puede deshacer.',
+    onConfirm: () => deleteList(),
+    onCancel: () => hideModal()
+});
+```
+
+#### **B. Componentes UI Estandarizados**
+- **Modales**: Confirmaciones, alertas, formularios complejos
+- **Loaders**: Estados de carga con spinners Reversa
+- **Feedback**: Banners de éxito/error con colores corporativos
+- **Botones**: Tipos específicos según acción (IA, danger, standard)
+
+#### **C. Patrones de Interacción**
+- **Acciones destructivas**: Siempre requieren confirmación modal
+- **Procesos largos**: Feedback visual con loaders y estados
+- **Errores**: Banners informativos en lugar de alerts
+- **Éxito**: Confirmación visual sutil y persistente
+
 ### 🔮 **Preparación para el Futuro**
 
 La arquitectura actual está preparada para:
@@ -842,4 +878,5 @@ La arquitectura actual está preparada para:
 - **API REST Completa**: Endpoints organizados y documentados
 - **Integración IA**: Sistema de prompts modular y escalable
 - **Multi-tenant**: Base para soporte de múltiples organizaciones
-- **Mobile Apps**: Backend API-first compatible con apps móviles 
+- **Mobile Apps**: Backend API-first compatible con apps móviles
+- **Design System Escalable**: Componentes reutilizables y consistentes 

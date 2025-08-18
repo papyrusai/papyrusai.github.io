@@ -6,6 +6,7 @@
     "start": "node app.js",
     "build": "parcel build public/index.js --dist-dir public/dist",
     "dev": "parcel public/index.html --dist-dir public/dist",
+    "newsletter": "node Otros/email_script/newsletter.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

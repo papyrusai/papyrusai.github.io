@@ -130,7 +130,7 @@ function renderBoletinDocumentos(documents) {
             <div class="resumen-content">${doc.resumen || 'Resumen no disponible.'}</div>
             <div class="margin-impacto">
               <a class="button-impacto"
-                 href="/norma.html?documentId=${doc._id}&collectionName=${collectionName}">
+                 href="/views/analisis/norma.html?documentId=${doc._id}&collectionName=${collectionName}">
                  Analizar documento
               </a>
             </div>

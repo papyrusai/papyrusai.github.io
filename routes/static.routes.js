@@ -6,6 +6,7 @@ Endpoints:
 - GET '/onboarding/paso0.html', '/onboarding/paso4.html': onboarding steps (protected)
 - GET '/profile.html': profile shell HTML (protected)
 - GET '/views/analisis/norma.html': analysis view (protected)
+- GET '/norma.html': legacy redirect to '/views/analisis/norma.html' (protected)
 - GET '/consultas_publicas.html': consultas públicas view (protected)
 - GET '/reset-password.html', '/feedback.html', '/suscripcion_email.html': feature pages
 - GET '/views/tuslistas/textEditor.js': static JS for lists editor (protected)
@@ -66,6 +67,12 @@ router.get('/feedback.html', (req, res) => {
 
 router.get('/suscripcion_email.html', (req, res) => {
 	res.sendFile(path.join(__dirname, '..', 'public', 'features', 'suscripcion_email.html'));
+});
+
+// Redirect legacy norma.html path to new location
+router.get('/norma.html', ensureAuthenticated, (req, res) => {
+	const queryString = req.url.includes('?') ? req.url.substring(req.url.indexOf('?')) : '';
+	res.redirect(`/views/analisis/norma.html${queryString}`);
 });
 
 module.exports = router; 
