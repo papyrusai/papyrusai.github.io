@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Aprendizajes para Etiquetado de Documentos Jurídicos</title>
+    <style>
+        body {
+            font-family: 'Calibri', 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 2cm;
+            color: #333;
+        }
+        h1 {
+            color: #2E5984;
+            font-size: 24pt;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #2E5984;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #2E5984;
+            font-size: 18pt;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            border-left: 5px solid #2E5984;
+            padding-left: 15px;
+        }
+        h3 {
+            color: #1B4F72;
+            font-size: 14pt;
+            font-weight: bold;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        h4 {
+            color: #1B4F72;
+            font-size: 12pt;
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 8px;
+        }
+        p {
+            font-size: 11pt;
+            margin-bottom: 10px;
+            text-align: justify;
+        }
+        .highlight {
+            background-color: #FFF2CC;
+            padding: 10px;
+            border-left: 4px solid #F1C40F;
+            margin: 15px 0;
+        }
+        .example {
+            background-color: #EBF5FB;
+            padding: 15px;
+            border: 1px solid #AED6F1;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .code {
+            background-color: #F4F4F4;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            border: 1px solid #CCC;
+            margin: 15px 0;
+            border-radius: 3px;
+            font-size: 10pt;
+            white-space: pre-wrap;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 5px;
+            font-size: 11pt;
+        }
+        .separator {
+            border-top: 2px solid #D5DBDB;
+            margin: 30px 0;
+        }
+        strong {
+            font-weight: bold;
+            color: #1B4F72;
+        }
+        .important {
+            background-color: #FADBD8;
+            border: 2px solid #E74C3C;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .keywords {
+            background-color: #E8F8F5;
+            padding: 10px;
+            border-left: 4px solid #1ABC9C;
+            margin: 15px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<h1>APRENDIZAJES PARA ETIQUETADO DE DOCUMENTOS JURÍDICOS</h1>
+
+<h2>Indicaciones de Redacción</h2>
+<div class="important">
+    <strong>Importante:</strong> No incluyas "\n" entre cada tag XML
+</div>
+
+<div class="separator"></div>
+
+<h2>Aprendizaje Pendiente por Incluir</h2>
+
+<h3>Etiquetas con Alcance Sectorial Muy Parecido</h3>
+<p>Cuando dos etiquetas cubran ámbitos muy cercanos (p.ej., dos de residuos o dos de protección de datos), usar un mismo patrón de redacción para <code>&lt;Contenido&gt;</code> y <code>&lt;DocumentosNoIncluidos&gt;</code>.</p>
+
+<div class="highlight">
+    <strong>Objetivo:</strong> Esto evita que una esté más "abierta" que otra y genere inconsistencias.
+</div>
+
+<div class="separator"></div>
+
+<h2>Aprendizajes Principales</h2>
+
+<h3>1. La Definición de los Agentes Debe Ser Inequívoca</h3>
+
+<div class="highlight">
+    <strong>Principio:</strong> La definición debe ser lo contrario de ambigua.
+</div>
+
+<p>Las afirmaciones en positivo sobre qué debe buscar el agente filtran el contenido detectable. Es crucial dejar claro si es contenido ilustrativo (ejemplos de cosas a detectar) o exhaustivo. Sin aclarar esto, hay veces que la IA decide que es exhaustivo y no detecta impacto y otras ilustrativo y sí lo pone (más o menos 50/50).</p>
+
+<h4>Ejemplos Ilustrativos</h4>
+
+<div class="example">
+    <p><strong>Documento:</strong> https://www.boe.es/boe/dias/2025/07/29/pdfs/BOE-A-2025-15652.pdf</p>
+    
+    <p><strong>Agente:</strong> "<strong>Protección de Datos MAZ</strong><br>
+    Contexto: MAZ es una mutua colaboradora con la Seguridad Social que ofrece servicios de seguros y asistencia sanitaria en España. <strong>Incluye</strong> Reglamentos, <strong>leyes</strong> u órdenes que <strong>modifiquen la LOPDGDD, el RGPD o su desarrollo sectorial.</strong> Resoluciones, guías y circulares de la AEPD, EDPB o CEPD con alcance general. Criterios, directrices o sanciones de interés transversal sobre tratamiento de datos de salud, IA o brechas de seguridad. No incluye Nombramientos o ceses de delegados de protección de datos en entidades concretas. Sanciones o resoluciones singulares sin valor doctrinal. Acuerdos o convenios privados sin fuerza normativa, ni subvenciones que introducen novedades en datos. Únicamente lo relevante para la empresa Maz."</p>
+    
+    <p><strong>Explicación IA no detección:</strong> "Protección de Datos MAZ": {<br>
+    "explicacion": "Aunque impone obligaciones genéricas de tratamiento de datos sanitarios, no modifica directamente RGPD/LOPDGDD sectorial ni emite criterios de la AEPD aplicables a MAZ.",</p>
+</div>
+
+<h4>Recomendación Clave</h4>
+<p>No se debe dejar a la IA razonar en abierto cuando haya posibles interpretaciones distintas.</p>
+
+<div class="example">
+    <p><strong>Ejemplo 1:</strong> Novedades relevantes pero que no alteran el status quo (no producen nuevas obligaciones o no cambian el criterio judicial) la IA razona correctamente que no se requieren cambios normativos y no etiqueta.</p>
+    
+    <p><strong>Ejemplo 2:</strong> Si se dice que notifique novedades normativas de xx sector relevantes para xx empresa produce inconsistencias. A veces la IA razona que no aplica exactamente a ese sector y no la incluye aunque sea relevante.</p>
+</div>
+
+<h3>2. Incluir un Apartado de Consistencia Como Criterio</h3>
+
+<p>Incluir un apartado de consistencia como criterio mejora la consistencia de resultados.</p>
+
+<div class="example">
+    <p><strong>Ejemplo</strong> (en test con doc con idioma distinto, de 70% acierto a 90%):</p>
+    <p><strong>Consistencia</strong>: Debes razonar y etiquetar de manera consistente, de tal manera que si tuvieras que etiquetar un texto 100 veces, las 100 tendrían el mismo resultado.</p>
+</div>
+
+<h3>3. Agrupar el Contenido por Bloques de XML/Variables</h3>
+
+<p>Agrupar el contenido por bloques de XML/variables ayuda al modelo a identificar y no equivocarse a que nos referimos. Es muy importante referirse al texto a analizar como <code>&lt;DOCUMENTO&gt;</code> y no como texto, texto jurídico u otros nombres.</p>
+
+<div class="example">
+    <p><strong>Ejemplos:</strong></p>
+    <ul>
+        <li>En el idioma, cuando le decías que si el texto era distinto de español o inglés no etiquetara, mejora la consistencia al indicarlo que es el texto de <code>&lt;DOCUMENTO&gt;</code> y debajo meter el texto a analizar dentro de <code>&lt;DOCUMENTO&gt;</code> <code>&lt;/DOCUMENTO&gt;</code></li>
+        <li>En razonamiento dentro de la etiqueta, sustituir "texto" por documento, mejora accuracy de (7/10) a (0/10). "Se debe incluir la etiqueta como identificada si el <strong><code>&lt;DOCUMENTO&gt;</code></strong> cumple alguno de los siguientes casos: a) obliga a empresas como MAZ a implementar cambios en su operativa b) presenta un precedente sancionador o judicial…"</li>
+    </ul>
+</div>
+
+<h3>4. Definir el Objetivo del Agente con la Finalidad/Implicaciones Requeridas</h3>
+
+<p>Definir el objetivo del agente con la finalidad/implicaciones requeridas, en vez de intentar redactar un listado de los tipos de textos a incluir. Escribir los textos concretos incluidos por el agente, genera inconsistencias y que falten textos en producción, porque es imposible y poco eficiente redactar todos los tipos de textos posibles.</p>
+
+<h3>5. Numerar los Objetos de un Listado</h3>
+
+<p>Numerar los objetos de un listado (usando 1,2,3.. o a,b,c…). Una lista larga de textos o contenidos a incluir separados por comas o puntos, hace que la IA se confunda.</p>
+
+<div class="example">
+    <p><strong>Ejemplo:</strong> mejora precisión de (6/10) a (10/10). Con listado de comas a veces solo comprobaba primeros dos elementos y dejaba fuera el texto (que tenía que cogerlo por ser modificación de ley general relevante para sector).</p>
+    
+    <p><strong>Antes:</strong> Para determinar si se etiqueta el texto o no, evalúa si obliga a empresas como MAZ a implementar cambios en su operativa, o si presenta un precedente sancionador o judicial, o si se trata de una ley general u orgánica relevante para la etiqueta o si establece una recomendación o mejores prácticas relevantes para el sector.</p>
+    
+    <p><strong>Después:</strong> Se debe incluir la etiqueta como identificada si el texto cumple alguno de los siguientes casos: a) obliga a empresas como MAZ a implementar cambios en su operativa b) presenta un precedente sancionador o judicial c) se trata de una ley general u orgánica relevante para la etiqueta d) se establece una recomendación o mejores prácticas relevantes para el sector</p>
+</div>
+
+<h3>6. Ajustes Parámetros API</h3>
+<p>o4mini_medium, temperature=0 (no se puede ajustar parece), seed=1</p>
+
+<h3>7. Elementos del Bloque de Contenido</h3>
+
+<div class="example">
+    <p><strong>Ejemplo protección de datos EOS:</strong></p>
+    <div class="code">&lt;Razonamiento&gt;
+Se debe etiquetar el &lt;DOCUMENTO&gt; si cumple al menos uno de los siguientes supuestos:
+ a) <strong>Nuevas obligaciones, Ej:</strong> Impone nuevas obligaciones, prohibiciones o medidas correctivas que obliguen a empresas como EOS a adaptar su operativa.
+ b) <strong>Sanciones y jurisprudencia, Ej:</strong> Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos
+ c) <strong>Leyes generales, Ej:</strong> Es una ley general u orgánica (o modifica una ley general u orgánica) relevante para la etiqueta 
+ d) <strong>Soft-law, recomendaciones, Ej:</strong> Establece una recomendación o guía de mejores prácticas relevantes en protección de datos.  Aunque el &lt;DOCUMENTO&gt; no introduzca obligaciones o sanciones, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y judiciales
+&lt;/Razonamiento&gt;</div>
+</div>
+
+<div class="highlight">
+    <strong>Aprendizaje Extra:</strong> Si por ej, no hay una cláusula sobre subvenciones o incentivos fiscales, no aparecerá etiquetado un texto sobre eso (dado que no impone obligaciones).
+</div>
+
+<h3>8. Dejar Claro que Excluir Convenios Particulares y Resoluciones de Particulares, No Implica No Recoger Sanciones y Decisiones Judiciales</h3>
+
+<div class="example">
+    <p><strong>Ejemplo</strong> (mejora de 0/6 a 6/6):</p>
+    <div class="code">&lt;Razonamiento&gt; b) Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos, <strong>ya que sirven como indicativo de tendencias reguladoras y judiciales, aunque afecten a particulares concretos distintos de MAZ</strong>
+
+&lt;DocumentosNoIncluidos&gt;
+Lista exhaustiva (no ampliar):
+• Nombramientos o ceses individuales de Delegados de Protección de Datos (DPO).
+• Convenios y resto de resoluciones <strong>(que no sean sanciones o decisiones judiciales)</strong> que afectan a particulares o empresas concretas sin efectos jurídicos generales</div>
+</div>
+
+<h3>9. Incluir Contenido Sobre Dos Ámbitos Distintos en Líneas Separadas Mejora el Output</h3>
+
+<div class="example">
+    <p><strong>Ejemplo:</strong> " f) Es una ley, real decreto, decreto autonómico, orden o ordenanza definitiva que introduce obligaciones o tasas sobre residuos <strong>o tabaco" —> falla</strong> , <strong>separando en líneas funciona:</strong> " f) Es una ley, real decreto, decreto autonómico, orden o ordenanza definitiva que introduce obligaciones o tasas sobre residuos  g) Novedades normativas sobre tabaco"</p>
+</div>
+
+<h3>10. Importancia de las Palabras Clave/Keywords</h3>
+
+<p>En residuos y economía circular, faltaba "industria limpia" y no pillaba una recomendación. También faltaba "incentivo fiscal" para pillar otra.</p>
+
+<div class="keywords">
+    <strong>Materias Keywords:</strong> Acumuladores, Aparatos eléctricos, Aparatos electrónicos, Convivencia, Economía Circular, Envases, Espacios públicos, Estrategia, Filtros, Fumar, Gestión ambiental, Infraestructuras verdes, Medio ambiente, Neumáticos, Pilas, Plásticos, Playas, Productor, Productor de producto, Residuos, Responsabilidad ampliada, Subproducto, Tabaco, Vertederos
+</div>
+
+<h3>11. Las Menciones Repetidas de Obligaciones en el Objetivo del System Prompt</h3>
+
+<p>Las menciones repetidas de obligaciones en el objetivo del system prompt hacía que a veces no identificara otras disposiciones (recomendaciones, sanciones etc…). Se ha redactado un objetivo más genérico y parece que funciona correctamente.</p>
+
+<div class="example">
+    <p><strong>Ejemplo Antiguo:</strong> "1. OBJETIVO<br>
+    Determinar qué sectores quedan directamente afectados por <strong>las obligaciones, prohibiciones o modificaciones de un texto jurídico</strong> y evaluar el nivel de impacto ESPECÍFICO para cada sector/etiqueta..."</p>
+    
+    <p><strong>Ejemplo Nuevo:</strong> "1. OBJETIVO<br>
+    <strong>Determinar si el contenido del &lt;DOCUMENTO&gt; coincide con el contenido descrito en las &lt;etiquetas&gt;</strong> y evaluar el nivel de impacto ESPECÍFICO para cada etiqueta..."</p>
+</div>
+
+<h3>12. En Listados, Cuando No Sean Exhaustivos Añadir "Similar" al Final</h3>
+
+<p>En listados, cuando no sean exhaustivos añadir "similar" al final, para contemplar casos que no sean exactos y que la IA no pueda razonar que no es relevante. Además, cuando se quiera mayor amplitud utilizar términos como "relacionado con sector…" más que "empresas que operen en sector…".</p>
+
+<div class="example">
+    <p><strong>Ejemplo:</strong> "Se pueden derivar oportunidades estratégicas o incentivos fiscales del &lt;DOCUMENTO&gt; para <strong>empresas que operen en el sector de residuos</strong>, economía circular o descarbonización..." —→ "Se pueden derivar oportunidades estratégicas o incentivos fiscales del &lt;DOCUMENTO&gt; <strong>relacionados con el sector</strong> de residuos, economía circular, descarbonización <strong>o similar</strong>" (Acierto de 60% —> 100% en run de 10)</p>
+</div>
+
+<h3>13. En Exclusiones, Cuando Sean Todos los de un Tipo Menos X</h3>
+
+<p>En exclusiones, cuando sean todos los de un tipo menos x que sí debe estar incluido, se debe meter ese x como cláusula positiva de contenido (el documento es xx) y redactar la exclusión: "Se excluyen Convenios/Resoluciones/xx que no estén incluidas en apartado x) de &lt;contenido&gt;</p>
+
+<h3>14. Listados Largos de Keywords o Palabras a Incluir</h3>
+
+<p>Listados largos de keywords o palabras a incluir, dejarlo abierto produce resultados más inconsistentes/impredecibles.</p>
+
+<div class="example">
+    <p><strong>Ejemplo:</strong> "en sectores como competencia, protección de datos, medioambiente, energía o consumo." vs "en los sectores de competencia, protección de datos, medioambiente, energía y consumo"</p>
+</div>
+
+<h3>15. Redacción de Supuestos de Contenido</h3>
+
+<p>Redacción de supuestos de contenido:</p>
+
+<ol type="a">
+    <li><strong>Disyunción lógica (OR)</strong> (ej: "Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el &lt;DOCUMENTO&gt; si cumple al menos uno de los siguientes supuestos:…"</li>
+    <li><strong>Parte conjunción lógica y parte disyunción lógica (AND + OR)</strong> ("Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el &lt;DOCUMENTO&gt; únicamente si procede del BOE...")</li>
+    <li><strong>Conjunción lógica (AND)</strong> ("Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el &lt;DOCUMENTO&gt; únicamente si se cumplen todos los siguientes supuestos: …".</li>
+</ol>
+
+<div class="highlight">
+    Es importante que a la hora de redactar los supuestos de contenido utilices alguno de estos métodos, no inventes otra manera.
+</div>
+
+<h3>16. Objetivo</h3>
+
+<p>El objetivo se debe redactar teniendo en cuenta la generalidad/funcionalidad de la etiqueta. Normalmente seguirá una estructura similar a: "Detectar novedades normativas relevantes en… {sector/área de interés de la etiqueta}"</p>
+
+<ul>
+    <li><strong>Correcto:</strong> "Detectar reformas/criterios que alteren proceso, fiscalidad y responsabilidades en compra-venta y servicing de carteras."</li>
+    <li><strong>Incorrecto:</strong> "Detectar Ley 4/2022 y normas conexas, códigos BDE, RDs y guías que extiendan protecciones..." (debe ser más general sobre la materia)</li>
+</ul>
+
+<h3>17. Contexto</h3>
+
+<p>Debe resumir en una o dos frases a qué se dedica la empresa usuaria de la plataforma:</p>
+
+<ul>
+    <li><strong>Correcto:</strong> "EOS es una entidad de gestión de crédito que opera en España y gestiona carteras NPL (Non Performing Loans)"</li>
+    <li><strong>Incorrecto:</strong> "EOS opera con deudores minoristas; la protección a colectivos vulnerables impacta recobro, reputación y riesgos."</li>
+</ul>
+
+<h3>18. Evitar la Omisión de Palabras</h3>
+
+<p>Evitar la omisión de palabras, para no dar lugar a interpretaciones.</p>
+
+<div class="example">
+    <p><strong>Ejemplo:</strong> "Reglamentos de ejecución o delegados" se podría interpretar como que "delegados" es un tipo de documento. Redactar: "Reglamentos de ejecución o reglamentos delegados", para evitar ambigüedades.</p>
+</div>
+
+<h3>19. Establecer Prevalencias ante Contradicciones</h3>
+<p>"Prevalecen las restricciones sobre inclusiones"</p>
+
+<h3>20. Incluir la Identificación de Variables Clave</h3>
+<p>Incluir la identificación de variables clave (idioma y rango) relevantes para tomar decisiones/aplicar criterios de interpretación.</p>
+
+<h3>21. Pendiente: Definir Criterios para Evaluar si el Agente es Específico o General</h3>
+
+<h3>22. Crear Listado de Preguntas que Debe Hacer la IA</h3>
+<p>Crear listado de preguntas que debe hacer la IA para afinar agente: tipo de documento: rango alto ley, lo, ley general, europeo, sanciones, jurisprudencia, guías, soft-law, resoluciones, convenios, órdenes, planes estratégicos, subvenciones, informes, mandatos, nombramientos, licitaciones públicas, sujeto afectado (particulares, empresas u organismos públicos concretas, efectos generales), ámbito de aplicación geográfico (estatal/europeo, nacional, regional, municipal)</p>
+
+<h3>23. Considerar si son Obligaciones/Prohibiciones con Efecto General</h3>
+<p>Considerar si son obligaciones/prohibiciones con efecto general o con alcance limitado al &lt;DOCUMENTO&gt; (contrato/resolución...) como manera de medir si son referencias tangenciales a etiqueta y no deben estar incluidas (obligaciones de datos, residuos, employment, fiscales...)</p>
+
+<div class="separator"></div>
+
+<div class="important">
+    <h2>IMPORTANTE</h2>
+    <p><strong>Paquetizar todo en keywords a incluir, cláusulas de inclusión (obligaciones/prohibiciones, sanciones/jurisprudencia...), docs a excluir... + personalizado (para frases personalizadas incluidas por usuario, se meten como tag XML extra. Explicar estructura agente en)</strong></p>
+</div>
+
+<h3>24. Clausulados Estándar Reutilizables</h3>
+
+<p>Clausulados estándar reutilizables (soft-law, sanciones/jurisprudencia y exclusión de particulares)</p>
+
+<div class="highlight">
+    <strong>Importante:</strong> Iniciar <code>&lt;Contenido&gt;</code> siempre con: "Teniendo en cuenta el <code>&lt;Objetivo&gt;</code> de la etiqueta, se debe etiquetar el <code>&lt;DOCUMENTO&gt;</code> si cumple al menos uno de los siguientes supuestos:". Iniciar <code>&lt;DocumentosNoIncluidos&gt;</code> siempre con: "Aunque cumpla los criterios de inclusión, EL <code>&lt;DOCUMENTO&gt;</code> no debe ser etiquetado por esta etiqueta si cumple alguno de los siguientes supuestos:"
+</div>
+
+<h4>Nota de Uso</h4>
+<p>Cada vez que el input incluya, en las secciones de Contenido o DocumentosNoIncluidos, información que encaje con alguna de las siguientes cláusulas tipo, conviértela a la plantilla correspondiente sustituyendo los tokens <code>&lt;AMBITO&gt;</code>, <code>&lt;SUJETO&gt;</code>, <code>&lt;AUTORIDAD&gt;</code>, <code>&lt;FUENTES&gt;</code>, <code>&lt;LISTA_MATERIAS&gt;</code> o <code>&lt;letra_sanciones&gt;</code> según aplique.</p>
+
+<h4>Cláusulas Tipo para CONTENIDO (elige y combina):</h4>
+
+<ul>
+    <li><strong>Criterio previo de procedencia (AND + OR):</strong><br>
+    "Se debe etiquetar el <code>&lt;DOCUMENTO&gt;</code> únicamente si procede de <code>&lt;FUENTES&gt;</code> y cumple al menos uno de los siguientes supuestos: …"</li>
+    
+    <li><strong>Cláusula general: Nuevas obligaciones/prohibiciones/medidas:</strong><br>
+    - empresa: "Impone nuevas obligaciones, prohibiciones o medidas correctivas que obliguen a <code>&lt;SUJETO&gt;</code> a adaptar su operativa/sistemas."<br>
+    - sector: "Establece nuevas obligaciones o prohibiciones que afectan a <code>&lt;ÁMBITO&gt;</code>."</li>
+    
+    <li><strong>Principales leyes: Ley general u orgánica:</strong><br>
+    - abierta: "Es una ley general u orgánica (o modifica una ley general u orgánica) relevante para <code>&lt;AMBITO&gt;</code>."</li>
+    
+    <li><strong>Soft-law (guías, Q&A, recomendaciones):</strong><br>
+    "Guía, Q&A o recomendación de <code>&lt;AUTORIDAD&gt;</code> relevante para <code>&lt;AMBITO&gt;</code>; aunque el &lt;DOCUMENTO&gt; no introduzca obligaciones ni sanciones, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y supervisoras/judiciales."</li>
+    
+    <li><strong>Sanciones y jurisprudencia:</strong><br>
+    "Establece sanciones económicas (de reguladores como <code>&lt;AUTORIDAD&gt;</code>) o criterio jurisprudencial en <code>&lt;AMBITO&gt;</code>; aunque el &lt;DOCUMENTO&gt; afecte a particulares concretos y la sanción o decisión judicial no suponga un criterio novedoso, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y judiciales."</li>
+</ul>
+
+<h4>Cláusulas Tipo para DOCUMENTOS NO INCLUIDOS (elige y combina):</h4>
+
+<ul>
+    <li><strong>Exclusión de particulares con excepción:</strong><br>
+    "Resoluciones, convenios u órdenes sin efectos generales que afecten a personas, empresas o administraciones concretas, salvo las del apartado <code>&lt;letra_sanciones&gt;</code> de &lt;Contenido&gt; que sí deben incluirse."</li>
+    
+    <li><strong>Exclusión de convenios no IG:</strong><br>
+    "Convenios que no estén incluidos en el apartado de &lt;Contenido&gt; sobre convenios de interés general."</li>
+    
+    <li><strong>Exclusión de normativa local/ámbito acotado:</strong><br>
+    a) Municipal: "Documentos cuyo ámbito de aplicación afecte únicamente a un municipio (normativa local), salvo que el agente especifique lo contrario."</li>
+</ul>
+
+<h4>Formato y Consistencia:</h4>
+
+<ul>
+    <li>Un solo renglón por etiqueta; no introducir "\n" entre tags XML.</li>
+    <li>Orden y numeración estable (a), b), c)…); usar OR por defecto; si se requiere AND, indicarlo explícitamente en el criterio previo de procedencia.</li>
+    <li>Mantener la misma literalidad de nombres de etiquetas y campos que en el catálogo/definición de entrada.</li>
+</ul>
+
+</body>
+</html> 

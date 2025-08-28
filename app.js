@@ -94,6 +94,9 @@ const generacioncontenidoRoutes = require('./routes/generacioncontenido.routes')
 const agentesRoutes = require('./routes/agentes.routes');
 const listasRoutes = require('./routes/listas.routes');
 const onboardingRoutes = require('./routes/onboarding.routes');
+const enterpriseRoutes = require('./routes/enterprise.routes');
+const permisosRoutes = require('./routes/permisos.routes');
+const etiquetasRoutes = require('./routes/etiquetas.routes');
 
 // Mount routers
 app.use(authRoutes);
@@ -107,6 +110,9 @@ app.use(generacioncontenidoRoutes);
 app.use(agentesRoutes);
 app.use(listasRoutes);
 app.use(onboardingRoutes);
+app.use(etiquetasRoutes);    // New unified etiquetas endpoints
+app.use(enterpriseRoutes);   // Must be before permisosRoutes (contains /api/user-context)
+app.use(permisosRoutes);
 
 // Middleware to ensure user is authenticated
 function ensureAuthenticated(req, res, next) {

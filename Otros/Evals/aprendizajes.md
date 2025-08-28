@@ -153,10 +153,12 @@ Keywords: Acumuladores, Aparatos eléctricos, Aparatos electrónicos, Convivenci
 - 18. Establecer prevalencias ante contradicciones: "prevalence las restricciones sobre inclusiones"
 - 19. Incluir la identificaciond e variables clave (idioma y rango) relevantes para tomar decisiones/aplicar criterios de interpretación
 - 20. Pendiente: definir criterios para evaluar si el agente es especifico o general.
-- 21. Crear listado de preguntas que debe hacer la IA sobre para afinar agente: tipo de documento: rango alto ley, lo, ley general, europeo, sanciones, jurisprudencia, guias, soft-low, resoluciones, convenios, ordenes, planes estrategicos, subvenciones, informes,mandatos, nombramientos, ver si alguno más ), sujeto afectado (particulares, empresas u organismos pubkicos concretas, efectos generales), ámbito de aplicación geográfico (estatal/europeo, nacional, regional, municipal)
+- 21. Crear listado de preguntas que debe hacer la IA sobre para afinar agente: tipo de documento: rango alto ley, lo, ley general, europeo, sanciones, jurisprudencia, guias, soft-low, resoluciones, convenios, ordenes, planes estrategicos, subvenciones, informes,mandatos, nombramientos,licitaciones públicas ver si alguno más ), sujeto afectado (particulares, empresas u organismos pubkicos concretas, efectos generales), ámbito de aplicación geográfico (estatal/europeo, nacional, regional, municipal)
+- 22. Considerar sis son olbigaciones/prohibiciones con efecto general o con alcance limitado al <DOCUMENTO> (contrato/resolución...) como manera de medir si son referencias tangenciales a etiqueta y no deben estar incluidas (obligaciones de datos, residuos, employment, fiscales...)  
 
+- IMPORTANTE. `Paquetizar todo en keywords a incluir, clausulas de inclusion (obligaciones/prohibiciones, sanciones/jrisprudencia...), docs a excluir... + personalizado (para frase personaliadas incluidas por usuario, se meten como tag XML extra. Explicar estructura agente en)
 
--  22. Clausulados estándar reutilizables (soft-law, sanciones/jurisprudencia y exclusión de particulares)
+-  23. Clausulados estándar reutilizables (soft-law, sanciones/jurisprudencia y exclusión de particulares)
      
     Importante: Iniciar <Contenido> siempre con: "Teniendo en cuenta el <Objetivo> de la etiqueta,se debe etiquetar el <DOCUMENTO> si cumple al menos uno de los siguientes supuestos:". Iniciar <DocumentosnoIncluidos> siempre con: "Aunque cumpla los criterios de inclusión, EL <DOCUMENTO> no debe ser etiquetado por esta etiqueta si cumple alguno de los siguientes supuestos:" A cotnuacion de ambas frases completar con las clausulas correspondientes:
     

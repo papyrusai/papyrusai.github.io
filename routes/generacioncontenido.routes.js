@@ -11,6 +11,7 @@ const ensureAuthenticated = require('../middleware/ensureAuthenticated');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const { getEtiquetasPersonalizadasAdapter } = require('../services/enterprise.service');
 
 // Ensure fetch is available
 if (typeof fetch === 'undefined') {
@@ -157,8 +158,9 @@ router.post('/api/generate-marketing-content', ensureAuthenticated, async (req, 
 			await client.connect();
 			const database = client.db('papyrus');
 			const usersCollection = database.collection('users');
-			const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) }, { projection: { etiquetas_personalizadas: 1 } });
-			const userEtiquetasDefiniciones = user?.etiquetas_personalizadas || {};
+			// ENTERPRISE ADAPTER: Obtener etiquetas según tipo de cuenta (empresa/individual)
+			const etiquetasResult = await getEtiquetasPersonalizadasAdapter(req.user);
+			const userEtiquetasDefiniciones = etiquetasResult.etiquetas_personalizadas || {};
 			console.log(`User tag definitions found: ${Object.keys(userEtiquetasDefiniciones).length} tags`);
 			for (const doc of selectedDocuments) {
 				const enrichedDoc = { ...doc };

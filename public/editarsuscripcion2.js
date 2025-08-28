@@ -858,6 +858,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Add new event listener to show the subscription modal directly
     newButton.addEventListener('click', function(e) {
+      // Skip modal if this is the Agentes shortcut button
+      if (this && this.id === 'editSuscription2') {
+        return; // let tracker.js handler manage navigation
+      }
       e.preventDefault();
       // Show subscription container instead of redirecting
       if (typeof showSubscriptionModal === 'function') {

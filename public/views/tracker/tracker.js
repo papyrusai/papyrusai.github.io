@@ -44,75 +44,99 @@ function loadChart(months, counts) {
   
   if (!ctx) {
     console.log('No se encontró el elemento canvas para el chart');
-    // Ocultar loader si no hay canvas
-    if (loadingIconChart) {
-      loadingIconChart.style.display = 'none';
-    }
+    if (loadingIconChart) loadingIconChart.style.display = 'none';
     return;
   }
   
-  // Destruir chart existente si existe
   if (trackerChart) {
     trackerChart.destroy();
     trackerChart = null;
   }
   
   try {
-    // Determinar el tipo de chart y datos basado en el rango de fechas
-    const startDate = document.getElementById('startDate')?.value;
-    const endDate = document.getElementById('endDate')?.value;
-    
-    let chartType = 'bar';
-    let chartData = { labels: months, counts: counts };
-    let timeUnit = 'month';
-    
-    // Calcular diferencia de meses si tenemos fechas
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const diffMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-      
-      if (diffMonths <= 1) {
-        // Un mes o menos - mostrar por días
-        timeUnit = 'day';
-        chartData = generateDailyData(startDate, endDate, months, counts);
+    // Usar el escalado interno de Chart.js para evitar blur
+    const canvas = ctx;
+    canvas.style.imageRendering = 'auto';
+    const desiredDpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+
+    // Ajustar tamaño del canvas al wrapper para evitar reescalados CSS
+    try {
+      const wrapper = canvas.parentElement;
+      if (wrapper) {
+        const rect = wrapper.getBoundingClientRect();
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+      }
+    } catch(_) {}
+
+    // Construir SIEMPRE una serie diaria continua del rango seleccionado
+    const startDateStr = document.getElementById('startDate')?.value;
+    const endDateStr = document.getElementById('endDate')?.value;
+
+    // Map de conteos diarios devueltos por el backend
+    let dailyMap = null;
+    if (Array.isArray(window.__dailyLabels) && Array.isArray(window.__dailyCounts)) {
+      dailyMap = {};
+      for (let i = 0; i < window.__dailyLabels.length; i++) {
+        dailyMap[window.__dailyLabels[i]] = window.__dailyCounts[i] || 0;
       }
     }
-    
-    const dataset = {
-      label: timeUnit === 'day' ? 'Documentos por día' : 'Documentos por mes',
-      data: chartData.counts,
-      backgroundColor: 'rgba(4, 219, 141, 0.7)',
-      borderColor: '#04db8d',
-      borderWidth: 2,
-      borderRadius: 6,
-      borderSkipped: false,
-      hoverBackgroundColor: 'rgba(4, 219, 141, 0.9)',
-      hoverBorderColor: '#04db8d',
-      hoverBorderWidth: 3
-    };
-    
+
+    let labels = [];
+    let series = [];
+    if (startDateStr && endDateStr) {
+      const start = new Date(startDateStr);
+      const end = new Date(endDateStr);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const da = String(d.getDate()).padStart(2, '0');
+          const key = `${y}-${m}-${da}`;
+          labels.push(key);
+          series.push(dailyMap && key in dailyMap ? dailyMap[key] : 0);
+        }
+      }
+    }
+
+    // Fallback si no hay fechas o mapa
+    if (labels.length === 0) {
+      if (dailyMap) {
+        const keys = Object.keys(dailyMap).sort();
+        labels = keys;
+        series = keys.map(k => dailyMap[k]);
+      } else {
+        labels = Array.isArray(months) ? months : [];
+        series = Array.isArray(counts) ? counts : [];
+      }
+    }
+
+    const numDays = labels.length;
+
     trackerChart = new Chart(ctx, {
-      type: chartType,
+      type: 'line',
       data: {
-        labels: chartData.labels,
-        datasets: [dataset]
+        labels,
+        datasets: [{
+          label: 'Alertas por día',
+          data: series,
+          fill: false,
+          borderColor: '#04db8d',
+          backgroundColor: 'rgba(4,219,141,0.2)',
+          borderWidth: 2,
+          pointRadius: 2,
+          pointHoverRadius: 4,
+          tension: 0.3,
+          spanGaps: false
+        }]
       },
       options: {
+        devicePixelRatio: desiredDpr,
         responsive: true,
         maintainAspectRatio: false,
-        layout: {
-          padding: {
-            top: 20,
-            right: 20,
-            bottom: 20,
-            left: 20
-          }
-        },
+        layout: { padding: { top: 8, right: 12, bottom: 8, left: 12 } },
         plugins: {
-          legend: {
-            display: false
-          },
+          legend: { display: false },
           tooltip: {
             backgroundColor: '#0b2431',
             titleColor: '#ffffff',
@@ -121,111 +145,70 @@ function loadChart(months, counts) {
             borderWidth: 2,
             cornerRadius: 8,
             displayColors: false,
-            titleFont: {
-              size: 14,
-              weight: '600'
-            },
-            bodyFont: {
-              size: 13
-            },
-            padding: 12,
-            callbacks: {
-              title: function(context) {
-                const label = context[0].label;
-                if (timeUnit === 'day') {
-                  return `Día ${label}`;
-                }
-                return label;
-              },
-              label: function(context) {
-                const value = context.parsed.y;
-                const unit = timeUnit === 'day' ? 'día' : 'mes';
-                return `${value} documento${value !== 1 ? 's' : ''} este ${unit}`;
-              }
-            }
+            padding: 10
           }
         },
         scales: {
           x: {
-            display: true,
-            grid: {
-              display: false
-            },
+            grid: { display: false },
             ticks: {
               color: '#6c757d',
-              font: {
-                size: 12,
-                weight: '500'
-              },
-              maxTicksLimit: timeUnit === 'day' ? 15 : 8
-            },
-            border: {
-              display: false
-            },
-            title: {
-              display: true,
-              text: timeUnit === 'day' ? 'Días' : 'Meses',
-              color: '#0b2431',
-              font: {
-                size: 13,
-                weight: '600'
+              font: { size: 12, weight: '500' },
+              autoSkip: false,
+              callback: function(value, index) {
+                const label = this.getLabelForValue(value);
+                // <=35 días: referencias cada 3 días
+                if (numDays <= 35) return index % 3 === 0 ? label?.slice(5).replace('-', '/') : '';
+                // <=92 días (≈3 meses): referencias semanales (cada 7 días)
+                if (numDays <= 92) return index % 7 === 0 ? label?.slice(5).replace('-', '/') : '';
+                // >92 días: referencias mensuales (inicio de mes)
+                return label && label.endsWith('-01') ? label.slice(0, 7) : '';
               }
-            }
+            },
+            border: { display: false },
+            title: { display: true, text: 'Fecha', color: '#0b2431', font: { size: 13, weight: '600' } }
           },
           y: {
-            display: true,
             beginAtZero: true,
-            grid: {
-              color: 'rgba(108, 117, 125, 0.1)',
-              drawBorder: false
-            },
-            ticks: {
-              color: '#6c757d',
-              font: {
-                size: 12,
-                weight: '500'
-              },
-              stepSize: 1,
-              padding: 10
-            },
-            border: {
-              display: false
-            },
-            title: {
-              display: true,
-              text: 'Documentos',
-              color: '#0b2431',
-              font: {
-                size: 13,
-                weight: '600'
-              }
-            }
+            grid: { color: 'rgba(108,117,125,0.1)', drawBorder: false },
+            ticks: { color: '#6c757d', font: { size: 12, weight: '500' }, stepSize: 1, padding: 8 },
+            title: { display: true, text: 'Alertas', color: '#0b2431', font: { size: 13, weight: '600' } }
           }
         },
-        interaction: {
-          intersect: false,
-          mode: 'index'
-        }
+        interaction: { intersect: false, mode: 'index' }
       }
     });
-    
-    // Mostrar el chart y ocultar el loader
+
     if (chartContainer) {
       chartContainer.style.display = 'block';
       chartContainer.classList.add('loaded');
     }
-    if (loadingIconChart) {
-      loadingIconChart.style.display = 'none';
-    }
-    
-    console.log(`Chart cargado correctamente - Tipo: ${chartType}, Unidad: ${timeUnit}`);
+    if (loadingIconChart) loadingIconChart.style.display = 'none';
+
+    // Re-render al cambiar tamaño/zoom para máxima nitidez
+    try {
+      if (window.__chartResizeObserver) window.__chartResizeObserver.disconnect();
+      const ro = new ResizeObserver(() => {
+        const newDpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        if (trackerChart && trackerChart.options) {
+          trackerChart.options.devicePixelRatio = newDpr;
+          try {
+            const wrapper = canvas.parentElement;
+            if (wrapper) {
+              const rect = wrapper.getBoundingClientRect();
+              canvas.style.width = rect.width + 'px';
+              canvas.style.height = rect.height + 'px';
+            }
+          } catch(_) {}
+          trackerChart.resize();
+        }
+      });
+      ro.observe(document.body);
+      window.__chartResizeObserver = ro;
+    } catch(_) {}
   } catch (error) {
     console.error('Error al crear el chart:', error);
-    
-    // En caso de error, ocultar el loader
-    if (loadingIconChart) {
-      loadingIconChart.style.display = 'none';
-    }
+    if (loadingIconChart) loadingIconChart.style.display = 'none';
   }
 }
 
@@ -282,9 +265,31 @@ function generateDailyData(startDate, endDate, months, counts) {
 }
 
 // Función principal para cargar y mostrar los agentes suscritos
-function loadAgentesContainer() {
+async function loadAgentesContainer() {
   const agentesContainer = document.getElementById('agentesContainer');
   if (!agentesContainer) return;
+  
+  // Obtener contexto enterprise para renombrar encabezado
+  let enterpriseContext = null;
+  try {
+    const ctxResp = await fetch('/api/user-context');
+    if (ctxResp.ok) enterpriseContext = await ctxResp.json();
+  } catch(_) {}
+  
+  // Cambiar encabezado dinámicamente para cuentas empresa con favoritos
+  try {
+    const headerEl = document.querySelector('.detalle-cuenta .etiquetas-label');
+    if (headerEl && enterpriseContext?.context?.tipo_cuenta === 'empresa') {
+      const selResp = await fetch('/api/agentes-seleccion-personalizada');
+      const selData = await selResp.json();
+      const favCount = Array.isArray(selData?.seleccion) ? selData.seleccion.length : 0;
+      if (favCount > 0) {
+        headerEl.textContent = 'Agentes Favoritos';
+      } else {
+        headerEl.textContent = 'Agentes Suscritos';
+      }
+    }
+  } catch(_) {}
   
   // Obtener el email del usuario para verificar si debe mostrar la vista de nodos
   let userEmail = null;
@@ -326,14 +331,33 @@ function loadAgentesContainer() {
     agentesContainer.className = 'etiquetas-values';
   }
   
-  // Obtener las etiquetas personalizadas del usuario desde el DOM global
-  const etiquetasPersonalizadas = getEtiquetasPersonalizadasSafely();
+  // Obtener las etiquetas personalizadas del usuario desde el DOM global o enterprise resolver
+  let etiquetasPersonalizadas = getEtiquetasPersonalizadasSafely();
   
-  // En el documento de usuario, etiquetas_personalizadas es directamente el objeto de etiquetas,
-  // no contiene un objeto anidado con userId como clave
-  const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
+  // Si está vacío, intentar cargar etiquetas seleccionadas del adaptador enterprise
+  if (!etiquetasPersonalizadas || Object.keys(etiquetasPersonalizadas).length === 0) {
+    try {
+      const resp = await fetch('/api/etiquetas-seleccionadas');
+      const data = await resp.json();
+      if (data && data.success) {
+        // Preferir mapping completo si viene; si no, construir objeto con las etiquetas
+        if (data.etiquetas_mapping && Object.keys(data.etiquetas_mapping).length > 0) {
+          etiquetasPersonalizadas = data.etiquetas_mapping;
+        } else if (Array.isArray(data.etiquetas_seleccionadas) && data.etiquetas_seleccionadas.length > 0) {
+          etiquetasPersonalizadas = data.etiquetas_seleccionadas.reduce((acc, k) => { acc[k] = ''; return acc; }, {});
+        } else if (data.etiquetas_disponibles && Object.keys(data.etiquetas_disponibles).length > 0) {
+          // Fallback a todas las disponibles (individual con 0 seleccionadas)
+          etiquetasPersonalizadas = data.etiquetas_disponibles;
+        }
+      }
+    } catch (e) {
+      console.log('No se pudieron cargar etiquetas seleccionadas enterprise:', e);
+    }
+  }
   
-  // Si no hay etiquetas personalizadas, mostrar mensaje
+  const etiquetasKeys = Object.keys(etiquetasPersonalizadas || {});
+  
+  // Si tras el intento sigue vacío, mostrar mensaje
   if (etiquetasKeys.length === 0) {
     agentesContainer.innerHTML = '<div class="no-agentes">No hay agentes configurados</div>';
     return;
@@ -717,66 +741,99 @@ function toggleNivelImpactoDropdown(event) {
 }
 
 // Función para cargar y mostrar las etiquetas personalizadas en el dropdown de búsqueda
-function loadEtiquetasDropdown() {
+// NUEVO: Usa solo etiquetas_personalizadas_seleccionadas con degradación elegante
+async function loadEtiquetasDropdown() {
   const etiquetasDropdown = document.getElementById('etiquetasDropdown');
   if (!etiquetasDropdown) return;
   
-  // Verificar si es el usuario específico y si está usando la vista de nodos
-  let userEmail = null;
   try {
-    const userEmailElement = document.getElementById('userEmail');
-    if (userEmailElement && userEmailElement.textContent) {
-      const emailContent = userEmailElement.textContent.trim();
-      // Verificar si el contenido es un template sin procesar
-      if (emailContent.startsWith('"') && emailContent.endsWith('"') && !emailContent.includes('{{')) {
-        userEmail = JSON.parse(emailContent);
-      } else if (emailContent && !emailContent.includes('{{')) {
-        userEmail = emailContent;
+    // ENTERPRISE ADAPTER: Cargar etiquetas seleccionadas del usuario
+    const response = await fetch('/api/etiquetas-seleccionadas');
+    const data = await response.json();
+    
+    if (!data.success) {
+      console.error('Error cargando etiquetas seleccionadas:', data.error);
+      etiquetasDropdown.innerHTML = '<div class="no-etiquetas">Error cargando agentes</div>';
+      return;
+    }
+    
+    const etiquetasSeleccionadas = data.etiquetas_seleccionadas || [];
+    const metadata = data.metadata || {};
+    
+    // Log para debugging
+    console.log(`[loadEtiquetasDropdown] Etiquetas seleccionadas: ${etiquetasSeleccionadas.length}/${metadata.total_disponibles} disponibles`);
+    if (metadata.etiquetas_filtradas > 0) {
+      console.log(`[loadEtiquetasDropdown] ${metadata.etiquetas_filtradas} etiquetas filtradas (no existen en fuente de verdad)`);
+    }
+    
+    // Verificar si es el usuario específico y si está usando la vista de nodos
+    let userEmail = null;
+    try {
+      const userEmailElement = document.getElementById('userEmail');
+      if (userEmailElement && userEmailElement.textContent) {
+        const emailContent = userEmailElement.textContent.trim();
+        if (emailContent.startsWith('"') && emailContent.endsWith('"') && !emailContent.includes('{{')) {
+          userEmail = JSON.parse(emailContent);
+        } else if (emailContent && !emailContent.includes('{{')) {
+          userEmail = emailContent;
+        }
+      }
+    } catch (e) {
+      userEmail = sessionStorage.getItem('userEmail');
+    }
+    
+    const isNodesUser = userEmail === 'burgalonso@gmail.com';
+    let etiquetasToShow = etiquetasSeleccionadas;
+    
+    // Si es el usuario de nodos, filtrar por el nodo activo
+    if (isNodesUser && etiquetasToShow.length > 0) {
+      // Para nodos, usar etiquetas mapping para tener las definiciones
+      const etiquetasMapping = data.etiquetas_mapping || {};
+      etiquetasToShow = getAgentesFromActiveNode(etiquetasMapping).filter(agente => 
+        etiquetasSeleccionadas.includes(agente)
+      );
+    }
+    
+    // Si no hay etiquetas seleccionadas, hacer fallback a todas las disponibles
+    if (etiquetasToShow.length === 0) {
+      const disponiblesMap = data.etiquetas_disponibles || {};
+      const allDisponibles = Object.keys(disponiblesMap);
+      if (allDisponibles.length > 0) {
+        etiquetasToShow = allDisponibles;
+      } else {
+        const mensaje = metadata.total_disponibles > 0 
+          ? 'No tienes agentes seleccionados. Ve a Configuración > Agentes para seleccionar.'
+          : 'No hay agentes configurados';
+        etiquetasDropdown.innerHTML = `<div class="no-etiquetas">${mensaje}</div>`;
+        return;
       }
     }
-  } catch (e) {
-    userEmail = sessionStorage.getItem('userEmail');
-  }
-  
-  const isNodesUser = userEmail === 'burgalonso@gmail.com';
-  
-  // Obtener las etiquetas personalizadas del usuario de manera segura
-  let etiquetasPersonalizadas = {};
-  try {
-    const userEtiquetasElement = document.getElementById('userEtiquetasPersonalizadas');
-    if (userEtiquetasElement && userEtiquetasElement.textContent) {
-      const content = userEtiquetasElement.textContent.trim();
-      if (content && !content.includes('{{')) {
-        etiquetasPersonalizadas = JSON.parse(content);
-      }
+    
+    // Crear el checkbox "Todos"
+    let html = `<label><input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todos</label>`;
+    
+    // Crear un checkbox para cada etiqueta seleccionada
+    etiquetasToShow.forEach(etiqueta => {
+      html += `<label><input type="checkbox" value="${etiqueta}" checked> ${etiqueta}</label>`;
+    });
+    
+    etiquetasDropdown.innerHTML = html;
+    
+    // Actualizar etiquetas globales para compatibilidad con resto del código
+    if (window.EtiquetasResolver) {
+      window.EtiquetasResolver.currentEtiquetas = data.etiquetas_mapping || {};
     }
-  } catch (e) {
-    console.log('Error al obtener etiquetas personalizadas:', e);
-    etiquetasPersonalizadas = {};
+    
+    // Si no hay etiquetas seleccionadas del usuario y es empresa, mostrar todas las de empresa
+    if (etiquetasSeleccionadas.length === 0 && metadata?.tipo_cuenta === 'empresa') {
+      const mapping = data.etiquetas_mapping || {};
+      etiquetasToShow = Object.keys(mapping);
+    }
+    
+  } catch (error) {
+    console.error('Error en loadEtiquetasDropdown:', error);
+    etiquetasDropdown.innerHTML = '<div class="no-etiquetas">Error cargando agentes</div>';
   }
-  
-  let etiquetasKeys = Object.keys(etiquetasPersonalizadas);
-  
-  // Si es el usuario de nodos, filtrar por el nodo activo
-  if (isNodesUser) {
-    etiquetasKeys = getAgentesFromActiveNode(etiquetasPersonalizadas);
-  }
-  
-  // Si no hay etiquetas personalizadas, mostrar mensaje
-  if (etiquetasKeys.length === 0) {
-    etiquetasDropdown.innerHTML = '<div class="no-etiquetas">No hay agentes configurados</div>';
-    return;
-  }
-  
-  // Crear el checkbox "Todos"
-  let html = `<label><input type="checkbox" value="Todas" id="chkAllEtiquetas" checked> Todos</label>`;
-  
-  // Crear un checkbox para cada etiqueta personalizada
-  etiquetasKeys.forEach(etiqueta => {
-    html += `<label><input type="checkbox" value="${etiqueta}" checked> ${etiqueta}</label>`;
-  });
-  
-  etiquetasDropdown.innerHTML = html;
   
   // Añadir event listener al checkbox "Todos"
   const chkAllEtiquetas = document.getElementById('chkAllEtiquetas');
@@ -816,6 +873,51 @@ function loadEtiquetasDropdown() {
   
   // Inicializar el texto seleccionado
   updateSelectedEtiquetasText();
+  
+  // Configurar tooltip persistente con enlace a configuración
+  try { setupAgentesInfoTooltip(metadata || {}); } catch(_) {}
+}
+
+function setupAgentesInfoTooltip(metadata){
+  const trigger = document.getElementById('etiquetas-info-trigger');
+  if (!trigger) return;
+  
+  const tooltip = document.createElement('div');
+  tooltip.style.cssText = 'position:absolute; background:#0b2431; color:#fff; padding:12px 16px; border-radius:8px; width: 360px; z-index:10000; top: 28px; right: 0; display:none;';
+  const hasFavs = (metadata?.etiquetas_seleccionadas_count || 0) > 0;
+  const texto = hasFavs 
+    ? 'Añade o elimina agentes favoritos en configuración'
+    : 'Puedes personalizar para que salgan solo los agentes de tu interés seleccionando agentes favoritos en configuración';
+  tooltip.innerHTML = `<span>${texto.replace('configuración', '<a id="go-config" href="#" style="color:#04db8d; text-decoration:underline;">configuración</a>')}</span>`;
+  
+  // Contenedor del dropdown
+  const wrapper = trigger.closest('.dropdown-content') || document.body;
+  wrapper.style.position = 'relative';
+  wrapper.appendChild(tooltip);
+  
+  let hoverCount = 0;
+  function show(){ tooltip.style.display='block'; }
+  function hide(){ if (hoverCount===0) tooltip.style.display='none'; }
+  
+  trigger.addEventListener('mouseenter', ()=>{ hoverCount++; show(); });
+  trigger.addEventListener('mouseleave', ()=>{ hoverCount=Math.max(hoverCount-1,0); setTimeout(hide, 150); });
+  tooltip.addEventListener('mouseenter', ()=>{ hoverCount++; show(); });
+  tooltip.addEventListener('mouseleave', ()=>{ hoverCount=Math.max(hoverCount-1,0); setTimeout(hide, 150); });
+  
+  // Navegar a configuración > agentes
+  tooltip.querySelector('#go-config')?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    try{
+      // Asumimos SPA con secciones en profile.html
+      const configNav = document.querySelector('.nav-item[data-section="configuracion"]');
+      configNav?.click();
+      // Tras cambiar a configuración, activar pestaña agentes
+      setTimeout(()=>{
+        const agentesTab = document.querySelector('#configuracion-iframe-container .config-menu-item[data-content="agentes"]');
+        agentesTab?.click();
+      }, 300);
+    }catch(_){ window.location.hash = '#configuracion'; }
+  });
 }
 
 // Función para actualizar el texto del botón de etiquetas
@@ -830,14 +932,14 @@ function updateSelectedEtiquetasText() {
   if (selectedEtiquetas.length === 0) {
     selectedEtiquetasSpan.textContent = 'Ninguno';
   } else if (selectedEtiquetas.length === etiquetasCheckboxes.length) {
-    selectedEtiquetasSpan.textContent = 'Todos';
+    selectedEtiquetasSpan.textContent = `Todos (${selectedEtiquetas.length})`;
   } else if (selectedEtiquetas.length <= 2) {
     selectedEtiquetasSpan.textContent = selectedEtiquetas.map(cb => cb.value).join(', ');
   } else {
     selectedEtiquetasSpan.textContent = `${selectedEtiquetas.length} seleccionados`;
   }
   
-  // Aplicar el filtro de nivel de impacto actual a la nueva selección de agentes
+  // Aplicar filtro nivel impacto si corresponde
   const nivelImpactoDropdown = document.getElementById('nivelImpactoDropdown');
   if (nivelImpactoDropdown) {
     const selectedRadio = nivelImpactoDropdown.querySelector('input[type="radio"]:checked');
@@ -1192,15 +1294,17 @@ function handleBuscar() {
   const allEtiquetasSelected = document.getElementById('chkAllEtiquetas')?.checked;
   
   if (allEtiquetasSelected) {
-    // Si "Todos" está seleccionado, usar todas las etiquetas del usuario (estructura directa)
-    const etiquetasPersonalizadas = getEtiquetasPersonalizadasSafely();
-    selectedEtiquetas = Object.keys(etiquetasPersonalizadas).map(etiqueta => etiqueta.toLowerCase());
+    // ENTERPRISE ADAPTER: Si "Todos" está seleccionado, usar todas las etiquetas SELECCIONADAS por el usuario
+    // En lugar de todas las disponibles, usar las que aparecen en el dropdown (que ya son las seleccionadas)
+    const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
+    selectedEtiquetas = Array.from(etiquetasCheckboxes)
+      .map(cb => cb.value); // Obtener todas las etiquetas del dropdown (en su casing original)
   } else if (etiquetasDropdown) {
     // Si no, usar solo las etiquetas seleccionadas
     const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
     selectedEtiquetas = Array.from(etiquetasCheckboxes)
       .filter(cb => cb.checked)
-      .map(cb => cb.value.toLowerCase()); // Convertir a minúsculas para comparación case-insensitive
+      .map(cb => cb.value); // Mantener casing original para matching exacto en backend
   }
   
   // Si no hay etiquetas seleccionadas, mostrar mensaje y no realizar la búsqueda
@@ -1282,6 +1386,9 @@ function handleBuscar() {
   if (endDate) {
     searchParams.append('hasta', endDate);
   }
+  // Paginación por defecto
+  searchParams.append('page', '1');
+  searchParams.append('pageSize', '25');
   
   // Realizar la petición al servidor
   fetch(`/data?${searchParams.toString()}`)
@@ -1298,11 +1405,12 @@ function handleBuscar() {
         collectionDocs.innerHTML = data.documentsHtml;
       }
       
-      // Ocultar o mostrar los títulos de estadísticas y documentos según la respuesta
+      // Renderizar paginación (y reset filtro impacto -> 'Todos')
+      try { renderTrackerPagination(data.pagination); } catch(_) {}
+      
       const analyticsLabels = document.querySelectorAll('.analytics-label');
       
       if (data.hideAnalyticsLabels) {
-        // Ocultar los títulos y el contenedor del gráfico
         analyticsLabels.forEach(label => {
           if (!label.classList.contains('busqueda')) {
             label.style.display = 'none';
@@ -1311,32 +1419,44 @@ function handleBuscar() {
         if (chartContainer) chartContainer.style.display = 'none';
         if (loadingIconChart) loadingIconChart.style.display = 'none';
       } else {
-        // Mostrar los títulos
         analyticsLabels.forEach(label => {
           if (!label.classList.contains('busqueda')) {
             label.style.display = 'block';
           }
         });
-        
-        // Si hay datos para el gráfico, actualizarlo (loadChart se encarga de mostrar el chart y ocultar el loader)
-        if (data.monthsForChart && data.countsForChart) {
-          loadChart(data.monthsForChart, data.countsForChart);
+        // NUEVO: construir mapa diario
+        if (data.dailyLabels && data.dailyCounts) {
+          window.__dailyLabels = data.dailyLabels;
+          window.__dailyCounts = data.dailyCounts;
         } else {
-          // Si no hay datos para el chart, ocultar el chart y el loader
-          if (chartContainer) chartContainer.style.display = 'none';
-          if (loadingIconChart) loadingIconChart.style.display = 'none';
+          delete window.__dailyLabels; delete window.__dailyCounts;
         }
+        // Crear gráfico (siempre serie diaria continua cuando hay fechas)
+        loadChart(data.monthsForChart, data.countsForChart);
+        // KPIs e impacto
+        try {
+          if (typeof data.totalAlerts === 'number') {
+            const totEl = document.getElementById('alerts-total');
+            if (totEl) totEl.textContent = data.totalAlerts.toString();
+          }
+          if (typeof data.avgAlertsPerDay === 'number') {
+            const avgEl = document.getElementById('alerts-avg');
+            if (avgEl) avgEl.textContent = `${data.avgAlertsPerDay.toFixed(2)}`;
+          }
+          if (data.impactCounts) {
+            const a = document.getElementById('impact-alto'); if (a) a.textContent = (data.impactCounts.alto||0).toString();
+            const m = document.getElementById('impact-medio'); if (m) m.textContent = (data.impactCounts.medio||0).toString();
+            const b = document.getElementById('impact-bajo'); if (b) b.textContent = (data.impactCounts.bajo||0).toString();
+          }
+        } catch(_){}
       }
       
-      // Ocultar el loader principal de documentos
       if (loadingIcon) loadingIcon.style.display = 'none';
-      
-      // Ocultar overlay principal después de cargar los datos
       if (typeof window.hidePageLoaderOverlay === 'function') {
         window.hidePageLoaderOverlay();
       }
       
-      // Reiniciar el filtro de nivel de impacto a "Todos"
+      // Reiniciar filtro de nivel de impacto a "Todos"
       const nivelImpactoRadio = document.querySelector('input[name="nivelImpacto"][value="todos"]');
       const selectedNivelSpan = document.getElementById('selectedNivelImpacto');
       const selectedNivelCirculo = document.getElementById('selectedNivelCirculo');
@@ -1634,61 +1754,138 @@ function loadInitialDocuments() {
     // Verificar si hay etiquetas personalizadas antes de cargar documentos
     const etiquetasPersonalizadas = getEtiquetasPersonalizadasSafely();
     const etiquetasKeys = Object.keys(etiquetasPersonalizadas);
-    
-    // Solo cargar documentos si hay etiquetas personalizadas
-    if (etiquetasKeys.length > 0) {
-      console.log('[loadInitialDocuments] Cargando documentos iniciales automáticamente');
-      
-      // Ejecutar búsqueda con configuración por defecto (todos seleccionados)
-      if (typeof handleBuscar === 'function') {
-        handleBuscar();
-      }
-    } else {
-      console.log('[loadInitialDocuments] No hay etiquetas personalizadas, no se cargan documentos');
-      
-      // Delay antes de ocultar loaders para evitar parpadeo
-      setTimeout(() => {
-        const loadingIcon = document.getElementById('loading-icon');
-        const loadingIconChart = document.getElementById('loading-icon-chart');
-        if (loadingIcon) loadingIcon.style.display = 'none';
-        if (loadingIconChart) loadingIconChart.style.display = 'none';
-        
-        const collectionDocs = document.querySelector('.collectionDocs');
+
+    const loadingIcon = document.getElementById('loading-icon');
+    const loadingIconChart = document.getElementById('loading-icon-chart');
+    const collectionDocs = document.querySelector('.collectionDocs');
+
+    // Si el dropdown de etiquetas ya está listo, delegar en handleBuscar()
+    const etiquetasDropdown = document.getElementById('etiquetasDropdown');
+    const dropdownReady = !!(etiquetasDropdown && etiquetasDropdown.querySelectorAll('input[type="checkbox"]').length > 0);
+
+    if (dropdownReady && typeof handleBuscar === 'function') {
+      handleBuscar();
+      return;
+    }
+
+    // Si no hay etiquetas personalizadas, intentar aún así un fetch inicial a /data
+    if (etiquetasKeys.length === 0) {
+      console.log('[loadInitialDocuments] No hay etiquetas personalizadas locales; intentando fetch inicial /data');
+      // Continuar hacia el fetch directo más abajo, sin retornar aquí
+    }
+
+    // Dropdown aún no está listo pero sí hay etiquetas → construir búsqueda y llamar a /data directamente
+    console.log('[loadInitialDocuments] Dropdown no listo. Realizando fetch inicial directo a /data');
+
+    // Mostrar loaders de forma explícita
+    if (loadingIcon) loadingIcon.style.display = 'block';
+    if (loadingIconChart) loadingIconChart.style.display = 'block';
+    if (collectionDocs) collectionDocs.innerHTML = '';
+
+    const selectedEtiquetasOriginal = etiquetasKeys;
+
+    const searchParams = new URLSearchParams();
+    if (selectedEtiquetasOriginal.length > 0) {
+      searchParams.append('etiquetas', selectedEtiquetasOriginal.join('||'));
+    }
+
+    // Collections (boletines) desde datos globales seguros
+    const userBoletines = getSafeGlobalData('userBoletines', []);
+    if (Array.isArray(userBoletines) && userBoletines.length > 0) {
+      searchParams.append('collections', userBoletines.join('||'));
+    }
+
+    // Fechas
+    const startDate = document.getElementById('startDate')?.value;
+    const endDate = document.getElementById('endDate')?.value;
+    if (startDate) searchParams.append('desde', startDate);
+    if (endDate) searchParams.append('hasta', endDate);
+
+    // Paginación por defecto
+    searchParams.append('page', '1');
+    searchParams.append('pageSize', '25');
+
+    fetch(`/data?${searchParams.toString()}`)
+      .then(response => {
+        if (!response.ok) throw new Error(`Error en la búsqueda: ${response.status}`);
+        return response.json();
+      })
+      .then(data => {
+        // Actualizar documentos
         if (collectionDocs) {
-          const userPlan = window.userPlan || 'plan1';
-          if (userPlan === 'plan1') {
-            collectionDocs.innerHTML = `
-              <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h3 style="color: #0b2431;">¡Mejora tu plan para acceder a la búsqueda por agentes!</h3>
-                <p style="color: #455862;">Nuestros planes de pago te permiten configurar agentes personalizados y realizar búsquedas automáticas de normativa.</p>
-              </div>
-            `;
-          } else {
-            collectionDocs.innerHTML = `
-              <div style="padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                <h3 style="color: #0b2431;">Configura tus agentes para ver documentos</h3>
-                <p style="color: #455862;">Ve a la sección de Configuración para configurar tus agentes personalizados y empezar a ver documentos relevantes aquí.</p>
-              </div>
-            `;
-          }
+          collectionDocs.innerHTML = data.documentsHtml || '';
         }
-        
-        // Ocultar overlay principal después de mostrar el contenido
+
+        // Paginación
+        try { renderTrackerPagination(data.pagination); } catch(_) {}
+
+        // Actualizar chart si hay datos
+        if (data.dailyLabels && data.dailyCounts) {
+          window.__dailyLabels = data.dailyLabels;
+          window.__dailyCounts = data.dailyCounts;
+          loadChart(data.dailyLabels, data.dailyCounts);
+        } else if (data.monthsForChart && data.countsForChart) {
+          delete window.__dailyLabels; delete window.__dailyCounts;
+          loadChart(data.monthsForChart, data.countsForChart);
+        } else {
+          if (loadingIconChart) loadingIconChart.style.display = 'none';
+        }
+
+        // KPIs
+        try {
+          if (typeof data.totalAlerts === 'number') {
+            const totEl = document.getElementById('alerts-total');
+            if (totEl) totEl.textContent = data.totalAlerts.toString();
+          }
+          if (typeof data.avgAlertsPerDay === 'number') {
+            const avgEl = document.getElementById('alerts-avg');
+            if (avgEl) avgEl.textContent = `${data.avgAlertsPerDay.toFixed(2)}`;
+          }
+          if (data.impactCounts) {
+            const a = document.getElementById('impact-alto'); if (a) a.textContent = (data.impactCounts.alto||0).toString();
+            const m = document.getElementById('impact-medio'); if (m) m.textContent = (data.impactCounts.medio||0).toString();
+            const b = document.getElementById('impact-bajo'); if (b) b.textContent = (data.impactCounts.bajo||0).toString();
+          }
+        } catch(_){}
+
+        // Ocultar loader principal de documentos
+        if (loadingIcon) loadingIcon.style.display = 'none';
+
+        // Ocultar overlay principal
         if (typeof window.hidePageLoaderOverlay === 'function') {
           window.hidePageLoaderOverlay();
         }
-      }, 300);
-    }
+
+        // Reiniciar filtro de nivel de impacto a "Todos"
+        const nivelImpactoRadio = document.querySelector('input[name="nivelImpacto"][value="todos"]');
+        const selectedNivelSpan = document.getElementById('selectedNivelImpacto');
+        const selectedNivelCirculo = document.getElementById('selectedNivelCirculo');
+        if (nivelImpactoRadio && selectedNivelSpan && selectedNivelCirculo) {
+          nivelImpactoRadio.checked = true;
+          selectedNivelSpan.textContent = 'Todos';
+          selectedNivelCirculo.className = 'nivel-circulo nivel-circulo-todos';
+          filterDocumentsByNivelImpacto('todos');
+        }
+      })
+      .catch(error => {
+        console.error('[loadInitialDocuments] Error en fetch inicial /data:', error);
+        if (collectionDocs) {
+          collectionDocs.innerHTML = `<div class="no-results">Error al realizar la búsqueda: ${error.message}</div>`;
+        }
+        if (loadingIcon) loadingIcon.style.display = 'none';
+        if (loadingIconChart) loadingIconChart.style.display = 'none';
+
+        if (typeof window.hidePageLoaderOverlay === 'function') {
+          window.hidePageLoaderOverlay();
+        }
+      });
   } catch (error) {
     console.error('[loadInitialDocuments] Error al cargar documentos iniciales:', error);
-    // En caso de error, ocultar los loaders después de un delay
     setTimeout(() => {
       const loadingIcon = document.getElementById('loading-icon');
       const loadingIconChart = document.getElementById('loading-icon-chart');
       if (loadingIcon) loadingIcon.style.display = 'none';
       if (loadingIconChart) loadingIconChart.style.display = 'none';
-      
-      // Ocultar overlay principal incluso en caso de error
       if (typeof window.hidePageLoaderOverlay === 'function') {
         window.hidePageLoaderOverlay();
       }
@@ -1697,12 +1894,21 @@ function loadInitialDocuments() {
 }
 
 // Función para obtener etiquetas personalizadas de forma segura
+// ENTERPRISE ADAPTER: Prioriza datos del adaptador enterprise sobre DOM
 function getEtiquetasPersonalizadasSafely() {
   try {
+    // PRIORITY 1: Usar etiquetas del adaptador enterprise si están disponibles
+    if (window.EtiquetasResolver && window.EtiquetasResolver.currentEtiquetas) {
+      console.log('[getEtiquetasPersonalizadasSafely] Usando etiquetas del adaptador enterprise');
+      return window.EtiquetasResolver.currentEtiquetas;
+    }
+    
+    // FALLBACK: Usar etiquetas del DOM (para compatibilidad con cuentas individuales)
     const userEtiquetasElement = document.getElementById('userEtiquetasPersonalizadas');
     if (userEtiquetasElement && userEtiquetasElement.textContent) {
       const content = userEtiquetasElement.textContent.trim();
       if (content && !content.includes('{{')) {
+        console.log('[getEtiquetasPersonalizadasSafely] Usando etiquetas del DOM (fallback)');
         return JSON.parse(content);
       }
     }
@@ -1764,7 +1970,55 @@ window.initializeTracker = function() {
   
   // Inicializar fecha predeterminada
   initializeDefaultDate();
+
+  // Asegurar loader oculto por defecto en primera carga
+  try { const btnLoaderInit = document.getElementById('edit-agentes-loader'); if (btnLoaderInit) btnLoaderInit.style.display = 'none'; } catch(_) {}
   
+  // Vincular botón "Editar Agentes" para redirigir a Configuración → Agentes con loader
+  try{
+    const editBtn = document.getElementById('editSuscription2');
+    if (editBtn){
+      editBtn.addEventListener('click', async (e)=>{
+        e.preventDefault();
+        const btnLoader = document.getElementById('edit-agentes-loader');
+        if (btnLoader) btnLoader.style.display='inline-block';
+        try {
+          let shouldGoAgentes = false;
+          try {
+            const ctxResp = await fetch('/api/etiquetas-context');
+            if (ctxResp.ok) {
+              const ctxData = await ctxResp.json();
+              const etiquetas = ctxData?.data || {};
+              shouldGoAgentes = etiquetas && Object.keys(etiquetas).length > 0;
+            }
+          } catch(_) {}
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('view', 'configuracion');
+          if (shouldGoAgentes) newUrl.searchParams.set('tab', 'agentes'); else newUrl.searchParams.delete('tab');
+          window.history.pushState({ path: newUrl.href }, '', newUrl.href);
+          const configItem = document.querySelector('.sidebar-item[data-target="content-configuracion"]');
+          configItem?.click();
+          let tries = 0;
+          const interval = setInterval(() => {
+            const selector = shouldGoAgentes ? '#configuracion-iframe-container .config-menu-item[data-content="agentes"]' : '#configuracion-iframe-container .config-menu-item[data-content="contexto"]';
+            const targetTab = document.querySelector(selector);
+            if (targetTab) {
+              targetTab.click();
+              clearInterval(interval);
+              if (btnLoader) btnLoader.style.display='none';
+            } else if (++tries > 40) {
+              clearInterval(interval);
+              if (btnLoader) btnLoader.style.display='none';
+            }
+          }, 100);
+        } finally {
+          // Safety: hide loader after 4s just in case
+          setTimeout(()=>{ if (btnLoader) btnLoader.style.display='none'; }, 4000);
+        }
+      });
+    }
+  } catch(_) {}
+
   // Cargar contenedores y dropdowns
   // Mostrar skeleton mientras cargan agentes para evitar salto de layout
   const agentesContainerSkeleton = document.getElementById('agentesContainer');
@@ -1805,16 +2059,101 @@ window.initializeTracker = function() {
   const etiquetasPersonalizadasInit = getEtiquetasPersonalizadasSafely();
   const hasAgentes = Object.keys(etiquetasPersonalizadasInit).length > 0;
 
-  if (hasAgentes) {
-    // Tenemos agentes personalizados → skip gráfico preliminar y ve directo a buscar datos
-    loadInitialDocuments();
-  } else {
-    // Sin agentes → intenta mostrar gráfico estático si hay datos embedidos
-    loadInitialChart();
-  }
+  // Siempre cargar documentos para que el comportamiento coincida con /data
+  loadInitialDocuments();
   
   console.log('[initializeTracker] Tracker inicializado correctamente');
 }
+
+// Renderizar controles de paginación abajo a la derecha
+function renderTrackerPagination(pagination) {
+  const container = document.getElementById('tracker-pagination');
+  if (!container) return;
+  const page = (pagination && pagination.page) || 1;
+  const totalPages = (pagination && pagination.totalPages) || 1;
+  if (!pagination || !pagination.total || totalPages <= 1) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+  container.style.display = 'flex';
+  const prevDisabled = page <= 1;
+  const nextDisabled = page >= totalPages;
+  container.innerHTML = `
+    <button class="pagination-btn" ${prevDisabled ? 'disabled' : ''} data-action="prev" aria-label="Página anterior">◀</button>
+    <span class="pagination-info">Página</span>
+    <span class="pagination-page">${page}</span>
+    <span class="pagination-info">de ${totalPages}</span>
+    <button class="pagination-btn" ${nextDisabled ? 'disabled' : ''} data-action="next" aria-label="Página siguiente">▶</button>
+    <span class="pagination-subtle">25 por página</span>
+  `;
+  const prevBtn = container.querySelector('[data-action="prev"]');
+  const nextBtn = container.querySelector('[data-action="next"]');
+  if (prevBtn && !prevDisabled) prevBtn.onclick = () => navigateTrackerPage(page - 1);
+  if (nextBtn && !nextDisabled) nextBtn.onclick = () => navigateTrackerPage(page + 1);
+}
+
+// Mantener y reutilizar los filtros actuales para navegar entre páginas
+function getCurrentSearchParamsForPagination() {
+  const params = new URLSearchParams();
+  // Etiquetas
+  const etiquetasDropdown = document.getElementById('etiquetasDropdown');
+  const allEtiquetasSelected = document.getElementById('chkAllEtiquetas')?.checked;
+  let selectedEtiquetas = [];
+  if (allEtiquetasSelected) {
+    const etiquetasCheckboxes = etiquetasDropdown?.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)') || [];
+    selectedEtiquetas = Array.from(etiquetasCheckboxes).map(cb => cb.value);
+  } else if (etiquetasDropdown) {
+    const etiquetasCheckboxes = etiquetasDropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetas)');
+    selectedEtiquetas = Array.from(etiquetasCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+  }
+  if (selectedEtiquetas.length) params.append('etiquetas', selectedEtiquetas.join('||'));
+
+  // Boletines
+  const boletinDropdown = document.getElementById('boletinDropdown');
+  const boletinCheckboxes = boletinDropdown?.querySelectorAll('input[type="checkbox"]:not(#chkAllBoletin)') || [];
+  const selectedBoletines = Array.from(boletinCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+  if (selectedBoletines.length) params.append('collections', selectedBoletines.join('||'));
+
+  // Rangos
+  const rangoDropdown = document.getElementById('rangoDropdown');
+  const rangoCheckboxes = rangoDropdown?.querySelectorAll('input[type="checkbox"]:not(#chkAllRango)') || [];
+  const selectedRangos = Array.from(rangoCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
+  if (selectedRangos.length) params.append('rango', selectedRangos.join('||'));
+
+  // Fechas
+  const startDate = document.getElementById('startDate')?.value;
+  const endDate = document.getElementById('endDate')?.value;
+  if (startDate) params.append('desde', startDate);
+  if (endDate) params.append('hasta', endDate);
+
+  // Tamaño de página fijo (25)
+  params.append('pageSize', '25');
+
+  return params;
+}
+
+function navigateTrackerPage(targetPage) {
+  try {
+    const params = getCurrentSearchParamsForPagination();
+    params.set('page', String(targetPage));
+    const collectionDocs = document.querySelector('.collectionDocs');
+    const loadingIcon = document.getElementById('loading-icon');
+    if (loadingIcon) loadingIcon.style.display = 'block';
+    if (collectionDocs) collectionDocs.innerHTML = '';
+    fetch(`/data?${params.toString()}`)
+      .then(r => r.json())
+      .then(data => {
+        if (collectionDocs) collectionDocs.innerHTML = data.documentsHtml;
+        renderTrackerPagination(data.pagination);
+        // Reaplicar filtro de impacto actual
+        const selectedRadio = document.querySelector('input[name="nivelImpacto"]:checked');
+        if (selectedRadio) filterDocumentsByNivelImpacto(selectedRadio.value || 'todos');
+      })
+      .finally(() => { if (loadingIcon) loadingIcon.style.display = 'none'; });
+  } catch (e) { console.log('navigateTrackerPage error', e); }
+}
+
 
 // Función para inicializar el título del tracker
 function initializeTrackerTitle() {
@@ -1849,22 +2188,64 @@ function initializeTrackerTitle() {
     
     const titleElement = document.getElementById('tracker-title');
     if (titleElement) {
-      titleElement.textContent = `Hola ${userName}`;
+      const prettyName = (userName && typeof userName === 'string') ? (userName.charAt(0).toUpperCase() + userName.slice(1).toLowerCase()) : 'Usuario';
+      titleElement.textContent = `Hola ${prettyName}`;
     }
   } catch (e) {
     console.log('Error al inicializar título del tracker:', e);
   }
 }
 
-// Función para inicializar la fecha de registro
-function initializeRegistrationDate() {
+// Función para inicializar la fecha de registro desde user.registration_date o empresa.created_at
+async function initializeRegistrationDate() {
   try {
     const betaBannerElement = document.getElementById('beta-banner-text');
-    if (betaBannerElement) {
-      // Obtener fecha actual como fallback
-      const currentDate = new Date().toLocaleDateString('es-ES');
-      betaBannerElement.textContent = `Búsqueda personalizada por agente activa desde ${currentDate}`;
+    if (!betaBannerElement) return;
+
+    // Intentar obtener contexto de usuario (para detectar empresa y created_at)
+    let createdAt = null; let registrationDate = null;
+    try {
+      const ctxResp = await fetch('/api/user-context');
+      if (ctxResp.ok) {
+        const ctx = await ctxResp.json();
+        if (ctx && ctx.context) {
+          if (ctx.context.tipo_cuenta === 'empresa') {
+            createdAt = ctx.context.empresa_info?.created_at || null;
+          }
+        }
+      }
+    } catch(_) {}
+
+    // Intentar obtener registration_date del usuario
+    try {
+      const userResp = await fetch('/api/get-user-data');
+      if (userResp.ok) {
+        const userData = await userResp.json();
+        registrationDate = userData.registration_date || null;
+      }
+    } catch(_) {}
+
+    // Seleccionar fecha según prioridad: empresa.created_at (si empresa), si no registration_date
+    let dateToUse = null;
+    if (createdAt) {
+      dateToUse = new Date(createdAt);
+    } else if (registrationDate) {
+      // registration_date viene como yyyy-mm-dd
+      dateToUse = new Date(registrationDate);
     }
+
+    // Fallback: fecha actual si no hay datos válidos
+    if (!dateToUse || isNaN(dateToUse.getTime())) {
+      dateToUse = new Date();
+    }
+
+    // Formato dd-mm-yyyy
+    const dd = String(dateToUse.getDate()).padStart(2, '0');
+    const mm = String(dateToUse.getMonth() + 1).padStart(2, '0');
+    const yyyy = dateToUse.getFullYear();
+    const formatted = `${dd}-${mm}-${yyyy}`;
+
+    betaBannerElement.textContent = `Búsqueda personalizada por agente activa desde ${formatted}`;
   } catch (e) {
     console.log('Error al inicializar fecha de registro:', e);
   }
@@ -2459,3 +2840,123 @@ window.handleListCheckboxChange = handleListCheckboxChange;
 window.showNewListForm = showNewListForm;
 window.hideNewListForm = hideNewListForm;
 window.createNewList = createNewList;
+
+function setupAgentesHeaderTooltip(metadata){
+  const trigger = document.getElementById('agentes-info-trigger');
+  if (!trigger) return;
+  const existing = document.getElementById('agentes-info-tooltip');
+  if (existing) existing.remove();
+  const tooltip = document.createElement('div');
+  tooltip.id = 'agentes-info-tooltip';
+  tooltip.style.cssText = 'position:absolute; background:#0b2431; color:#fff; padding:12px 16px; border-radius:8px; width: 360px; z-index:10000; display:none;';
+  const hasFavs = (metadata?.etiquetas_seleccionadas_count || 0) > 0;
+  const texto = hasFavs 
+    ? 'Añade o elimina agentes favoritos en configuración'
+    : 'Puedes personalizar para que salgan solo los agentes de tu interés seleccionando agentes favoritos en configuración';
+  tooltip.innerHTML = `<span>${texto.replace('configuración', '<a id="go-config-hdr" href="#" style="color:#04db8d; text-decoration:underline;">configuración</a><span id="go-config-hdr-loader" style="display:none; margin-left:8px; width:12px; height:12px; border:2px solid rgba(4,219,141,0.3); border-top-color:#04db8d; border-radius:50%; display:inline-block; vertical-align:-2px; animation: spin 1s linear infinite;"></span>')}</span>`;
+  
+  const container = document.getElementById('etiquetasPersonalizadasContainer');
+  container.style.position = 'relative';
+  container.appendChild(tooltip);
+  // Ensure loader hidden initially
+  try { const bbLoader = tooltip.querySelector('#go-config-hdr-loader'); if (bbLoader) bbLoader.style.display='none'; } catch(_) {}
+  
+  // Position to the right of the label
+  function place(){
+    const rect = trigger.getBoundingClientRect();
+    const crect = container.getBoundingClientRect();
+    tooltip.style.top = (trigger.offsetTop + 22) + 'px';
+    tooltip.style.left = (trigger.offsetLeft + 12) + 'px';
+  }
+  place();
+  
+  let hoverCount = 0;
+  function show(){ tooltip.style.display='block'; }
+  function hide(){ if (hoverCount===0) tooltip.style.display='none'; }
+  trigger.addEventListener('mouseenter', ()=>{ hoverCount++; show(); });
+  trigger.addEventListener('mouseleave', ()=>{ hoverCount=Math.max(hoverCount-1,0); setTimeout(hide, 150); });
+  tooltip.addEventListener('mouseenter', ()=>{ hoverCount++; show(); });
+  tooltip.addEventListener('mouseleave', ()=>{ hoverCount=Math.max(hoverCount-1,0); setTimeout(hide, 150); });
+  
+  tooltip.querySelector('#go-config-hdr')?.addEventListener('click', async (e)=>{
+    e.preventDefault();
+    const loader = tooltip.querySelector('#go-config-hdr-loader');
+    if (loader) loader.style.display = 'inline-block';
+    try{
+      // Decide whether to go directly to Agentes based on context (empresa + etiquetas)
+      let shouldGoAgentes = false;
+      try {
+        const ctxResp = await fetch('/api/etiquetas-context');
+        if (ctxResp.ok) {
+          const ctxData = await ctxResp.json();
+          const etiquetas = ctxData?.data || {};
+          shouldGoAgentes = etiquetas && Object.keys(etiquetas).length > 0;
+        }
+      } catch(_) {}
+
+      // Ensure URL reflects desired destination so loaded content can react
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('view', 'configuracion');
+      if (shouldGoAgentes) newUrl.searchParams.set('tab', 'agentes'); else newUrl.searchParams.delete('tab');
+      window.history.pushState({ path: newUrl.href }, '', newUrl.href);
+
+      // Open configuration via the current sidebar navigation system
+      const configItem = document.querySelector('.sidebar-item[data-target="content-configuracion"]');
+      configItem?.click();
+
+      // Try to activate the intended tab once the configuration UI is ready
+      let tries = 0;
+      const interval = setInterval(() => {
+        const selector = shouldGoAgentes ? '#configuracion-iframe-container .config-menu-item[data-content="agentes"]' : '#configuracion-iframe-container .config-menu-item[data-content="contexto"]';
+        const targetTab = document.querySelector(selector);
+        if (targetTab) {
+          targetTab.click();
+          clearInterval(interval);
+          if (loader) loader.style.display = 'none';
+        } else if (++tries > 30) {
+          clearInterval(interval);
+          if (loader) loader.style.display = 'none';
+        }
+      }, 100);
+    }catch(_){ 
+      // Last resort: update hash for older navigation
+      window.location.hash = '#configuracion'; 
+    } finally {
+      if (loader) loader.style.display = 'none';
+    }
+  });
+}
+
+async function refreshFavoritesDependentUI(){
+  try {
+    // Re-read selected favorites and mapping
+    const resp = await fetch('/api/agentes-seleccion-personalizada');
+    const data = await resp.json();
+    const favCount = Array.isArray(data?.seleccion) ? data.seleccion.length : 0;
+    const headerEl = document.querySelector('.detalle-cuenta .etiquetas-label');
+    if (headerEl) headerEl.textContent = favCount > 0 ? 'Agentes Favoritos' : 'Agentes Suscritos';
+    // Re-load subscribed agents list
+    await loadAgentesContainer();
+    // Re-load dropdown
+    await loadEtiquetasDropdown();
+    // Update tooltip by header
+    setupAgentesHeaderTooltip({ etiquetas_seleccionadas_count: favCount });
+  } catch (e) { console.warn('refreshFavoritesDependentUI error', e); }
+}
+
+// Simple watcher to detect favorites size changes during session and refresh
+(function setupFavoritesWatcher(){
+  let lastCount = null;
+  setInterval(async ()=>{
+    try{
+      const resp = await fetch('/api/agentes-seleccion-personalizada');
+      const data = await resp.json();
+      const count = Array.isArray(data?.seleccion) ? data.seleccion.length : 0;
+      if (lastCount === null) { lastCount = count; setupAgentesHeaderTooltip({ etiquetas_seleccionadas_count: count }); return; }
+      if (count !== lastCount) {
+        lastCount = count;
+        await refreshFavoritesDependentUI();
+      }
+    }catch(_){ /* ignore */ }
+  }, 5000);
+})();

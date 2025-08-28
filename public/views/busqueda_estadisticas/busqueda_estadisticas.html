@@ -1,5 +1,375 @@
 <div id="content-busqueda" class="vision-section">
-    <h2>Búsqueda y Estadísticas</h2>
-    <p>Próximamente podrás acceder a estadísticas normativas y búsqueda por rama jurídica o actividad económica</p>
-    <div class="plan-badge">Coming Soon</div>
+  <div class="tendencias-container">
+    <!-- Submenú Tabs -->
+    <div class="tendencias-tabs">
+      <a id="tabPublicada" class="tab-link active" data-tab="publicada">Normativa publicada</a>
+      <a id="tabTramitacion" class="tab-link" data-tab="tramitacion">Normativa en tramitación</a>
+      <a id="tabSanciones" class="tab-link" data-tab="sanciones">Sanciones</a>
+      <div class="submenu-actions">
+        <button id="btnExportPdf" class="btn-ai">Exportar PDF</button>
+        <button id="btnCopyLink" class="btn-outline">Copiar enlace</button>
+      </div>
+    </div>
+
+    <!-- Coming soon placeholder (for tabs sin datos) -->
+    <div id="comingSoonBlock" class="coming-soon" style="display:none;">
+      <div class="coming-card">
+        <div class="coming-title">Próximamente</div>
+        <div class="coming-text">Estamos preparando esta sección. Te avisaremos cuando esté disponible.</div>
+      </div>
+    </div>
+
+    <!-- Barra de filtros (sticky) -->
+    <div class="tendencias-filters">
+      <div class="filters-row">
+        <!-- Rangos: chip-select -->
+        <div class="filter-block">
+          <label class="filter-label">Rangos normativos</label>
+          <div class="chip-select-wrap">
+            <div class="chip-select" id="rangosSelect">
+              <div class="chips" id="rangosChips">
+                <span class="chip-bubble selected" data-value="Todos">Todos <span class="chip-x">×</span></span>
+              </div>
+              <div class="select-icons"><span class="clear-icon" id="rangosClear">×</span><span class="caret">▾</span></div>
+            </div>
+            <div class="chip-dropdown" id="rangosDropdown">
+              <div class="dropdown-item" data-value="Ley">Ley</div>
+              <div class="dropdown-item" data-value="Real Decreto">Real Decreto</div>
+              <div class="dropdown-item" data-value="Orden">Orden</div>
+              <div class="dropdown-item" data-value="Resolución">Resolución</div>
+              <div class="dropdown-item" data-value="Directiva">Directiva</div>
+              <div class="dropdown-item" data-value="Reglamento">Reglamento</div>
+              <div class="dropdown-item" data-value="Todos">Todos</div>
+            </div>
+          </div>
+        </div>
+        <!-- Sectores económicos: chip-select -->
+        <div class="filter-block">
+          <label class="filter-label">Sectores económicos</label>
+          <div class="chip-select-wrap">
+            <div class="chip-select" id="divisionesSelect">
+              <div class="chips" id="divisionesChips">
+                <span class="chip-bubble selected" data-value="Todos">Todos <span class="chip-x">×</span></span>
+              </div>
+              <div class="select-icons"><span class="clear-icon" id="divisionesClear">×</span><span class="caret">▾</span></div>
+            </div>
+            <div class="chip-dropdown" id="divisionesDropdown">
+              <div class="dropdown-item" data-value="Servicios financieros">Servicios financieros</div>
+              <div class="dropdown-item" data-value="Energía">Energía</div>
+              <div class="dropdown-item" data-value="Inmobiliario">Inmobiliario</div>
+              <div class="dropdown-item" data-value="Administración pública">Administración pública</div>
+              <div class="dropdown-item" data-value="Sanidad">Sanidad</div>
+              <div class="dropdown-item" data-value="Tecnología">Tecnología</div>
+              <div class="dropdown-item" data-value="Transporte">Transporte</div>
+              <div class="dropdown-item" data-value="Agroalimentario">Agroalimentario</div>
+              <div class="dropdown-item" data-value="Comercio">Comercio</div>
+              <div class="dropdown-item" data-value="Industria y manufactura">Industria y manufactura</div>
+              <div class="dropdown-item" data-value="Turismo y hostelería">Turismo y hostelería</div>
+              <div class="dropdown-item" data-value="Educación y cultura">Educación y cultura</div>
+              <div class="dropdown-item" data-value="Medio ambiente y residuos">Medio ambiente y residuos</div>
+              <div class="dropdown-item" data-value="General">General</div>
+              <div class="dropdown-item" data-value="No identificado">No identificado</div>
+              <div class="dropdown-item" data-value="Todos">Todos</div>
+            </div>
+          </div>
+        </div>
+        <!-- Ramas jurídicas: chip-select -->
+        <div class="filter-block">
+          <label class="filter-label">Ramas jurídicas</label>
+          <div class="chip-select-wrap">
+            <div class="chip-select" id="ramasSelect">
+              <div class="chips" id="ramasChips">
+                <span class="chip-bubble selected" data-value="Todos">Todos <span class="chip-x">×</span></span>
+              </div>
+              <div class="select-icons"><span class="clear-icon" id="ramasClear">×</span><span class="caret">▾</span></div>
+            </div>
+            <div class="chip-dropdown" id="ramasDropdown">
+              <div class="dropdown-item" data-value="Derecho mercantil y societario">Derecho mercantil y societario</div>
+              <div class="dropdown-item" data-value="Derecho financiero y asegurador">Derecho financiero y asegurador</div>
+              <div class="dropdown-item" data-value="Derecho fiscal y tributario">Derecho fiscal y tributario</div>
+              <div class="dropdown-item" data-value="Derecho laboral y seguridad social">Derecho laboral y seguridad social</div>
+              <div class="dropdown-item" data-value="Derecho administrativo general">Derecho administrativo general</div>
+              <div class="dropdown-item" data-value="Derecho público sectorial">Derecho público sectorial</div>
+              <div class="dropdown-item" data-value="Derecho civil patrimonial">Derecho civil patrimonial</div>
+              <div class="dropdown-item" data-value="Derecho de familia y personas">Derecho de familia y personas</div>
+              <div class="dropdown-item" data-value="Derecho penal económico y corporativo">Derecho penal económico y corporativo</div>
+              <div class="dropdown-item" data-value="Derecho procesal">Derecho procesal</div>
+              <div class="dropdown-item" data-value="Derecho digital y tecnológico">Derecho digital y tecnológico</div>
+              <div class="dropdown-item" data-value="Derecho de consumo">Derecho de consumo</div>
+              <div class="dropdown-item" data-value="Derecho internacional y extranjería">Derecho internacional y extranjería</div>
+              <div class="dropdown-item" data-value="Propiedad intelectual e industrial">Propiedad intelectual e industrial</div>
+              <div class="dropdown-item" data-value="Derecho general y transversal">Derecho general y transversal</div>
+              <div class="dropdown-item" data-value="No identificado">No identificado</div>
+              <div class="dropdown-item" data-value="Todos">Todos</div>
+            </div>
+          </div>
+        </div>
+        <div class="filter-block small">
+          <label class="filter-label">Outliers</label>
+          <label class="checkbox-group reversa-checkbox"><input type="checkbox" id="chkOutliers" class="checkbox" checked /> <span class="reversa-box"></span> Excluir "Adm. Pública" y "Dcho. Administrativo"</label>
+        </div>
+        <div class="filter-actions">
+          <button id="btnResetFiltros" class="btn-outline">Reset</button>
+        </div>
+      </div>
+      <div class="filters-row">
+        <div class="filter-block">
+          <label class="filter-label">Periodo</label>
+          <div class="periodo-row">
+            <div class="chip-row" id="periodoChips">
+              <button class="chip" data-range="30">30d</button>
+              <button class="chip" data-range="90">90d</button>
+              <button class="chip" data-range="365">365d</button>
+              <button class="chip" data-range="ytd">YTD</button>
+              <button class="chip" data-range="custom">Personalizado</button>
+            </div>
+            <div class="date-range" id="customRange" style="display:none;">
+              <input type="date" id="inputStartDate" class="input" />
+              <span class="date-sep">—</span>
+              <input type="date" id="inputEndDate" class="input" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="filters-meta">
+        <span id="lastUpdated">Última actualización: —</span>
+        <span id="betaGateBadge" class="beta-gate-badge" style="display:none;">Solo se muestra tomas</span>
+      </div>
+    </div>
+
+    <div id="dashContent">
+      <!-- Submenú Ámbito -->
+      <div class="ambito-tabs">
+        <a class="tab-link ambito-link active" data-ambito="nacional">Nacional</a>
+        <a class="tab-link ambito-link" data-ambito="europeo">Europeo</a>
+        <a class="tab-link ambito-link" data-ambito="regional">Regional</a>
+        <div id="regionalSelector" class="regional-selector" style="display:none;">
+          <label class="filter-label" style="margin-right:6px;">Región</label>
+          <div class="chip-select-wrap">
+            <div class="chip-select" id="regionesSelect">
+              <div class="chips" id="regionesChips">
+                <span class="chip-bubble selected" data-value="Todos">Todos <span class="chip-x">×</span></span>
+              </div>
+              <div class="select-icons"><span class="clear-icon" id="regionesClear">×</span><span class="caret">▾</span></div>
+            </div>
+            <div class="chip-dropdown" id="regionesDropdown">
+              <div class="dropdown-item" data-value="ES-AN">Andalucía</div>
+              <div class="dropdown-item" data-value="ES-AR">Aragón</div>
+              <div class="dropdown-item" data-value="ES-AS">Asturias</div>
+              <div class="dropdown-item" data-value="ES-IB">Illes Balears</div>
+              <div class="dropdown-item" data-value="ES-CN">Canarias</div>
+              <div class="dropdown-item" data-value="ES-CB">Cantabria</div>
+              <div class="dropdown-item" data-value="ES-CL">Castilla y León</div>
+              <div class="dropdown-item" data-value="ES-CM">Castilla-La Mancha</div>
+              <div class="dropdown-item" data-value="ES-CT">Cataluña</div>
+              <div class="dropdown-item" data-value="ES-EX">Extremadura</div>
+              <div class="dropdown-item" data-value="ES-GA">Galicia</div>
+              <div class="dropdown-item" data-value="ES-RI">La Rioja</div>
+              <div class="dropdown-item" data-value="ES-MD">Madrid</div>
+              <div class="dropdown-item" data-value="ES-MC">Murcia</div>
+              <div class="dropdown-item" data-value="ES-NC">Navarra</div>
+              <div class="dropdown-item" data-value="ES-PV">País Vasco</div>
+              <div class="dropdown-item" data-value="ES-VC">Comunidad Valenciana</div>
+              <div class="dropdown-item" data-value="ES-CE">Ceuta</div>
+              <div class="dropdown-item" data-value="ES-ML">Melilla</div>
+              <div class="dropdown-item" data-value="Todos">Todos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label"># Normas</div>
+          <div class="kpi-value" id="kpiNormas">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label"># Páginas</div>
+          <div class="kpi-value" id="kpiPaginas">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Páginas/Norma (mediana)</div>
+          <div class="kpi-value" id="kpiMediana">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Δ% vs periodo anterior</div>
+          <div class="kpi-value" id="kpiDelta">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top Rango</div>
+          <div class="kpi-value" id="kpiTopRango">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Top Sector</div>
+          <div class="kpi-value" id="kpiTopDivision">—</div>
+        </div>
+      </div>
+
+      <!-- Panel principal -->
+      <div class="grid-2">
+        <div class="card-block">
+          <div class="card-title-row">
+            <h3>Evolución temporal</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="serieChart"></canvas></div>
+        </div>
+        <div class="card-block">
+          <div class="card-title-row">
+            <h3>Geografía</h3>
+            <span class="card-subtitle" id="geoSubtitle">Ranking CCAA (ES)</span>
+          </div>
+          <div class="chart-wrap"><canvas id="rankingChart"></canvas></div>
+          <div class="map-placeholder" id="mapPlaceholder">Mapa CCAA próximamente</div>
+        </div>
+        <div class="card-block">
+          <div class="card-title-row"><h3>Rangos normativos</h3></div>
+          <div class="chart-wrap"><canvas id="rangosChart"></canvas></div>
+        </div>
+        <div class="card-block">
+          <div class="card-title-row"><h3>Sectores económicos</h3></div>
+          <div class="chart-wrap"><canvas id="divisionesChart"></canvas></div>
+        </div>
+        <div class="card-block">
+          <div class="card-title-row"><h3>Top ramas jurídicas</h3></div>
+          <div class="chart-wrap"><canvas id="ramasChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Mapa de calor CCAA -->
+      <div class="card-block grid-span-2 map-card" id="geoHeatmapCard">
+        <div class="card-title-row"><h3> Volumen normativa por CCAA)</h3><span class="card-subtitle" id="geoHeatmapSubtitle">Datos desde: —</span></div>
+        <div id="esHeatmap" class="heatmap-wrap"></div>
+        <div id="esLeafletMap" class="heatmap-wrap" style="display:none;"></div>
+        <div class="heatmap-legend" id="esLegend"></div>
+      </div>
+    </div>
+
+    <!-- Tabla detalle eliminada -->
+    <!-- (anteriormente había una tabla de detalle aquí) -->
   </div>
+
+  <style>
+    /* Tokens mínimos y estilos específicos de la vista */
+    .tendencias-container { padding: 12px; }
+    .ambito-tabs { display:flex; align-items:flex-end; gap:16px; margin: 8px 0 12px 0; border-bottom:1px solid #e9ecef; }
+    .ambito-tabs .tab-link { padding:10px 4px; color: var(--text-color); font-weight:600; cursor:pointer; }
+    .ambito-tabs .tab-link.active { color:#0b2431; position:relative; }
+    .ambito-tabs .tab-link.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px; background:#04db8d; border-radius:2px; }
+    .regional-selector { display:flex; align-items:center; gap:10px; margin-left: 24px; }
+
+    /* Tabs menu */
+    .tendencias-tabs { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom: 12px; border-bottom:1px solid #e9ecef; }
+    .tab-link { position:relative; padding:10px 4px; margin-right:16px; color: var(--text-color); text-decoration:none; font-weight:600; cursor:pointer; }
+    .tab-link.active { color:#0b2431; }
+    .tab-link.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px; background:#04db8d; border-radius:2px; }
+    .submenu-actions { margin-left:auto; display:flex; gap:8px; }
+    .btn-ai { background: linear-gradient(135deg, #04db8d 0%, #0b2431 100%); color:white; border:0; border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; }
+    .btn-outline { background: transparent; border:1px solid var(--text-color); color: var(--text-color); border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; }
+
+    /* Coming soon */
+    .coming-soon { display:flex; justify-content:center; align-items:center; padding: 24px 0; }
+    .coming-card { background:white; border:1px solid var(--border-color); border-radius:16px; padding:24px; box-shadow: 0 2px 8px rgba(11,36,49,.06); max-width:520px; text-align:center; }
+    .coming-title { font-size:18px; font-weight:700; margin-bottom:6px; color: var(--text-color); }
+    .coming-text { color:#6c757d; font-size:14px; }
+
+    /* Filtros */
+    .tendencias-filters { position: sticky; top: 0; z-index: 5; background: white; border:1px solid var(--border-color); border-radius: 12px; padding: 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); margin-bottom: 16px; }
+    .filters-row { display:flex; flex-wrap:wrap; gap:16px 20px; align-items:flex-end; }
+    .filter-block { display:flex; flex-direction:column; gap:6px; min-width: 260px; flex:1; }
+    .filter-block.small { min-width: 300px; }
+    .filter-actions { margin-left:auto; }
+    .filter-label { font-weight:600; color: var(--text-color); font-size: 14px; }
+    .chip-row { display:flex; gap:6px; flex-wrap:wrap; }
+    .periodo-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .chip { border:1px solid var(--text-color); color: var(--text-color); background:white; border-radius: 9999px; padding:6px 12px; cursor:pointer; font-size: 12px; }
+    .chip.active { background: rgba(4,219,141,.1); border-color:#04db8d; color:#04db8d; }
+    .date-range { display:flex; align-items:center; gap:8px; }
+    .date-sep { color: var(--text-color); opacity:.7; }
+    .filters-meta { margin-top: 8px; font-size: 12px; color: #6c757d; display:flex; align-items:center; gap:12px; justify-content:space-between; }
+
+    /* Chip-select */
+    .chip-select { display:flex; align-items:center; justify-content:space-between; gap:8px; border:1.5px solid #e9ecef; border-radius:12px; padding:6px 10px; min-height:44px; max-height:88px; overflow:auto; background:white; box-shadow: 0 2px 8px rgba(11,36,49,.04); cursor:text; }
+    .chip-select.active { border-color:#04db8d; box-shadow: 0 0 0 3px rgba(4,219,141,.15); }
+    .chips { display:flex; gap:6px; flex-wrap:wrap; }
+    .chip-bubble { display:inline-flex; align-items:center; gap:8px; background: rgba(4,219,141,.08); color:#04db8d; padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:600; }
+    .chip-bubble.selected { background: rgba(4,219,141,.18); }
+    .chip-x { cursor:pointer; opacity:.7; }
+    .chip-x:hover { opacity:1; }
+    .select-icons { display:flex; align-items:center; gap:10px; color:#455862; }
+    .clear-icon { cursor:pointer; opacity:.7; }
+    .clear-icon:hover { opacity:1; }
+    .caret { font-size:12px; }
+    .chip-select-wrap { position: relative; }
+    .chip-select { position: relative; }
+    .chip-dropdown { display:none; position:absolute; left:0; right:auto; top:calc(100% + 2px); background:white; border:1px solid #e9ecef; border-radius:12px; box-shadow:0 8px 24px rgba(11,36,49,.12); padding:8px; max-height:300px; overflow:auto; min-width:100%; z-index:100; }
+    .chip-dropdown.open { display:block; }
+    .dropdown-item { padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
+    .dropdown-item:hover { background:#f8f9fa; }
+
+    /* KPIs */
+    .kpi-grid { display:grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom: 16px; }
+    .kpi-card { background:white; border:1px solid var(--border-color); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); }
+    .kpi-label { font-size: 12px; color:#6c757d; margin-bottom: 6px; }
+    .kpi-value { font-size: 22px; font-weight:700; color: var(--text-color); }
+
+    /* Cards */
+    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card-block { position:relative; background:white; border:1px solid var(--border-color); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); }
+    .card-invert { background: var(--text-color); color: white; border-color: var(--text-color); }
+    .card-invert .card-title-row h3, .card-invert .card-subtitle { color: white; }
+    .card-title-row { display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px; }
+    .card-title-row h3 { margin:0; font-size: 16px; color: var(--text-color); }
+    .card-subtitle { font-size: 12px; color:#6c757d; }
+    .chart-wrap { width:100%; height: 320px; }
+    .map-placeholder { margin-top: 8px; padding: 10px; font-size: 12px; color:#6c757d; background: #f8f9fa; border:1px dashed #dee2e6; border-radius: 8px; text-align:center; }
+
+    /* Map */
+    .grid-span-2 { grid-column: 1 / -1; }
+    .heatmap-wrap { width:100%; height: 420px; border-radius:12px; }
+    .map-card { overflow:hidden; margin-top: 24px; }
+    .heatmap-legend { display:flex; align-items:center; gap:8px; margin-top:10px; }
+    .legend-bar { height:10px; width:200px; background: linear-gradient(90deg, rgb(217,248,238) 0%, #04db8d 50%, #0b2431 100%); border-radius:8px; }
+    .legend-label { font-size:12px; color:#6c757d; }
+    /* Extra spacing after map card */
+    #geoHeatmapCard { margin-bottom: 16px; }
+    /* Leaflet container overrides */
+    #esLeafletMap.leaflet-container { background: #ffffff; border-radius: 12px; }
+
+    /* Reversa checkbox */
+    .reversa-checkbox { display:flex; align-items:center; gap:8px; position:relative; }
+    .reversa-checkbox input[type="checkbox"] { position:absolute; opacity:0; left:0; }
+    .reversa-box { width:18px; height:18px; border-radius:6px; border:1px solid #04db8d; box-shadow: inset 0 0 0 2px rgba(4,219,141,.2); background: rgba(4,219,141,.12); display:inline-block; position:relative; }
+    .reversa-checkbox input[type="checkbox"]:checked + .reversa-box { background: #04db8d; border-color:#04db8d; }
+    .reversa-checkbox input[type="checkbox"]:checked + .reversa-box::after { content:''; position:absolute; left:5px; top:2px; width:5px; height:10px; border:2px solid white; border-top:none; border-left:none; transform: rotate(45deg); }
+
+    /* Toasts */
+    .toast-container { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: white; border-left: 4px solid #04db8d; box-shadow: 0 4px 12px rgba(11,36,49,.12); border-radius: 8px; padding: 10px 12px; min-width: 200px; color: #0b2431; font-size: 14px; }
+    .toast.info { border-left-color: #455862; }
+    .toast.success { border-left-color: #04db8d; }
+    .toast.error { border-left-color: #d32f2f; }
+
+    /* Beta gate badge */
+    .beta-gate-badge { margin-left:auto; background: #fff8e1; color:#8a6d3b; border:1px solid #ffe0a3; padding:4px 8px; border-radius:8px; font-size:11px; font-weight:600; }
+
+    /* Beta gate: default hide dashboard for non-allowed users to avoid flash */
+    .tendencias-container:not(.beta-allowed) .tendencias-tabs,
+    .tendencias-container:not(.beta-allowed) .tendencias-filters,
+    .tendencias-container:not(.beta-allowed) #dashContent { display: none !important; }
+    .tendencias-container:not(.beta-allowed) #comingSoonBlock { display: block !important; }
+
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+
+  <!-- Toast container -->
+  <div id="tendToastContainer" class="toast-container"></div>
+
+  <!-- Script específico de la vista -->
+  <script src="busqueda_estadisticas.js"></script>
+</div>

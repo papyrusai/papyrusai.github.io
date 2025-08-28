@@ -6,11 +6,11 @@ function populateFuentes(cobertura_legal) {
   checkAndShowAgentesRegulatoryBanner();
 
   const fuentesData = {
-    "Boletines Europeos, Nacionales y Regionales": {
+    "Boletines Oficiales": {
         "A) Europeos y Nacionales": [
             { sigla: "DOUE", nombre: "Diario Oficial de la Unión Europea", tipo: "fuentes-gobierno" },
             { sigla: "BOE", nombre: "Boletín Oficial del Estado", tipo: "fuentes-gobierno" },
-            
+            { sigla: "BOPA_ANDORRA", nombre: "BOPA Andorra", tipo: "fuentes-gobierno" },
         ],
         "B) Regionales": [
             { sigla: "BOPV", nombre: "Boletín Oficial del País Vasco", tipo: "fuentes-gobierno" },
@@ -28,6 +28,9 @@ function populateFuentes(cobertura_legal) {
             { sigla: "BOPA", nombre: "Boletín Oficial del Principado de Asturias", tipo: "fuentes-gobierno" },
             { sigla: "DOGV", nombre: "Diario Oficial de la Generalitat Valenciana", tipo: "fuentes-gobierno" },
             { sigla: "BOCA", nombre: "Boletín Oficial de Canarias", tipo: "fuentes-gobierno" },
+            { sigla: "BOR", nombre: "Boletín Oficial de La Rioja", tipo: "fuentes-gobierno" },
+            { sigla: "BON", nombre: "Boletín Oficial de Navarra", tipo: "fuentes-gobierno" },
+            { sigla: "DOCM", nombre: "Diario Oficial de Castilla-La Mancha", tipo: "fuentes-gobierno" },
         ]
     },
     "Reguladores": [
@@ -45,8 +48,65 @@ function populateFuentes(cobertura_legal) {
         { sigla: "AEPD_guias", nombre: "Agencia Española de Protección de Datos - Guías", tipo: "fuentes-reguladores" },
 
     ],
-    "Normativa en tramitación": [
+    "Actividad Parlamentaria": [
       { sigla: "BOCG", nombre: "Boletín Oficial de las Cortes Generales", tipo: "fuentes-gobierno" },
+      { sigla: "EUROPARL_WEEKLY_AGENDA", nombre: "Agenda semanal del Parlamento Europeo", tipo: "fuentes-gobierno" },
+      { sigla: "EUROPARL_LATEST_DOCS", nombre: "Últimos documentos del Parlamento Europeo", tipo: "fuentes-gobierno" },
+      { sigla: "EUROPARL_EVENTS", nombre: "Eventos del Parlamento Europeo", tipo: "fuentes-gobierno" },
+      { sigla: "EUROPARL_MEETINGS", nombre: "Reuniones del Parlamento Europeo", tipo: "fuentes-gobierno" },
+      { sigla: "DANISH_PRESIDENCY_MEETINGS", nombre: "Reuniones Presidencia Danesa del Consejo de la UE", tipo: "fuentes-gobierno" },
+      { sigla: "SENADO_AGENDA", nombre: "Agenda del Senado", tipo: "fuentes-gobierno" },
+      { sigla: "SENADO_LEYES_EN_TRAMITACION", nombre: "Leyes en tramitación del Senado", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_ECONOMIA_CONSULTAS", nombre: "Participación Economía Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_DEFENSA_AUDIENCIAS", nombre: "Participación Defensa Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_DEFENSA_CONSULTAS", nombre: "Participación Defensa Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_DERECHOS_SOCIALES_AUDIENCIAS", nombre: "Participación Derechos Sociales Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_HACIENDA_AUDIENCIAS", nombre: "Participación Hacienda Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_EXTERIORES_AUDIENCIAS", nombre: "Participación Exteriores Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_IGUALDAD_AUDIENCIAS", nombre: "Participación Igualdad Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_EXTERIORES_CONSULTAS", nombre: "Participación Exteriores Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_PROYECTOS_NORMATIVOS", nombre: "Participación Transición Ecológica Proyectos Normativos", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSFORMACION_DIGITAL_CONSULTAS", nombre: "Participación Transformación Digital Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_POLITICA_TERRITORIAL_CONSULTAS", nombre: "Participación Política Territorial Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_AGRICULTURA_PARTICIPACION_PUBLICA_OTROS_DOCUMENTOS", nombre: "Participación Agricultura Participación Pública Otros Documentos", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_AGRICULTURA_PARTICIPACION_PUBLICA_PROYECTOS_NORMATIVOS", nombre: "Participación Agricultura Participación Pública Proyectos Normativos", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_SANIDAD_AUDIENCIAS", nombre: "Participación Sanidad Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_EDUCACION_CONSULTAS", nombre: "Participación Educación Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_PRESIDENCIA_JUSTICIA", nombre: "Participación Presidencia Justicia", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_IGUALDAD_CONSULTAS", nombre: "Participación Igualdad Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_OTROS_DOCUMENTOS", nombre: "Participación Transición Ecológica Otros Documentos", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_ECONOMIA_AUDIENCIAS", nombre: "Participación Economía Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_POLITICA_TERRITORIAL_AUDIENCIAS", nombre: "Participación Política Territorial Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_INDUSTRIA_Y_PYME", nombre: "Participación Industria y PYME", tipo: "fuentes-gobierno" },
+      { sigla: "OEIL", nombre: "OEIL - European Parliament Legislative Observatory", tipo: "fuentes-gobierno" },
+      { sigla: "EUROPARL_PLENARY_AGENDA", nombre: "Agenda del Pleno del Parlamento Europeo", tipo: "fuentes-gobierno" },
+      { sigla: "CONSILIUM_MEETINGS", nombre: "Reuniones del Consejo de la UE", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_CIENCIA_AUDIENCIAS", nombre: "Participación Ciencia Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_CIENCIA_CONSULTAS", nombre: "Participación Ciencia Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_CULTURA_AUDIENCIAS", nombre: "Participación Cultura Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_CULTURA_CONSULTAS", nombre: "Participación Cultura Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_DERECHOS_SOCIALES_CONSULTAS", nombre: "Participación Derechos Sociales Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_EDUCACION_AUDIENCIAS", nombre: "Participación Educación Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_HACIENDA_CONSULTAS", nombre: "Participación Hacienda Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_INCLUSION_AUDIENCIAS", nombre: "Participación Inclusión Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_INCLUSION_CONSULTAS", nombre: "Participación Inclusión Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_INDUSTRIA_SUBSECRETARIA", nombre: "Participación Industria Subsecretaría", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_INTERIOR_AUDIENCIAS", nombre: "Participación Interior Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_INTERIOR_CONSULTAS", nombre: "Participación Interior Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_JUVENTUD_AUDIENCIAS", nombre: "Participación Juventud Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_JUVENTUD_CONSULTAS", nombre: "Participación Juventud Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_PRESIDENCIA_AUDIENCIAS", nombre: "Participación Presidencia Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_PRESIDENCIA_CONSULTAS", nombre: "Participación Presidencia Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_SANIDAD_CONSULTAS", nombre: "Participación Sanidad Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRABAJO_AUDIENCIAS", nombre: "Participación Trabajo Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRABAJO_CONSULTAS", nombre: "Participación Trabajo Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSFORMACION_DIGITAL_AUDIENCIAS", nombre: "Participación Transformación Digital Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_PARTICIPACION_PUBLICA_OTROS_DOCUMENTOS", nombre: "Participación Transición Ecológica Participación Pública Otros Documentos", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_PARTICIPACION_PUBLICA_PROYECTOS_NORMATIVOS", nombre: "Participación Transición Ecológica Participación Pública Proyectos Normativos", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSPORTES_AUDIENCIAS", nombre: "Participación Transportes Audiencias", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TRANSPORTES_CONSULTAS", nombre: "Participación Transportes Consultas", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_TURISMO", nombre: "Participación Turismo", tipo: "fuentes-gobierno" },
+      { sigla: "PARTICIPACION_VIVIENDA_TODO", nombre: "Participación Vivienda Todo", tipo: "fuentes-gobierno" },
     ],
     "Comunicados y prensa":[
     { sigla: "CEPC", nombre: "Comisión Europea Press Corner", tipo: "fuentes-gobierno" },
@@ -56,8 +116,17 @@ function populateFuentes(cobertura_legal) {
     { "sigla": "CEPC", "nombre": "Sala de prensa de la Comisión Europea", "tipo": "fuentes-gobierno" },
     { "sigla": "CE_ALL_NOTICIAS", "nombre": "Noticias de la Comisión Europea", "tipo": "fuentes-gobierno" },
     { "sigla": "DANISH_PRESIDENCY_NOTICIAS", "nombre": "Web de la Presidencia danesa del Consejo de la UE", "tipo": "fuentes-gobierno" },
+    { "sigla": "CONSEJO_ESTADO_NOTICIAS", "nombre": "Consejo de Estado - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "COMUNIDAD_VALENCIANA_NOTICIAS", "nombre": "Comunitat Valenciana - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "COMUNIDAD_MADRID_NOTICIAS", "nombre": "Comunidad de Madrid - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "CONGRESO_NOTICIAS", "nombre": "Congreso de los Diputados - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "ASTURIAS_NOTICIAS", "nombre": "Principado de Asturias - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "CANARIAS_NOTICIAS", "nombre": "Gobierno de Canarias - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "EXTREMADURA_NOTICIAS", "nombre": "Junta de Extremadura - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "ANDALUCIA_NOTICIAS", "nombre": "Junta de Andalucía - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "ANDORRA_NOTICIAS", "nombre": "Gobierno de Andorra - Noticias", "tipo": "fuentes-gobierno" },
     ],
-    "Ministerios": [
+    "Organismos Gubernamentales": [
     { "sigla": "MITES_NOTICIAS", "nombre": "Ministerio de Trabajo", "tipo": "fuentes-gobierno" },
     { "sigla": "MITECO_NOTICIAS", "nombre": "Ministerio de Transición Ecológica", "tipo": "fuentes-gobierno" },
     { "sigla": "MAPA_NOTICIAS", "nombre": "Ministerio de Agricultura, Pesca y Alimentación", "tipo": "fuentes-gobierno" },
@@ -78,8 +147,16 @@ function populateFuentes(cobertura_legal) {
     { "sigla": "MIN_MIVAU_NOTICIAS", "nombre": "Ministerio de Vivienda", "tipo": "fuentes-gobierno" },
     { "sigla": "MIN_INCLUSION_NOTICIAS", "nombre": "Ministerio de Inclusión", "tipo": "fuentes-gobierno" },
     { "sigla": "MIN_JUVENTUDEINFANCIA_NOTICIAS", "nombre": "Ministerio de Juventud e Infancia", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_TRANSPORTES_NOTICIAS", "nombre": "Ministerio de Transportes", "tipo": "fuentes-gobierno" }
-  ]
+    { "sigla": "MIN_TRANSPORTES_NOTICIAS", "nombre": "Ministerio de Transportes", "tipo": "fuentes-gobierno" },
+    { "sigla": "MONCLOA_NOTICIAS", "nombre": "Moncloa - Noticias", "tipo": "fuentes-gobierno" },
+    { "sigla": "MONCLOA_REFERENCIAS", "nombre": "Moncloa - Referencias", "tipo": "fuentes-gobierno" },
+    { "sigla": "MONCLOA_AGENDA", "nombre": "Moncloa - Agenda", "tipo": "fuentes-gobierno" },
+    { "sigla": "CONGRESO_AGENDA", "nombre": "Congreso de los Diputados - Agenda", "tipo": "fuentes-gobierno" },
+    { "sigla": "ASTURIAS_CONSEJO_GOBIERNO_NOTICIAS", "nombre": "Principado de Asturias - Consejo de Gobierno", "tipo": "fuentes-gobierno" },
+    { "sigla": "EXTREMADURA_CONSEJO_GOBIERNO", "nombre": "Junta de Extremadura - Consejo de Gobierno", "tipo": "fuentes-gobierno" },
+    { "sigla": "COMUNIDAD_VALENCIANA_ACTOS", "nombre": "Generalitat Valenciana - Actos", "tipo": "fuentes-gobierno" },
+    { "sigla": "ANDALUCIA_ULTIMA_SESION_CONSEJO_GOBIERNO", "nombre": "Junta de Andalucía - Última sesión del Consejo de Gobierno", "tipo": "fuentes-gobierno" }
+    ]
   };
   
   let html = '';
@@ -105,7 +182,7 @@ function populateFuentes(cobertura_legal) {
       html += `<h3 class="summary-title">${sectionTitle}</h3>`;
       html += `<div class="selected-tags-container" id="selected-tags-${sectionKey}"></div>`;
       // Add save button only for the first section (Boletines)
-      if (sectionTitle === "Boletines Europeos, Nacionales y Regionales") {
+      if (sectionTitle === "Boletines Oficiales") {
           html += `<button id="saveFuentesBtn" class="save-fuentes-btn-inline">Guardar</button>`;
           html += `<div id="saveStatus" class="save-status"></div>`;
       }
@@ -269,7 +346,8 @@ function populateFuentes(cobertura_legal) {
   updateSelectedTags();
 
   // Save button logic
-  document.getElementById('saveFuentesBtn').addEventListener('click', () => {
+  const saveBtnEl = document.getElementById('saveFuentesBtn');
+  if (saveBtnEl) saveBtnEl.addEventListener('click', async () => {
       const saveBtn = document.getElementById('saveFuentesBtn');
       const saveStatus = document.getElementById('saveStatus');
       
@@ -279,45 +357,83 @@ function populateFuentes(cobertura_legal) {
       saveBtn.innerHTML = '<div class="button-spinner"></div>';
       saveBtn.classList.add('loading');
       
-      const newCobertura = {
-          'fuentes-gobierno': [],
-          'fuentes-reguladores': [],
-          'fuentes-tramitacion': [] // This key exists but isn't part of the final payload
-      };
-      document.querySelectorAll('.fuente-box.selected').forEach(box => {
-          const tipo = box.dataset.tipo;
-          const sigla = box.dataset.sigla;
-          if (newCobertura[tipo]) {
-              newCobertura[tipo].push(sigla);
-          }
-      });
-      
-      const finalPayload = {
-          cobertura_legal: {
+      try {
+          const newCobertura = {
+              'fuentes-gobierno': [],
+              'fuentes-reguladores': [],
+              'fuentes-tramitacion': [] // This key exists but isn't part of the final payload
+          };
+          document.querySelectorAll('.fuente-box.selected').forEach(box => {
+              const tipo = box.dataset.tipo;
+              const sigla = box.dataset.sigla;
+              if (newCobertura[tipo]) {
+                  newCobertura[tipo].push(sigla);
+              }
+          });
+          
+          const cobertura_legal = {
               fuentes_gobierno: newCobertura['fuentes-gobierno'],
               fuentes_reguladores: newCobertura['fuentes-reguladores']
-          },
-          rangos: ["Acuerdos Internacionales","Normativa Europea","Legislacion Nacional","Normativa Reglamentaria","Decisiones Judiciales","Doctrina Administrativa","Comunicados, Guias y Opiniones Consultivas","Consultas Publicas","Normativa en tramitación","Otras"]
-      };
+          };
+          
+          const rangos = ["Acuerdos Internacionales","Normativa Europea","Legislacion Nacional","Normativa Reglamentaria","Decisiones Judiciales","Doctrina Administrativa","Comunicados, Guias y Opiniones Consultivas","Consultas Publicas","Normativa en tramitación","Otras"];
 
-      fetch('/api/update-user-data', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(finalPayload)
-      })
-      .then(res => res.json())
-      .then(data => {
-          if (data.success) {
+          // Use resolver if available, otherwise fallback to legacy method
+          let result;
+          if (typeof window.EtiquetasResolver !== 'undefined') {
+              result = await window.EtiquetasResolver.updateCoberturaLegal(cobertura_legal, rangos);
+              
+              if (!result.success) {
+                  if (result.conflict) {
+                      // Handle version conflict
+                      window.EtiquetasResolver.handleVersionConflict(result);
+                      return;
+                  }
+                  
+                  if (result.permission_error) {
+                      // Show permission error
+                      saveStatus.textContent = result.error || 'Sin permisos para editar fuentes empresariales';
+                      saveBtn.classList.remove('loading');
+                      saveBtn.innerHTML = 'Guardar';
+                      saveBtn.disabled = false;
+                      return;
+                  }
+                  
+                  throw new Error(result.error || 'Error actualizando fuentes');
+              }
+          } else {
+              // Fallback to legacy method
+              console.warn('EtiquetasResolver not available, using legacy method');
+              const response = await fetch('/api/update-user-data', {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({ cobertura_legal, rangos })
+              });
+              
+              if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.error || 'Error actualizando fuentes');
+              }
+              
+              result = await response.json();
+          }
+
+          if (result.success) {
               // Show success state
               saveBtn.classList.remove('loading');
               saveBtn.innerHTML = '✓ Guardado';
               saveBtn.classList.add('success');
               
               // Refresh usage tracker after successful save
-              fetch('/api/get-user-data')
-                  .then(res => res.json())
-                  .then(userData => updateUsageTrackers(userData))
-                  .catch(err => console.error('Error updating tracker:', err));
+              try {
+                  const response = await fetch('/api/get-user-data');
+                  const userData = await response.json();
+                  if (typeof updateUsageTrackers === 'function') {
+                      updateUsageTrackers(userData);
+                  }
+              } catch (err) {
+                  console.error('Error updating tracker:', err);
+              }
               
               // Reset after 2 seconds
               setTimeout(() => {
@@ -332,14 +448,14 @@ function populateFuentes(cobertura_legal) {
               saveStatus.textContent = 'Error, pruebe de nuevo';
               saveBtn.disabled = false;
           }
-      })
-      .catch(err => {
+
+      } catch (err) {
           console.error('Error saving fuentes:', err);
           saveBtn.classList.remove('loading');
           saveBtn.innerHTML = 'Guardar';
-          saveStatus.textContent = 'Error, pruebe de nuevo';
+          saveStatus.textContent = err.message || 'Error, pruebe de nuevo';
           saveBtn.disabled = false;
-      });
+      }
   });
 }
 

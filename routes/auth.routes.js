@@ -30,7 +30,7 @@ if (SENDGRID_API_KEY && SENDGRID_API_KEY.startsWith('SG.')) {
 	sgMail.setApiKey(SENDGRID_API_KEY);
 }
 
-const { processSpecialDomainUser, processAODomainUser } = require('../services/users.service');
+const { processSpecialDomainUser, processAODomainUser, extractDomainFromEmail, connectUserToEmpresa, getUserLimits } = require('../services/users.service');
 const { sendPasswordResetEmail } = require('../services/email.service');
 
 // Local login
@@ -69,6 +69,88 @@ router.post('/login', (req, res, next) => {
 				await processAODomainUser(user);
 				return res.status(200).json({ redirectUrl: '/profile' });
 			}
+
+			// Autoconexión por dominio en login: si existe estructura de empresa, vincular/copiar y saltar onboarding
+			try {
+				const empresaDomain = extractDomainFromEmail(user.email);
+				if (empresaDomain) {
+					const client = new MongoClient(uri, mongodbOptions);
+					await client.connect();
+					const db = client.db('papyrus');
+					const estructura = await db.collection('users').findOne({ tipo_cuenta: 'estructura_empresa', empresa: empresaDomain });
+					if (estructura) {
+						// Conectar usuario a empresa usando la conexión existente
+						let isAdmin = false;
+						if (!estructura.admin_principal_id) {
+							const estructuraObjectId = (estructura._id && estructura._id instanceof ObjectId) ? estructura._id : new ObjectId(String(estructura._id));
+							await db.collection('users').updateOne(
+								{ _id: estructuraObjectId },
+								{ $set: { admin_principal_id: (user._id instanceof ObjectId) ? user._id : new ObjectId(String(user._id)), updated_at: new Date() } }
+							);
+							isAdmin = true;
+						} else {
+							try {
+								const currentUserObjectId = (user._id instanceof ObjectId) ? user._id : new ObjectId(String(user._id));
+								isAdmin = estructura.admin_principal_id && estructura.admin_principal_id.equals ? estructura.admin_principal_id.equals(currentUserObjectId) : (String(estructura.admin_principal_id) === String(currentUserObjectId));
+							} catch (_) {
+								isAdmin = String(estructura.admin_principal_id) === String(user._id);
+							}
+						}
+						
+						// Actualizar usuario con datos de empresa
+						// Solo asignar nuevo permiso si el usuario no tiene uno ya (primera vez)
+						const currentUser = await db.collection('users').findOne({ _id: userObjectId });
+						const permisoToAssign = currentUser && currentUser.tipo_cuenta === 'empresa' && currentUser.permiso
+							? currentUser.permiso  // Mantener permiso existente
+							: (isAdmin ? 'admin' : 'lectura'); // Solo asignar lectura por defecto si es primera vez
+						
+						const userUpdate = {
+							$set: {
+								tipo_cuenta: 'empresa',
+								empresa: empresaDomain,
+								estructura_empresa_id: estructura._id,
+								permiso: permisoToAssign,
+								admin_empresa_id: estructura.admin_principal_id || ((user._id instanceof ObjectId) ? user._id : new ObjectId(String(user._id))),
+								subscription_plan: 'plan4',
+								limit_agentes: getUserLimits('plan4').limit_agentes,
+								limit_fuentes: getUserLimits('plan4').limit_fuentes,
+								updated_at: new Date()
+							}
+						};
+						const userObjectId = (user._id && user._id._bsontype === 'ObjectID') ? user._id : ((user._id instanceof ObjectId) ? user._id : new ObjectId(String(user._id)));
+						await db.collection('users').updateOne({ _id: userObjectId }, userUpdate);
+						
+						// Copiar variables comunes de estructura a user (best effort)
+						try {
+							const now = new Date();
+							const yyyy = now.getFullYear();
+							const mm = String(now.getMonth() + 1).padStart(2, '0');
+							const dd = String(now.getDate()).padStart(2, '0');
+							const copyFields = {
+								industry_tags: estructura.industry_tags || [],
+								sub_industria_map: estructura.sub_industria_map || {},
+								rama_juridicas: estructura.rama_juridicas || [],
+								sub_rama_map: estructura.sub_rama_map || {},
+								cobertura_legal: estructura.cobertura_legal || { fuentes_gobierno: [], fuentes_reguladores: [] },
+								rangos: estructura.rangos || [],
+								perfil_regulatorio: estructura.perfil_regulatorio || '<p>Perfil regulatorio establecido para empresa.</p><p>Configuración completada automáticamente basada en la estructura organizacional.</p><p>Accede a la sección de Agentes para personalizar tu monitoreo normativo.</p>',
+								tipo_empresa: estructura.tipo_empresa || 'Corporativo',
+								detalle_empresa: estructura.detalle_empresa || { sector: 'Empresarial', actividad: 'Múltiples sectores' },
+								interes: estructura.interes || 'Monitoreo normativo empresarial',
+								tamaño_empresa: estructura.tamaño_empresa || 'Mediana-Grande',
+								web: estructura.web || '',
+								company_name: estructura.company_name || '',
+								registration_date: user.registration_date || `${yyyy}-${mm}-${dd}`,
+								registration_date_obj: now
+							};
+							await db.collection('users').updateOne({ _id: userObjectId }, { $set: copyFields });
+						} catch (_) {}
+						await client.close();
+						return res.status(200).json({ redirectUrl: '/profile?view=configuracion&tab=agentes' });
+					}
+					await client.close();
+				}
+			} catch (_) {}
 
 			if (user.subscription_plan) {
 				return res.status(200).json({ redirectUrl: '/profile' });
@@ -131,6 +213,9 @@ router.post('/register', async (req, res) => {
 				});
 			}
 
+			// Registro inicial debe pasar por onboarding para selección de plan y promoción.
+			// La vinculación a empresa (si procede) se hará en /save-free-plan cuando se use el código enterprise.
+
 			if (newUser.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
 				await processSpecialDomainUser(newUser);
 				return res.status(200).json({ redirectUrl: '/profile' });
@@ -139,13 +224,90 @@ router.post('/register', async (req, res) => {
 				await processAODomainUser(newUser);
 				return res.status(200).json({ redirectUrl: '/profile' });
 			}
+
+			// Autoconexión por dominio: si existe estructura de empresa para el dominio, vincular y saltar onboarding
+			try {
+				const empresaDomain = extractDomainFromEmail(newUser.email);
+				if (empresaDomain) {
+					// Buscar estructura empresa existente usando la conexión ya abierta
+					const estructura = await database.collection('users').findOne({ tipo_cuenta: 'estructura_empresa', empresa: empresaDomain });
+					if (estructura) {
+						// Conectar usuario a empresa usando la conexión existente
+						let isAdmin = false;
+						if (!estructura.admin_principal_id) {
+							const estructuraObjectId = (estructura._id && estructura._id instanceof ObjectId) ? estructura._id : new ObjectId(String(estructura._id));
+							await database.collection('users').updateOne(
+								{ _id: estructuraObjectId },
+								{ $set: { admin_principal_id: (newUser._id instanceof ObjectId) ? newUser._id : new ObjectId(String(newUser._id)), updated_at: new Date() } }
+							);
+							isAdmin = true;
+						} else {
+							try {
+								const currentUserObjectId = (newUser._id instanceof ObjectId) ? newUser._id : new ObjectId(String(newUser._id));
+								isAdmin = estructura.admin_principal_id && estructura.admin_principal_id.equals ? estructura.admin_principal_id.equals(currentUserObjectId) : (String(estructura.admin_principal_id) === String(currentUserObjectId));
+							} catch (_) {
+								isAdmin = String(estructura.admin_principal_id) === String(newUser._id);
+							}
+						}
+						
+						// Actualizar usuario con datos de empresa
+						// Para nuevos usuarios registrándose, siempre asignar permiso por defecto
+						const userUpdate = {
+							$set: {
+								tipo_cuenta: 'empresa',
+								empresa: empresaDomain,
+								estructura_empresa_id: estructura._id,
+								permiso: isAdmin ? 'admin' : 'lectura',
+								admin_empresa_id: estructura.admin_principal_id || ((newUser._id instanceof ObjectId) ? newUser._id : new ObjectId(String(newUser._id))),
+								subscription_plan: 'plan4',
+								limit_agentes: getUserLimits('plan4').limit_agentes,
+								limit_fuentes: getUserLimits('plan4').limit_fuentes,
+								updated_at: new Date()
+							}
+						};
+						await database.collection('users').updateOne({ _id: (newUser._id instanceof ObjectId) ? newUser._id : new ObjectId(String(newUser._id)) }, userUpdate);
+						
+						// Copiar variables comunes de estructura a user (best effort)
+						try {
+							const now = new Date();
+							const yyyy = now.getFullYear();
+							const mm = String(now.getMonth() + 1).padStart(2, '0');
+							const dd = String(now.getDate()).padStart(2, '0');
+							const copyFields = {
+								industry_tags: estructura.industry_tags || [],
+								sub_industria_map: estructura.sub_industria_map || {},
+								rama_juridicas: estructura.rama_juridicas || [],
+								sub_rama_map: estructura.sub_rama_map || {},
+								cobertura_legal: estructura.cobertura_legal || { fuentes_gobierno: [], fuentes_reguladores: [] },
+								rangos: estructura.rangos || [],
+								perfil_regulatorio: estructura.perfil_regulatorio || '<p>Perfil regulatorio establecido para empresa.</p><p>Configuración completada automáticamente basada en la estructura organizacional.</p><p>Accede a la sección de Agentes para personalizar tu monitoreo normativo.</p>',
+								tipo_empresa: estructura.tipo_empresa || 'Corporativo',
+								detalle_empresa: estructura.detalle_empresa || { sector: 'Empresarial', actividad: 'Múltiples sectores' },
+								interes: estructura.interes || 'Monitoreo normativo empresarial',
+								tamaño_empresa: estructura.tamaño_empresa || 'Mediana-Grande',
+								web: estructura.web || '',
+								company_name: estructura.company_name || '',
+								registration_date: `${yyyy}-${mm}-${dd}`,
+								registration_date_obj: now
+							};
+							await database.collection('users').updateOne({ _id: (newUser._id instanceof ObjectId) ? newUser._id : new ObjectId(String(newUser._id)) }, { $set: copyFields });
+						} catch (_) {
+							// Non-blocking copy step
+						}
+						
+						await client.close();
+						return res.status(200).json({ redirectUrl: '/profile?view=configuracion&tab=agentes' });
+					}
+				}
+			} catch (e) {
+				console.warn('Autoconexión por dominio (registro) no aplicada:', e.message);
+			}
+			await client.close();
 			return res.status(200).json({ redirectUrl: '/onboarding/paso0.html' });
 		});
 	} catch (err) {
 		console.error("Error registrando usuario:", err);
 		return res.status(500).json({ error: "Error al registrar el usuario." });
-	} finally {
-		await client.close();
 	}
 });
 
@@ -171,6 +333,49 @@ router.get('/auth/google/callback',
 			}
 
 			await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
+
+			// Autoconexión por dominio para Google OAuth
+			try {
+				const empresaDomain = extractDomainFromEmail(req.user.email);
+				if (empresaDomain) {
+					const estructura = await connectUserToEmpresa(req.user._id, req.user.email);
+					if (estructura) {
+						const estructuraDoc = await database.collection('users').findOne({ _id: (estructura._id instanceof ObjectId) ? estructura._id : new ObjectId(String(estructura._id)) });
+						if (estructuraDoc) {
+							const now = new Date();
+							const yyyy = now.getFullYear();
+							const mm = String(now.getMonth() + 1).padStart(2, '0');
+							const dd = String(now.getDate()).padStart(2, '0');
+							const copyFields = {
+								industry_tags: estructuraDoc.industry_tags || [],
+								sub_industria_map: estructuraDoc.sub_industria_map || {},
+								rama_juridicas: estructuraDoc.rama_juridicas || [],
+								sub_rama_map: estructuraDoc.sub_rama_map || {},
+								cobertura_legal: estructuraDoc.cobertura_legal || { fuentes_gobierno: [], fuentes_reguladores: [] },
+								rangos: estructuraDoc.rangos || [],
+								perfil_regulatorio: estructuraDoc.perfil_regulatorio || '<p>Perfil regulatorio establecido para empresa.</p><p>Configuración completada automáticamente basada en la estructura organizacional.</p><p>Accede a la sección de Agentes para personalizar tu monitoreo normativo.</p>',
+								tipo_empresa: estructuraDoc.tipo_empresa || 'Corporativo',
+								detalle_empresa: estructuraDoc.detalle_empresa || { sector: 'Empresarial', actividad: 'Múltiples sectores' },
+								interes: estructuraDoc.interes || 'Monitoreo normativo empresarial',
+								tamaño_empresa: estructuraDoc.tamaño_empresa || 'Mediana-Grande',
+								web: estructuraDoc.web || '',
+								company_name: estructuraDoc.company_name || '',
+								subscription_plan: 'plan4',
+								impact_analysis_limit: -1,
+								limit_agentes: estructuraDoc.limit_agentes ?? null,
+								limit_fuentes: estructuraDoc.limit_fuentes ?? null,
+								registration_date: `${yyyy}-${mm}-${dd}`,
+								registration_date_obj: now,
+								updated_at: new Date()
+							};
+							await database.collection('users').updateOne({ _id: (req.user._id instanceof ObjectId) ? req.user._id : new ObjectId(String(req.user._id)) }, { $set: copyFields });
+						}
+						return res.redirect('/profile?view=configuracion&tab=agentes');
+					}
+				}
+			} catch (e) {
+				console.warn('Autoconexión por dominio (Google) no aplicada:', e.message);
+			}
 
 			if (req.user.email.toLowerCase().endsWith(SPECIAL_DOMAIN)) {
 				await processSpecialDomainUser(req.user);

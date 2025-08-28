@@ -953,7 +953,7 @@
           }
           
           // Check promotion code validity
-          if (promotionCode && promotionCode !== "ReversaTrial1620") {
+          if (promotionCode && promotionCode !== "ReversaTrial1620" && promotionCode !== "ReversaEnterprise1620") {
             // Invalid promotion code
             promoCodeError.style.display = 'block';
             nextButton.classList.remove('loading');
@@ -963,9 +963,9 @@
           }
           
           // Set promotion code status in sessionStorage
-          if (promotionCode === "ReversaTrial1620") {
-            sessionStorage.setItem('promotion_code', 'yes');
-            console.log('Promoción aplicada correctamente');
+          if (promotionCode === "ReversaTrial1620" || promotionCode === "ReversaEnterprise1620") {
+            sessionStorage.setItem('promotion_code', promotionCode);
+            console.log('Promoción aplicada correctamente:', promotionCode);
           } else {
             sessionStorage.setItem('promotion_code', 'no');
           }
@@ -975,20 +975,21 @@
             const response = await fetch('/save-free-plan', {
              method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ plan: planType, billingInterval: billing })
+            body: JSON.stringify({ plan: planType, billingInterval: billing, promotion_code: sessionStorage.getItem('promotion_code') })
             });
             if (!response.ok) throw new Error('Error al guardar plan gratuito');
             const result = await response.json();
             window.location.href = result.redirectUrl || '/profile?view=configuracion';
           
           } else if (planType === 'plan2' || planType === 'plan3') {
-            const promoApplied = sessionStorage.getItem('promotion_code') === 'yes';
+            const promoCodeStored = sessionStorage.getItem('promotion_code');
+            const promoApplied = promoCodeStored === 'ReversaTrial1620' || promoCodeStored === 'ReversaEnterprise1620';
             if (promoApplied) {
               console.log('Código promocional aceptado. Activando plan sin pasar por Stripe...');
               const response = await fetch('/save-free-plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ plan: planType, billingInterval: billing, promo: true })
+                body: JSON.stringify({ plan: planType, billingInterval: billing, promo: true, promotion_code: promoCodeStored })
               });
               if (!response.ok) throw new Error('Error al guardar plan con promoción');
               const result = await response.json();
@@ -1015,7 +1016,8 @@
                 rangos: [],
                 feedback: {},
                 etiquetas_personalizadas: {},
-                isTrial: planType === 'plan2'
+                isTrial: planType === 'plan2',
+                promotion_code: promoCodeStored
               };
               console.log('Creating Stripe session with payload:', payload);
               const resp = await fetch('/create-checkout-session', {

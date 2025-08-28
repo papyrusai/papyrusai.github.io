@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Reversa</title>
+    <style>
+        :root {
+            --reversa-green: #04db8d;
+            --reversa-blue: #0b2431;
+            --reversa-slate: #455862;
+            --neutral-100: #f8f9fa;
+            --neutral-350: #e8ecf0;
+            --neutral-400: #dee2e6;
+            --neutral-500: #adb5bd;
+            --neutral-600: #6c757d;
+            --neutral-700: #495057;
+            --error: #d32f2f;
+            --gradient-reversa: linear-gradient(135deg, #04db8d 0%, #0b2431 100%);
+            --shadow-sm: 0 2px 8px rgba(11, 36, 49, 0.08);
+            --shadow-md: 0 4px 12px rgba(11, 36, 49, 0.12);
+        }
+
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+            font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .admin-header {
+            margin-bottom: 32px;
+        }
+
+        .admin-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--reversa-blue);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-subtitle {
+            color: var(--neutral-600);
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .admin-section {
+            margin-bottom: 40px;
+        }
+
+        .section-header {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--reversa-blue);
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--neutral-350);
+            padding-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .users-counter {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--neutral-600);
+            background: var(--neutral-100);
+            padding: 4px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--neutral-350);
+        }
+
+        .request-box, .user-box {
+            background: #ffffff;
+            border: 1px solid var(--neutral-350);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .request-box:hover, .user-box:hover {
+            box-shadow: var(--shadow-md);
+            border-color: rgba(4, 219, 141, 0.2);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .request-user {
+            font-weight: 600;
+            color: var(--reversa-blue);
+            font-size: 16px;
+        }
+
+        .request-date {
+            color: var(--neutral-600);
+            font-size: 14px;
+        }
+
+        .request-reason {
+            background: var(--neutral-100);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--neutral-700);
+            border-left: 3px solid var(--reversa-green);
+        }
+
+        .request-reason.empty {
+            color: var(--neutral-500);
+            font-style: italic;
+            border-left-color: var(--neutral-400);
+        }
+
+        /* Permission change info styles */
+        .permission-change-info {
+            margin: 16px 0;
+            padding: 12px 16px;
+            background: var(--neutral-100);
+            border-radius: 8px;
+            border-left: 3px solid var(--reversa-blue);
+        }
+
+        .change-type {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .permission-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .permission-badge.from {
+            background: var(--neutral-400);
+            color: var(--neutral-600);
+        }
+
+        .permission-badge.to {
+            background: var(--gradient-reversa);
+            color: white;
+        }
+
+        .change-type i {
+            color: var(--reversa-slate);
+            font-size: 12px;
+        }
+
+        .change-description {
+            font-size: 13px;
+            color: var(--neutral-600);
+            font-style: italic;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .btn-reject {
+            background: transparent;
+            color: var(--reversa-blue);
+            border: 1px solid var(--reversa-blue);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 8px;
+        }
+
+        .btn-reject:hover {
+            background: rgba(11, 36, 49, 0.04);
+            transform: translateY(-1px);
+        }
+
+        .btn-approve {
+            background: var(--reversa-blue);
+            color: white;
+            border: 1px solid var(--reversa-blue);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-approve:hover {
+            background: rgba(11, 36, 49, 0.9);
+            transform: translateY(-1px);
+        }
+
+        .user-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+        }
+
+        .user-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-icon {
+            color: var(--neutral-500);
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-weight: 600;
+            color: var(--reversa-blue);
+            margin-bottom: 4px;
+            font-size: 16px;
+        }
+
+        .user-email {
+            color: var(--neutral-600);
+            font-size: 14px;
+        }
+
+        .permission-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .permission-dropdown {
+            background: #ffffff;
+            border: 1px solid var(--neutral-400);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            min-width: 110px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .permission-dropdown:hover {
+            border-color: var(--reversa-green);
+            box-shadow: 0 2px 6px rgba(4, 219, 141, 0.15);
+        }
+
+        .permission-dropdown.admin {
+            background: var(--gradient-reversa);
+            color: white;
+            border-color: var(--reversa-green);
+            opacity: 1 !important;
+        }
+
+        .permission-dropdown.edicion {
+            background: var(--reversa-blue);
+            color: white;
+            border-color: var(--reversa-blue);
+        }
+
+        .permission-dropdown.lectura {
+            background: var(--neutral-100);
+            color: var(--neutral-600);
+            border-color: var(--neutral-400);
+        }
+
+        /* New permission badge styles for admin users */
+        .permission-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 110px;
+            justify-content: center;
+        }
+
+        .permission-badge.admin-principal {
+            background: var(--gradient-reversa);
+            color: white;
+            border: 1px solid var(--reversa-green);
+        }
+
+        .permission-badge.admin-regular {
+            background: var(--gradient-reversa);
+            color: white;
+            border: 1px solid var(--reversa-green);
+        }
+
+        /* Disabled dropdown styles */
+        .permission-dropdown.disabled {
+            cursor: not-allowed !important;
+            opacity: 0.8;
+            background: var(--neutral-200) !important;
+            color: var(--neutral-600) !important;
+            border-color: var(--neutral-400) !important;
+            pointer-events: none;
+        }
+
+        .permission-dropdown.disabled:hover {
+            border-color: var(--neutral-400) !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        /* Override for admin disabled - keep gradient but make it obvious it's disabled */
+        .permission-dropdown.admin.disabled {
+            background: linear-gradient(135deg, rgba(4, 219, 141, 0.6) 0%, rgba(11, 36, 49, 0.6) 100%) !important;
+            color: rgba(255, 255, 255, 0.8) !important;
+            border-color: rgba(4, 219, 141, 0.4) !important;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--neutral-600);
+            font-style: italic;
+            font-size: 16px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--neutral-350);
+            border-top: 3px solid var(--reversa-green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn-loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s ease;
+        }
+
+        .notification.success {
+            background: var(--gradient-reversa);
+        }
+
+        .notification.error {
+            background: var(--error);
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .empresa-badge {
+            background: var(--gradient-reversa);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 12px;
+        }
+        /* Request permission section styles */
+        .request-permission-section {
+            margin: 16px 0;
+        }
+
+        .request-permission-subtitle,
+        .request-comment-subtitle {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--reversa-blue);
+            margin-bottom: 8px;
+        }
+
+        .request-permission-banners {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .permission-banner {
+            background: var(--neutral-100);
+            border: 1px solid var(--neutral-350);
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--reversa-slate);
+        }
+
+        .permission-banner.current {
+            background: rgba(173, 181, 189, 0.1);
+            color: var(--neutral-600);
+        }
+
+        .permission-banner.target {
+            background: rgba(4, 219, 141, 0.1);
+            border-color: var(--reversa-green);
+            color: var(--reversa-green);
+        }
+
+        .permission-arrow {
+            color: var(--neutral-500);
+            font-size: 12px;
+        }
+
+        /* Request comment section styles */
+        .request-comment-section {
+            margin: 16px 0;
+        }
+
+        .request-comment-content {
+            background: var(--neutral-100);
+            border: 1px solid var(--neutral-350);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            color: var(--neutral-700);
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <div class="admin-title">
+                Panel de Administración
+                <span id="empresaBadge" class="empresa-badge"></span>
+            </div>
+            <div class="admin-subtitle">Gestiona permisos y usuarios de tu empresa</div>
+        </div>
+
+        <!-- Sección: Solicitudes Pendientes -->
+        <div class="admin-section">
+            <div class="section-header">Solicitudes Pendientes</div>
+            <div id="solicitudesContainer">
+                <div class="section-loader">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección: Detalle Usuarios -->
+        <div class="admin-section">
+            <div class="section-header">
+                Detalle Usuarios
+                <span id="usuariosCounter" class="users-counter">Total usuarios: 0</span>
+            </div>
+            <div id="usuariosContainer">
+                <div class="section-loader">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification container -->
+    <div id="notification" class="notification"></div>
+
+    <script src="admin.js"></script>
+</body>
+</html> 

@@ -12,6 +12,9 @@ const ensureAuthenticated = require('../middleware/ensureAuthenticated');
 const fs = require('fs');
 const path = require('path');
 
+// Import the resolver service
+const { updateEtiquetasPersonalizadas, getEtiquetasPersonalizadas } = require('../services/enterprise.service');
+
 // Ensure fetch is available
 if (typeof fetch === 'undefined') {
 	global.fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
@@ -73,6 +76,217 @@ function renderTemplate(tpl, replacements) {
 	return out;
 }
 
+// === NUEVOS ENDPOINTS: Gestión de carpetas de agentes y selección personalizada ===
+const {
+	getCarpetasEstructura,
+	createCarpeta,
+	renameCarpeta,
+	moveCarpeta,
+	deleteCarpeta,
+	assignAgenteToCarpeta,
+	getSeleccionAgentes,
+	updateSeleccionAgentes,
+	lockCarpetasForEdit,
+	unlockCarpetasForEdit,
+	getUserContext
+} = require('../services/enterprise.service');
+
+// GET /api/carpetas-context - Obtener estructura de carpetas con conteos
+router.get('/api/carpetas-context', ensureAuthenticated, async (req, res) => {
+	try {
+		const result = await getCarpetasEstructura(req.user);
+		res.json({ success: true, data: result.estructura_carpetas, counts: result.counts, source: result.source });
+	} catch (error) {
+		console.error('Error obteniendo carpetas:', error);
+		res.status(500).json({ success: false, error: 'Error interno al obtener estructura de carpetas' });
+	}
+});
+
+// POST /api/carpetas - Crear carpeta
+router.post('/api/carpetas', ensureAuthenticated, async (req, res) => {
+	try {
+		const { nombre, parentId = null, expectedVersion = null } = req.body || {};
+		if (!nombre || typeof nombre !== 'string') {
+			return res.status(400).json({ success: false, error: 'Se requiere nombre de carpeta' });
+		}
+		const result = await createCarpeta(req.user, nombre.trim(), parentId || null, expectedVersion);
+		if (!result.success) {
+			const status = result.conflict ? 409 : (result.error && result.error.includes('admins de empresa') ? 403 : 400);
+			return res.status(status).json(result);
+		}
+		res.json(result);
+	} catch (error) {
+		console.error('Error creando carpeta:', error);
+		res.status(500).json({ success: false, error: 'Error interno al crear carpeta' });
+	}
+});
+
+// PUT /api/carpetas/:folderId/rename - Renombrar carpeta
+router.put('/api/carpetas/:folderId/rename', ensureAuthenticated, async (req, res) => {
+	try {
+		const { folderId } = req.params;
+		const { newName, expectedVersion = null } = req.body || {};
+		if (!newName || typeof newName !== 'string') {
+			return res.status(400).json({ success: false, error: 'Se requiere nuevo nombre' });
+		}
+		const result = await renameCarpeta(req.user, folderId, newName.trim(), expectedVersion);
+		if (!result.success) {
+			const status = result.conflict ? 409 : (result.error && result.error.includes('admins de empresa') ? 403 : 400);
+			return res.status(status).json(result);
+		}
+		res.json(result);
+	} catch (error) {
+		console.error('Error renombrando carpeta:', error);
+		res.status(500).json({ success: false, error: 'Error interno al renombrar carpeta' });
+	}
+});
+
+// PUT /api/carpetas/:folderId/move - Mover carpeta
+router.put('/api/carpetas/:folderId/move', ensureAuthenticated, async (req, res) => {
+	try {
+		const { folderId } = req.params;
+		const { newParentId = null, expectedVersion = null } = req.body || {};
+		const result = await moveCarpeta(req.user, folderId, newParentId || null, expectedVersion);
+		if (!result.success) {
+			const status = result.conflict ? 409 : (result.error && result.error.includes('admins de empresa') ? 403 : 400);
+			return res.status(status).json(result);
+		}
+		res.json(result);
+	} catch (error) {
+		console.error('Error moviendo carpeta:', error);
+		res.status(500).json({ success: false, error: 'Error interno al mover carpeta' });
+	}
+});
+
+// DELETE /api/carpetas/:folderId - Eliminar carpeta
+router.delete('/api/carpetas/:folderId', ensureAuthenticated, async (req, res) => {
+	try {
+		const { folderId } = req.params;
+		const { expectedVersion = null } = req.body || {};
+		const result = await deleteCarpeta(req.user, folderId, expectedVersion);
+		if (!result.success) {
+			const status = result.conflict ? 409 : (result.error && result.error.includes('admins de empresa') ? 403 : 400);
+			return res.status(status).json(result);
+		}
+		res.json(result);
+	} catch (error) {
+		console.error('Error eliminando carpeta:', error);
+		res.status(500).json({ success: false, error: 'Error interno al eliminar carpeta' });
+	}
+});
+
+// POST /api/carpetas/assign - Asignar agente a carpeta
+router.post('/api/carpetas/assign', ensureAuthenticated, async (req, res) => {
+	try {
+		const { agenteName, folderId = null, expectedVersion = null } = req.body || {};
+		if (!agenteName || typeof agenteName !== 'string') {
+			return res.status(400).json({ success: false, error: 'Se requiere agenteName' });
+		}
+		const result = await assignAgenteToCarpeta(req.user, agenteName, folderId || null, expectedVersion);
+		if (!result.success) {
+			const status = result.conflict ? 409 : (result.error && result.error.includes('permisos') ? 403 : 400);
+			return res.status(status).json(result);
+		}
+		res.json(result);
+	} catch (error) {
+		console.error('Error asignando agente a carpeta:', error);
+		res.status(500).json({ success: false, error: 'Error interno al asignar agente' });
+	}
+});
+
+// GET /api/agentes-seleccion-personalizada - Obtener selección del usuario
+router.get('/api/agentes-seleccion-personalizada', ensureAuthenticated, async (req, res) => {
+	try {
+		const result = await getSeleccionAgentes(req.user);
+		res.json(result);
+	} catch (error) {
+		console.error('Error obteniendo selección personalizada:', error);
+		res.status(500).json({ success: false, error: 'Error interno al obtener selección' });
+	}
+});
+
+// POST /api/agentes-seleccion-personalizada - Actualizar selección del usuario
+router.post('/api/agentes-seleccion-personalizada', ensureAuthenticated, async (req, res) => {
+	try {
+		const { seleccion = [] } = req.body || {};
+		const result = await updateSeleccionAgentes(req.user, Array.isArray(seleccion) ? seleccion : []);
+		if (!result.success) {
+			const status = result.error && result.error.includes('límite') ? 403 : 400;
+			return res.status(status).json(result);
+		}
+		res.json(result);
+	} catch (error) {
+		console.error('Error actualizando selección personalizada:', error);
+		res.status(500).json({ success: false, error: 'Error interno al actualizar selección' });
+	}
+});
+
+// POST /api/carpetas-lock - Bloqueo de edición de carpetas
+router.post('/api/carpetas-lock', ensureAuthenticated, async (req, res) => {
+	try {
+		const { folderId = null } = req.body || {};
+		const result = await lockCarpetasForEdit(req.user, folderId);
+		if (!result.success) return res.status(423).json(result);
+		res.json(result);
+	} catch (error) {
+		console.error('Error bloqueando edición de carpetas:', error);
+		res.status(500).json({ success: false, error: 'Error interno al bloquear edición' });
+	}
+});
+
+// DELETE /api/carpetas-lock - Liberar bloqueo de edición de carpetas
+router.delete('/api/carpetas-lock', ensureAuthenticated, async (req, res) => {
+	try {
+		const { folderId = null } = req.body || {};
+		const result = await unlockCarpetasForEdit(req.user, folderId);
+		res.json(result);
+	} catch (error) {
+		console.error('Error liberando bloqueo de carpetas:', error);
+		res.status(500).json({ success: false, error: 'Error interno al liberar bloqueo' });
+	}
+});
+
+// GET /api/historial/carpetas - Obtener historial de cambios de carpetas
+router.get('/api/historial/carpetas', ensureAuthenticated, async (req, res) => {
+	try {
+		const client = new MongoClient(uri, mongodbOptions);
+		await client.connect();
+		const users = client.db('papyrus').collection('users');
+		let doc;
+		if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
+			doc = await users.findOne({ _id: (req.user.estructura_empresa_id instanceof ObjectId) ? req.user.estructura_empresa_id : new ObjectId(String(req.user.estructura_empresa_id)) });
+		} else {
+			doc = await users.findOne({ _id: (req.user._id instanceof ObjectId) ? req.user._id : new ObjectId(String(req.user._id)) });
+		}
+		await client.close();
+		return res.json({ success: true, historial: doc?.historial_carpetas || [] });
+	} catch (error) {
+		console.error('Error obteniendo historial de carpetas:', error);
+		res.status(500).json({ success: false, error: 'Error interno al obtener historial de carpetas' });
+	}
+});
+
+// GET /api/historial/agentes - Obtener historial de cambios de agentes
+router.get('/api/historial/agentes', ensureAuthenticated, async (req, res) => {
+	try {
+		const client = new MongoClient(uri, mongodbOptions);
+		await client.connect();
+		const users = client.db('papyrus').collection('users');
+		let doc;
+		if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
+			doc = await users.findOne({ _id: (req.user.estructura_empresa_id instanceof ObjectId) ? req.user.estructura_empresa_id : new ObjectId(String(req.user.estructura_empresa_id)) });
+		} else {
+			doc = await users.findOne({ _id: (req.user._id instanceof ObjectId) ? req.user._id : new ObjectId(String(req.user._id)) });
+		}
+		await client.close();
+		return res.json({ success: true, historial: doc?.historial_agentes || [] });
+	} catch (error) {
+		console.error('Error obteniendo historial de agentes:', error);
+		res.status(500).json({ success: false, error: 'Error interno al obtener historial de agentes' });
+	}
+});
+// === FIN NUEVOS ENDPOINTS ===
+
 // Generate Agent endpoint
 router.post('/api/generate-agent', ensureAuthenticated, async (req, res) => {
 	try {
@@ -115,9 +329,18 @@ router.post('/api/generate-agent', ensureAuthenticated, async (req, res) => {
 		let parsedAgent;
 		try { parsedAgent = JSON.parse(aiContent); } catch (err) { console.error('Failed to parse Gemini response:', err, aiContent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid AI response format' }); }
 		if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') { console.error('Invalid agent structure:', parsedAgent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid agent structure from AI' }); }
-		const existingEtiquetas = user.etiquetas_personalizadas || {};
+		// Get existing etiquetas using resolver
+		const existingResult = await getEtiquetasPersonalizadas(req.user);
+		const existingEtiquetas = existingResult.etiquetas_personalizadas || {};
 		const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
-		await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: { etiquetas_personalizadas: newEtiquetas } });
+		
+		// Use resolver to update etiquetas
+		const updateResult = await updateEtiquetasPersonalizadas(req.user, newEtiquetas);
+		if (!updateResult.success) {
+			await client.close();
+			return res.status(400).json({ success: false, error: updateResult.error });
+		}
+		
 		await client.close();
 		console.log('Agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
 		res.json({ success: true, agent: parsedAgent, message: 'Agent generated and saved successfully' });
@@ -167,9 +390,18 @@ router.post('/api/generate-client-agent', ensureAuthenticated, async (req, res) 
 		let parsedAgent;
 		try { parsedAgent = JSON.parse(aiContent); } catch (err) { console.error('Failed to parse Gemini response:', err, aiContent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid AI response format' }); }
 		if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') { console.error('Invalid agent structure:', parsedAgent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid agent structure from AI' }); }
-		const existingEtiquetas = user.etiquetas_personalizadas || {};
+		// Get existing etiquetas using resolver
+		const existingResult = await getEtiquetasPersonalizadas(req.user);
+		const existingEtiquetas = existingResult.etiquetas_personalizadas || {};
 		const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
-		await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: { etiquetas_personalizadas: newEtiquetas } });
+		
+		// Use resolver to update etiquetas
+		const updateResult = await updateEtiquetasPersonalizadas(req.user, newEtiquetas);
+		if (!updateResult.success) {
+			await client.close();
+			return res.status(400).json({ success: false, error: updateResult.error });
+		}
+		
 		await client.close();
 		console.log('Client agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
 		res.json({ success: true, agent: parsedAgent, message: 'Client agent generated and saved successfully' });
@@ -219,9 +451,18 @@ router.post('/api/generate-sector-agent', ensureAuthenticated, async (req, res) 
 		let parsedAgent;
 		try { parsedAgent = JSON.parse(aiContent); } catch (err) { console.error('Failed to parse Gemini response:', err, aiContent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid AI response format' }); }
 		if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') { console.error('Invalid agent structure:', parsedAgent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid agent structure from AI' }); }
-		const existingEtiquetas = user.etiquetas_personalizadas || {};
+		// Get existing etiquetas using resolver
+		const existingResult = await getEtiquetasPersonalizadas(req.user);
+		const existingEtiquetas = existingResult.etiquetas_personalizadas || {};
 		const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
-		await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: { etiquetas_personalizadas: newEtiquetas } });
+		
+		// Use resolver to update etiquetas
+		const updateResult = await updateEtiquetasPersonalizadas(req.user, newEtiquetas);
+		if (!updateResult.success) {
+			await client.close();
+			return res.status(400).json({ success: false, error: updateResult.error });
+		}
+		
 		await client.close();
 		console.log('Sector agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
 		res.json({ success: true, agent: parsedAgent, message: 'Sector agent generated and saved successfully' });
@@ -269,9 +510,18 @@ router.post('/api/generate-custom-agent', ensureAuthenticated, async (req, res) 
 		let parsedAgent;
 		try { parsedAgent = JSON.parse(aiContent); } catch (err) { console.error('Failed to parse Gemini response:', err, aiContent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid AI response format' }); }
 		if (!parsedAgent.etiqueta_personalizada || typeof parsedAgent.etiqueta_personalizada !== 'object') { console.error('Invalid agent structure:', parsedAgent); await client.close(); return res.status(500).json({ success: false, error: 'Invalid agent structure from AI' }); }
-		const existingEtiquetas = user.etiquetas_personalizadas || {};
+		// Get existing etiquetas using resolver
+		const existingResult = await getEtiquetasPersonalizadas(req.user);
+		const existingEtiquetas = existingResult.etiquetas_personalizadas || {};
 		const newEtiquetas = { ...existingEtiquetas, ...parsedAgent.etiqueta_personalizada };
-		await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: { etiquetas_personalizadas: newEtiquetas } });
+		
+		// Use resolver to update etiquetas
+		const updateResult = await updateEtiquetasPersonalizadas(req.user, newEtiquetas);
+		if (!updateResult.success) {
+			await client.close();
+			return res.status(400).json({ success: false, error: updateResult.error });
+		}
+		
 		await client.close();
 		console.log('Custom agent generated and saved successfully:', parsedAgent.etiqueta_personalizada);
 		res.json({ success: true, agent: parsedAgent, message: 'Custom agent generated and saved successfully' });

@@ -821,6 +821,11 @@ POST /cancel-plan2           # Cancelación
 POST /save-free-plan         # Downgrade a gratuito
 ```
 
+#### Nota temporal
+- Envío de correo de confirmación desactivado temporalmente para onboarding y plan gratuito:
+  - `/save-user` (user.routes.js): envío comentado con log.
+  - `/save-free-plan` (billing.routes.js): envío comentado con log.
+
 ---
 
 ## 📈 CONCLUSIÓN

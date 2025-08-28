@@ -17,7 +17,7 @@ const path = require('path');
 // Reuse dependencies from app environment
 const stripe = require('stripe')(process.env.STRIPE);
 const BASE_URL = process.env.BASE_URL || 'https://app.reversa.ai';
-const { getUserLimits } = require('../services/users.service');
+const { getUserLimits, extractDomainFromEmail, createEstructuraEmpresa, connectUserToEmpresa } = require('../services/users.service');
 const { sendSubscriptionEmail } = require('../services/email.service');
 
 const router = express.Router();
@@ -253,7 +253,7 @@ router.post('/save-free-plan', ensureAuthenticated, async (req, res) => {
 		let impactAnalysisLimit = 0;
 		if (plan === 'plan2') impactAnalysisLimit = 50; else if (plan === 'plan3') impactAnalysisLimit = 500; else if (plan === 'plan4') impactAnalysisLimit = -1;
 		const userLimits = getUserLimits(plan);
-		const userData = {
+		let userData = {
 			industry_tags,
 			sub_industria_map,
 			rama_juridicas,
@@ -279,10 +279,109 @@ router.post('/save-free-plan', ensureAuthenticated, async (req, res) => {
 			limit_agentes: userLimits.limit_agentes,
 			limit_fuentes: userLimits.limit_fuentes,
 		};
-		await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: userData }, { upsert: true });
-		await sendSubscriptionEmail(req.user, userData);
-		await client.close();
-		res.json({ redirectUrl: '/profile?view=configuracion' });
+
+		// Detect enterprise trial code and create/connect empresa structure
+		const isEnterpriseCode = promotion_code === 'ReversaEnterprise1620';
+		if (isEnterpriseCode) {
+			const empresaDomain = extractDomainFromEmail(req.user.email);
+			if (!empresaDomain) {
+				await client.close();
+				return res.status(400).json({ error: 'No se pudo extraer dominio de empresa del email' });
+			}
+			try {
+				await createEstructuraEmpresa(empresaDomain, req.user._id);
+				await connectUserToEmpresa(req.user._id, req.user.email);
+				// Actualizar documento estructura_empresa con la configuración enviada (fuente de verdad)
+				const estructuraDoc = await usersCollection.findOne({ tipo_cuenta: 'estructura_empresa', empresa: empresaDomain });
+				if (estructuraDoc) {
+					const empresaLimits = getUserLimits('plan4');
+					await usersCollection.updateOne(
+						{ _id: (estructuraDoc._id instanceof ObjectId) ? estructuraDoc._id : new ObjectId(String(estructuraDoc._id)) },
+						{ $set: {
+							industry_tags: industry_tags || [],
+							sub_industria_map: sub_industria_map || {},
+							rama_juridicas: rama_juridicas || [],
+							sub_rama_map: sub_rama_map || {},
+							cobertura_legal: cobertura_legal || { fuentes_gobierno: [], fuentes_reguladores: [] },
+							rangos: rangos || [],
+							etiquetas_personalizadas: etiquetas_personalizadas || {},
+							subscription_plan: 'plan4',
+							impact_analysis_limit: -1,
+							limit_agentes: empresaLimits.limit_agentes,
+							limit_fuentes: empresaLimits.limit_fuentes,
+							updated_at: new Date()
+						}}
+					);
+					// Copiar variables actuales de estructura a usuario para UI inmediata
+					const now = new Date();
+					const yyyy = now.getFullYear();
+					const mm = String(now.getMonth() + 1).padStart(2, '0');
+					const dd = String(now.getDate()).padStart(2, '0');
+					const empresaSnapshot = await usersCollection.findOne({ _id: new ObjectId(estructuraDoc._id) });
+					const copyFields = {
+						industry_tags: empresaSnapshot.industry_tags || [],
+						sub_industria_map: empresaSnapshot.sub_industria_map || {},
+						rama_juridicas: empresaSnapshot.rama_juridicas || [],
+						sub_rama_map: empresaSnapshot.sub_rama_map || {},
+						cobertura_legal: empresaSnapshot.cobertura_legal || { fuentes_gobierno: [], fuentes_reguladores: [] },
+						rangos: empresaSnapshot.rangos || [],
+						etiquetas_personalizadas: empresaSnapshot.etiquetas_personalizadas || {},
+						subscription_plan: 'plan4',
+						impact_analysis_limit: -1,
+						limit_agentes: empresaSnapshot.limit_agentes ?? null,
+						limit_fuentes: empresaSnapshot.limit_fuentes ?? null,
+						registration_date: `${yyyy}-${mm}-${dd}`,
+						registration_date_obj: now,
+						updated_at: new Date()
+					};
+					await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: copyFields });
+				}
+				await client.close();
+				return res.json({ redirectUrl: '/profile?view=configuracion&tab=agentes' });
+			} catch (e) {
+				console.error('[save-free-plan] Error creando/conectando estructura empresa:', e);
+				await client.close();
+				return res.status(500).json({ error: 'Error creando/conectando estructura de empresa' });
+			}
+		} else {
+			// Autoconexión por dominio: si existe estructura_empresa para este dominio, vincular al usuario
+			let autoConnected = false;
+			try {
+				const empresaDomain = extractDomainFromEmail(req.user.email);
+				if (empresaDomain) {
+					const existing = await usersCollection.findOne({ tipo_cuenta: 'estructura_empresa', empresa: empresaDomain });
+					if (existing) {
+						await connectUserToEmpresa(req.user._id, req.user.email);
+						// Copiar variables comunes de estructura a user para UI
+											const copyFields = {
+						industry_tags: existing.industry_tags || [],
+						sub_industria_map: existing.sub_industria_map || {},
+						rama_juridicas: existing.rama_juridicas || [],
+						sub_rama_map: existing.sub_rama_map || {},
+						cobertura_legal: existing.cobertura_legal || { fuentes_gobierno: [], fuentes_reguladores: [] },
+						rangos: existing.rangos || [],
+						impact_analysis_limit: -1,
+						subscription_plan: 'plan4',
+						limit_agentes: getUserLimits('plan4').limit_agentes,
+						limit_fuentes: getUserLimits('plan4').limit_fuentes,
+						updated_at: new Date()
+					};
+						await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: copyFields });
+						autoConnected = true;
+					}
+				}
+			} catch (e) {
+				console.warn('[save-free-plan] Autoconexión por dominio fallida (no bloqueante):', e.message);
+			}
+
+			if (!autoConnected) {
+				await usersCollection.updateOne({ _id: new ObjectId(req.user._id) }, { $set: userData }, { upsert: true });
+			}
+			// await sendSubscriptionEmail(req.user, userData);
+			console.log('[save-free-plan] Email de confirmación desactivado temporalmente');
+			await client.close();
+			return res.json({ redirectUrl: autoConnected ? '/profile?view=configuracion&tab=agentes' : '/profile?view=configuracion' });
+		}
 	} catch (error) {
 		console.error('Error saving free plan data:', error);
 		res.status(500).send('Error saving user data');

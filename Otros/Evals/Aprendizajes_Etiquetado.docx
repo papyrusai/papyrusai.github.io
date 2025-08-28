@@ -1,0 +1,340 @@
+# APRENDIZAJES PARA ETIQUETADO DE DOCUMENTOS JURÍDICOS
+
+## Indicaciones de Redacción
+**Importante:** No incluyas "\n" entre cada tag XML
+
+---
+
+## Aprendizaje Pendiente por Incluir
+
+### Etiquetas con Alcance Sectorial Muy Parecido
+Cuando dos etiquetas cubran ámbitos muy cercanos (p.ej., dos de residuos o dos de protección de datos), usar un mismo patrón de redacción para `<Contenido>` y `<DocumentosNoIncluidos>`.
+
+**Objetivo:** Esto evita que una esté más "abierta" que otra y genere inconsistencias.
+
+---
+
+## Aprendizajes Principales
+
+### 1. La Definición de los Agentes Debe Ser Inequívoca
+
+**Principio:** La definición debe ser lo contrario de ambigua.
+
+Las afirmaciones en positivo sobre qué debe buscar el agente filtran el contenido detectable. Es crucial dejar claro si es contenido ilustrativo (ejemplos de cosas a detectar) o exhaustivo. Sin aclarar esto, hay veces que la IA decide que es exhaustivo y no detecta impacto y otras ilustrativo y sí lo pone (más o menos 50/50).
+
+#### Ejemplos Ilustrativos
+
+**Documento:** https://www.boe.es/boe/dias/2025/07/29/pdfs/BOE-A-2025-15652.pdf
+
+**Agente:** "**Protección de Datos MAZ**
+Contexto: MAZ es una mutua colaboradora con la Seguridad Social que ofrece servicios de seguros y asistencia sanitaria en España. **Incluye** Reglamentos, **leyes** u órdenes que **modifiquen la LOPDGDD, el RGPD o su desarrollo sectorial.** Resoluciones, guías y circulares de la AEPD, EDPB o CEPD con alcance general. Criterios, directrices o sanciones de interés transversal sobre tratamiento de datos de salud, IA o brechas de seguridad. No incluye Nombramientos o ceses de delegados de protección de datos en entidades concretas. Sanciones o resoluciones singulares sin valor doctrinal. Acuerdos o convenios privados sin fuerza normativa, ni subvenciones que introducen novedades en datos. Únicamente lo relevante para la empresa Maz."
+
+**Explicación IA no detección:** "Protección de Datos MAZ": {
+"explicacion": "Aunque impone obligaciones genéricas de tratamiento de datos sanitarios, no modifica directamente RGPD/LOPDGDD sectorial ni emite criterios de la AEPD aplicables a MAZ.",
+
+**Agente:** "**Asistencia Sanitaria MAZ**
+Contexto: MAZ es una mutua colaboradora con la Seguridad Social que presta servicios médicos y asistenciales. Incluye **Leyes**, reales decretos‑ley, reales decretos y órdenes ministeriales o autonómicas **que regulen la asistencia sanitaria de mutuas y la cartera de servicios del SNS**. Resoluciones o instrucciones de la Dirección General de Ordenación Profesional, Consejo Interterritorial, INS, o consejerías autonómicas que introduzcan nuevos requisitos asistenciales, protocolos, estándares de calidad, autorizaciones o procedimientos de homologación. Normas sobre acreditación de centros, homologación de profesionales sanitarios y sistemas de información clínica. No incluye Ofertas de empleo público, oposiciones, convocatorias de plazas, concursos para dotación de personal médico. Anuncios de adjudicación de suministros o licitaciones hospitalarias. Convenios administrativos o protocolos de intenciones sin carácter normativo."
+
+**Explicación IA:** "Asistencia Sanitaria MAZ": {
+"explicacion": "La norma crea una agencia de salud pública y modifica la Ley de Salud Pública, pero no regula cartera de servicios de mutuas ni autorizaciones asistenciales.",
+"nivel_impacto": "No identificado"
+
+#### Recomendación Clave
+No se debe dejar a la IA razonar en abierto cuando haya posibles interpretaciones distintas.
+
+**Ejemplo 1:** Novedades relevantes pero que no alteran el status quo (no producen nuevas obligaciones o no cambian el criterio judicial) la IA razona correctamente que no se requieren cambios normativos y no etiqueta.
+
+**Ejemplo 2:** Si se dice que notifique novedades normativas de xx sector relevantes para xx empresa produce inconsistencias. A veces la IA razona que no aplica exactamente a ese sector y no la incluye aunque sea relevante.
+
+**En estos casos dejar claro el comportamiento que esperamos de la IA:**
+
+- **Ejemplo 1:** b) Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos. Aunque afecten a particulares concretos distintos de MAZ y la sanción o decisión judicial **no suponga un criterio novedoso, deben ser etiquetadas ya que sirven como indicativo de tendencias reguladoras y judiciales.** Con esto se evita: *"Protección de Datos y Privacidad MAZ": { "explicacion": "Se trata de una sanción individual de la AEPD contra una empresa concreta sin efectos normativos generales para MAZ.", "nivel_impacto": "No identificado" }*
+
+- **Ejemplo 2:** `<Contexto>`MAZ es una mutua colaboradora con la Seguridad Social que presta servicios médicos y asistenciales.`</Contexto>`
+`<Objetivo>`Detectar novedades normativas sobre IA y protección de datos **relevantes para MAZ**`</Objetivo>` **Resultado:** Auto Europeo Meta: "Protección de Datos y Privacidad MAZ": {
+"explicacion": "Aunque es jurisprudencia de protección de datos, el fallo no afecta específicamente al tratamiento de datos sanitarios de mutuas colaboradoras ni impone obligaciones particulares en ese ámbito.",
+"nivel_impacto": "No identificado" —> se quita la coletilla "relevantes para MAZ"
+
+### 2. Incluir un Apartado de Consistencia Como Criterio
+
+Incluir un apartado de consistencia como criterio mejora la consistencia de resultados.
+
+**Ejemplo** (en test con doc con idioma distinto, de 70% acierto a 90%):
+
+**Consistencia**: Debes razonar y etiquetar de manera consistente, de tal manera que si tuvieras que etiquetar un texto 100 veces, las 100 tendrían el mismo resultado.
+
+### 3. Agrupar el Contenido por Bloques de XML/Variables
+
+Agrupar el contenido por bloques de XML/variables ayuda al modelo a identificar y no equivocarse a que nos referimos. Es muy importante referirse al texto a analizar como `<DOCUMENTO>` y no como texto, texto jurídico u otros nombres.
+
+**Ejemplos:**
+
+- En el idioma, cuando le decías que si el texto era distinto de español o inglés no etiquetara, mejora la consistencia al indicarlo que es el texto de `<DOCUMENTO>` y debajo meter el texto a analizar dentro de `<DOCUMENTO>` `</DOCUMENTO>`
+
+- En razonamiento dentro de la etiqueta, sustituir "texto" por documento, mejora accuracy de (7/10) a (0/10). "Se debe incluir la etiqueta como identificada si el **`<DOCUMENTO>`** cumple alguno de los siguientes casos: a) obliga a empresas como MAZ a implementar cambios en su operativa b) presenta un precedente sancionador o judicial…"
+
+### 4. Definir el Objetivo del Agente con la Finalidad/Implicaciones Requeridas
+
+Definir el objetivo del agente con la finalidad/implicaciones requeridas, en vez de intentar redactar un listado de los tipos de textos a incluir. Escribir los textos concretos incluidos por el agente, genera inconsistencias y que faltan textos en producción, porque es imposible y poco eficiente redactar todos los tipos de textos posibles.
+
+### 5. Numerar los Objetos de un Listado
+
+Numerar los objetos de un listado (usando 1,2,3.. o a,b,c…). Una lista larga de textos o contenidos a incluir separados por comas o puntos, hace que la IA se confunda.
+
+**Ejemplo:** mejora precisión de (6/10) a (10/10). Con listado de comas a veces solo comprobaba primeros dos elementos y dejaba fuera el texto (que tenía que cogerlo por ser modificación de ley general relevante para sector).
+
+- **Antes:** Para determinar si se etiqueta el texto o no, evalúa si obliga a empresas como MAZ a implementar cambios en su operativa, o si presenta un precedente sancionador o judicial, o si se trata de una ley general u orgánica relevante para la etiqueta o si establece una recomendación o mejores prácticas relevantes para el sector. **Resultado:** "La ley crea una agencia de salud pública y modifica la Ley General de Salud Pública, sin alterar la cartera de servicios sanitarios ni imponer cambios operativos en la prestación de asistencia sanitaria."
+
+- **Después:** Se debe incluir la etiqueta como identificada si el texto cumple alguno de los siguientes casos: a) obliga a empresas como MAZ a implementar cambios en su operativa b) presenta un precedente sancionador o judicial c) se trata de una ley general u orgánica relevante para la etiqueta d) se establece una recomendación o mejores prácticas relevantes para el sector
+
+### 6. Ajustes Parámetros API
+
+o4mini_medium, temperature=0 (no se puede ajustar parece), seed=1
+
+### 7. Elementos del Bloque de Contenido
+
+**Ejemplo protección de datos EOS:**
+
+```
+<Razonamiento>
+Se debe etiquetar el <DOCUMENTO> si cumple al menos uno de los siguientes supuestos:
+ a) **Nuevas obligaciones, Ej:** Impone nuevas obligaciones, prohibiciones o medidas correctivas que obliguen a empresas como EOS a adaptar su operativa.
+ b) **Sanciones y jurisprudencia, Ej:** Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos
+ c) **Leyes generales, Ej:** Es una ley general u orgánica (o modifica una ley general u orgánica) relevante para la etiqueta 
+ d) **Soft-law, recomendaciones, Ej:** Establece una recomendación o guía de mejores prácticas relevantes en protección de datos.  Aunque el <DOCUMENTO> no introduzca obligaciones o sanciones, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y judiciales
+ e) **Personalizada 1, Ej:** Altera o crea un nuevo criterio interpretativo en materia de bases de legitimación, profiling, conservación o transferencias internacionales
+ f) **Personalizada 2, Ej:** Establece novedades normativas en el tratamiento de información de deudores y cesionarios
+ g) **Oportunidades estratégicas o incentivos:** Establece oportunidades estratégicas o incentivos en residuos, economía circular o descarbonización
+ h) **Consultas públicas:** Es un proyecto normativo en consulta pública relacionado con el sector residuos/economía circular.
+</Razonamiento>
+```
+
+**Aprendizaje Extra:** Si por ej, no hay una cláusula sobre subvenciones o incentivos fiscales, no aparecerá etiquetado un texto sobre eso (dado que no impone obligaciones).
+
+**Ejemplo employment GAP:**
+
+```markdown
+**<Etiqueta>
+<NombreEtiqueta>Employment & PRL – Gomez Acebo y Pombo</NombreEtiqueta>
+<Contexto>Gómez-Acebo & Pombo asesora a empresas altamente reguladas y les notifica sobre novedades normativas relevantes en sus áreas de interés</Contexto>
+<Objetivo>Detectar novedades normativas sobre prevención de riesgos laborales y condiciones de trabajo para notificar a clientes</Objetivo>
+<Contenido>
+ Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el <DOCUMENTO> si cumple al menos uno de los siguientes supuestos:**
+ a) **Cláusula genérica sobre obligaciones o prohibiciones del objetivo etiqueta** Establece nuevas obligaciones o prohibiciones que afectan a prevención de riesgos laborales y condiciones de trabajo.
+ b) **Cláusula de cambios en leyes principales del sector** Es una ley general u orgánica (o modifica una ley general u orgánica) relevante para la etiqueta 
+ c) **Cláusula soft law, recomendaciones** Establece una recomendación o guía de mejores prácticas relevantes en condiciones de trabajo o prevención de riesgos laborales.  Aunque el <DOCUMENTO> no introduzca obligaciones o sanciones, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y judiciales
+ d) **Sanciones, criterio judicial** Establece sanciones económicas (de reguladores) o criterio jurisprudencial en materia de condiciones de trabajo o prevención de riesgos laborales. Aunque el <DOCUMENTO> afecte a particulares concretos y la sanción o decisión judicial no suponga un criterio novedoso, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y judiciales
+ e) **Convenios IG** Convenios de interés general que afecten directamente a todo un sector, subsector o administración 
+ f) **Personalizado 1** Establece novedades normativas en coordinación de actividades, EPIs, jornada, desconexión digital, igualdad y protección sindical
+**</Contenido>
+<DocumentosNoIncluidos>
+Exclusiones (lista exhaustiva):
+ • Exclusión de convenios, Ej**: Todos los convenios que no estén incluidos en el apartado b) de <contenido>
+ • Informes específicos de proyectos sin efectos normativos generales.
+ • **Exclusión de disposiciones particulares:** Todas las órdenes y resoluciones sobre particulares concretos que no estén incluidas en el apartado d) de <contenido>
+ **</DocumentosNoIncluidos>
+ </Etiqueta>**
+```
+
+#### Otros Ejemplos de Cláusulas:
+- **Otra versión sobre exclusión de particulares:** "• Resoluciones, convenios u órdenes sin efectos generales, que afecten a personas, empresas o administraciones concretas, salvo las del apartado b) de <Contenido> que sí deben incluirse" —> más detalle en lo que es particulares
+- **Exclusión de normativa municipal/local:** Documentos cuyo ámbito de aplicación afecte únicamente a una región o municipio
+- **Criterio que se debe cumplir siempre + lista de supuestos:** "Se debe etiquetar el <DOCUMENTO> únicamente si procede del BOE (principalmente Secciones I y III), del BOCM (disposiciones generales) o del DOUE (serie L) y cumple al menos uno de los siguientes supuestos:…"
+- **Cláusula sobre criterios/actualizaciones reguladores:** Establece criterios o actualizaciones de supervisores/reguladores que impacten en regulación financiera o PBC/FT.
+
+### 8. Dejar Claro que Excluir Convenios Particulares y Resoluciones de Particulares, No Implica No Recoger Sanciones y Decisiones Judiciales
+
+**Ejemplo** (mejora de 0/6 a 6/6):
+
+```
+<Razonamiento> b) Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos, **ya que sirven como indicativo de tendencias reguladoras y judiciales, aunque afecten a particulares concretos distintos de MAZ**
+
+<DocumentosNoIncluidos>
+Lista exhaustiva (no ampliar):
+• Nombramientos o ceses individuales de Delegados de Protección de Datos (DPO).
+• Convenios y resto de resoluciones **(que no sean sanciones o decisiones judiciales)** que afectan a particulares o empresas concretas sin efectos jurídicos generales
+```
+
+### 9. Incluir Contenido Sobre Dos Ámbitos Distintos en Líneas Separadas Mejora el Output
+
+**Ejemplo:** " f) Es una ley, real decreto, decreto autonómico, orden o ordenanza definitiva que introduce obligaciones o tasas sobre residuos **o tabaco" —> falla** , **separando en líneas funciona:** " f) Es una ley, real decreto, decreto autonómico, orden o ordenanza definitiva que introduce obligaciones o tasas sobre residuos  g) Novedades normativas sobre tabaco"
+
+### 10. Importancia de las Palabras Clave/Keywords
+
+En residuos y economía circular, faltaba "industria limpia" y no pillaba una recomendación. También faltaba "incentivo fiscal" para pillar otra.
+
+#### Materias Keywords:
+Acumuladores, Aparatos eléctricos, Aparatos electrónicos, Convivencia, Economía Circular, Envases, Espacios públicos, Estrategia, Filtros, Fumar, Gestión ambiental, Infraestructuras verdes, Medio ambiente, Neumáticos, Pilas, Plásticos, Playas, Productor, Productor de producto, Residuos, Responsabilidad ampliada, Subproducto, Tabaco, Vertederos
+
+### 11. Las Menciones Repetidas de Obligaciones en el Objetivo del System Prompt
+
+Las menciones repetidas de obligaciones en el objetivo del system prompt hacía que a veces no identificara otras disposiciones (recomendaciones, sanciones etc…). Se ha redactado un objetivo más genérico y parece que funciona correctamente.
+
+**Ejemplo Antiguo:** "1. OBJETIVO
+
+Determinar qué sectores quedan directamente afectados por **las obligaciones, prohibiciones o modificaciones de un texto jurídico** y evaluar el nivel de impacto ESPECÍFICO para cada sector/etiqueta. NO pongas ningún convenio colectivo o convenios entre administraciones públicas, son irrelevantes siempre.
+Las etiquetas representan los intereses normativos de clientes que quieren ser notificados cuando un texto normativo tiene un impacto según la definición de la etiqueta y las instrucciones siguientes:"
+
+**Ejemplo Nuevo:** "1. OBJETIVO
+
+**Determinar si el contenido del <DOCUMENTO> coincide con el contenido descrito en las <etiquetas>** y evaluar el nivel de impacto ESPECÍFICO para cada etiqueta, teniendo en cuenta el procedimiento, criterios y estructura de output descritos a continuación. NO pongas ningún convenio colectivo o convenios entre administraciones públicas, son irrelevantes siempre.
+Las etiquetas representan los intereses normativos de clientes que quieren ser notificados cuando el <DOCUMENTO> coincide con el contenido descrito."
+
+### 12. En Listados, Cuando No Sean Exhaustivos Añadir "Similar" al Final
+
+En listados, cuando no sean exhaustivos añadir "similar" al final, para contemplar casos que no sean exactos y que la IA no pueda razonar que no es relevante. Además, cuando se quiera mayor amplitud utilizar términos como "relacionado con sector…" más que "empresas que operen en sector…". Este último exige que la IA considere que sea relevante para esas empresas que operan en ese sector, el otro solo que esté relacionado. Esto aplica para otros términos y casuísticas.
+
+**Ejemplo:** "Se pueden derivar oportunidades estratégicas o incentivos fiscales del <DOCUMENTO> para **empresas que operen en el sector de residuos**, economía circular o descarbonización. Aunque el <DOCUMENTO> no introduzca obligaciones o sanciones, debe ser etiquetado ya que es útil para los clientes de GAyPombo poder detectar estas oportunidades e incentivos" —→ "Se pueden derivar oportunidades estratégicas o incentivos fiscales del <DOCUMENTO> **relacionados con el sector** de residuos, economía circular, descarbonización **o similar**" (Acierto de 60% —> 100% en run de 10)
+
+### 13. En Exclusiones, Cuando Sean Todos los de un Tipo Menos X
+
+En exclusiones, cuando sean todos los de un tipo menos x que sí debe estar incluido, se debe meter ese x como cláusula positiva de contenido (el documento es xx) y redactar la exclusión: "Se excluyen Convenios/Resoluciones/xx que no estén incluidas en apartado x) de <contenido>
+
+### 14. Listados Largos de Keywords o Palabras a Incluir
+
+Listados largos de keywords o palabras a incluir, dejarlo abierto produce resultados más inconsistentes/impredecibles. 
+
+**Ejemplo:** "en sectores como competencia, protección de datos, medioambiente, energía o consumo." vs "en los sectores de competencia, protección de datos, medioambiente, energía y consumo"
+
+### 15. Redacción de Supuestos de Contenido
+
+Redacción de supuestos de contenido:
+
+a) **Disyunción lógica (OR)** (ej: "Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el <DOCUMENTO> si cumple al menos uno de los siguientes supuestos:…"
+
+b) **Parte conjunción lógica y parte disyunción lógica (AND + OR)** ("Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el <DOCUMENTO> únicamente si procede del BOE (principalmente Secciones I y III), del BOCM (disposiciones generales) o del DOUE (serie L) y cumple al menos uno de los siguientes supuestos: …"
+
+c) **Conjunción lógica (AND)** ("Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el <DOCUMENTO> únicamente si se cumplen todos los siguientes supuestos: …".
+
+Es importante que a la hora de redactar los supuestos de contenido utilices alguno de estos métodos, no inventes otra manera.
+
+### 16. Objetivo
+
+El objetivo se debe redactar teniendo en cuenta la generalidad/funcionalidad de la etiqueta. Normalmente seguirá una estructura similar a: "Detectar novedades normativas relevantes en… {sector/área de interés de la etiqueta}" dado que ese es el objetivo de la mayoría. Pero en ocasiones, pueden tener un objetivo más acotado y específico como "Identificar convocatorias abiertas dirigidas a profesionales jurídicos o a sus clientes, incluyendo becas, premios, subvenciones y ayudas con base jurídica publicada, y ofrecer en la explicación síntesis con plazos, beneficiarios y requisitos clave."
+
+- **Correcto:** "Detectar reformas/criterios que alteren proceso, fiscalidad y responsabilidades en compra-venta y servicing de carteras."
+- **Correcto (ejemplo con más detalle).** Muy importante dejar "o similar" para que puedan incluirse otras novedades relevantes, salvo que se quiera acotar mucho la búsqueda
+- **Incorrecto:** "Detectar Ley 4/2022 y normas conexas, códigos BDE, RDs y guías que extiendan protecciones (desahucios, topes, atenciones prioritarias)." (debe ser más general sobre la materia y luego meter detalle en contenido, salvo que el usuario diga lo contrario)
+
+### 17. Contexto
+
+Debe resumir en una o dos frases a qué se dedica la empresa usuaria de la plataforma:
+- Misma empresa, debería ser el mismo y genérico sobre las operaciones de la empresa
+- **Correcto:** "EOS es una entidad de gestión de crédito que opera en España y gestiona carteras NPL (Non Performing Loans)" 
+- **Incorrecto:** "EOS opera con deudores minoristas; la protección a colectivos vulnerables impacta recobro, reputación y riesgos."
+
+### 18. Evitar la Omisión de Palabras
+
+Evitar la omisión de palabras, para no dar lugar a interpretaciones. 
+
+**Ejemplo:** "Reglamentos de ejecución o delegados" se podría interpretar como que "delegados" es un tipo de documento. Redactar: "Reglamentos de ejecución o reglamentos delegados", para evitar ambigüedades.
+
+### 19. Establecer Prevalencias ante Contradicciones
+
+"Prevalecen las restricciones sobre inclusiones"
+
+### 20. Incluir la Identificación de Variables Clave
+
+Incluir la identificación de variables clave (idioma y rango) relevantes para tomar decisiones/aplicar criterios de interpretación.
+
+### 21. Pendiente: Definir Criterios para Evaluar si el Agente es Específico o General
+
+### 22. Crear Listado de Preguntas que Debe Hacer la IA
+
+Crear listado de preguntas que debe hacer la IA para afinar agente: tipo de documento: rango alto ley, lo, ley general, europeo, sanciones, jurisprudencia, guías, soft-law, resoluciones, convenios, órdenes, planes estratégicos, subvenciones, informes, mandatos, nombramientos, licitaciones públicas (ver si alguno más), sujeto afectado (particulares, empresas u organismos públicos concretas, efectos generales), ámbito de aplicación geográfico (estatal/europeo, nacional, regional, municipal)
+
+### 23. Considerar si son Obligaciones/Prohibiciones con Efecto General
+
+Considerar si son obligaciones/prohibiciones con efecto general o con alcance limitado al <DOCUMENTO> (contrato/resolución...) como manera de medir si son referencias tangenciales a etiqueta y no deben estar incluidas (obligaciones de datos, residuos, employment, fiscales...)
+
+---
+
+## IMPORTANTE
+
+**Paquetizar todo en keywords a incluir, cláusulas de inclusión (obligaciones/prohibiciones, sanciones/jurisprudencia...), docs a excluir... + personalizado (para frases personalizadas incluidas por usuario, se meten como tag XML extra. Explicar estructura agente en)**
+
+### 24. Clausulados Estándar Reutilizables
+
+Clausulados estándar reutilizables (soft-law, sanciones/jurisprudencia y exclusión de particulares)
+
+**Importante:** Iniciar `<Contenido>` siempre con: "Teniendo en cuenta el `<Objetivo>` de la etiqueta, se debe etiquetar el `<DOCUMENTO>` si cumple al menos uno de los siguientes supuestos:". Iniciar `<DocumentosNoIncluidos>` siempre con: "Aunque cumpla los criterios de inclusión, EL `<DOCUMENTO>` no debe ser etiquetado por esta etiqueta si cumple alguno de los siguientes supuestos:" A continuación de ambas frases completar con las cláusulas correspondientes:
+
+#### Nota de Uso
+
+Cada vez que el input incluya, en las secciones de Contenido o DocumentosNoIncluidos, información que encaje con alguna de las siguientes cláusulas tipo, conviértela a la plantilla correspondiente sustituyendo los tokens `<AMBITO>`, `<SUJETO>`, `<AUTORIDAD>`, `<FUENTES>`, `<LISTA_MATERIAS>` o `<letra_sanciones>` según aplique. Importante que `<SUJETO>`, debe tener siempre esta estructura "empresas como {nombre sujeto}" Mantén el encabezado "Lee detenidamente y uno por uno los siguientes supuestos. Se debe etiquetar el `<DOCUMENTO>` si…" y enumera a), b), c)… con disyunción lógica (OR), salvo que explícitamente se indique AND o se fije un criterio previo de procedencia.
+
+#### Cláusulas Tipo para CONTENIDO (elige y combina):
+
+- **Criterio previo de procedencia (AND + OR):**
+  "Se debe etiquetar el `<DOCUMENTO>` únicamente si procede de `<FUENTES>` y cumple al menos uno de los siguientes supuestos: …"
+  (Ejemplos de `<FUENTES>`: BOE [Secc. I/III], BOCM [disposiciones generales], DOUE [serie L])
+
+- **Cláusula general: Nuevas obligaciones/prohibiciones/medidas. Versión empresa y sector:**
+  - empresa: "Impone nuevas obligaciones, prohibiciones o medidas correctivas que obliguen a `<SUJETO>` a adaptar su operativa/sistemas."
+  - sector: "Establece nuevas obligaciones o prohibiciones que afectan a `<ÁMBITO>`."
+
+- **Principales leyes: Ley general u orgánica (o modificación). Abierta o cerrada:**
+  - abierta: "Es una ley general u orgánica (o modifica una ley general u orgánica) relevante para `<AMBITO>`."
+  - cerrada: "Desarrolla o implementa la Directiva (UE) 2021/2167 o el GDPR."
+
+- **Soft-law (guías, Q&A, recomendaciones):**
+  "Guía, Q&A o recomendación de `<AUTORIDAD>` relevante para `<AMBITO>`; aunque el <DOCUMENTO> no introduzca obligaciones ni sanciones, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y supervisoras/judiciales."
+
+- **Sanciones y jurisprudencia:**
+  "Establece sanciones económicas (de reguladores como `<AUTORIDAD>`) o criterio jurisprudencial en `<AMBITO>`; aunque el <DOCUMENTO> afecte a particulares concretos y la sanción o decisión judicial no suponga un criterio novedoso, debe ser etiquetado ya que sirve como indicativo de tendencias reguladoras y judiciales."
+
+- **Criterios/actualizaciones de supervisores:**
+  "Establece criterios o actualizaciones de supervisores/reguladores que impacten en `<AMBITO>`."
+
+- **Proyectos en consulta pública:**
+  "Es un proyecto normativo en consulta pública relacionado con `<AMBITO>`."
+
+- **Oportunidades estratégicas o incentivos:**
+  "Se derivan oportunidades estratégicas o incentivos (incl. fiscales) relacionados con `<AMBITO>` o similar; aunque el <DOCUMENTO> no introduzca obligaciones o sanciones, debe ser etiquetado por su utilidad para los usuarios."
+
+- **Convenios de interés general (cuando aplique):**
+  "Convenio de interés general que afecta directamente a todo un sector, subsector o administración."
+
+- **Novedades específicas enumeradas (plantilla abierta):**
+  "Establece novedades normativas en `<LISTA_MATERIAS>` (p.ej., coordinación de actividades, EPIs, jornada, desconexión digital, igualdad, protección sindical / bases de legitimación, perfilado, conservación, transferencias internacionales / trazabilidad, licencias, RAP, SDDR, tasas, etc.)."
+
+#### Cláusulas Tipo para DOCUMENTOS NO INCLUIDOS (elige y combina):
+
+- **Exclusión de particulares con excepción:**
+  "Resoluciones, convenios u órdenes sin efectos generales que afecten a personas, empresas o administraciones concretas, salvo las del apartado `<letra_sanciones>` de <Contenido> que sí deben incluirse."
+  "• Documentos cuyos sujetos afectados sean únicamente organismos o administraciones del sector público"
+  "b) resoluciones, contratos, convenios o pliegos que afecten a individuos particulares, empresas particulares u organismos del sector público, salvo las del apartado d) de <Contenido> sobre sanciones o criterio judicial"
+  - **ÚLTIMO:** "a) Resoluciones, órdenes, convenios u otra normativa sin efectos generales que afecten a personas, empresas, administraciones o inmuebles concretos, salvo las del apartado f) de <Contenido> sobre sanciones y doctrina judicial que sí deben incluirse"
+
+- **Exclusión de convenios no IG:**
+  "Convenios que no estén incluidos en el apartado de <Contenido> sobre convenios de interés general." "Convenios o resoluciones no sancionadoras que afectan a particulares concretos, empresas concretas o interadministrativos sin efectos jurídicos generales"
+
+- **Exclusión de informes, proyectos o explotaciones particulares. Especialmente relevantes para residuos:**
+  "Textos normativos que afecten únicamente a un proyecto, explotación, planta, reserva natural o parque natural en particular."
+
+- **Exclusión de normativa local/ámbito acotado:**
+  a) Municipal: "Documentos cuyo ámbito de aplicación afecte únicamente a un municipio (normativa local), salvo que el agente especifique lo contrario."
+  b) autonómico: "Documentos cuyo ámbito de aplicación sea solo municipal o regional (que afecte únicamente a una Comunidad Autónoma) sin tener efecto general en España, salvo que imponga obligaciones relevantes en `<AMBITO>` que sean indicativas de tendencia regulatoria"
+
+- **Exclusión de órdenes/anuncios administrativos (usar solo si el agente así lo define):**
+  "Órdenes ministeriales y/o anuncios que no introduzcan efectos normativos generales."
+
+- **Exclusión de ayudas/subvenciones (si el agente no las cubre):**
+  "Ayudas o subvenciones sin base jurídica publicada, sin valor económico o fuera del alcance del agente."
+
+- **Exclusión de sentencias (si el agente no cubre jurisprudencia):**
+  "Sentencias o resoluciones judiciales cuando no formen parte del alcance definido en <Contenido>."
+  - **Exclusión referencias tangenciales.** Se debe aplicar a etiquetas generales/horizontales (ej: protección de datos, empleo, tributación...)
+  "• **Documentos cuyo foco NO es la protección de datos y cuya "inclusión" provendría solo de uno de los siguientes supuestos: i) referencias tangenciales al RGPD/LOPDGDD/o normativa referente de datos similar ii) Disposiciones de tratamiento de datos para un procedimiento concreto: convocatorias, bases, subvenciones, inscripciones o similar. El apartado d) no se excluirá si la referencia tangencial o procedimiento trata sobre `<AMBITO>`**
+  - "c) referencias tangenciales a `<AMBITO>` que no impliquen cambios operativos para empresas como `<SUJETO>`
+
+#### Errores Cláusulas:
+
+- d) Introduce sanciones o doctrina aplicable con efecto general. --> efecto general para qué? específico sobre dónde afecta. Además sanciones y doctrina suelen para particulares, pero no implica que no sean relevantes (generan jurisprudencia o precedentes)
+- listado largo, desestructurado y repetitivo sin numerar los contenidos no incluidos: "Aunque cumpla los criterios de inclusión, el <DOCUMENTO> no debe ser etiquetado por esta etiqueta si cumple alguno de los siguientes supuestos: acuerdos privados; resoluciones de partes concretas (salvo criterios generales); comunicados comerciales; menciones tangenciales sin cambios en plazos/intereses/reporting."
+
+#### Formato y Consistencia:
+
+- Un solo renglón por etiqueta; no introducir "\n" entre tags XML.
+- Orden y numeración estable (a), b), c)…); usar OR por defecto; si se requiere AND, indicarlo explícitamente en el criterio previo de procedencia.
+- Mantener la misma literalidad de nombres de etiquetas y campos que en el catálogo/definición de entrada. 

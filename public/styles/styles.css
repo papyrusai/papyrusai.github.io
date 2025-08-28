@@ -190,7 +190,7 @@ body {
 }
 
 #chartContainer {
-  height: 40vh; /* Adjust height to 50% of the viewport height */
+  height: 50vh; /* Adjust height to 50% of the viewport height */
   width: 100%; /* Full width */
   display: flex;
 }
@@ -412,4 +412,418 @@ a[href="/logout"] {
 a[href="/logout"]:hover {
   background-color: #d43f3f; /* Slightly darker red on hover */
   transform: translateY(-2px); /* Lift effect on hover */
+}
+
+/* =================================== */
+/* READONLY BUTTONS & TOOLTIPS - REVERSA UI STANDARD */  
+/* =================================== */
+
+/* Readonly button - sin border siguiendo estándar */
+.readonly-btn {
+    background: transparent;
+    border: none;
+    color: var(--reversa-slate, #455862);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.readonly-btn:hover {
+    background: rgba(69, 88, 98, 0.04);
+    color: var(--reversa-blue, #0b2431);
+}
+
+.readonly-btn i {
+    color: var(--reversa-slate, #455862);
+}
+
+/* Tooltip container mejorado */
+.readonly-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px); /* Menos margen/gap */
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(11, 36, 49, 0.95); /* Negro sólido */
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.3;
+    white-space: nowrap;
+    max-width: 280px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 10001;
+    pointer-events: none; /* Inicialmente sin interacción */
+    box-shadow: 0 4px 12px rgba(11, 36, 49, 0.3);
+}
+
+/* Flecha del tooltip */
+.readonly-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(11, 36, 49, 0.95);
+}
+
+/* Mostrar tooltip en hover del botón */
+.readonly-btn:hover .readonly-tooltip {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto; /* Permitir interacción cuando está visible */
+}
+
+/* UX mejorada: mantener tooltip visible cuando el mouse se mueve hacia "Solicitar" */
+.readonly-btn:hover .readonly-tooltip,
+.readonly-tooltip:hover {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+/* Link "Solicitar" dentro del tooltip */
+.solicitar-link {
+    color: var(--reversa-green, #04db8d);
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 500;
+    margin-left: 4px;
+    transition: color 0.2s ease;
+}
+
+.solicitar-link:hover {
+    color: #03c57f;
+    text-decoration: none;
+}
+
+/* =================================== */
+/* MODAL STANDARD REVERSA UI */
+/* =================================== */
+
+.permission-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.permission-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.permission-modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(11, 36, 49, 0.16);
+    width: 450px;
+    max-width: 90vw;
+    transform: scale(0.9) translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.permission-modal-overlay.active .permission-modal-content {
+    transform: scale(1) translateY(0);
+}
+
+.permission-modal-header {
+    padding: 24px 24px 16px 24px;
+    border-bottom: 1px solid var(--neutral-350, #e8ecf0);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.permission-modal-header h3 {
+    margin: 0;
+    color: var(--reversa-blue, #0b2431);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.permission-modal-close {
+    background: none;
+    border: none;
+    color: var(--neutral-600, #6c757d);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.permission-modal-close:hover {
+    background: var(--neutral-100, #f8f9fa);
+    color: var(--reversa-blue, #0b2431);
+}
+
+.permission-modal-body {
+    padding: 16px 24px 24px 24px;
+}
+
+.permission-modal-body p {
+    margin: 0 0 16px 0;
+    color: var(--neutral-600, #6c757d);
+    line-height: 1.5;
+}
+
+.permission-modal-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--neutral-400, #dee2e6);
+    border-radius: 4px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    transition: all 0.2s ease;
+}
+
+.permission-modal-input:focus {
+    outline: none;
+    border-color: var(--reversa-green, #04db8d);
+    box-shadow: 0 0 0 2px rgba(4, 219, 141, 0.2);
+}
+
+.permission-modal-footer {
+    padding: 0 24px 24px 24px;
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* Botones del modal siguiendo estándar Reversa */
+.permission-modal-btn {
+    border-radius: 20px;
+    border: 1px solid transparent;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.permission-modal-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(11, 36, 49, 0.15);
+}
+
+.permission-modal-btn.btn-outline {
+    background: transparent;
+    border-color: var(--reversa-blue, #0b2431);
+    color: var(--reversa-blue, #0b2431);
+}
+
+.permission-modal-btn.btn-outline:hover {
+    background: rgba(11, 36, 49, 0.04);
+}
+
+.permission-modal-btn.btn-filled {
+    background: var(--reversa-blue, #0b2431);
+    border-color: var(--reversa-blue, #0b2431);
+    color: white;
+}
+
+.permission-modal-btn.btn-filled:hover {
+    filter: brightness(0.95);
+}
+
+.permission-modal-btn:disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Loader inline para botón */
+.btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Success state */
+.permission-modal-btn.success {
+    background: var(--reversa-green, #04db8d);
+    border-color: var(--reversa-green, #04db8d);
+    color: white;
+}
+
+/* Responsive tooltip */
+@media (max-width: 768px) {
+    .readonly-tooltip {
+        max-width: 240px;
+        font-size: 11px;
+    }
+    
+    .permission-modal-content {
+        width: 380px;
+        margin: 20px;
+    }
+}
+
+/* =================================== */
+/* READONLY DROPDOWN BUTTON - REVERSA UI STANDARD */
+/* =================================== */
+
+/* Contenedor del dropdown readonly */
+.readonly-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+/* Botón readonly clickeable con dropdown */
+.readonly-dropdown-btn {
+    background: transparent;
+    border: 1px solid var(--neutral-400, #dee2e6);
+    color: var(--reversa-slate, #455862);
+    padding: 0.5rem 1rem;
+    border-radius: 20px; /* 20px como solicitado */
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: relative;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    justify-content: space-between;
+}
+
+.readonly-dropdown-btn:hover {
+    background: rgba(69, 88, 98, 0.04);
+    color: var(--reversa-blue, #0b2431);
+    border-color: var(--neutral-500, #adb5bd);
+}
+
+.readonly-dropdown-btn:focus {
+    outline: none;
+    border-color: var(--reversa-green, #04db8d);
+    box-shadow: 0 0 0 2px rgba(4, 219, 141, 0.2);
+}
+
+.readonly-dropdown-btn.active {
+    background: rgba(69, 88, 98, 0.08);
+    border-color: var(--reversa-blue, #0b2431);
+}
+
+.readonly-dropdown-btn .dropdown-icon {
+    color: var(--neutral-500, #adb5bd);
+    transition: transform 0.2s ease;
+    font-size: 12px;
+}
+
+.readonly-dropdown-btn.active .dropdown-icon {
+    transform: rotate(180deg);
+}
+
+/* Menú dropdown */
+.readonly-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--neutral-350, #e8ecf0);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(11, 36, 49, 0.12);
+    z-index: 10002;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: all 0.2s ease;
+    min-width: 180px;
+}
+
+.readonly-dropdown-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Item del menú dropdown */
+.readonly-dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--reversa-blue, #0b2431);
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+    border-radius: 6px;
+    margin: 4px;
+}
+
+.readonly-dropdown-item:hover {
+    background: rgba(4, 219, 141, 0.08);
+    color: var(--reversa-blue, #0b2431);
+}
+
+.readonly-dropdown-item i {
+    color: var(--reversa-green, #04db8d);
+    font-size: 12px;
+}
+
+/* Item del menú dropdown en estado pendiente */
+.readonly-dropdown-item-pending {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--neutral-600, #6c757d);
+    font-size: 14px;
+    border-radius: 6px;
+    margin: 4px;
+    cursor: default; /* No clickeable */
+    background: rgba(108, 117, 125, 0.05);
+}
+
+.readonly-dropdown-item-pending i {
+    color: var(--neutral-600, #6c757d);
+    font-size: 12px;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+    .readonly-dropdown-btn {
+        min-width: 100px;
+        font-size: 13px;
+        padding: 0.4rem 0.8rem;
+    }
+    
+    .readonly-dropdown-menu {
+        min-width: 160px;
+    }
+    
+    .readonly-dropdown-item {
+        padding: 10px 14px;
+        font-size: 13px;
+    }
 }

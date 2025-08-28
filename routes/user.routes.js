@@ -163,7 +163,9 @@ router.get('/save-user', async (req, res) => {
 		console.log('[save-user] User data updated successfully in database');
 		console.log('[save-user] User email:', user.email);
 		console.log('[save-user] Final subscription plan:', reconstructedData.subscription_plan);
-		try { const { sendSubscriptionEmail } = require('./billing.routes'); await sendSubscriptionEmail(user, reconstructedData); } catch (emailError) { console.error('[save-user] Error sending confirmation email:', emailError); }
+		// Email desactivado temporalmente (confirmación de suscripción)
+		// try { const { sendSubscriptionEmail } = require('./billing.routes'); await sendSubscriptionEmail(user, reconstructedData); } catch (emailError) { console.error('[save-user] Error sending confirmation email:', emailError); }
+		console.log('[save-user] Email de confirmación desactivado temporalmente');
 		await client.close();
 		if (!req.user || req.user._id.toString() !== user._id.toString()) {
 			req.login(user, (loginErr) => {
@@ -217,7 +219,8 @@ router.get('/api/get-user-data', ensureAuthenticated, async (req, res) => {
 		const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
 		if (!user) return res.status(404).json({ error: 'User not found' });
 		res.json({
-			name: user.name || '', web: user.web || '', linkedin: user.linkedin || '', perfil_profesional: user.perfil_profesional || '', especializacion: user.especializacion || '', otro_perfil: user.otro_perfil || '', subscription_plan: user.subscription_plan || 'plan1', profile_type: user.profile_type || 'individual', company_name: user.company_name || '', industry_tags: user.industry_tags || [], sub_industria_map: user.sub_industria_map || {}, rama_juridicas: user.rama_juridicas || [], sub_rama_map: user.sub_rama_map || {}, rangos: user.rangos || [], cobertura_legal: user.cobertura_legal || { fuentes: [], reguladores: [] }, etiquetas_personalizadas: user.etiquetas_personalizadas || {}, impact_analysis_limit: user.impact_analysis_limit || 0, extra_agentes: user.extra_agentes || 0, extra_fuentes: user.extra_fuentes || 0, payment_status: user.payment_status || '', stripe_customer_id: user.stripe_customer_id || '', stripe_subscription_id: user.stripe_subscription_id || '', billing_interval: user.billing_interval || 'monthly', registration_date: user.registration_date || '', purchased_items: user.purchased_items || [], limit_agentes: user.limit_agentes !== undefined ? user.limit_agentes : null, limit_fuentes: user.limit_fuentes !== undefined ? user.limit_fuentes : null, tipo_empresa: user.tipo_empresa || null, detalle_empresa: user.detalle_empresa || null, interes: user.interes || null, tamaño_empresa: user.tamaño_empresa || null, perfil_regulatorio: user.perfil_regulatorio || null, website_extraction_status: user.website_extraction_status || { success: true, error: null }
+			name: user.name || '', web: user.web || '', linkedin: user.linkedin || '', perfil_profesional: user.perfil_profesional || '', especializacion: user.especializacion || '', otro_perfil: user.otro_perfil || '', subscription_plan: user.subscription_plan || 'plan1', profile_type: user.profile_type || 'individual', company_name: user.company_name || '', industry_tags: user.industry_tags || [], sub_industria_map: user.sub_industria_map || {}, rama_juridicas: user.rama_juridicas || [], sub_rama_map: user.sub_rama_map || {}, rangos: user.rangos || [], cobertura_legal: user.cobertura_legal || { fuentes: [], reguladores: [] }, etiquetas_personalizadas: user.etiquetas_personalizadas || {}, impact_analysis_limit: user.impact_analysis_limit || 0, extra_agentes: user.extra_agentes || 0, extra_fuentes: user.extra_fuentes || 0, payment_status: user.payment_status || '', stripe_customer_id: user.stripe_customer_id || '', stripe_subscription_id: user.stripe_subscription_id || '', billing_interval: user.billing_interval || 'monthly', registration_date: user.registration_date || '', purchased_items: user.purchased_items || [], limit_agentes: user.limit_agentes !== undefined ? user.limit_agentes : null, limit_fuentes: user.limit_fuentes !== undefined ? user.limit_fuentes : null, tipo_empresa: user.tipo_empresa || null, detalle_empresa: user.detalle_empresa || null, interes: user.interes || null, tamaño_empresa: user.tamaño_empresa || null, perfil_regulatorio: user.perfil_regulatorio || null, website_extraction_status: user.website_extraction_status || { success: true, error: null },
+			tipo_cuenta: user.tipo_cuenta || 'individual', empresa: user.empresa || null, permiso: user.permiso || 'lectura', estructura_empresa_id: user.estructura_empresa_id || null, etiquetas_personalizadas_seleccionadas: user.etiquetas_personalizadas_seleccionadas || []
 		});
 		await client.close();
 	} catch (error) {
@@ -234,7 +237,7 @@ router.post('/api/update-user-data', ensureAuthenticated, async (req, res) => {
 		await client.connect();
 		const database = client.db('papyrus');
 		const usersCollection = database.collection('users');
-		const allowedFields = ['etiquetas_personalizadas','cobertura_legal','rangos','accepted_email','limit_agentes','limit_fuentes','tipo_empresa','detalle_empresa','interes','tamaño_empresa','web','perfil_regulatorio','website_extraction_status'];
+		const allowedFields = ['etiquetas_personalizadas','cobertura_legal','rangos','accepted_email','limit_agentes','limit_fuentes','tipo_empresa','detalle_empresa','interes','tamaño_empresa','web','perfil_regulatorio','website_extraction_status','etiquetas_personalizadas_seleccionadas'];
 		const updateData = {};
 		for (const field of allowedFields) { if (req.body[field] !== undefined) { updateData[field] = req.body[field]; } }
 		if (Object.keys(updateData).length === 0) return res.status(400).json({ error: 'No valid fields provided for update' });

@@ -5,41 +5,165 @@
   const profileView = document.getElementById('profile-summary-view');
   const configLoader = document.getElementById('config-loader');
   
+  // Function to determine if user should see profile view or onboarding form
+  function determineShouldShowProfile(userData) {
+    console.log('Determining profile view for userData:', {
+      has_perfil_regulatorio: !!(userData?.perfil_regulatorio),
+      is_empresa: userData?.is_empresa,
+      tipo_cuenta: userData?.tipo_cuenta,
+      perfil_length: userData?.perfil_regulatorio?.length || 0,
+      source: userData?.source
+    });
+    
+    // If no userData, show onboarding
+    if (!userData) {
+      console.log('No userData - showing onboarding');
+      return false;
+    }
+    
+    // Special handling for empresa users
+    if (userData.is_empresa || userData.tipo_cuenta === 'empresa') {
+      // If empresa user but structure is empty (first admin user), show onboarding
+      // This happens when admin comes from ReversaEnterprise1620 onboarding flow
+      if (userData.source === 'empresa' && 
+          (!userData.perfil_regulatorio || userData.perfil_regulatorio.trim().length === 0) &&
+          (!userData.tipo_empresa || userData.tipo_empresa.trim().length === 0)) {
+        console.log('Empresa admin user with empty structure - showing onboarding to populate estructura_empresa');
+        return false;
+      }
+      
+      // Otherwise, empresa users should see profile view (data from estructura_empresa)
+      console.log('Empresa user with existing structure - showing profile view');
+      return true;
+    }
+    
+    // For individual users, check if they have completed their regulatory profile
+    if (userData.perfil_regulatorio && userData.perfil_regulatorio.trim().length > 0) {
+      console.log('Individual user with perfil_regulatorio - showing profile view');
+      return true;
+    }
+    
+    console.log('Individual user without perfil_regulatorio - showing onboarding');
+    return false;
+  }
+  
   // Check for existing profile data on load
-  fetch('/api/get-user-data')
-      .then(res => res.json())
-      .then(userData => {
+  // Wait for EtiquetasResolver to be available before loading context
+  function waitForResolverAndLoad() {
+    if (typeof window.EtiquetasResolver !== 'undefined') {
+      console.log('EtiquetasResolver is available, loading context');
+      loadContextWithResolver();
+    } else {
+      console.log('EtiquetasResolver not yet available, waiting...');
+      setTimeout(waitForResolverAndLoad, 100);
+    }
+  }
+  
+  // Start the wait process
+  waitForResolverAndLoad();
+
+  // Helper function to load all context data using resolver
+  async function loadContextWithResolver() {
+      try {
+          let userData;
+          
+          console.log('loadContextWithResolver: Starting context loading');
+          
+          // Use resolver if available, otherwise fallback to legacy method
+          if (typeof window.EtiquetasResolver !== 'undefined') {
+              console.log('loadContextWithResolver: Using EtiquetasResolver');
+              userData = await window.EtiquetasResolver.getContextData();
+              console.log('loadContextWithResolver: Got userData from resolver:', {
+                is_empresa: userData?.is_empresa,
+                tipo_cuenta: userData?.tipo_cuenta,
+                has_perfil_regulatorio: !!(userData?.perfil_regulatorio),
+                perfil_length: userData?.perfil_regulatorio?.length || 0
+              });
+              
+              // Setup readonly buttons for empresa users without edit permissions
+              if (userData.is_empresa) {
+                  if (typeof window.EtiquetasResolver.setupReadonlyButtons === 'function') {
+                      setTimeout(() => window.EtiquetasResolver.setupReadonlyButtons(), 200);
+                  }
+              }
+          } else {
+              // Fallback to legacy method
+              console.warn('EtiquetasResolver not available, using legacy method');
+              const response = await fetch('/api/get-user-data');
+              userData = await response.json();
+              console.log('loadContextWithResolver: Got userData from legacy API:', {
+                tipo_cuenta: userData?.tipo_cuenta,
+                has_perfil_regulatorio: !!(userData?.perfil_regulatorio),
+                perfil_length: userData?.perfil_regulatorio?.length || 0
+              });
+          }
+          
           // Update usage trackers with user data
-          updateUsageTrackers(userData);
+          if (typeof updateUsageTrackers === 'function') {
+              // For empresa users, userData already contains the correct limits from estructura_empresa
+              // For individual users, userData contains their personal limits
+              updateUsageTrackers(userData);
+          }
           
-          // Always populate fuentes when user data is loaded
-          populateFuentes(userData.cobertura_legal);
+          // Load fuentes using resolver
+          await loadFuentesWithResolver(userData);
           
-          if (userData && userData.perfil_regulatorio) {
-              // If profile exists, display it directly
+          // Determine if user should see profile or onboarding form
+          const shouldShowProfile = determineShouldShowProfile(userData);
+          
+          console.log('loadContextWithResolver: shouldShowProfile result:', shouldShowProfile, 'for userData:', userData);
+          
+          if (shouldShowProfile) {
+              // If profile should be shown, display it directly
               renderFinalView(userData);
               if (onboardingContainer) onboardingContainer.style.display = 'none';
               if (profileView) profileView.style.display = 'block';
           } else {
               // If not, fetch the form structure and start onboarding
-              return fetch('/views/configuracion/estructura_onboarding.json')
-                .then(res=>res.json())
-                .then(json=>{
-                  onboardingStructure=json;
-                  startOnboarding();
-                })
+              console.log('loadContextWithResolver: User should see onboarding, preparing containers');
+              if (onboardingContainer) onboardingContainer.style.display = 'block';
+              if (profileView) profileView.style.display = 'none';
+              
+              const structureResponse = await fetch('/views/configuracion/estructura_onboarding.json');
+              const json = await structureResponse.json();
+              onboardingStructure = json;
+              startOnboarding();
           }
-      })
-      .catch(err => {
-          console.error('Error fetching initial data:', err);
+      } catch (err) {
+          console.error('Error loading context data:', err);
           // On error, try to show the form as a fallback
-          if(onboardingContainer) onboardingContainer.style.display = 'block';
+          if (onboardingContainer) onboardingContainer.style.display = 'block';
           // Still try to populate fuentes even on error
-          populateFuentes(null);
-      })
-      .finally(() => {
+          await loadFuentesWithResolver(null);
+      } finally {
           if (configLoader) configLoader.style.display = 'none';
-      });
+      }
+  }
+
+  // Helper function to load fuentes using resolver
+  async function loadFuentesWithResolver(fallbackUserData) {
+      try {
+          if (typeof window.EtiquetasResolver !== 'undefined') {
+              const result = await window.EtiquetasResolver.getCoberturaLegal();
+              
+              // Setup readonly buttons for empresa users without edit permissions
+              if (result.is_empresa) {
+                  if (typeof window.EtiquetasResolver.setupReadonlyButtons === 'function') {
+                      setTimeout(() => window.EtiquetasResolver.setupReadonlyButtons(), 400);
+                  }
+              }
+              
+              populateFuentes(result.cobertura_legal);
+          } else {
+              // Fallback to legacy method
+              populateFuentes(fallbackUserData?.cobertura_legal || null);
+          }
+      } catch (error) {
+          console.error('Error loading fuentes with resolver:', error);
+          // Fallback to userData or null
+          populateFuentes(fallbackUserData?.cobertura_legal || null);
+      }
+  }
 
   /* -------------- HELPERS -------------- */
   const onboardingForm = document.getElementById('onboarding-form');
@@ -261,20 +385,39 @@
                  updatedData.perfil_regulatorio = profileTextarea.value.trim();
              }
 
-             // Send to server
-             const response = await fetch('/api/update-user-data', {
-                 method: 'POST',
-                 headers: {
-                     'Content-Type': 'application/json'
-                 },
-                 body: JSON.stringify(updatedData)
-             });
+             // Send to server using resolver if available, otherwise fallback to legacy endpoint
+             let response, result;
+             
+             if (typeof window.EtiquetasResolver !== 'undefined') {
+                 try {
+                     // Use resolver for consistent context saving
+                     result = await window.EtiquetasResolver.updateContextData(updatedData);
+                     response = { ok: true }; // Simulate response object for consistency
+                 } catch (error) {
+                     console.error('Error using resolver, falling back to legacy API:', error);
+                     // Fallback to legacy method
+                     response = await fetch('/api/update-user-data', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(updatedData)
+                     });
+                     result = await response.json();
+                 }
+             } else {
+                 // Legacy method
+                 response = await fetch('/api/update-user-data', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify(updatedData)
+                 });
+                 result = await response.json();
+             }
 
              if (!response.ok) {
                  throw new Error('Failed to save changes');
              }
 
-             const result = await response.json();
+             // result is already declared above
              
              if (result.success) {
                  // Update original data
@@ -942,8 +1085,22 @@
 
   /* --------- BOOTSTRAP --------- */
   function startOnboarding(){
+    console.log('startOnboarding: Called with onboardingStructure:', onboardingStructure);
+    
     if (onboardingStructure && onboardingStructure.tipo_empresa) {
+      console.log('startOnboarding: Starting onboarding flow');
+      
+      // Ensure onboarding container is visible
+      if (onboardingContainer) {
+        onboardingContainer.style.display = 'block';
+      }
+      if (profileView) {
+        profileView.style.display = 'none';
+      }
+      
       generateFromNode({tipo_empresa:onboardingStructure.tipo_empresa});
+    } else {
+      console.warn('startOnboarding: No onboarding structure available');
     }
   }
 

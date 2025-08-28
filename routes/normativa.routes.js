@@ -10,6 +10,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const ensureAuthenticated = require('../middleware/ensureAuthenticated');
 const path = require('path');
 const { spawn } = require('child_process');
+const { getEtiquetasPersonalizadasAdapter } = require('../services/enterprise.service');
 
 const router = express.Router();
 
@@ -32,10 +33,13 @@ router.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 		if (req.user && req.user._id) {
 			const userDoc = await usersCollection.findOne(
 				{ _id: new ObjectId(req.user._id) },
-				{ projection: { perfil_regulatorio: 1, etiquetas_personalizadas: 1 } }
+				{ projection: { perfil_regulatorio: 1 } }
 			);
 			perfilRegulatorioUser = userDoc?.perfil_regulatorio || null;
-			etiquetasDefiniciones = userDoc?.etiquetas_personalizadas || {};
+			
+			// ENTERPRISE ADAPTER: Obtener etiquetas según tipo de cuenta
+			const etiquetasResult = await getEtiquetasPersonalizadasAdapter(req.user);
+			etiquetasDefiniciones = etiquetasResult.etiquetas_personalizadas || {};
 		}
 
 		const document = await collection.findOne({ _id: documentId });

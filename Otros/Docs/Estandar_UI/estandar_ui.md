@@ -2,7 +2,7 @@
 
 ## 📋 RESUMEN EJECUTIVO
 
-**Estándar UI Reversa** es el sistema de diseño oficial para Papyrus AI Platform. Define componentes, patrones de interacción y directrices visuales para mantener una experiencia de usuario consistente y profesional en toda la aplicación.
+**Estándar UI Reversa** es el sistema de diseño oficial para Reversa AI Platform. Define componentes, patrones de interacción y directrices visuales para mantener una experiencia de usuario consistente y profesional en toda la aplicación.
 
 ### 🎯 **Principios Fundamentales:**
 - **Consistencia**: Todos los elementos siguen el mismo sistema visual

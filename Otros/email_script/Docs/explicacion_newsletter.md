@@ -1,5 +1,34 @@
 # NEWSLETTER.JS - EXPLICACIÓN COMPLETA (Versión datetime_insert)
 
+## 0. Intervalo temporal analizado por ejecución (resumen práctico)
+
+- **Variables clave**
+  - **`datetime_insert` (en cada documento)**: marca temporal usada para filtrar los documentos que se analizan en cada ejecución.
+  - **`logs_newsletter`**: colección de logs del newsletter de usuarios.
+    - **`datetime_run_newsletter`**: fecha/hora (Date) del último envío del newsletter.
+    - **`run_info.environment`**: entorno del envío (`"test"`/`"production"`).
+  - **`lastRunTime` (Date)**: límite inferior del intervalo; es el valor de `logs_newsletter.datetime_run_newsletter` de la última ejecución con `run_info.environment = "production"`. Si no existe, se usa el valor por defecto indicado abajo.
+  - **`currentTime` (Date)**: límite superior del intervalo; es el momento actual cuando se ejecuta el proceso.
+  - **Filtro aplicado**: los documentos analizados cumplen `datetime_insert ∈ (lastRunTime, currentTime]` (exclusivo por abajo, inclusivo por arriba).
+  - **Colecciones excluidas**: `['logs', 'logs_newsletter', 'Feedback', 'Ramas boja', 'Ramas UE', 'users', 'embedding_alerts', 'embedding_filter_metrics', 'tag_change_log', 'tag_embeddings']`.
+  - **Zona horaria**: las marcas de tiempo se guardan y comparan en **UTC**. La visualización en horario de Madrid (`Europe/Madrid`) no altera el criterio del filtro.
+  - **Relación con `logs.datetime_run` (ETL)**: esta marca temporal pertenece a los logs del proceso ETL y **no** determina el intervalo de documentos del newsletter; se usa para reportes y avisos (p.ej., advertir si no hubo webscraping o si hubo runs sin documentos).
+
+- **Escenarios y su intervalo**
+
+| Escenario | Condición | Desde (`lastRunTime`) | Hasta (`currentTime`) | Flags/Notas |
+|----------|-----------|-----------------------|-----------------------|-------------|
+| Primera ejecución (sin logs previos de `production`) | No existe entrada previa en `logs_newsletter` con `run_info.environment = "production"` | Ayer a las 10:00 (UTC) | Ahora | `isExtraVersion = false` |
+| Nueva ejecución el mismo día | Existe un `datetime_run_newsletter` hoy (mismo día en UTC) | Último `datetime_run_newsletter` | Ahora | `isExtraVersion = true` (Versión Extra) |
+| Día siguiente | El último `datetime_run_newsletter` es de un día anterior | Último `datetime_run_newsletter` | Ahora | `isExtraVersion = false` |
+| Sin documentos nuevos | El filtro devuelve 0 documentos (`totalCount === 0`) | — | — | No se crea nueva entrada en `logs_newsletter`. La próxima ejecución volverá a usar el mismo `lastRunTime` anterior |
+| Ejecución en modo `test` | Se envía solo a cuentas de prueba; el cálculo de `lastRunTime` se sigue haciendo sobre `logs_newsletter` de `production` | Último `datetime_run_newsletter` (de `production`) | Ahora | Solo cambia el `environment` del envío/log, no el intervalo |
+
+- **Propiedades del intervalo**
+  - No hay duplicados: al usar `(lastRunTime, currentTime]`, cada documento se procesa como máximo una vez.
+  - Si hay múltiples ejecuciones en el mismo día, el `Desde` avanza a la última `datetime_run_newsletter`, y el `Hasta` es el instante actual.
+  - Si en una ejecución no se encuentran documentos (`totalCount === 0`), no se crea log y el `Desde` no cambia para la siguiente ejecución.
+
 ## 1. NUEVA ARQUITECTURA Y LÓGICA DE FUNCIONAMIENTO
 
 ### 1.1 Cambio Fundamental: De anio/mes/dia a datetime_insert
@@ -14,6 +43,16 @@
 - Sistema independiente con colección `logs_newsletter`
 - Control timezone GMT+2 España
 - Detección automática de versión extra
+
+### 1.2 Compatibilidad Enterprise (etiquetas y cobertura)
+
+- Para cuentas con `tipo_cuenta = 'empresa'` y `estructura_empresa_id`:
+  - Las coincidencias de etiquetas de documentos se evalúan contra las etiquetas de la estructura empresa, leyendo `doc.etiquetas_personalizadas[empresaId]`.
+  - La cobertura legal usada para filtrar colecciones proviene de `estructura_empresa.cobertura_legal`. Si no existe, se usa la cobertura del usuario individual como fallback.
+  - Selección por usuario dentro de empresa:
+    - Si el usuario tiene `etiquetas_personalizadas_seleccionadas`, se envían solo los matches de esas etiquetas seleccionadas (sobre las etiquetas de la estructura empresa).
+    - Si no tiene selección, se envían todos los matches de las `etiquetas_personalizadas` de la estructura empresa.
+- Para cuentas individuales, se mantiene el comportamiento anterior (coincidencias con sus propias etiquetas y cobertura del propio usuario).
 
 ## 2. ESCENARIOS POSIBLES Y OUTCOMES
 
@@ -82,8 +121,7 @@ lastRunDate.isSame(currentDate, 'day') → false
     "documents_analyzed_detail": {
       "BOE": 633,
       "BOCM": 70,
-      "DOG": 12,
-      // ... todas las colecciones con conteos
+      "DOG": 12
     },
     "users_match": {
       "tomas@reversa.ai": {
@@ -91,9 +129,6 @@ lastRunDate.isSame(currentDate, 'day') → false
           "Compliance Financiero": {
             "CNMV": ["doc1", "doc2"],
             "BOE": ["doc3"]
-          },
-          "Ayudas y Subvenciones": {
-            "DOG": ["doc4", "doc5"]
           }
         }
       }
@@ -194,6 +229,40 @@ const uniqueDocsMatch = userStats.withMatches.reduce((sum, user) => sum + user.t
 const totalMatchesCount = userStats.withMatches.reduce((sum, user) => sum + user.totalMatches, 0);
 ```
 
+### 4.5 Enterprise helpers y matching
+
+```javascript
+// Obtener documento empresa (cache) por estructura_empresa_id
+async function getEmpresaDoc(db, estructuraEmpresaId) {
+  return await db.collection('users').findOne({ _id: new ObjectId(estructuraEmpresaId), tipo_cuenta: 'empresa' });
+}
+
+// Extraer cobertura de la empresa o del usuario
+function extractCoverageCollections(coverageObj) {
+  const fuentesGobierno = coverageObj['fuentes-gobierno'] || coverageObj.fuentes_gobierno || coverageObj.fuentes || [];
+  const fuentesReg = coverageObj['fuentes-reguladores'] || coverageObj.fuentes_reguladores || coverageObj['fuentes-regulador'] || coverageObj.reguladores || [];
+  const cols = [];
+  if (Array.isArray(fuentesGobierno)) cols.push(...fuentesGobierno);
+  if (Array.isArray(fuentesReg)) cols.push(...fuentesReg);
+  return cols.map(c => String(c).toUpperCase());
+}
+
+// Etiquetas seleccionadas por el usuario dentro de empresa (opcional)
+function getSelectedEtiquetasFromUser(user) {
+  const sel = user.etiquetas_personalizadas_seleccionadas || user.etiquetas_seleccionadas;
+  if (!sel) return [];
+  if (Array.isArray(sel)) return sel;
+  if (typeof sel === 'object') return Object.keys(sel);
+  if (typeof sel === 'string') return [sel];
+  return [];
+}
+
+// Matching (resumen):
+// - Individual → doc.etiquetas_personalizadas[userId] intersect etiquetas del usuario
+// - Empresa → doc.etiquetas_personalizadas[empresaId];
+//     si el usuario tiene seleccionadas → filtrar a esas; si no, incluir todas las de empresa
+```
+
 ## 5. MÉTRICAS DE MATCHES
 
 ### 5.1 Diferencia entre Métricas
@@ -239,9 +308,9 @@ const filteredUsers = filterUniqueEmails(allUsers);
 ### 6.2 Procesamiento por Usuario
 
 **Filtros aplicados:**
-1. **Cobertura legal**: Solo colecciones suscritas por el usuario
+1. **Cobertura legal**: Solo colecciones suscritas por el usuario/empresa
 2. **Rangos**: Solo documentos con `rango_titulo` en `user.rangos`
-3. **Etiquetas personalizadas**: Solo documentos con matches en `user.etiquetas_personalizadas`
+3. **Etiquetas personalizadas**: Coincidencias según tipo de cuenta (individual/empresa)
 
 **Estadísticas por usuario:**
 ```javascript
@@ -257,10 +326,34 @@ userStats.withMatches.push({
 // Usuarios sin matches
 userStats.withoutMatches.push({
   email: user.email,
-  etiquetasCount: userEtiquetasKeys.length,
-  etiquetas_personalizadas: user.etiquetas_personalizadas,
+  etiquetasCount: userEtiquetasCount,
+  etiquetas_personalizadas: etiquetasFuente, // empresa o individual
   etiquetas_demo: user.etiquetas_demo
 });
+```
+
+### 6.3 Modo Empresa: cobertura y matching de etiquetas
+
+- Detección: `isEnterprise = (user.tipo_cuenta === 'empresa' && user.estructura_empresa_id)`
+- Identificador objetivo para matching: `targetUserId = empresa._id` (no el `user._id`)
+- Cobertura de colecciones:
+  - Primero se intenta `empresa.cobertura_legal` → `extractCoverageCollections()`
+  - Fallback: `user.cobertura_legal`
+- Matching de etiquetas:
+  - Se usa `doc.etiquetas_personalizadas[targetUserId]`.
+  - Si el usuario tiene `etiquetas_personalizadas_seleccionadas` → filtrar a esas etiquetas.
+  - Si no, incluir todas las etiquetas de la empresa presentes en el documento.
+- El conteo y detalle de estadísticas usan el catálogo de etiquetas de la empresa para usuarios enterprise.
+
+```javascript
+// Pseudocódigo
+const empresa = await getEmpresaDoc(db, user.estructura_empresa_id);
+const targetId = empresa._id.toString();
+const docEtiq = doc.etiquetas_personalizadas?.[targetId];
+const selected = getSelectedEtiquetasFromUser(user);
+let keys = Object.keys(docEtiq || {});
+if (selected.length) keys = keys.filter(k => selected.includes(k));
+if (keys.length) { /* match */ }
 ```
 
 ## 7. ENVÍO DE EMAILS
@@ -270,7 +363,8 @@ userStats.withoutMatches.push({
 **✅ SE ENVÍAN EMAILS cuando:**
 - `documentsData.totalCount > 0` (hay documentos nuevos)
 - Usuario está en `filteredUsers`
-- Usuario pasa filtros de cobertura legal y rangos
+- Usuario pasa filtros de cobertura y rangos
+- Hay matches de etiquetas (individual o empresa según corresponda)
 
 **❌ NO SE ENVÍAN EMAILS cuando:**
 - No hay documentos nuevos desde última ejecución
@@ -347,6 +441,9 @@ htmlBody = buildNewsletterHTMLNoMatches(
 | `userStats.withMatches.length` | Usuarios con matches | `number` |
 | `filteredUsers` | Usuarios a procesar | `Array` |
 | `SEND_EMAILS_TO_USERS_WITHOUT_MATCHES` | Enviar a usuarios sin matches | `true`/`false` |
+| `isEnterpriseUser` | Si el usuario pertenece a empresa | `true`/`false` |
+| `estructura_empresa_id` | ID empresa asociada (MongoDB) | `ObjectId` |
+| `selectedEnterpriseEtiquetas` | Selección por usuario en empresa | `Array<string>` |
 
 ## 10. FLUJO COMPLETO DE EJECUCIÓN
 
@@ -356,7 +453,9 @@ htmlBody = buildNewsletterHTMLNoMatches(
 3. getDocumentsByDatetimeInsert() → Filtrar documentos por timestamp
 4. Si no hay documentos → Enviar solo ETL report y salir
 5. Procesar usuarios filtrados:
-   - Aplicar filtros de cobertura y etiquetas
+   - Detectar si es usuario enterprise
+   - Cobertura: usar empresa.cobertura_legal (fallback a usuario)
+   - Matching etiquetas: empresa (con selección) o individual
    - Calcular matches únicos y totales
    - Generar HTML y enviar emails
 6. Calcular estadísticas finales
@@ -373,3 +472,4 @@ htmlBody = buildNewsletterHTMLNoMatches(
 - ✅ Métricas detalladas y precisas
 - ✅ Detección automática de versión extra
 - ✅ Observabilidad completa
+- ✅ Compatibilidad enterprise (cobertura y etiquetas de empresa, y selección por usuario)

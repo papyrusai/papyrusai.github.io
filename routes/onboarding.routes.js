@@ -11,6 +11,9 @@ const ensureAuthenticated = require('../middleware/ensureAuthenticated');
 const fs = require('fs');
 const path = require('path');
 
+// Import the resolver service
+const { updateContextData } = require('../services/enterprise.service');
+
 const router = express.Router();
 
 // MongoDB configuration
@@ -246,12 +249,7 @@ router.post('/api/save-onboarding-data', ensureAuthenticated, async (req, res) =
   try {
     const { tipo_empresa, detalle_empresa, interes, tamaño_empresa, web } = req.body;
 
-    const client = new MongoClient(uri, mongodbOptions);
-    await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
-
-    const updateData = {
+    const contextData = {
       tipo_empresa,
       detalle_empresa,
       interes,
@@ -260,17 +258,34 @@ router.post('/api/save-onboarding-data', ensureAuthenticated, async (req, res) =
     };
 
     // Remove undefined fields
-    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+    Object.keys(contextData).forEach(key => contextData[key] === undefined && delete contextData[key]);
 
-    if (Object.keys(updateData).length > 0) {
-        await usersCollection.updateOne(
-          { _id: new ObjectId(req.user._id) },
-          { $set: updateData }
-        );
+    if (Object.keys(contextData).length > 0) {
+      // Use resolver to save context data (handles empresa vs individual automatically)
+      const result = await updateContextData(req.user, contextData);
+      
+      if (!result.success) {
+        if (result.permission_error) {
+          return res.status(403).json({ error: result.error });
+        }
+        if (result.conflict) {
+          return res.status(409).json({ error: result.error });
+        }
+        return res.status(400).json({ error: result.error });
+      }
+      
+      console.log('Onboarding data saved via resolver:', {
+        source: result.source,
+        user_id: req.user._id,
+        contextData
+      });
     }
 
-    await client.close();
-    res.status(200).json({ success: true, message: 'Onboarding data saved.' });
+    res.status(200).json({ 
+      success: true, 
+      message: 'Onboarding data saved.',
+      source: result?.source || 'individual'
+    });
   } catch (error) {
     console.error('Error saving onboarding data:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -285,24 +300,30 @@ router.post('/api/save-regulatory-profile', ensureAuthenticated, async (req, res
       return res.status(400).json({ error: 'perfil_regulatorio is required' });
     }
 
-    const client = new MongoClient(uri, mongodbOptions);
-    await client.connect();
-    const database = client.db("papyrus");
-    const usersCollection = database.collection("users");
-
-    // ✅ GUARDAR TAMBIÉN ESTADO DE EXTRACCIÓN WEB
-    const updateData = { perfil_regulatorio };
+    // Prepare context data update
+    const contextData = { perfil_regulatorio };
     if (website_extraction_status) {
-      updateData.website_extraction_status = website_extraction_status;
+      contextData.website_extraction_status = website_extraction_status;
     }
 
-    await usersCollection.updateOne(
-      { _id: new ObjectId(req.user._id) },
-      { $set: updateData }
-    );
+    // Use resolver to update context data
+    const result = await updateContextData(req.user, contextData);
 
-    await client.close();
-    res.status(200).json({ success: true, message: 'Regulatory profile saved.' });
+    if (!result.success) {
+      if (result.permission_error) {
+        return res.status(403).json({ error: result.error });
+      }
+      if (result.conflict) {
+        return res.status(409).json({ error: result.error });
+      }
+      return res.status(400).json({ error: result.error });
+    }
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Regulatory profile saved.',
+      source: result.source 
+    });
   } catch (error) {
     console.error('Error saving regulatory profile:', error);
     res.status(500).json({ error: 'Internal server error' });

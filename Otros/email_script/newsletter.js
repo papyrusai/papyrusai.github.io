@@ -8,7 +8,7 @@
  *   las colecciones definidas en user.cobertura_legal,
  *   o BOE si no existe/está vacío.
  ************************************************/
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const nodemailer = require('nodemailer');
 const sgTransport = require('nodemailer-sendgrid-transport');
 const moment = require('moment');
@@ -2473,6 +2473,52 @@ async function createNewsletterLog(db, userStats, documentsAnalyzedDetail, total
   }
 }
 
+// ENTERPRISE HELPERS ---------------------------------------------------------
+// Cache empresa docs to avoid repeated DB lookups
+const empresaDocCache = new Map();
+
+// Extract coverage collections from various possible coverage_legal shapes
+function extractCoverageCollections(coverageObj) {
+  try {
+    if (!coverageObj || typeof coverageObj !== 'object') return [];
+    const fuentesGobierno = coverageObj['fuentes-gobierno'] || coverageObj.fuentes_gobierno || coverageObj.fuentes || [];
+    const fuentesReg = coverageObj['fuentes-reguladores'] || coverageObj.fuentes_reguladores || coverageObj['fuentes-regulador'] || coverageObj.reguladores || [];
+    const arrays = [];
+    if (Array.isArray(fuentesGobierno)) arrays.push(...fuentesGobierno);
+    if (Array.isArray(fuentesReg)) arrays.push(...fuentesReg);
+    // Fallback: flatten any array values if above keys are not used
+    if (arrays.length === 0) {
+      Object.values(coverageObj).forEach(v => { if (Array.isArray(v)) arrays.push(...v); });
+    }
+    return arrays.map(c => String(c).toUpperCase());
+  } catch (_) { return []; }
+}
+
+// Get per-user selected etiquetas (array) if present
+function getSelectedEtiquetasFromUser(user) {
+  const sel = user && (user.etiquetas_personalizadas_seleccionadas || user.etiquetas_seleccionadas);
+  if (!sel) return [];
+  if (Array.isArray(sel)) return sel.map(s => String(s));
+  if (typeof sel === 'object') return Object.keys(sel);
+  if (typeof sel === 'string') return [sel];
+  return [];
+}
+
+// Fetch empresa doc by estructura_empresa_id with cache
+async function getEmpresaDoc(db, estructuraEmpresaId) {
+  try {
+    if (!estructuraEmpresaId) return null;
+    const key = estructuraEmpresaId.toString();
+    if (empresaDocCache.has(key)) return empresaDocCache.get(key);
+    const doc = await db.collection('users').findOne({ _id: new ObjectId(key), tipo_cuenta: 'empresa' });
+    if (doc) empresaDocCache.set(key, doc);
+    return doc;
+  } catch (e) {
+    return null;
+  }
+}
+// ---------------------------------------------------------------------------
+
 // MAIN EXECUTION
 
 (async () => {
@@ -2557,372 +2603,414 @@ async function createNewsletterLog(db, userStats, documentsAnalyzedDetail, total
     };
 
     for (const user of filteredUsers) {
-      // 2) Obtenemos coverage_legal => array de colecciones (BOE, BOA, BOJA, CNMV, etc.)
-      const coverageObj = user.cobertura_legal || {}; // ejemplo => {"Nacional y Europeo":["BOE"],"Autonomico":["BOA","BOJA"],"Reguladores":["CNMV"]}
+      // 2) Determinar contexto enterprise vs individual
+      const isEnterpriseUser = user.tipo_cuenta === 'empresa' && user.estructura_empresa_id;
+      let targetUserIdStr = user._id ? user._id.toString() : '';
+      let selectedEnterpriseEtiquetas = [];
+      let effectiveEtiquetasCatalog = user.etiquetas_personalizadas || {};
       let coverageCollections = [];
-      Object.values(coverageObj).forEach(arr => {
-        if (Array.isArray(arr)) {
-          coverageCollections.push(...arr.map(col => col.toUpperCase()));
+
+      if (isEnterpriseUser) {
+        const empresaDoc = await getEmpresaDoc(db, user.estructura_empresa_id);
+        if (empresaDoc) {
+          targetUserIdStr = empresaDoc._id.toString();
+          effectiveEtiquetasCatalog = empresaDoc.etiquetas_personalizadas || {};
+          coverageCollections = extractCoverageCollections(empresaDoc.cobertura_legal || {});
         }
-      });
+        selectedEnterpriseEtiquetas = getSelectedEtiquetasFromUser(user);
+      }
+      // Fallback a cobertura individual si no hay en empresa o no es enterprise
+      if (coverageCollections.length === 0) {
+        coverageCollections = extractCoverageCollections(user.cobertura_legal || {});
+      }
       if (coverageCollections.length === 0) {
         coverageCollections = ["BOE"]; // fallback
       }
-      // NEW LOGIC: Filter documents from documentsData.allDocuments based on user's coverage
-      const userMatchingDocs = documentsData.allDocuments.filter(docObj => 
-        coverageCollections.includes(docObj.collectionName.toUpperCase())
-      );
-      
-      if (userMatchingDocs.length === 0) {
-        console.log(`👤 User ${user.email} has no documents in subscribed collections. Skipping.`);
-        continue;
-      }
-      
-      console.log(`👤 User ${user.email}: Processing ${userMatchingDocs.length} documents from ${[...new Set(userMatchingDocs.map(d => d.collectionName))].join(', ')}`);
+       // NEW LOGIC: Filter documents from documentsData.allDocuments based on user's coverage
+       const userMatchingDocs = documentsData.allDocuments.filter(docObj => 
+         coverageCollections.includes(docObj.collectionName.toUpperCase())
+       );
+       
+       if (userMatchingDocs.length === 0) {
+         console.log(`👤 User ${user.email} has no documents in subscribed collections. Skipping.`);
+         continue;
+       }
+       
+       console.log(`👤 User ${user.email}: Processing ${userMatchingDocs.length} documents from ${[...new Set(userMatchingDocs.map(d => d.collectionName))].join(', ')}`);
+ 
+       // 3) Filtrar documentos según etiquetas personalizadas del usuario
+       // Para individuales: utilizar sus propias etiquetas; para empresa: usar etiquetas del documento bajo empresaId
+       const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
+       const userEtiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
+       
+       // Obtener rangos del usuario (mantener este filtro)
+       const userRangos = user.rangos || [];
+       
+       // Filtrar documentos que coincidan con etiquetas personalizadas
+       const filteredMatchingDocs = [];
+       
+       // Track matches for statistics
+       const userMatchStats = new Map(); // etiqueta -> { collections: Set, totalMatches: number }
+       
+       for (const docObj of userMatchingDocs) {
+         const doc = docObj.doc;
+         const collectionName = docObj.collectionName;
+         
+         // FILTER 1: Check if the document's rango matches any of the user's rangos
+         const docRango = doc.rango_titulo || "Otras";
+         const rangoMatches = userRangos.includes(docRango);
+         
+         if (!rangoMatches) continue;
+         
+         // FILTER 2: Check for etiquetas personalizadas match (enterprise-aware)
+         let hasEtiquetasMatch = false;
+         let matchedEtiquetas = [];
+         let matchedEtiquetasDescriptions = [];
 
-      // 3) Filtrar documentos según etiquetas personalizadas del usuario
-      // Obtener etiquetas personalizadas del usuario - CORREGIDO: Ahora es un objeto, no un array
-      const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
-      
-      // Obtener las claves (nombres de etiquetas) del objeto etiquetas_personalizadas
-      const userEtiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
-      
-      // Obtener rangos del usuario (mantener este filtro)
-      const userRangos = user.rangos || [];
-      
-      // Filtrar documentos que coincidan con etiquetas personalizadas
-      const filteredMatchingDocs = [];
-      
-      // Track matches for statistics
-      const userMatchStats = new Map(); // etiqueta -> { collections: Set, totalMatches: number }
-      
-      for (const docObj of userMatchingDocs) {
-        const doc = docObj.doc;
-        const collectionName = docObj.collectionName;
-        
-        // FILTER 1: Check if the document's rango matches any of the user's rangos
-        const docRango = doc.rango_titulo || "Otras";
-        const rangoMatches = userRangos.includes(docRango);
-        
-        if (!rangoMatches) continue;
-        
-        // FILTER 2: Check for etiquetas personalizadas match
-        let hasEtiquetasMatch = false;
-        let matchedEtiquetas = [];
-        let matchedEtiquetasDescriptions = [];
-        
-        // Verificar si el documento tiene etiquetas personalizadas y el usuario tiene un ID
-        if (doc.etiquetas_personalizadas && user._id) {
-          const userId = user._id.toString();
-          
-          // Verificar si hay etiquetas personalizadas para este usuario en el documento
-          if (doc.etiquetas_personalizadas[userId]) {
-            // En la nueva estructura, doc.etiquetas_personalizadas[userId] es un objeto donde las claves son los nombres de las etiquetas
-            const docEtiquetasObj = doc.etiquetas_personalizadas[userId] || {};
-            
-            // Verificar coincidencias entre las etiquetas del documento para este usuario y las etiquetas del usuario
-            for (const etiquetaKey of userEtiquetasKeys) {
-              if (etiquetaKey in docEtiquetasObj) {
-                hasEtiquetasMatch = true;
-                matchedEtiquetas.push(etiquetaKey);
-                
-                // Extraer descripción y nivel de impacto según la estructura
-                const etiquetaData = docEtiquetasObj[etiquetaKey];
-                let descripcion = '';
-                let nivelImpacto = '';
-                
-                if (typeof etiquetaData === 'string') {
-                  // Estructura antigua: solo string
-                  descripcion = etiquetaData;
-                } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
-                  // Estructura nueva: objeto con explicacion y nivel_impacto
-                  descripcion = etiquetaData.explicacion || '';
-                  nivelImpacto = etiquetaData.nivel_impacto || '';
-                }
-                
-                // Combinar descripción y nivel de impacto para compatibilidad
-                const fullDescription = nivelImpacto ? `${descripcion} (Nivel: ${nivelImpacto})` : descripcion;
-                matchedEtiquetasDescriptions.push(fullDescription);
-                
-                // Track for statistics
-                if (!userMatchStats.has(etiquetaKey)) {
-                  userMatchStats.set(etiquetaKey, { collections: new Set(), totalMatches: 0 });
-                }
-                userMatchStats.get(etiquetaKey).collections.add(collectionName);
-                userMatchStats.get(etiquetaKey).totalMatches++;
-              }
-            }
-          }
-        }
-        
-        // Solo incluir documentos que coincidan con etiquetas personalizadas
-        if (hasEtiquetasMatch) {
-          // Crear versión mejorada del documento con valores coincidentes
-          filteredMatchingDocs.push({
-            collectionName: collectionName,
-            doc: {
-              ...doc,
-              matched_etiquetas_personalizadas: matchedEtiquetas,
-              matched_etiquetas_descriptions: matchedEtiquetasDescriptions
-            }
-          });
-        }
-      }
-      
-      // Reemplazar la colección original con la filtrada
-      const userMatchingDocsFiltered = filteredMatchingDocs;
-      
-      // 4) Build etiqueta & collection & rango grouping
-      const etiquetaGroups = {};
+         if (doc.etiquetas_personalizadas && targetUserIdStr) {
+           const docEtiqForTarget = doc.etiquetas_personalizadas[targetUserIdStr];
+           if (docEtiqForTarget) {
+             if (isEnterpriseUser) {
+               // Empresa: usar etiquetas del documento para la estructura_empresa
+               let docKeys = [];
+               if (Array.isArray(docEtiqForTarget)) {
+                 docKeys = docEtiqForTarget.map(String);
+               } else if (typeof docEtiqForTarget === 'object') {
+                 docKeys = Object.keys(docEtiqForTarget);
+               } else if (typeof docEtiqForTarget === 'string') {
+                 docKeys = [docEtiqForTarget];
+               }
 
-      userMatchingDocsFiltered.forEach(({ collectionName, doc }) => {
-        // Get matched etiquetas personalizadas
-        const matchedEtiquetas = doc.matched_etiquetas_personalizadas || [];
-        const rango = doc.rango_titulo || "Otras";
-        
-        matchedEtiquetas.forEach(etiqueta => {
-          // Initialize the etiqueta group if needed
-          if (!etiquetaGroups[etiqueta]) {
-            etiquetaGroups[etiqueta] = {};
-          }
-          
-          // Initialize the collection subgroup if needed
-          if (!etiquetaGroups[etiqueta][collectionName]) {
-            etiquetaGroups[etiqueta][collectionName] = {};
-          }
-          
-          // Initialize the rango subgroup if needed
-          if (!etiquetaGroups[etiqueta][collectionName][rango]) {
-            etiquetaGroups[etiqueta][collectionName][rango] = [];
-          }
-          
-          // Add document to its group
-          etiquetaGroups[etiqueta][collectionName][rango].push({
-            ...doc,
-            collectionName
-          });
-        });
-      });
+               let keysToInclude = docKeys;
+               if (selectedEnterpriseEtiquetas && selectedEnterpriseEtiquetas.length > 0) {
+                 const selSet = new Set(selectedEnterpriseEtiquetas.map(s => String(s).toLowerCase()));
+                 keysToInclude = docKeys.filter(k => selSet.has(String(k).toLowerCase()));
+               }
 
-      // Convert to array structure for template processing
-      const finalGroups = [];
-      for (const [etiqueta, collections] of Object.entries(etiquetaGroups)) {
-        const etiquetaGroup = {
-          etiquetaTitle: etiqueta,
-          collections: []
-        };
-        
-        for (const [collName, rangos] of Object.entries(collections)) {
-          const collectionGroup = {
-            collectionName: collName,
-            displayName: mapCollectionNameToDisplay(collName),
-            rangos: []
-          };
-          
-          for (const [rango, docs] of Object.entries(rangos)) {
-            collectionGroup.rangos.push({
-              rangoTitle: rango,
-              docs: docs
-            });
-          }
-          
-          // Sort rangos by predefined order
-          collectionGroup.rangos.sort((a, b) => {
-            const order = [
-              "Legislación", 
-              "Normativa Reglamentaria", 
-              "Doctrina Administrativa",
-              "Comunicados, Guías y Directivas de Reguladores",
-              "Decisiones Judiciales",
-              "Normativa Europea",
-              "Acuerdos Internacionales",
-              "Anuncios de Concentración de Empresas",
-              "Dictámenes y Opiniones",
-              "Subvenciones",
-              "Declaraciones e Informes de Impacto Ambiental",
-              "Otras"
-            ];
-            return order.indexOf(a.rangoTitle) - order.indexOf(b.rangoTitle);
-          });
-          
-          etiquetaGroup.collections.push(collectionGroup);
-        }
-        
-        // Sort collections by predefined order
-        etiquetaGroup.collections.sort((a, b) => {
-          const order = ["BOE", "DOUE", "DOG", "BOA", "BOCM", "BOCYL", "BOJA", "BOPV", "CNMV"];
-          return order.indexOf(a.collectionName.toUpperCase()) - order.indexOf(b.collectionName.toUpperCase());
-        });
-        
-        finalGroups.push(etiquetaGroup);
-      }
+               if (keysToInclude.length > 0) {
+                 hasEtiquetasMatch = true;
+                 for (const etiquetaKey of keysToInclude) {
+                   matchedEtiquetas.push(etiquetaKey);
+                   let fullDescription = '';
+                   if (typeof docEtiqForTarget === 'object' && !Array.isArray(docEtiqForTarget)) {
+                     const etiquetaData = docEtiqForTarget[etiquetaKey];
+                     let descripcion = '';
+                     let nivelImpacto = '';
+                     if (typeof etiquetaData === 'string') {
+                       descripcion = etiquetaData;
+                     } else if (etiquetaData && typeof etiquetaData === 'object') {
+                       descripcion = etiquetaData.explicacion || '';
+                       nivelImpacto = etiquetaData.nivel_impacto || '';
+                     }
+                     fullDescription = nivelImpacto ? `${descripcion} (Nivel: ${nivelImpacto})` : descripcion;
+                   }
+                   matchedEtiquetasDescriptions.push(fullDescription);
 
-      // Sort etiqueta groups alphabetically
-      finalGroups.sort((a, b) => a.etiquetaTitle.localeCompare(b.etiquetaTitle));
+                   if (!userMatchStats.has(etiquetaKey)) {
+                     userMatchStats.set(etiquetaKey, { collections: new Set(), totalMatches: 0 });
+                   }
+                   userMatchStats.get(etiquetaKey).collections.add(collectionName);
+                   userMatchStats.get(etiquetaKey).totalMatches++;
+                 }
+               }
+             } else {
+               // Individual: mantener lógica actual basada en etiquetas del usuario
+               const docEtiquetasObj = docEtiqForTarget || {};
+               for (const etiquetaKey of userEtiquetasKeys) {
+                 if (etiquetaKey in docEtiquetasObj) {
+                   hasEtiquetasMatch = true;
+                   matchedEtiquetas.push(etiquetaKey);
+                   const etiquetaData = docEtiquetasObj[etiquetaKey];
+                   let descripcion = '';
+                   let nivelImpacto = '';
+                   if (typeof etiquetaData === 'string') {
+                     descripcion = etiquetaData;
+                   } else if (typeof etiquetaData === 'object' && etiquetaData !== null) {
+                     descripcion = etiquetaData.explicacion || '';
+                     nivelImpacto = etiquetaData.nivel_impacto || '';
+                   }
+                   const fullDescription = nivelImpacto ? `${descripcion} (Nivel: ${nivelImpacto})` : descripcion;
+                   matchedEtiquetasDescriptions.push(fullDescription);
 
-      // 5) Build HTML
+                   if (!userMatchStats.has(etiquetaKey)) {
+                     userMatchStats.set(etiquetaKey, { collections: new Set(), totalMatches: 0 });
+                   }
+                   userMatchStats.get(etiquetaKey).collections.add(collectionName);
+                   userMatchStats.get(etiquetaKey).totalMatches++;
+                 }
+               }
+             }
+           }
+         }
+         
+         // Solo incluir documentos que coincidan con etiquetas personalizadas
+         if (hasEtiquetasMatch) {
+           // Crear versión mejorada del documento con valores coincidentes
+           filteredMatchingDocs.push({
+             collectionName: collectionName,
+             doc: {
+               ...doc,
+               matched_etiquetas_personalizadas: matchedEtiquetas,
+               matched_etiquetas_descriptions: matchedEtiquetasDescriptions
+             }
+           });
+         }
+       }
+       
+       // Reemplazar la colección original con la filtrada
+       const userMatchingDocsFiltered = filteredMatchingDocs;
+       
+       // 4) Build etiqueta & collection & rango grouping
+       const etiquetaGroups = {};
 
-          // if it's our special email and there are NO alerts today, skip entirely
-        const isEaz = user.email.toLowerCase() === 'eaz@ayuelajimenez.es';
-        if (isEaz && finalGroups.length === 0) {
-          console.log(`Skipping email for ${user.email} – no matches today.`);
-          continue;  // jump to next user, no template, no sendMail
-        }
+       userMatchingDocsFiltered.forEach(({ collectionName, doc }) => {
+         // Get matched etiquetas personalizadas
+         const matchedEtiquetas = doc.matched_etiquetas_personalizadas || [];
+         const rango = doc.rango_titulo || "Otras";
+         
+         matchedEtiquetas.forEach(etiqueta => {
+           // Initialize the etiqueta group if needed
+           if (!etiquetaGroups[etiqueta]) {
+             etiquetaGroups[etiqueta] = {};
+           }
+           
+           // Initialize the collection subgroup if needed
+           if (!etiquetaGroups[etiqueta][collectionName]) {
+             etiquetaGroups[etiqueta][collectionName] = {};
+           }
+           
+           // Initialize the rango subgroup if needed
+           if (!etiquetaGroups[etiqueta][collectionName][rango]) {
+             etiquetaGroups[etiqueta][collectionName][rango] = [];
+           }
+           
+           // Add document to its group
+           etiquetaGroups[etiqueta][collectionName][rango].push({
+             ...doc,
+             collectionName
+           });
+         });
+       });
 
-      let htmlBody = '';
-      let hasMatches = finalGroups.length > 0;
-      
-      if (!hasMatches) {
-        // Add to statistics - users without matches
-        userStats.withoutMatches.push({
-          email: user.email,
-          etiquetasCount: userEtiquetasKeys.length,
-          etiquetas_personalizadas: user.etiquetas_personalizadas || {},
-          etiquetas_demo: user.etiquetas_demo || {}
-        });
+       // Convert to array structure for template processing
+       const finalGroups = [];
+       for (const [etiqueta, collections] of Object.entries(etiquetaGroups)) {
+         const etiquetaGroup = {
+           etiquetaTitle: etiqueta,
+           collections: []
+         };
+         
+         for (const [collName, rangos] of Object.entries(collections)) {
+           const collectionGroup = {
+             collectionName: collName,
+             displayName: mapCollectionNameToDisplay(collName),
+             rangos: []
+           };
+           
+           for (const [rango, docs] of Object.entries(rangos)) {
+             collectionGroup.rangos.push({
+               rangoTitle: rango,
+               docs: docs
+             });
+           }
+           
+           // Sort rangos by predefined order
+           collectionGroup.rangos.sort((a, b) => {
+             const order = [
+               "Legislación", 
+               "Normativa Reglamentaria", 
+               "Doctrina Administrativa",
+               "Comunicados, Guías y Directivas de Reguladores",
+               "Decisiones Judiciales",
+               "Normativa Europea",
+               "Acuerdos Internacionales",
+               "Anuncios de Concentración de Empresas",
+               "Dictámenes y Opiniones",
+               "Subvenciones",
+               "Declaraciones e Informes de Impacto Ambiental",
+               "Otras"
+             ];
+             return order.indexOf(a.rangoTitle) - order.indexOf(b.rangoTitle);
+           });
+           
+           etiquetaGroup.collections.push(collectionGroup);
+         }
+         
+         // Sort collections by predefined order
+         etiquetaGroup.collections.sort((a, b) => {
+           const order = ["BOE", "DOUE", "DOG", "BOA", "BOCM", "BOCYL", "BOJA", "BOPV", "CNMV"];
+           return order.indexOf(a.collectionName.toUpperCase()) - order.indexOf(b.collectionName.toUpperCase());
+         });
+         
+         finalGroups.push(etiquetaGroup);
+       }
 
-        // Check if we should send emails to users without matches
-        if (!SEND_EMAILS_TO_USERS_WITHOUT_MATCHES) {
-          console.log(`Skipping email for ${user.email} - no matches and SEND_EMAILS_TO_USERS_WITHOUT_MATCHES is false`);
-          continue; // Skip to next user
-        }
+       // Sort etiqueta groups alphabetically
+       finalGroups.sort((a, b) => a.etiquetaTitle.localeCompare(b.etiquetaTitle));
 
-        // No matches => get BOE documents with seccion = "Disposiciones generales"
-        const queryBoeGeneral = { 
-          anio: anioToday, 
-          mes: mesToday, 
-          dia: diaToday,
-          seccion: "Disposiciones generales"
-        };
-        
-        try {
-          const boeColl = db.collection("BOE");
-          const boeDocs = await boeColl.find(queryBoeGeneral).toArray();
-          
-          // Add collectionName to each doc
-          const boeDocsWithCollection = boeDocs.map(doc => ({
-            ...doc,
-            collectionName: "BOE"
-          }));
-          
-          htmlBody = buildNewsletterHTMLNoMatches(
-            user.name || '',
-            user._id.toString(),
-            moment().format('YYYY-MM-DD'),
-            boeDocsWithCollection
-          );
-        } catch (err) {
-          console.warn(`Error retrieving BOE general docs: ${err}`);
-          // If all else fails, show empty
-          htmlBody = buildNewsletterHTMLNoMatches(
-            user.name || '',
-            user._id.toString(),
-            moment().format('YYYY-MM-DD'),
-            []
-          );
-        }
-      } else {
-        htmlBody = buildNewsletterHTML(
-          user.name || '',
-          user._id.toString(),
-          moment().format('YYYY-MM-DD'),
-          finalGroups,
-          isExtraVersion
-        );
-        
-        // Add to statistics - users with matches
-        const matchDetails = [];
-        for (const [etiqueta, stats] of userMatchStats.entries()) {
-          for (const collection of stats.collections) {
-            const matchCount = Array.from(userMatchStats.entries())
-              .filter(([e, s]) => e === etiqueta && s.collections.has(collection))
-              .reduce((sum, [, s]) => sum + s.totalMatches, 0);
-            matchDetails.push(`${etiqueta}-${collection}-${matchCount}`);
-          }
-        }
-        
-        // Calculate total matches count (sum of all etiquetas matches across all documents)
-        const totalMatchesCount = userMatchingDocsFiltered.reduce((sum, docObj) => {
-          return sum + (docObj.doc.matched_etiquetas_personalizadas || []).length;
-        }, 0);
+       // 5) Build HTML
 
-        userStats.withMatches.push({
-          email: user.email,
-          totalDocs: userMatchingDocsFiltered.length, // Unique documents with matches
-          totalMatches: totalMatchesCount, // Total number of matches (including multiple per document)
-          uniqueEtiquetas: userMatchStats.size,
-          matchDetails: matchDetails.join(' ; '),
-          etiquetas_personalizadas: user.etiquetas_personalizadas || {},
-          etiquetas_demo: user.etiquetas_demo || {},
-          detailedMatches: userMatchingDocsFiltered.map(docObj => ({
-            collectionName: docObj.collectionName,
-            shortName: docObj.doc.short_name,
-            urlPdf: docObj.doc.url_pdf,
-            matchedEtiquetas: docObj.doc.matched_etiquetas_personalizadas || []
-          }))
-        });
-      }
+           // if it's our special email and there are NO alerts today, skip entirely
+         const isEaz = user.email.toLowerCase() === 'eaz@ayuelajimenez.es';
+         if (isEaz && finalGroups.length === 0) {
+           console.log(`Skipping email for ${user.email} – no matches today.`);
+           continue;  // jump to next user, no template, no sendMail
+         }
 
-      // 6) Send email
-      const emailSize = Buffer.byteLength(htmlBody, 'utf8');
-      console.log(`Email size for ${user.email}: ${emailSize} bytes (~${(emailSize/1024).toFixed(2)} KB)`);
+       let htmlBody = '';
+       let hasMatches = finalGroups.length > 0;
+       
+       if (!hasMatches) {
+         // Add to statistics - users without matches
+         userStats.withoutMatches.push({
+           email: user.email,
+           etiquetasCount: (isEnterpriseUser ? Object.keys(effectiveEtiquetasCatalog) : userEtiquetasKeys).length,
+           etiquetas_personalizadas: isEnterpriseUser ? (effectiveEtiquetasCatalog || {}) : (user.etiquetas_personalizadas || {}),
+           etiquetas_demo: user.etiquetas_demo || {}
+         });
 
-      const mailOptions = {
-        from: 'Reversa <info@reversa.ai>',
-        to: user.email,
-        subject: `Reversa Alertas Normativas${isExtraVersion ? ' - Versión Extra' : ''} — ${moment().format('YYYY-MM-DD')}`,
-        html: htmlBody,
-        attachments: [
-          {
-            filename: 'Intro_to_reversa.jpg',
-            path: path.join(__dirname, 'assets', 'Intro_to_reversa.jpg'),
-            cid: 'reversaLogo'
-          }
-        ]
-      };
-      try {
-        await transporter.sendMail(mailOptions);
-      
-        console.log(`Email sent to ${user.email}.`);
-        //console.log(htmlBody);
-      } catch(err) {
-        console.error(`Error sending email to ${user.email}:`, err);
-      }
-    }
+         // Check if we should send emails to users without matches
+         if (!SEND_EMAILS_TO_USERS_WITHOUT_MATCHES) {
+           console.log(`Skipping email for ${user.email} - no matches and SEND_EMAILS_TO_USERS_WITHOUT_MATCHES is false`);
+           continue; // Skip to next user
+         }
 
-    console.log('✅ All emails processed. Creating newsletter log and sending reports...');
-    
-    // NEW LOGIC: Calculate statistics
-    const totalDocsAnalyzed = documentsData.totalCount;
-    const uniqueDocsMatch = userStats.withMatches.reduce((sum, user) => sum + user.totalDocs, 0);
-    const totalMatchesCount = userStats.withMatches.reduce((sum, user) => sum + user.totalMatches, 0);
-    
-    console.log(`📊 Final Statistics:`);
-    console.log(`   - Documents analyzed: ${totalDocsAnalyzed}`);
-    console.log(`   - Unique documents with matches: ${uniqueDocsMatch}`);
-    console.log(`   - Total matches count: ${totalMatchesCount}`);
-    console.log(`   - Users with matches: ${userStats.withMatches.length}`);
-    console.log(`   - Users without matches: ${userStats.withoutMatches.length}`);
-    
-    // NEW LOGIC: Create newsletter log
-    try {
-      await createNewsletterLog(db, userStats, documentsData.documentsAnalyzedDetail, totalDocsAnalyzed, uniqueDocsMatch, totalMatchesCount);
-    } catch (err) {
-      console.error('Failed to create newsletter log, but continuing with reports:', err);
-    }
-    
-    // Send reports (keep existing functionality)
-    console.log('📧 Sending daily report...');
-    await sendReportEmail(db, userStats);
+         // No matches => get BOE documents with seccion = "Disposiciones generales"
+         const queryBoeGeneral = { 
+           anio: anioToday, 
+           mes: mesToday, 
+           dia: diaToday,
+           seccion: "Disposiciones generales"
+         };
+         
+         try {
+           const boeColl = db.collection("BOE");
+           const boeDocs = await boeColl.find(queryBoeGeneral).toArray();
+           
+           // Add collectionName to each doc
+           const boeDocsWithCollection = boeDocs.map(doc => ({
+             ...doc,
+             collectionName: "BOE"
+           }));
+           
+           htmlBody = buildNewsletterHTMLNoMatches(
+             user.name || '',
+             user._id.toString(),
+             moment().format('YYYY-MM-DD'),
+             boeDocsWithCollection
+           );
+         } catch (err) {
+           console.warn(`Error retrieving BOE general docs: ${err}`);
+           // If all else fails, show empty
+           htmlBody = buildNewsletterHTMLNoMatches(
+             user.name || '',
+             user._id.toString(),
+             moment().format('YYYY-MM-DD'),
+             []
+           );
+         }
+       } else {
+         htmlBody = buildNewsletterHTML(
+           user.name || '',
+           user._id.toString(),
+           moment().format('YYYY-MM-DD'),
+           finalGroups,
+           isExtraVersion
+         );
+         
+         // Add to statistics - users with matches
+         const matchDetails = [];
+         for (const [etiqueta, stats] of userMatchStats.entries()) {
+           for (const collection of stats.collections) {
+             const matchCount = Array.from(userMatchStats.entries())
+               .filter(([e, s]) => e === etiqueta && s.collections.has(collection))
+               .reduce((sum, [, s]) => sum + s.totalMatches, 0);
+             matchDetails.push(`${etiqueta}-${collection}-${matchCount}`);
+           }
+         }
+         
+         // Calculate total matches count (sum of all etiquetas matches across all documents)
+         const totalMatchesCount = userMatchingDocsFiltered.reduce((sum, docObj) => {
+           return sum + (docObj.doc.matched_etiquetas_personalizadas || []).length;
+         }, 0);
 
-    console.log('📊 Sending synchronized ETL report...');
-    await sendCollectionsReportEmail(db, lastNewsletterRun.lastEtlLogId);
+         userStats.withMatches.push({
+           email: user.email,
+           totalDocs: userMatchingDocsFiltered.length, // Unique documents with matches
+           totalMatches: totalMatchesCount, // Total number of matches (including multiple per document)
+           uniqueEtiquetas: userMatchStats.size,
+           matchDetails: matchDetails.join(' ; '),
+           etiquetas_personalizadas: isEnterpriseUser ? (effectiveEtiquetasCatalog || {}) : (user.etiquetas_personalizadas || {}),
+           etiquetas_demo: user.etiquetas_demo || {},
+           detailedMatches: userMatchingDocsFiltered.map(docObj => ({
+             collectionName: docObj.collectionName,
+             shortName: docObj.doc.short_name,
+             urlPdf: docObj.doc.url_pdf,
+             matchedEtiquetas: docObj.doc.matched_etiquetas_personalizadas || []
+           }))
+         });
+       }
 
-    console.log('All done. Closing DB.');
-    await client.close();
+       // 6) Send email
+       const emailSize = Buffer.byteLength(htmlBody, 'utf8');
+       console.log(`Email size for ${user.email}: ${emailSize} bytes (~${(emailSize/1024).toFixed(2)} KB)`);
 
-  } catch (err) {
-    console.error('Error =>', err);
-  }
+       const mailOptions = {
+         from: 'Reversa <info@reversa.ai>',
+         to: user.email,
+         subject: `Reversa Alertas Normativas${isExtraVersion ? ' - Versión Extra' : ''} — ${moment().format('YYYY-MM-DD')}`,
+         html: htmlBody,
+         attachments: [
+           {
+             filename: 'Intro_to_reversa.jpg',
+             path: path.join(__dirname, 'assets', 'Intro_to_reversa.jpg'),
+             cid: 'reversaLogo'
+           }
+         ]
+       };
+       try {
+         await transporter.sendMail(mailOptions);
+       
+         console.log(`Email sent to ${user.email}.`);
+         //console.log(htmlBody);
+       } catch(err) {
+         console.error(`Error sending email to ${user.email}:`, err);
+       }
+     }
+
+     console.log('✅ All emails processed. Creating newsletter log and sending reports...');
+     
+     // NEW LOGIC: Calculate statistics
+     const totalDocsAnalyzed = documentsData.totalCount;
+     const uniqueDocsMatch = userStats.withMatches.reduce((sum, user) => sum + user.totalDocs, 0);
+     const totalMatchesCount = userStats.withMatches.reduce((sum, user) => sum + user.totalMatches, 0);
+     
+     console.log(`📊 Final Statistics:`);
+     console.log(`   - Documents analyzed: ${totalDocsAnalyzed}`);
+     console.log(`   - Unique documents with matches: ${uniqueDocsMatch}`);
+     console.log(`   - Total matches count: ${totalMatchesCount}`);
+     console.log(`   - Users with matches: ${userStats.withMatches.length}`);
+     console.log(`   - Users without matches: ${userStats.withoutMatches.length}`);
+     
+     // NEW LOGIC: Create newsletter log
+     try {
+       await createNewsletterLog(db, userStats, documentsData.documentsAnalyzedDetail, totalDocsAnalyzed, uniqueDocsMatch, totalMatchesCount);
+     } catch (err) {
+       console.error('Failed to create newsletter log, but continuing with reports:', err);
+     }
+     
+     // Send reports (keep existing functionality)
+     console.log('📧 Sending daily report...');
+     await sendReportEmail(db, userStats);
+
+     console.log('📊 Sending synchronized ETL report...');
+     await sendCollectionsReportEmail(db, lastNewsletterRun.lastEtlLogId);
+
+     console.log('All done. Closing DB.');
+     await client.close();
+
+   } catch (err) {
+     console.error('Error =>', err);
+   }
 
 })();

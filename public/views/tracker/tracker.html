@@ -12,6 +12,10 @@
     border: 1px solid rgba(108, 117, 125, 0.2);
     visibility: hidden;
     opacity: 0;
+    border-radius: 12px;
+    overflow: hidden; /* Contener todo dentro del contenedor */
+    background: #ffffff; /* Fondo blanco solicitado */
+    box-sizing: border-box;
   }
   
   #chartContainer.loaded {
@@ -24,8 +28,9 @@
   }
   
   #documentsChart {
-    min-height: 300px;
-    max-height: 400px;
+    min-height: 280px;
+    max-height: 360px;
+    width: 100%;
   }
   
   .analytics-label {
@@ -34,6 +39,32 @@
     font-size: 16px;
     margin-bottom: 15px;
     margin-top: 25px;
+  }
+  
+  /* Layout analytics */
+  .analytics-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: stretch; width: 100%; max-width: 100%; box-sizing: border-box; }
+  .analytics-left { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .chart-wrapper { height: clamp(280px, 32vh, 340px); }
+  .analytics-left canvas { display: block; width: 100%; height: 100%; }
+  .kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .kpi-item { background: #ffffff; border: 1px solid #e8ecf0; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .kpi-label { color: #455862; font-weight: 600; font-size: 13px; }
+  .kpi-value { color: #0b2431; font-weight: 700; font-size: 18px; overflow-wrap: anywhere; }
+  
+  .analytics-right { display: grid; grid-template-columns: 1fr; gap: 12px; align-content: start; max-width: 100%; min-width: 0; overflow: hidden; }
+  .impact-box { background: #ffffff; border-radius: 12px; padding: 16px; border: 1px solid #e8ecf0; }
+  .impact-box.alto { background: rgba(211,47,47,.05); border-left: 4px solid #d32f2f; }
+  .impact-box.medio { background: #fff3cd; border-left: 4px solid #856404; }
+  .impact-box.bajo { background: rgba(4,219,141,.05); border-left: 4px solid #04db8d; }
+  .impact-title { color: #0b2431; font-weight: 600; margin-bottom: 8px; }
+  .impact-count { color: #0b2431; font-weight: 700; font-size: 24px; }
+  
+  @media (max-width: 1280px) {
+    .analytics-grid { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .analytics-grid { grid-template-columns: 1fr; }
+    .kpi-row { grid-template-columns: 1fr; }
   }
   
   /* Loaders unificados */
@@ -398,6 +429,91 @@
     color: #6c757d;
     font-style: italic;
   }
+
+  /* Estilos para el botón Buscar */
+  #buscarBtn {
+    background-color: #0b2431;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 18px;
+    font-weight: 500;
+    font-family: 'Satoshi', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 120px;
+    margin-left: auto;
+    gap: 8px;
+    line-height: 1;
+  }
+
+  #buscarBtn::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-right: 2px;
+  }
+
+  #buscarBtn:hover {
+    background-color: #1a3a4a;
+    box-shadow: 0 4px 12px rgba(11, 36, 49, 0.2);
+    transform: translateY(-1px);
+  }
+
+  #buscarBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(11, 36, 49, 0.3);
+  }
+
+  #buscarBtn:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Paginación (Reversa style) */
+  .pagination-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .pagination-btn {
+    background: transparent;
+    border: 1px solid #0b2431;
+    color: #0b2431;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .pagination-btn[disabled] { opacity: .5; cursor: not-allowed; }
+  .pagination-info {
+    font-size: 13px;
+    color: #455862;
+    margin: 0 6px;
+  }
+  .pagination-page {
+    background: #0b2431;
+    border: 1px solid #0b2431;
+    color: #fff;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-weight: 600;
+  }
+  .pagination-subtle { color:#6c757d; font-size:12px; margin-left:8px; }
   </style>
 </head>
 <body>
@@ -443,7 +559,7 @@
          </div>
        </div>
      </div>
-     <a href="#" id="editSuscription2" class="change-subscription">Editar Agentes</a>
+     <a href="#" id="editSuscription2" class="change-subscription">Editar Agentes <span id="edit-agentes-loader" style="display:none; margin-left:8px; width:12px; height:12px; border:2px solid rgba(11,36,49,0.25); border-top-color:#0b2431; border-radius:50%; vertical-align:-2px; animation: spin .9s linear infinite;"></span></a>
 
      <!-- Búsqueda Avanzada -->
      <div class="analytics-label busqueda">Búsqueda Avanzada</div>
@@ -456,7 +572,7 @@
      <div id="Filtrar">
        <!-- Filtro Agentes -->
        <div class="filter-item" id="etiquetasPersonalizadasContainer" style="display: block;">
-         <div class="etiquetas-label" id="etiquetas-label">Agentes</div>
+         <div class="etiquetas-label" id="etiquetas-label">Agentes <i class="fas fa-info-circle agente-descripcion" id="agentes-info-trigger" style="margin-left:6px; cursor:pointer; font-size: 12px;"></i></div>
          <div class="dropdown">
            <button class="dropbtn" id="btnEtiquetasPersonalizadas" onclick="toggleEtiquetasDropdown()">
              <span id="selectedEtiquetas">Todos</span> <i class="fa fa-caret-down"></i>
@@ -502,56 +618,92 @@
      <!-- Estadísticas -->
      <div class="analytics-label">Estadísticas de la búsqueda</div>
      <div id="loading-icon-chart" style="display: block;"><div class="loader"></div></div>
-     <div id="chartContainer" style="display: none; background-color: #fafbfc; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(11, 36, 49, 0.08); margin: 20px 0;">
-       <canvas id="documentsChart" style="max-height: 400px;"></canvas>
+     <div id="chartContainer" style="display: none; background-color: #ffffff; border-radius: 12px; padding: 16px 16px 12px 16px; box-shadow: 0 2px 8px rgba(11, 36, 49, 0.08); margin: 16px 0;">
+      <div class="analytics-grid">
+        <div class="analytics-left">
+          <div class="chart-wrapper">
+            <canvas id="documentsChart"></canvas>
+          </div>
+        </div>
+        <div class="analytics-right" id="impact-summary">
+          <div class="impact-box alto">
+            <div class="impact-title">Impacto Alto</div>
+            <div class="impact-count" id="impact-alto">0</div>
+          </div>
+          <div class="impact-box medio">
+            <div class="impact-title">Impacto Medio</div>
+            <div class="impact-count" id="impact-medio">0</div>
+          </div>
+          <div class="impact-box bajo">
+            <div class="impact-title">Impacto Bajo</div>
+            <div class="impact-count" id="impact-bajo">0</div>
+          </div>
+          <div class="kpi-row">
+            <div class="kpi-item">
+              <span class="kpi-label">Total alertas</span>
+              <span id="alerts-total" class="kpi-value">-</span>
+            </div>
+            <div class="kpi-item">
+              <span class="kpi-label">Media diaria</span>
+              <span id="alerts-avg" class="kpi-value">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
      </div>
 
-     <!-- Filtro Nivel de Impacto -->
-     <div style="margin-bottom: 15px;">
-       <div class="etiquetas-label" style="margin-bottom: 8px;">Nivel de impacto</div>
-       <div class="dropdown">
-         <button class="dropbtn" id="btnNivelImpacto" onclick="toggleNivelImpactoDropdown()">
-           <span class="nivel-circulo nivel-circulo-todos" id="selectedNivelCirculo"></span>
-           <span id="selectedNivelImpacto">Todos</span> 
-           <i class="fa fa-caret-down"></i>
-         </button>
-         <div id="nivelImpactoDropdown" class="dropdown-content">
-           <label>
-             <input type="radio" name="nivelImpacto" value="todos" checked>
-             <div class="nivel-option-content">
-               <div style="display: flex; align-items: center;">
-                 <span class="nivel-circulo nivel-circulo-todos"></span>
-                 Todos
+     <!-- Header Documentos + Filtro Nivel de Impacto -->
+     <div class="docs-header-row" style="display:flex; align-items:center; justify-content:flex-start; gap: 20px; margin: 10px 0 12px 0;">
+       <div class="docs-title" style="font-size:16px; font-weight:600; color:#0b2431;">Documentos</div>
+       <div class="docs-filter" style="display:flex; align-items:center; gap:10px;">
+         <div class="filter-label-compact" style="display:flex; align-items:center; gap:6px; color:#455862; font-size:13px;">
+           <i class="fas fa-filter"></i>
+           <span>Nivel de impacto</span>
+         </div>
+         <div class="dropdown">
+           <button class="dropbtn" id="btnNivelImpacto" onclick="toggleNivelImpactoDropdown()">
+             <span class="nivel-circulo nivel-circulo-todos" id="selectedNivelCirculo"></span>
+             <span id="selectedNivelImpacto">Todos</span> 
+             <i class="fa fa-caret-down"></i>
+           </button>
+           <div id="nivelImpactoDropdown" class="dropdown-content">
+             <label>
+               <input type="radio" name="nivelImpacto" value="todos" checked>
+               <div class="nivel-option-content">
+                 <div style="display: flex; align-items: center;">
+                   <span class="nivel-circulo nivel-circulo-todos"></span>
+                   Todos
+                 </div>
                </div>
-             </div>
-           </label>
-           <label>
-             <input type="radio" name="nivelImpacto" value="alto">
-             <div class="nivel-option-content">
-               <div style="display: flex; align-items: center;">
-                 <span class="nivel-circulo nivel-circulo-alto"></span>
-                 Alto
+             </label>
+             <label>
+               <input type="radio" name="nivelImpacto" value="alto">
+               <div class="nivel-option-content">
+                 <div style="display: flex; align-items: center;">
+                   <span class="nivel-circulo nivel-circulo-alto"></span>
+                   Alto
+                 </div>
                </div>
-             </div>
-           </label>
-           <label>
-             <input type="radio" name="nivelImpacto" value="medio">
-             <div class="nivel-option-content">
-               <div style="display: flex; align-items: center;">
-                 <span class="nivel-circulo nivel-circulo-medio"></span>
-                 Medio
+             </label>
+             <label>
+               <input type="radio" name="nivelImpacto" value="medio">
+               <div class="nivel-option-content">
+                 <div style="display: flex; align-items: center;">
+                   <span class="nivel-circulo nivel-circulo-medio"></span>
+                   Medio
+                 </div>
                </div>
-             </div>
-           </label>
-           <label>
-             <input type="radio" name="nivelImpacto" value="bajo">
-             <div class="nivel-option-content">
-               <div style="display: flex; align-items: center;">
-                 <span class="nivel-circulo nivel-circulo-bajo"></span>
-                 Bajo
+             </label>
+             <label>
+               <input type="radio" name="nivelImpacto" value="bajo">
+               <div class="nivel-option-content">
+                 <div style="display: flex; align-items: center;">
+                   <span class="nivel-circulo nivel-circulo-bajo"></span>
+                   Bajo
+                 </div>
                </div>
-             </div>
-           </label>
+             </label>
+           </div>
          </div>
        </div>
      </div>
@@ -559,11 +711,28 @@
      <div class="collectionDocs" id="tracker-docs-container">
        <!-- Los documentos se cargarán aquí dinámicamente -->
      </div>
+    <div id="tracker-pagination" class="pagination-container" style="display:none;">
+      <span class="pagination-info">Documentos por página:</span>
+      <select id="docsPerPage" onchange="changeDocsPerPage()">
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+      </select>
+    </div>
   </div> <!-- Fin de #data-container -->
 </div> <!-- Fin de .tracker-container -->
 
 <!-- Scripts que necesita el tracker -->
 <script src="tracker.js"></script>
+<script src="/views/configuracion/carpetas_agentes.js"></script>
+<script>
+  // Inicializar carpetas una vez esté lista la vista del tracker
+  document.addEventListener('DOMContentLoaded', function(){
+    if (window.CarpetasAgentes && typeof window.CarpetasAgentes.init === 'function') {
+      window.CarpetasAgentes.init();
+    }
+  });
+</script>
 
 </body>
 </html>

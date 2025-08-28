@@ -16,6 +16,7 @@ const fs = require('fs');
 const { MongoClient, ObjectId } = require('mongodb');
 const ensureAuthenticated = require('../middleware/ensureAuthenticated');
 const { getDisplayName } = require('../services/users.service');
+const { getEtiquetasPersonalizadasAdapter, buildEtiquetasQuery, getEtiquetasSeleccionadasAdapter } = require('../services/enterprise.service');
 
 const router = express.Router();
 const uri = process.env.DB_URI;
@@ -62,13 +63,27 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 		const userIndustries = user.industry_tags || [];
 		const userRamas = user.rama_juridicas || [];
 		const userRangos = user.rangos || [];
-		const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
+		// ENTERPRISE ADAPTER: Obtener etiquetas según tipo de cuenta (empresa/individual)
+		// ENTERPRISE ADAPTER: Usar req.user para resolver etiquetas correctamente en cuentas empresa
+		const etiquetasResult = await getEtiquetasPersonalizadasAdapter(req.user);
+		const userEtiquetasPersonalizadas = etiquetasResult.etiquetas_personalizadas || {};
 		const etiquetasKeys = Array.isArray(userEtiquetasPersonalizadas) ? userEtiquetasPersonalizadas : Object.keys(userEtiquetasPersonalizadas);
 
 		let userBoletines = [];
-		const fuentesGobierno = user.cobertura_legal?.['fuentes-gobierno'] || user.cobertura_legal?.fuentes_gobierno || user.cobertura_legal?.fuentes || [];
+		// ENTERPRISE ADAPTER: Resolver cobertura_legal desde estructura_empresa si aplica
+		let coberturaSource = user.cobertura_legal || {};
+		try {
+			if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
+				const estructuraDoc = await database.collection('users').findOne(
+					{ _id: new ObjectId(req.user.estructura_empresa_id) },
+					{ projection: { cobertura_legal: 1 } }
+				);
+				if (estructuraDoc && estructuraDoc.cobertura_legal) coberturaSource = estructuraDoc.cobertura_legal;
+			}
+		} catch (e) { console.error('[profile] Error resolviendo cobertura_legal empresa:', e.message); }
+		const fuentesGobierno = coberturaSource?.['fuentes-gobierno'] || coberturaSource?.fuentes_gobierno || coberturaSource?.fuentes || [];
 		if (fuentesGobierno.length > 0) userBoletines = userBoletines.concat(fuentesGobierno);
-		const fuentesReguladores = user.cobertura_legal?.['fuentes-reguladores'] || user.cobertura_legal?.fuentes_reguladores || user.cobertura_legal?.['fuentes-regulador'] || user.cobertura_legal?.reguladores || [];
+		const fuentesReguladores = coberturaSource?.['fuentes-reguladores'] || coberturaSource?.fuentes_reguladores || coberturaSource?.['fuentes-regulador'] || coberturaSource?.reguladores || [];
 		if (fuentesReguladores.length > 0) userBoletines = userBoletines.concat(fuentesReguladores);
 		userBoletines = userBoletines.map(b => b.toUpperCase());
 		if (userBoletines.length === 0) userBoletines = ['BOE'];
@@ -112,32 +127,96 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 			return res.send(profileHtml);
 		}
 
-		const selectedEtiquetas = etiquetas ? JSON.parse(etiquetas) : etiquetasKeys;
+		console.log(`[profile] === INICIO PROCESAMIENTO DOCUMENTOS ===`);
+		console.log(`[profile] Usuario: ${req.user.email}, Tipo: ${req.user.tipo_cuenta}`);
+		console.log(`[profile] Etiquetas disponibles: ${etiquetasKeys.length} - ${etiquetasKeys.slice(0, 3).join(', ')}${etiquetasKeys.length > 3 ? '...' : ''}`);
+		console.log(`[profile] Boletines usuario: ${userBoletines.length} - ${userBoletines.join(', ')}`);
+		console.log(`[profile] Rangos usuario: ${userRangos.length} - ${userRangos.join(', ')}`);
+		
+		// ENTERPRISE ADAPTER: Para usuarios enterprise, usar etiquetas seleccionadas si las hay, sino todas las disponibles
+		let defaultEtiquetas = etiquetasKeys;
+		if (req.user.tipo_cuenta === 'empresa') {
+			try {
+				const etiquetasSeleccionadasResult = await getEtiquetasSeleccionadasAdapter(req.user);
+				const etiquetasSeleccionadas = etiquetasSeleccionadasResult.etiquetas_seleccionadas || [];
+				
+				// Si hay etiquetas seleccionadas, usarlas; sino usar todas las disponibles
+				if (etiquetasSeleccionadas.length > 0) {
+					defaultEtiquetas = etiquetasSeleccionadas;
+					console.log(`[profile] Usuario empresa: usando ${defaultEtiquetas.length} etiquetas seleccionadas por defecto`);
+				} else {
+					defaultEtiquetas = etiquetasKeys;
+					console.log(`[profile] Usuario empresa: sin etiquetas seleccionadas, usando ${defaultEtiquetas.length} etiquetas disponibles`);
+				}
+			} catch (error) {
+				console.error('[profile] Error obteniendo etiquetas seleccionadas, fallback a todas:', error);
+				defaultEtiquetas = etiquetasKeys;
+			}
+		} else {
+			console.log(`[profile] Usuario individual: usando ${defaultEtiquetas.length} etiquetas disponibles`);
+		}
+		
+		const selectedEtiquetas = etiquetas ? JSON.parse(etiquetas) : defaultEtiquetas;
 		const selectedBoletines = boletines ? JSON.parse(boletines) : userBoletines;
-		const selectedRangos = rangos ? JSON.parse(rangos) : userRangos;
+		const selectedRangos = rangos ? JSON.parse(rangos) : [];
+		// Normalizar etiquetas a minúsculas para matching posterior, pero usamos buildEtiquetasQuery para la query
+		const etiquetasForMatch = Array.isArray(selectedEtiquetas) ? selectedEtiquetas.map(e => e.toLowerCase()) : [];
 		const dateFilter = buildDateFilter(searchStartDate, searchEndDate);
+		
+		console.log(`[profile] === PARÁMETROS FINALES ===`);
+		console.log(`[profile] Etiquetas seleccionadas: ${selectedEtiquetas.length} - ${selectedEtiquetas.slice(0, 3).join(', ')}${selectedEtiquetas.length > 3 ? '...' : ''}`);
+		console.log(`[profile] Boletines seleccionados: ${selectedBoletines.length} - ${selectedBoletines.join(', ')}`);
+		console.log(`[profile] Rangos seleccionados: ${selectedRangos.length} - ${selectedRangos.join(', ')}`);
+		console.log(`[profile] Filtro de fechas: ${JSON.stringify(dateFilter)}`);
+		
+		// ENTERPRISE ADAPTER: Usar query builder adaptado para empresa/individual
+		const etiquetasQuery = buildEtiquetasQuery(req.user, selectedEtiquetas);
+		
+		// ENTERPRISE ADAPTER: Determinar userId correcto para filtrado
+		let targetUserId;
+		if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
+			targetUserId = req.user.estructura_empresa_id.toString();
+		} else {
+			targetUserId = user._id.toString();
+		}
+		
+		console.log(`[profile] Target User ID: ${targetUserId}`);
+		console.log(`[profile] Etiquetas Query: ${JSON.stringify(etiquetasQuery)}`);
+		
 		const query = {
 			$and: [
 				...dateFilter,
-				{ rango_titulo: { $in: selectedRangos } },
-				{
-					$or: [
-						{ $or: selectedEtiquetas.map(etiqueta => ({ [`etiquetas_personalizadas.${user._id.toString()}.${etiqueta}`]: { $exists: true } })) },
-						{ [`etiquetas_personalizadas.${user._id.toString()}`]: { $in: selectedEtiquetas } }
-					]
-				}
+				...(selectedRangos.length > 0 ? [{ rango_titulo: { $in: selectedRangos } }] : []),
+				...(Object.keys(etiquetasQuery).length > 0 ? [etiquetasQuery] : [])
 			]
 		};
-
+		
+		console.log(`[profile] Query MongoDB final: ${JSON.stringify(query, null, 2)}`);
+		
+		// Verificar que query no tenga filtros vacíos
+		if (query.$and && query.$and.length === 0) {
+			delete query.$and;
+		}
+		console.log(`[profile] Query MongoDB final limpia: ${JSON.stringify(query, null, 2)}`);
+		
 		const projection = { short_name: 1, divisiones: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, ramas_juridicas: 1, rango_titulo: 1, _id: 1, etiquetas_personalizadas: 1 };
 		let allDocuments = [];
 		const expandedBoletines = expandCollectionsWithTest(selectedBoletines);
 		
+		console.log(`[profile] Colecciones expandidas a consultar: ${expandedBoletines.join(', ')}`);
+		console.log(`[profile] === INICIANDO CONSULTAS MONGODB ===`);
+		
 		// OPTIMIZACIÓN: Usar Promise.all para consultas paralelas y límite de documentos
 		const queryPromises = expandedBoletines.map(async (collectionName) => {
 			try {
+				console.log(`[profile] Verificando existencia de colección: ${collectionName}`);
 				const exists = await collectionExists(database, collectionName);
-				if (!exists) return [];
+				if (!exists) {
+					console.log(`[profile] Colección ${collectionName} no existe, saltando...`);
+					return [];
+				}
+				
+				console.log(`[profile] Consultando colección: ${collectionName}`);
 				const coll = database.collection(collectionName);
 				// Límite de 500 documentos por colección y ordenar por fecha en DB
 				const docs = await coll.find(query)
@@ -145,25 +224,35 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 					.sort({ anio: -1, mes: -1, dia: -1 })
 					.limit(500)
 					.toArray();
+				
+				console.log(`[profile] Colección ${collectionName}: ${docs.length} documentos encontrados`);
 				docs.forEach(doc => { doc.collectionName = collectionName; });
 				return docs;
 			} catch (error) {
-				console.error(`Error querying collection ${collectionName}:`, error.message);
+				console.error(`[profile] Error consultando colección ${collectionName}:`, error.message);
 				return [];
 			}
 		});
 		
+		console.log(`[profile] === ESPERANDO RESULTADOS DE TODAS LAS CONSULTAS ===`);
 		const collectionResults = await Promise.all(queryPromises);
 		allDocuments = collectionResults.flat();
+		console.log(`[profile] Total documentos encontrados: ${allDocuments.length}`);
+		console.log(`[profile] === INICIANDO PROCESAMIENTO Y RENDERIZADO ===`);
 		// OPTIMIZACIÓN: Ordenar y filtrar con límite para renderizado más rápido
 		allDocuments.sort((a, b) => (new Date(a.anio, a.mes - 1, a.dia)) - (new Date(b.anio, b.mes - 1, b.dia)) < 0 ? 1 : -1);
 		allDocuments = allDocuments.filter(doc => !(documentosEliminados && documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())));
 		
-		// Limitar a los 100 documentos más recientes para mejorar renderizado
-		const maxDocumentsToShow = 100;
-		if (allDocuments.length > maxDocumentsToShow) {
-			allDocuments = allDocuments.slice(0, maxDocumentsToShow);
-		}
+		// PAGINACIÓN SSR: 25 docs por página, manteniendo estadísticas sobre todo el conjunto
+		const totalDocsSsr = allDocuments.length;
+		const pageSizeSsr = Math.max(1, Math.min(parseInt(req.query.pageSize || '25', 10) || 25, 100));
+		const pageSsrRaw = parseInt(req.query.page || '1', 10);
+		const pageSsr = Math.max(1, isNaN(pageSsrRaw) ? 1 : pageSsrRaw);
+		const totalPagesSsr = Math.max(1, Math.ceil(totalDocsSsr / pageSizeSsr));
+		const safePageSsr = Math.min(pageSsr, totalPagesSsr);
+		const startIndexSsr = (safePageSsr - 1) * pageSizeSsr;
+		const endIndexSsr = Math.min(startIndexSsr + pageSizeSsr, totalDocsSsr);
+		const pageDocsSsr = allDocuments.slice(startIndexSsr, endIndexSsr);
 
 		let documentsHtml;
 		let hideAnalyticsLabels = false;
@@ -195,12 +284,12 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 			documentsHtml = `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Puedes estar tranquilo. Tus agentes han analizado ${totalPages} páginas hoy y no hay nada que te afecte.</div>`;
 			hideAnalyticsLabels = true;
 		} else {
-			documentsHtml = allDocuments.map(doc => {
+			documentsHtml = pageDocsSsr.map(doc => {
 				const rangoToShow = doc.rango_titulo || 'Indefinido';
 				const etiquetasPersonalizadasHtml = (() => {
 					if (!doc.etiquetas_personalizadas) return '';
-					const userId = user._id.toString();
-					const userEtiquetas = doc.etiquetas_personalizadas[userId];
+					// ENTERPRISE ADAPTER: Usar targetUserId correcto
+					const userEtiquetas = doc.etiquetas_personalizadas[targetUserId];
 					if (!userEtiquetas || (Array.isArray(userEtiquetas) && userEtiquetas.length === 0) || (typeof userEtiquetas === 'object' && Object.keys(userEtiquetas).length === 0)) return '';
 					let etiquetasParaMostrar = [];
 					if (Array.isArray(userEtiquetas)) etiquetasParaMostrar = userEtiquetas; else if (typeof userEtiquetas === 'object') etiquetasParaMostrar = Object.keys(userEtiquetas);
@@ -212,8 +301,8 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 				})();
 				const impactoAgentesHtml = (() => {
 					if (!doc.etiquetas_personalizadas) return '';
-					const userId = user._id.toString();
-					const userEtiquetas = doc.etiquetas_personalizadas[userId];
+					// ENTERPRISE ADAPTER: Usar targetUserId correcto
+					const userEtiquetas = doc.etiquetas_personalizadas[targetUserId];
 					if (!userEtiquetas || Array.isArray(userEtiquetas) || typeof userEtiquetas !== 'object') return '';
 					const etiquetasKeys = Object.keys(userEtiquetas);
 					if (etiquetasKeys.length === 0) return '';
@@ -249,62 +338,83 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 					  </div>`;
 				})();
 				return `
-				  <div class=\"data-item\">
-					<div class=\"header-row\">
-					  <div class=\"id-values\">${doc.short_name}</div>
-					  <span class=\"date\"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+				  <div class="data-item">
+					<div class="header-row">
+					  <div class="id-values">${doc.short_name}</div>
+					  <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
 					</div>
-					<div style=\"color: gray; font-size: 1.1em; margin-bottom: 6px;\">${rangoToShow} | ${doc.collectionName}</div>
+					<div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">${rangoToShow} | ${doc.collectionName}</div>
 					${etiquetasPersonalizadasHtml}
-					<div class=\"resumen-label\">Resumen</div>
-					<div class=\"resumen-content\" style=\"font-size: 1.1em; line-height: 1.4;\">${doc.resumen}</div>
+					<div class="resumen-label">Resumen</div>
+					<div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
 					${impactoAgentesHtml}
-					<div class=\"margin-impacto\"><a class=\"button-impacto\" href=\"/views/analisis/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}\">Analizar documento</a></div>
-					${doc.url_pdf || doc.url_html ? `<a class=\"leer-mas\" href=\"${doc.url_pdf || doc.url_html}\" target=\"_blank\" style=\"margin-right: 15px;\">Leer más: ${doc._id}</a>` : `<span class=\"leer-mas\" style=\"margin-right: 15px; color: #ccc;\">Leer más: ${doc._id} (No disponible)</span>`}
+					<div class="margin-impacto"><a class="button-impacto" href="/views/analisis/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Analizar documento</a></div>
+					${doc.url_pdf || doc.url_html ? `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">Leer más: ${doc._id}</a>` : `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">Leer más: ${doc._id} (No disponible)</span>`}
 					
 					<!-- Botón de Guardar -->
-					<div class=\"guardar-button\">
-					  <button class=\"save-btn\" onclick=\"toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')\">
-						<i class=\"fas fa-bookmark\"></i>
+					<div class="guardar-button">
+					  <button class="save-btn" onclick="toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')">
+						<i class="fas fa-bookmark"></i>
 						Guardar
 					  </button>
-					  <div class=\"lists-dropdown\">
-						<div class=\"lists-dropdown-header\">
+					  <div class="lists-dropdown">
+						<div class="lists-dropdown-header">
 						  <span>Guardar en...</span>
-						  <button class=\"save-ok-btn\" onclick=\"saveToSelectedLists(this)\">OK</button>
+						  <button class="save-ok-btn" onclick="saveToSelectedLists(this)">OK</button>
 						</div>
-						<div class=\"lists-content\">
-						  <div class=\"lists-container\">
+						<div class="lists-content">
+						  <div class="lists-container">
 							<!-- Las listas se cargarán dinámicamente -->
 						  </div>
-						  <div class=\"add-new-list\" onclick=\"showNewListForm(this)\">
-							<i class=\"fas fa-plus\"></i>
+						  <div class="add-new-list" onclick="showNewListForm(this)">
+							<i class="fas fa-plus"></i>
 							Añadir nueva
 						  </div>
-						  <div class=\"new-list-form\">
-							<input type=\"text\" class=\"new-list-input\" placeholder=\"Nombre de la nueva lista\" maxlength=\"50\">
-							<div class=\"new-list-buttons\">
-							  <button class=\"new-list-btn cancel\" onclick=\"hideNewListForm(this)\">Cancelar</button>
-							  <button class=\"new-list-btn save\" onclick=\"createNewList(this, '${doc._id}', '${doc.collectionName}')\">OK</button>
+						  <div class="new-list-form">
+							<input type="text" class="new-list-input" placeholder="Nombre de la nueva lista" maxlength="50">
+							<div class="new-list-buttons">
+							  <button class="new-list-btn cancel" onclick="hideNewListForm(this)">Cancelar</button>
+							  <button class="new-list-btn save" onclick="createNewList(this, '${doc._id}', '${doc.collectionName}')">OK</button>
 							</div>
 						  </div>
 						</div>
 					  </div>
 					</div>
-					<span class=\"doc-seccion\" style=\"display:none;\">Disposiciones generales</span>
-					<span class=\"doc-rango\" style=\"display:none;\">${rangoToShow}</span>
+					<span class="doc-seccion" style="display:none;">Disposiciones generales</span>
+					<span class="doc-rango" style="display:none;">${rangoToShow}</span>
 				  </div>`;
 				}).join('');
+
+				// Controles de paginación SSR (abajo a la derecha)
+				const buildQuery = (page) => {
+					const q = { ...req.query, page: String(page), pageSize: String(pageSizeSsr) };
+					const usp = new URLSearchParams();
+					for (const [k,v] of Object.entries(q)) { if (v !== undefined && v !== null && v !== '') usp.append(k, v); }
+					return `/profile?${usp.toString()}`;
+				};
+				const prevDisabled = safePageSsr <= 1;
+				const nextDisabled = safePageSsr >= totalPagesSsr;
+				const paginationHtml = `
+				  <div class="pagination-container" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;margin-top:12px;">
+					<button class="pagination-btn" ${prevDisabled ? 'disabled' : ''} onclick="location.href='${buildQuery(Math.max(1, safePageSsr-1))}'">◀</button>
+					<span class="pagination-info">Página</span>
+					<span class="pagination-page">${safePageSsr}</span>
+					<span class="pagination-info">de ${totalPagesSsr}</span>
+					<button class="pagination-btn" ${nextDisabled ? 'disabled' : ''} onclick="location.href='${buildQuery(Math.min(totalPagesSsr, safePageSsr+1))}'">▶</button>
+					<span class=\"pagination-subtle\">${pageSizeSsr} por página</span>
+				  </div>`;
+				documentsHtml += paginationHtml;
 		}
 
 		const documentsByMonth = {};
 		allDocuments.forEach(doc => {
 			const month = `${doc.anio}-${String(doc.mes).padStart(2, '0')}`;
-			documentsByMonth[month] = (documentsByMonth[month] || 0) + 1;
+			if (!documentsByMonth[month]) documentsByMonth[month] = new Set();
+			documentsByMonth[month].add(String(doc._id));
 		});
 		const sortedMonths = Object.keys(documentsByMonth).sort();
 		const monthsForChart = sortedMonths.map(m => { const [year, month] = m.split('-'); const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return `${monthNames[parseInt(month) - 1]} ${year}`; });
-		const countsForChart = sortedMonths.map(m => documentsByMonth[m]);
+		const countsForChart = sortedMonths.map(m => (documentsByMonth[m] instanceof Set ? documentsByMonth[m].size : documentsByMonth[m]));
 
 		let profileHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'profile.html'), 'utf8');
 		if (hideAnalyticsLabels) {
@@ -330,6 +440,9 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 			.replace('{{user_rangos_json}}', JSON.stringify(selectedRangos))
 			.replace('{{etiquetas_personalizadas_json}}', JSON.stringify(userEtiquetasPersonalizadas))
 			.replace('{{registration_date_formatted}}', formattedRegDate);
+			
+		console.log(`[profile] === FINALIZANDO RESPUESTA ===`);
+		console.log(`[profile] HTML generado, enviando respuesta al cliente`);
 		return res.send(profileHtml);
 	} catch (error) {
 		console.error('Error in profile route:', error);
@@ -350,8 +463,10 @@ router.get('/data', async (req, res) => {
 		const database = client.db('papyrus');
 		const usersCollection = database.collection('users');
 		const user = await usersCollection.findOne({ _id: new ObjectId(req.user._id) });
-		const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
-		const etiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
+		// ENTERPRISE ADAPTER: Obtener etiquetas según tipo de cuenta (empresa/individual)
+		const etiquetasResult = await getEtiquetasPersonalizadasAdapter(req.user);
+		const userEtiquetasPersonalizadas = etiquetasResult.etiquetas_personalizadas || {};
+		const etiquetasKeys = Array.isArray(userEtiquetasPersonalizadas) ? userEtiquetasPersonalizadas : Object.keys(userEtiquetasPersonalizadas);
 		if (etiquetasKeys.length === 0) {
 			return res.json({
 				documentsHtml: `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Hemos lanzado una nueva versión del producto para poder personalizar más las alertas del usuario. Por favor, configura de nuevo tu perfil en menos de 5mins.</div>`,
@@ -361,9 +476,27 @@ router.get('/data', async (req, res) => {
 			});
 		}
 		let userBoletines = [];
-		const fuentesGobierno = user.cobertura_legal?.['fuentes-gobierno'] || user.cobertura_legal?.fuentes_gobierno || user.cobertura_legal?.fuentes || [];
+		// ENTERPRISE ADAPTER: Resolver cobertura_legal desde estructura_empresa si aplica
+		let coberturaSource = user.cobertura_legal || {};
+		try {
+			if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
+				const estructuraDoc = await usersCollection.findOne(
+					{ _id: new ObjectId(req.user._id) },
+					{ projection: { estructura_empresa_id: 1 } }
+				);
+				const estructuraId = estructuraDoc?.estructura_empresa_id || req.user.estructura_empresa_id;
+				if (estructuraId) {
+					const empresaDoc = await database.collection('users').findOne(
+						{ _id: (estructuraId instanceof ObjectId) ? estructuraId : new ObjectId(String(estructuraId)) },
+						{ projection: { cobertura_legal: 1 } }
+					);
+					if (empresaDoc && empresaDoc.cobertura_legal) coberturaSource = empresaDoc.cobertura_legal;
+				}
+			}
+		} catch (e) { console.error('[data] Error resolviendo cobertura_legal empresa:', e.message); }
+		const fuentesGobierno = coberturaSource?.['fuentes-gobierno'] || coberturaSource?.fuentes_gobierno || coberturaSource?.fuentes || [];
 		if (fuentesGobierno.length > 0) userBoletines = userBoletines.concat(fuentesGobierno);
-		const fuentesReguladores = user.cobertura_legal?.['fuentes-reguladores'] || user.cobertura_legal?.fuentes_reguladores || user.cobertura_legal?.['fuentes-regulador'] || user.cobertura_legal?.reguladores || [];
+		const fuentesReguladores = coberturaSource?.['fuentes-reguladores'] || coberturaSource?.fuentes_reguladores || coberturaSource?.['fuentes-regulador'] || coberturaSource?.reguladores || [];
 		if (fuentesReguladores.length > 0) userBoletines = userBoletines.concat(fuentesReguladores);
 		userBoletines = userBoletines.map(b => b.toUpperCase());
 		if (userBoletines.length === 0) userBoletines = ['BOE'];
@@ -371,23 +504,66 @@ router.get('/data', async (req, res) => {
 		const rangoStr = req.query.rango || '';
 		const startDate = req.query.desde;
 		const endDate = req.query.hasta;
-		const etiquetasStr = req.query.etiquetas || '';
-		let selectedEtiquetas = [];
-		if (etiquetasStr.trim() !== '') selectedEtiquetas = etiquetasStr.split('||').map(s => s.toLowerCase()).filter(Boolean);
-		if (selectedEtiquetas.length === 0) {
-			return res.json({
-				documentsHtml: `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Por favor, selecciona al menos un agente para realizar la búsqueda.</div>`,
-				hideAnalyticsLabels: true,
-				monthsForChart: [],
-				countsForChart: []
-			});
+			const etiquetasStr = req.query.etiquetas || '';
+	let selectedEtiquetas = [];
+	
+	if (etiquetasStr.trim() !== '') {
+		selectedEtiquetas = etiquetasStr.split('||').map(s => s.trim()).filter(Boolean);
+	} else {
+		// ENTERPRISE ADAPTER: Para usuarios enterprise, usar etiquetas seleccionadas si las hay, sino todas las disponibles
+		if (req.user.tipo_cuenta === 'empresa') {
+			try {
+				const etiquetasSeleccionadasResult = await getEtiquetasSeleccionadasAdapter(req.user);
+				const etiquetasSeleccionadas = etiquetasSeleccionadasResult.etiquetas_seleccionadas || [];
+				
+				if (etiquetasSeleccionadas.length > 0) {
+					selectedEtiquetas = etiquetasSeleccionadas;
+					console.log(`[data] Usuario empresa: usando ${selectedEtiquetas.length} etiquetas seleccionadas por defecto`);
+				} else {
+					selectedEtiquetas = etiquetasKeys;
+					console.log(`[data] Usuario empresa: sin etiquetas seleccionadas, usando ${selectedEtiquetas.length} etiquetas disponibles`);
+				}
+			} catch (error) {
+				console.error('[data] Error obteniendo etiquetas seleccionadas, fallback a todas:', error);
+				selectedEtiquetas = etiquetasKeys;
+			}
+		} else {
+			selectedEtiquetas = etiquetasKeys;
+			console.log(`[data] Usuario individual: usando ${selectedEtiquetas.length} etiquetas disponibles`);
 		}
-		const userId = user._id.toString();
+	}
+	
+	if (selectedEtiquetas.length === 0) {
+		return res.json({
+			documentsHtml: `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Por favor, selecciona al menos un agente para realizar la búsqueda.</div>`,
+			hideAnalyticsLabels: true,
+			monthsForChart: [],
+			countsForChart: []
+		});
+	}
+		// ENTERPRISE ADAPTER: Determinar userId correcto para filtrado
+		let targetUserId;
+		if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
+			targetUserId = req.user.estructura_empresa_id.toString();
+		} else {
+			targetUserId = user._id.toString();
+		}
+		
 		let selectedRangos = [];
 		if (rangoStr.trim() !== '') selectedRangos = rangoStr.split('||').map(s => s.trim()).filter(Boolean);
-		const query = {};
+		
+		// ENTERPRISE ADAPTER: Usar buildEtiquetasQuery para construir query con etiquetas (sin lowercasing)
+		const etiquetasQuery = buildEtiquetasQuery(req.user, Array.isArray(selectedEtiquetas) ? selectedEtiquetas : []);
+		
+		// Normalizar etiquetas para matching posterior (minúsculas) solo para comparar dentro de cada doc
+		const etiquetasForMatch = Array.isArray(selectedEtiquetas) ? selectedEtiquetas.map(e => String(e).toLowerCase()) : [];
+		
+		const query = {
+			$and: []
+		};
+		
+		// Añadir filtro de fechas
 		if (startDate || endDate) {
-			query.$and = query.$and || [];
 			if (startDate) {
 				const [anio, mes, dia] = startDate.split('-').map(Number);
 				query.$and.push({ $or: [ { anio: { $gt: anio } }, { anio: anio, mes: { $gt: mes } }, { anio: anio, mes: mes, dia: { $gte: dia } } ] });
@@ -396,6 +572,16 @@ router.get('/data', async (req, res) => {
 				const [anio, mes, dia] = endDate.split('-').map(Number);
 				query.$and.push({ $or: [ { anio: { $lt: anio } }, { anio: anio, mes: { $lt: mes } }, { anio: anio, mes: mes, dia: { $lte: dia } } ] });
 			}
+		}
+		
+		// Añadir filtro de etiquetas usando adaptador enterprise
+		if (Object.keys(etiquetasQuery).length > 0) {
+			query.$and.push(etiquetasQuery);
+		}
+		
+		// Si no hay filtros, usar query vacía
+		if (query.$and.length === 0) {
+			delete query.$and;
 		}
 		const projection = { short_name: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, rango_titulo: 1, etiquetas_personalizadas: 1, num_paginas: 1, _id: 1 };
 		let allDocuments = [];
@@ -421,7 +607,33 @@ router.get('/data', async (req, res) => {
 			}
 		});
 		
+		// NUEVO: agregación diaria completa sin límite de documentos
+		const dateMatchStages = [];
+		if (startDate) {
+			const [y, m, d] = startDate.split('-').map(Number);
+			dateMatchStages.push({ $or: [ { anio: { $gt: y } }, { anio: y, mes: { $gt: m } }, { anio: y, mes: m, dia: { $gte: d } } ] });
+		}
+		if (endDate) {
+			const [y2, m2, d2] = endDate.split('-').map(Number);
+			dateMatchStages.push({ $or: [ { anio: { $lt: y2 } }, { anio: y2, mes: { $lt: m2 } }, { anio: y2, mes: m2, dia: { $lte: d2 } } ] });
+		}
+		const rangoMatchStage = selectedRangos.length > 0 ? { rango_titulo: { $in: selectedRangos } } : null;
+		const etiquetasStage = Object.keys(etiquetasQuery).length > 0 ? etiquetasQuery : null;
+		const fullMatch = { $and: [ ...(dateMatchStages.length ? dateMatchStages : []), ...(rangoMatchStage ? [rangoMatchStage] : []), ...(etiquetasStage ? [etiquetasStage] : []) ] };
+		if (fullMatch.$and.length === 0) delete fullMatch.$and;
+		const dailyAggPromises = expandedCollections.map(async (cName) => {
+			try {
+				const exists = await collectionExists(database, cName);
+				if (!exists) return [];
+				return await database.collection(cName).aggregate([
+					{ $match: fullMatch },
+					{ $group: { _id: { anio: "$anio", mes: "$mes", dia: "$dia" }, count: { $sum: 1 } } }
+				]).toArray();
+			} catch (e) { console.error('dailyAgg error', cName, e.message); return []; }
+		});
+		
 		const dataResults = await Promise.all(dataQueryPromises);
+		const dailyAggResults = await Promise.all(dailyAggPromises);
 		allDocuments = dataResults.flat();
 		allDocuments.sort((a, b) => (new Date(a.anio, a.mes - 1, a.dia)) - (new Date(b.anio, b.mes - 1, b.dia)) < 0 ? 1 : -1);
 		const start = startDate ? new Date(startDate) : null;
@@ -438,14 +650,15 @@ router.get('/data', async (req, res) => {
 			if (!passesRangoFilter) continue;
 			let hasEtiquetasMatch = false;
 			let matchedEtiquetas = [];
-			if (doc.etiquetas_personalizadas && doc.etiquetas_personalizadas[userId]) {
-				const userEtiquetas = doc.etiquetas_personalizadas[userId];
+			// ENTERPRISE ADAPTER: Usar targetUserId correcto
+			if (doc.etiquetas_personalizadas && doc.etiquetas_personalizadas[targetUserId]) {
+				const userEtiquetas = doc.etiquetas_personalizadas[targetUserId];
 				if (Array.isArray(userEtiquetas)) {
-					const etiquetasCoincidentes = userEtiquetas.filter(et => selectedEtiquetas.includes(et.toLowerCase()));
+					const etiquetasCoincidentes = userEtiquetas.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
 					if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; }
 				} else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
 					const docEtiquetasKeys = Object.keys(userEtiquetas);
-					const etiquetasCoincidentes = docEtiquetasKeys.filter(et => selectedEtiquetas.includes(et.toLowerCase()));
+					const etiquetasCoincidentes = docEtiquetasKeys.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
 					if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; }
 				}
 			}
@@ -456,62 +669,87 @@ router.get('/data', async (req, res) => {
 		}
 		
 		// OPTIMIZACIÓN: Limitar documentos filtrados para mejor UX
-		const maxFilteredDocs = 100;
-		if (filteredDocuments.length > maxFilteredDocs) {
-			filteredDocuments.splice(maxFilteredDocs);
-		}
-		const monthsForChart = [];
-		const countsForChart = [];
-		const documentsByMonth = {};
-		for (const doc of filteredDocuments) {
-			const monthKey = `${doc.anio}-${doc.mes.toString().padStart(2, '0')}`;
-			documentsByMonth[monthKey] = (documentsByMonth[monthKey] || 0) + 1;
-		}
-		const sortedMonths = Object.keys(documentsByMonth).sort();
-		for (const month of sortedMonths) {
-			const [year, monthNum] = month.split('-');
-			const monthName = new Date(parseInt(year), parseInt(monthNum) - 1, 1).toLocaleString('es-ES', { month: 'long' });
-			monthsForChart.push(`${monthName} ${year}`);
-			countsForChart.push(documentsByMonth[month]);
-		}
-		// OPTIMIZACIÓN: Contar páginas con aggregation pipeline paralelo
-		const pageCountDataPromises = expandedCollections.map(async (cName) => {
-			try {
-				const exists = await collectionExists(database, cName);
-				if (!exists) return 0;
-				const result = await database.collection(cName).aggregate([
-					{ $match: queryWithoutEtiquetas },
-					{ $group: { _id: null, totalPages: { $sum: "$num_paginas" } } }
-				]).toArray();
-				return result.length > 0 ? (result[0].totalPages || 0) : 0;
-			} catch (error) {
-				console.error(`Error counting pages for collection ${cName}:`, error.message);
-				return 0;
+		// PAGINACIÓN: calcular totales y recortar por página sin afectar estadísticas
+		const totalFiltered = filteredDocuments.length;
+		const pageSize = Math.max(1, Math.min(parseInt(req.query.pageSize || '25', 10) || 25, 100));
+		const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
+		const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+		const safePage = Math.min(page, totalPages);
+		const startIndex = (safePage - 1) * pageSize;
+		const endIndex = Math.min(startIndex + pageSize, totalFiltered);
+		const pageDocuments = filteredDocuments.slice(startIndex, endIndex);
+		// Construir mapa diario consolidado de la agregación
+		const dailyMap = {};
+		for (const arr of dailyAggResults) {
+			for (const row of arr) {
+				const y = row._id.anio; const m = String(row._id.mes).padStart(2,'0'); const d = String(row._id.dia).padStart(2,'0');
+				const key = `${y}-${m}-${d}`;
+				dailyMap[key] = (dailyMap[key] || 0) + (row.count || 0);
 			}
-		});
-		
-		const pageCountsData = await Promise.all(pageCountDataPromises);
-		const totalPages = pageCountsData.reduce((sum, count) => sum + count, 0);
+		}
+		const dailyLabels = Object.keys(dailyMap).sort();
+		const dailyCounts = dailyLabels.map(k => dailyMap[k]);
+		// Derivar meses para chart mensual (por compatibilidad)
+		const monthMap = {};
+		for (const key of dailyLabels) {
+			const [y, m] = key.split('-');
+			const mk = `${y}-${m}`;
+			monthMap[mk] = (monthMap[mk] || 0) + (dailyMap[key] || 0);
+		}
+		const sortedMonthsKeys = Object.keys(monthMap).sort();
+		const monthsForChart = sortedMonthsKeys.map(mk => { const [yy, mm] = mk.split('-'); const name = new Date(parseInt(yy), parseInt(mm)-1, 1).toLocaleString('es-ES', { month: 'long' }); return `${name} ${yy}`; });
+		const countsForChart = sortedMonthsKeys.map(mk => monthMap[mk]);
+		// Estadísticas diarias e impacto del conjunto completo
+		const totalAlerts = dailyCounts.reduce((a,b)=>a+b,0);
+		const impactCounts = { alto: 0, medio: 0, bajo: 0 };
+		for (const doc of allDocuments) {
+			let userEtiq = doc.etiquetas_personalizadas ? (doc.etiquetas_personalizadas[targetUserId] || doc.etiquetas_personalizadas[user._id.toString()]) : null;
+			let level = '';
+			if (userEtiq && typeof userEtiq === 'object' && !Array.isArray(userEtiq)) {
+				const matchKeys = Array.isArray(doc.matched_etiquetas) && doc.matched_etiquetas.length ? doc.matched_etiquetas : Object.keys(userEtiq);
+				let hasAlto=false, hasMedio=false, hasBajo=false;
+				for (const et of matchKeys) {
+					const data = userEtiq[et];
+					if (data && typeof data === 'object') {
+						const n = String(data.nivel_impacto || '').toLowerCase();
+						if (n==='alto') hasAlto=true; else if (n==='medio') hasMedio=true; else if (n==='bajo') hasBajo=true;
+					}
+				}
+				if (hasAlto) level='alto'; else if (hasMedio) level='medio'; else if (hasBajo) level='bajo';
+			}
+			if (!level) level='bajo';
+			impactCounts[level] = (impactCounts[level]||0)+1;
+		}
+		let avgAlertsPerDay = 0;
+		try {
+			const sd = startDate ? new Date(startDate) : (dailyLabels[0] ? new Date(dailyLabels[0]) : null);
+			const ed = endDate ? new Date(endDate) : (dailyLabels[dailyLabels.length-1] ? new Date(dailyLabels[dailyLabels.length-1]) : null);
+			if (sd && ed && !isNaN(sd.getTime()) && !isNaN(ed.getTime())) {
+				const diffDays = Math.max(1, Math.round((ed - sd)/(1000*60*60*24)) + 1);
+				avgAlertsPerDay = totalAlerts / diffDays;
+			}
+		} catch(_){}
 		let documentsHtml;
 		if (filteredDocuments.length === 0) {
-			documentsHtml = `<div class=\"no-results\" style=\"color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);\">Puedes estar tranquilo. Tus agentes han analizado ${totalPages} páginas en el rango seleccionado y no hay nada que te afecte.</div>`;
+			documentsHtml = `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Puedes estar tranquilo. Tus agentes han analizado ${totalAlerts} alertas en el rango seleccionado y no hay nada que te afecte.</div>`;
 		} else {
-			documentsHtml = filteredDocuments.map(doc => {
+			documentsHtml = pageDocuments.map(doc => {
 				const rangoToShow = doc.rango_titulo || 'Indefinido';
-				const matchedEtiquetasHtml = doc.matched_etiquetas && doc.matched_etiquetas.length > 0 ? `<div class=\"etiquetas-personalizadas-values\">${doc.matched_etiquetas.map(e => `<span class=\"etiqueta-personalizada-value\">${e}</span>`).join(' ')}</div>` : '';
+				const matchedEtiquetasHtml = doc.matched_etiquetas && doc.matched_etiquetas.length > 0 ? `<div class="etiquetas-personalizadas-values">${doc.matched_etiquetas.map(e => `<span class="etiqueta-personalizada-value">${e}</span>`).join(' ')}</div>` : '';
 				
 				// Generar sección de impacto en agentes
 				const impactoAgentesHtml = (() => {
 					if (!doc.etiquetas_personalizadas) return '';
-					const userId = user._id.toString();
+					// ENTERPRISE ADAPTER: Usar targetUserId correcto (segunda instancia)
+					const userId = targetUserId;
 					const userEtiquetas = doc.etiquetas_personalizadas[userId];
 					if (!userEtiquetas || Array.isArray(userEtiquetas) || typeof userEtiquetas !== 'object') return '';
 					const etiquetasKeys = Object.keys(userEtiquetas);
 					if (etiquetasKeys.length === 0) return '';
 					return `
-					  <div class=\"impacto-agentes\" style=\"margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #04db8d; background-color: rgba(4, 219, 141, 0.05);\">
-						<div style=\"font-weight: 600; font-size: large; margin-bottom: 10px; color: #455862; padding: 5px;\">Impacto en agentes</div>
-						<div style=\"padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;\">
+					  <div class="impacto-agentes" style="margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #04db8d; background-color: rgba(4, 219, 141, 0.05);">
+						<div style="font-weight: 600; font-size: large; margin-bottom: 10px; color: #455862; padding: 5px;">Impacto en agentes</div>
+						<div style="padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;">
 						  ${etiquetasKeys.map(etiqueta => {
 							const etiquetaData = userEtiquetas[etiqueta];
 							let explicacion = '';
@@ -526,67 +764,67 @@ router.get('/data', async (req, res) => {
 							if (nivelImpacto) {
 								let bgColor = '#f8f9fa'; let textColor = '#6c757d';
 								switch ((nivelImpacto||'').toLowerCase()) { case 'alto': bgColor = '#ffe6e6'; textColor = '#dc3545'; break; case 'medio': bgColor = '#fff3cd'; textColor = '#856404'; break; case 'bajo': bgColor = '#d4edda'; textColor = '#155724'; break; }
-								nivelTag = `<span style=\"background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;\">${nivelImpacto}</span>`;
+								nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
 							}
 							const feedbackIcons = nivelImpacto ? `
-							  <span style=\"margin-left: 12px; display: inline-flex; align-items: center; gap: 8px;\">
-								<i class=\"fa fa-thumbs-up thumb-icon\" onclick=\"sendFeedback('${doc._id}', 'like', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')\" style=\"cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;\"></i>
-								<i class=\"fa fa-thumbs-down thumb-icon\" onclick=\"sendFeedback('${doc._id}', 'dislike', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')\" style=\"cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;\"></i>
+							  <span style="margin-left: 12px; display: inline-flex; align-items: center; gap: 8px;">
+								<i class="fa fa-thumbs-up thumb-icon" onclick="sendFeedback('${doc._id}', 'like', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')" style="cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;"></i>
+								<i class="fa fa-thumbs-down thumb-icon" onclick="sendFeedback('${doc._id}', 'dislike', this, '${etiqueta}', '${doc.collectionName}', '${doc.url_pdf || doc.url_html || ''}', '${doc.short_name}')" style="cursor: pointer; color: #6c757d; font-size: 0.9em; transition: color 0.2s;"></i>
 							  </span>
 							` : '';
-							return `<div style=\"margin-bottom: 12px; display: flex; align-items: baseline;\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" style=\"color: #04db8d; margin-right: 10px; flex-shrink: 0;\"><path fill=\"currentColor\" d=\"M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z\"></path></svg><div style=\"flex: 1;\"><span style=\"font-weight: 600;\">${etiqueta}</span>${nivelTag}${feedbackIcons}<div style=\"margin-top: 4px; color: #555;\">${explicacion}</div></div></div>`;
+							return `<div style="margin-bottom: 12px; display: flex; align-items: baseline;"><svg width="16" height="16" viewBox="0 0 24 24" style="color: #04db8d; margin-right: 10px; flex-shrink: 0;"><path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path></svg><div style="flex: 1;"><span style="font-weight: 600;">${etiqueta}</span>${nivelTag}${feedbackIcons}<div style="margin-top: 4px; color: #555;">${explicacion}</div></div></div>`;
 						}).join('')}
 						</div>
 					  </div>`;
 				})();
 				
 				return `
-					<div class=\"data-item\">
-					  <div class=\"header-row\"><div class=\"id-values\">${doc.short_name}</div><span class=\"date\"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span></div>
-					  <div style=\"color: gray; font-size: 1.1em; margin-bottom: 6px;\">${rangoToShow} | ${doc.collectionName}</div>
+					<div class="data-item">
+					  <div class="header-row"><div class="id-values">${doc.short_name}</div><span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span></div>
+					  <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">${rangoToShow} | ${doc.collectionName}</div>
 					  ${matchedEtiquetasHtml}
-					  <div class=\"resumen-label\">Resumen</div>
-					  <div class=\"resumen-content\" style=\"font-size: 1.1em; line-height: 1.4;\">${doc.resumen}</div>
+					  <div class="resumen-label">Resumen</div>
+					  <div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
 					  ${impactoAgentesHtml}
-					  <div class=\"margin-impacto\"><a class=\"button-impacto\" href=\"/views/analisis/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}\">Analizar documento</a></div>
-					  ${doc.url_pdf || doc.url_html ? `<a class=\"leer-mas\" href=\"${doc.url_pdf || doc.url_html}\" target=\"_blank\" style=\"margin-right: 15px;\">Leer más: ${doc._id}</a>` : `<span class=\"leer-mas\" style=\"margin-right: 15px; color: #ccc;\">Leer más: ${doc._id} (No disponible)</span>`}
+					  <div class="margin-impacto"><a class="button-impacto" href="/views/analisis/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Analizar documento</a></div>
+					  ${doc.url_pdf || doc.url_html ? `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">Leer más: ${doc._id}</a>` : `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">Leer más: ${doc._id} (No disponible)</span>`}
 					  
 					  <!-- Botón de Guardar -->
-					  <div class=\"guardar-button\">
-						<button class=\"save-btn\" onclick=\"toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')\">
-						  <i class=\"fas fa-bookmark\"></i>
+					  <div class="guardar-button">
+						<button class="save-btn" onclick="toggleListsDropdown(this, '${doc._id}', '${doc.collectionName}')">
+						  <i class="fas fa-bookmark"></i>
 						  Guardar
 						</button>
-						<div class=\"lists-dropdown\">
-						  <div class=\"lists-dropdown-header\">
+						<div class="lists-dropdown">
+						  <div class="lists-dropdown-header">
 							<span>Guardar en...</span>
-							<button class=\"save-ok-btn\" onclick=\"saveToSelectedLists(this)\">OK</button>
+							<button class="save-ok-btn" onclick="saveToSelectedLists(this)">OK</button>
 						  </div>
-						  <div class=\"lists-content\">
-							<div class=\"lists-container\">
+						  <div class="lists-content">
+							<div class="lists-container">
 							  <!-- Las listas se cargarán dinámicamente -->
 							</div>
-							<div class=\"add-new-list\" onclick=\"showNewListForm(this)\">
-							  <i class=\"fas fa-plus\"></i>
+							<div class="add-new-list" onclick="showNewListForm(this)">
+							  <i class="fas fa-plus"></i>
 							  Añadir nueva
 							</div>
-							<div class=\"new-list-form\">
-							  <input type=\"text\" class=\"new-list-input\" placeholder=\"Nombre de la nueva lista\" maxlength=\"50\">
-							  <div class=\"new-list-buttons\">
-								<button class=\"new-list-btn cancel\" onclick=\"hideNewListForm(this)\">Cancelar</button>
-								<button class=\"new-list-btn save\" onclick=\"createNewList(this, '${doc._id}', '${doc.collectionName}')\">OK</button>
+							<div class="new-list-form">
+							  <input type="text" class="new-list-input" placeholder="Nombre de la nueva lista" maxlength="50">
+							  <div class="new-list-buttons">
+								<button class="new-list-btn cancel" onclick="hideNewListForm(this)">Cancelar</button>
+								<button class="new-list-btn save" onclick="createNewList(this, '${doc._id}', '${doc.collectionName}')">OK</button>
 							  </div>
 							</div>
 						  </div>
 						</div>
 					  </div>
 					  
-					  <span class=\"doc-seccion\" style=\"display:none;\">Disposiciones generales</span>
-					  <span class=\"doc-rango\" style=\"display:none;\">${rangoToShow}</span>
+					  <span class="doc-seccion" style="display:none;">Disposiciones generales</span>
+					  <span class="doc-rango" style="display:none;">${rangoToShow}</span>
 					</div>`;
 				}).join('');
 		}
-		return res.json({ documentsHtml, hideAnalyticsLabels: false, monthsForChart, countsForChart });
+		return res.json({ documentsHtml, hideAnalyticsLabels: false, monthsForChart, countsForChart, dailyLabels, dailyCounts, impactCounts, totalAlerts, avgAlertsPerDay, pagination: { page: safePage, pageSize, total: totalFiltered, totalPages } });
 	} catch (err) {
 		console.error('Error in /data:', err);
 		return res.status(500).json({ error: 'Error interno del servidor' });

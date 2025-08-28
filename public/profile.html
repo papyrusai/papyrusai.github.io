@@ -105,6 +105,10 @@
         <a href="#" class="sidebar-item" id="editSuscription">
           <i class="fas fa-user-circle"></i> Cuenta
         </a>
+        <a href="#" class="sidebar-item" id="adminPanel" data-target="content-admin" style="display: none;">
+          <i class="fas fa-shield-alt"></i> Admin
+          <span id="adminNotificationBadge" class="admin-notification-badge" style="display: none;">0</span>
+        </a>
       </div>
       
       <!-- Sidebar items para Consultas Públicas -->
@@ -120,6 +124,10 @@
         </a>
         <a href="#" class="sidebar-item" id="editSuscriptionConsultas">
           <i class="fas fa-user-circle"></i> Cuenta
+        </a>
+        <a href="#" class="sidebar-item" id="adminPanelConsultas" data-target="content-admin" style="display: none;">
+          <i class="fas fa-shield-alt"></i> Admin
+          <span id="adminNotificationBadgeConsultas" class="admin-notification-badge" style="display: none;">0</span>
         </a>
       </div>
     </div>
@@ -152,6 +160,13 @@
       <div id="content-configuracion" class="vision-section">
         <div id="configuracion-iframe-container" style="width: 100%; height: 100vh; border: none;">
           <!-- The configuration content will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Sección Panel de Administración -->
+      <div id="content-admin" class="vision-section" style="display: none;">
+        <div id="admin-panel-container" style="width: 100%; height: 100vh; border: none;">
+          <!-- El contenido del panel de administración se cargará aquí dinámicamente -->
         </div>
       </div>
 
@@ -742,14 +757,36 @@
                 doc.head.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => {
                     document.head.appendChild(el.cloneNode(true));
                 });
-                busquedaContentLoaded = true;
-                
-                // Ocultar overlay principal después de cargar búsqueda
-                if (typeof window.hidePageLoaderOverlay === 'function') {
-                    window.hidePageLoaderOverlay();
-                }
-                
-                if (callback) callback();
+                // Cargar scripts de la vista (soporta src relativo)
+                const scripts = Array.from(doc.body.querySelectorAll('script'));
+                let idx = 0;
+                const loadNext = () => {
+                    if (idx >= scripts.length) {
+                        busquedaContentLoaded = true;
+                        if (typeof window.hidePageLoaderOverlay === 'function') {
+                            window.hidePageLoaderOverlay();
+                        }
+                        if (callback) callback();
+                        return;
+                    }
+                    const s = scripts[idx++];
+                    const newScript = document.createElement('script');
+                    if (s.src) {
+                        let src = s.getAttribute('src');
+                        if (!src.startsWith('http') && !src.startsWith('/')) {
+                            src = '/views/busqueda_estadisticas/' + src;
+                        }
+                        newScript.src = src;
+                        newScript.onload = loadNext;
+                        newScript.onerror = loadNext;
+                        document.body.appendChild(newScript);
+                    } else {
+                        newScript.textContent = s.textContent;
+                        document.body.appendChild(newScript);
+                        loadNext();
+                    }
+                };
+                loadNext();
             })
             .catch(error => {
                 console.error('[loadBusquedaContent] Fetch error:', error);
@@ -1099,6 +1136,17 @@ function loadBoletinDiarioContent(callback) {
 
     const contentSections = document.querySelectorAll('.vision-section');
 
+    // Prefetch configuración para acelarar la primera carga
+    (function prefetchConfiguracion(){
+      try {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = 'views/configuracion/configuracion_cuenta.html';
+        link.as = 'fetch';
+        document.head.appendChild(link);
+      } catch(_) {}
+    })();
+
     // Función para manejar el cambio de sección
     function handleSectionChange(targetId) {
         const targetSection = document.getElementById(targetId);
@@ -1255,6 +1303,19 @@ function loadBoletinDiarioContent(callback) {
             item.addEventListener('click', function(event) {
                 event.preventDefault();
                 
+                // Mostrar loader pequeño cuando se hace clic en Configuración
+                try {
+                  const isConfig = this.getAttribute('data-target') === 'content-configuracion';
+                  if (isConfig) {
+                    const loader = (this.closest('#sidebar-consultas')
+                      ? document.getElementById('config-link-loader-consultas')
+                      : document.getElementById('config-link-loader'));
+                    if (loader) loader.style.display = 'inline-block';
+                    // Seguridad: ocultar loader tras 3.5s si algo falla
+                    setTimeout(()=>{ if (loader) loader.style.display='none'; }, 3500);
+                  }
+                } catch(_) {}
+                
                 // Remover clase active de todos los elementos del sidebar activo
                 const currentSidebarItems = getCurrentSidebarItems();
                 currentSidebarItems.forEach(i => i.classList.remove('active'));
@@ -1301,21 +1362,52 @@ function loadBoletinDiarioContent(callback) {
     });
 
     // Set up event listener for editSuscription buttons - both in the sidebar and content area
-    document.querySelectorAll('#editSuscription, #editSuscription2, #editSuscription3, #editSuscriptionConsultas').forEach(button => {
-      button.addEventListener('click', function(e) {
+    document.querySelectorAll('#editSuscription, #editSuscription3, #editSuscriptionConsultas').forEach(button => {
+      button.addEventListener('click', async function(e) {
         e.preventDefault();
-        // Show subscription container instead of redirecting
-        if (typeof showSubscriptionModal === 'function') {
-          showSubscriptionModal();
-        } else {
-          // Fallback if the function isn't available
-          const modal = document.getElementById('subscription-container');
-          if (modal) {
-            modal.style.display = 'block';
-          } else {
-            console.error('Subscription container not found');
-            alert('La funcionalidad de editar suscripción estará disponible próximamente.');
-          }
+        // Redirect to Configuración → Agentes with a small loader on the button
+        const btn = this;
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn-spinner" style="display:inline-block; width:14px; height:14px; border:2px solid rgba(4,219,141,0.3); border-top-color:#04db8d; border-radius:50%; animation:spin .8s linear infinite; vertical-align:-2px; margin-right:8px;"></span>Redirigiendo...';
+        if (!document.getElementById('loader-keyframes')) {
+          const style = document.createElement('style');
+          style.id = 'loader-keyframes';
+          style.textContent = '@keyframes spin {0%{transform:rotate(0)}100%{transform:rotate(360deg)}}';
+          document.head.appendChild(style);
+        }
+        try {
+          // Decide whether to go directly to Agentes based on context (empresa + etiquetas)
+          let shouldGoAgentes = false;
+          try {
+            const ctxResp = await fetch('/api/etiquetas-context');
+            if (ctxResp.ok) {
+              const ctxData = await ctxResp.json();
+              const etiquetas = ctxData?.data || {};
+              shouldGoAgentes = etiquetas && Object.keys(etiquetas).length > 0;
+            }
+          } catch(_) {}
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.set('view', 'configuracion');
+          if (shouldGoAgentes) newUrl.searchParams.set('tab', 'agentes'); else newUrl.searchParams.delete('tab');
+          window.history.pushState({ path: newUrl.href }, '', newUrl.href);
+          const configItem = document.querySelector('.sidebar-item[data-target="content-configuracion"]');
+          configItem?.click();
+          let tries = 0;
+          const interval = setInterval(() => {
+            const selector = shouldGoAgentes ? '#configuracion-iframe-container .config-menu-item[data-content="agentes"]' : '#configuracion-iframe-container .config-menu-item[data-content="contexto"]';
+            const targetTab = document.querySelector(selector);
+            if (targetTab) {
+              targetTab.click();
+              clearInterval(interval);
+              setTimeout(()=>{ btn.disabled=false; btn.innerHTML=originalHTML; }, 600);
+            } else if (++tries > 40) {
+              clearInterval(interval);
+              setTimeout(()=>{ btn.disabled=false; btn.innerHTML=originalHTML; }, 600);
+            }
+          }, 100);
+        } catch(_) {
+          setTimeout(()=>{ btn.disabled=false; btn.innerHTML=originalHTML; }, 600);
         }
       });
     });
@@ -2397,6 +2489,7 @@ function loadBoletinDiarioContent(callback) {
       }
       
       // Load the configuration content
+      if(window.__LOADING_CONFIG_CONTENT__) return; window.__LOADING_CONFIG_CONTENT__ = true;
       fetch('views/configuracion/configuracion_cuenta.html')
         .then(response => {
           if (!response.ok) {
@@ -2418,16 +2511,23 @@ function loadBoletinDiarioContent(callback) {
             document.head.appendChild(styleEl.cloneNode(true));
           });
           
-          // Re-execute any scripts in the loaded content
+          // Re-execute scripts from the loaded content, avoiding duplicates for externals
           const scripts = container.querySelectorAll('script');
           scripts.forEach(script => {
-            const newScript = document.createElement('script');
             if (script.src) {
-              newScript.src = script.src;
-            } else {
-              newScript.textContent = script.textContent;
+              // External: skip if a script with the same src is already present
+              if (!document.querySelector(`script[src="${script.src}"]`)) {
+                const s = document.createElement('script');
+                s.src = script.src;
+                document.head.appendChild(s);
+              }
+            } else if (script.textContent && script.textContent.trim().length > 0) {
+              // Inline: execute once by cloning into DOM
+              const s = document.createElement('script');
+              s.textContent = script.textContent;
+              document.body.appendChild(s);
             }
-            document.head.appendChild(newScript);
+            // Remove original tag from container to prevent reprocessing
             script.remove();
           });
           
@@ -2436,6 +2536,24 @@ function loadBoletinDiarioContent(callback) {
             if (window.initializeConfigurationMenu) {
               window.initializeConfigurationMenu();
             }
+            
+            // If URL asks for agents tab, switch to it
+            try {
+              const params = new URLSearchParams(window.location.search);
+              const tab = params.get('tab');
+              if (tab === 'agentes') {
+                const menuItems = container.querySelectorAll('.config-menu-item');
+                menuItems.forEach(item => { if (item.dataset.content === 'agentes') item.click(); });
+              }
+            } catch (_) {}
+            
+            // Hide small loader on Config once loaded
+            try {
+              const loader1 = document.getElementById('config-link-loader');
+              const loader2 = document.getElementById('config-link-loader-consultas');
+              if (loader1) loader1.style.display = 'none';
+              if (loader2) loader2.style.display = 'none';
+            } catch(_) {}
             
             // Ocultar overlay principal después de cargar configuración
             if (typeof window.hidePageLoaderOverlay === 'function') {
@@ -2561,6 +2679,288 @@ function loadBoletinDiarioContent(callback) {
   }
   // Initial run
   addTrashIcons();
+})();
+
+// === ADMIN NOTIFICATION BADGE STYLES ===
+const adminNotificationStyles = document.createElement('style');
+adminNotificationStyles.textContent = `
+  .admin-notification-badge {
+    position: absolute;
+    top: 11px;
+    margin-right: 99px;
+    right: -8px;
+    background: #d32f2f;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    animation: pulse-notification 2s infinite;
+  }
+  
+  @keyframes pulse-notification {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+`;
+document.head.appendChild(adminNotificationStyles);
+
+// === ADMIN PANEL LOGIC ===
+(function() {
+  'use strict';
+  
+  // Check if user is admin and show admin panel accordingly
+  async function checkAdminStatus() {
+    try {
+      const response = await fetch('/api/user-context');
+      const data = await response.json();
+      
+      if (data.success && data.context) {
+        const { tipo_cuenta, is_admin } = data.context;
+        
+        // Show admin panel if user is empresa admin
+        if (tipo_cuenta === 'empresa' && is_admin) {
+          // Show admin panel items in both sidebars
+          const adminPanelItem = document.getElementById('adminPanel');
+          const adminPanelItemConsultas = document.getElementById('adminPanelConsultas');
+          
+          if (adminPanelItem) {
+            adminPanelItem.style.display = 'block';
+          }
+          if (adminPanelItemConsultas) {
+            adminPanelItemConsultas.style.display = 'block';
+          }
+          
+                     // Add click handlers for admin panel items
+           setupAdminPanelHandlers();
+           
+           // Check and update notification count
+           window.updateAdminNotificationCount();
+         }
+       }
+     } catch (error) {
+       console.error('Error checking admin status:', error);
+     }
+   }
+   
+   window.updateAdminNotificationCount = async function() {
+     try {
+       const response = await fetch('/api/permisos/solicitudes');
+       const data = await response.json();
+       
+       if (data.success) {
+         const pendingCount = data.solicitudes ? data.solicitudes.length : 0;
+         
+         // Update both badges
+         const badge1 = document.getElementById('adminNotificationBadge');
+         const badge2 = document.getElementById('adminNotificationBadgeConsultas');
+         
+         [badge1, badge2].forEach(badge => {
+           if (badge) {
+             if (pendingCount > 0) {
+               badge.textContent = pendingCount;
+               badge.style.display = 'flex';
+             } else {
+               badge.style.display = 'none';
+             }
+           }
+         });
+       }
+     } catch (error) {
+       console.error('Error updating notification count:', error);
+     }
+   }
+  
+  function setupAdminPanelHandlers() {
+    // Handle clicks on admin panel items
+    document.querySelectorAll('#adminPanel, #adminPanelConsultas').forEach(item => {
+      item.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Load admin panel content
+        window.loadAdminPanel();
+        
+        // Update active states
+        document.querySelectorAll('.sidebar-item').forEach(si => si.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Show admin content section
+        document.querySelectorAll('.vision-section').forEach(section => {
+          section.style.display = 'none';
+        });
+        
+        const adminSection = document.getElementById('content-admin');
+        if (adminSection) {
+          adminSection.style.display = 'block';
+        }
+      });
+    });
+  }
+  
+  window.loadAdminPanel = function() {
+    const container = document.getElementById('admin-panel-container');
+    if (!container) return;
+    
+    // Show loading state
+    container.innerHTML = `
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <div style="text-align: center;">
+          <div class="loading-spinner" style="margin: 0 auto 20px; width: 40px; height: 40px; border: 3px solid #f3f3f3; border-top: 3px solid #0969da; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+          <p>Cargando panel de administración...</p>
+        </div>
+      </div>
+    `;
+    
+    // Force clear all admin-related globals and cache
+    console.log('Force clearing AdminPanel cache...');
+    if (window.adminPanel) {
+      delete window.adminPanel;
+    }
+    if (window.AdminPanel) {
+      delete window.AdminPanel;
+    }
+    if (window.initializeAdminPanel) {
+      delete window.initializeAdminPanel;
+    }
+    
+    // Clear browser cache for admin files
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          if (name.includes('admin')) {
+            caches.delete(name);
+          }
+        });
+      });
+    }
+    
+         // Load admin panel HTML
+     fetch('/views/administracion/admin.html')
+       .then(response => {
+         if (!response.ok) {
+           throw new Error('Error loading admin panel');
+         }
+         return response.text();
+       })
+       .then(html => {
+         // Extract body content from the HTML
+         const tempDiv = document.createElement('div');
+         tempDiv.innerHTML = html;
+         const bodyContent = tempDiv.querySelector('body')?.innerHTML || html;
+         
+         container.innerHTML = bodyContent;
+         
+                // Always try to initialize admin panel after loading HTML
+        setTimeout(() => {
+          // Clear any existing AdminPanel references to force fresh load
+          if (window.adminPanel) {
+            console.log('Clearing existing AdminPanel instance for fresh reload...');
+            delete window.adminPanel;
+          }
+          if (window.AdminPanel) {
+            console.log('Clearing existing AdminPanel class for fresh reload...');
+            delete window.AdminPanel;
+          }
+          if (window.initializeAdminPanel) {
+            console.log('Clearing existing initializeAdminPanel function for fresh reload...');
+            delete window.initializeAdminPanel;
+          }
+          
+          // Remove any existing admin script tags
+          const existingScripts = document.querySelectorAll('script[src*="/views/administracion/admin.js"]');
+          existingScripts.forEach(script => {
+            console.log('Removing existing admin script tag...');
+            script.remove();
+          });
+          
+          // Force reload the admin panel script with cache busting
+          console.log('Loading fresh admin script...');
+          const script = document.createElement('script');
+          script.src = '/views/administracion/admin.js?t=' + Date.now() + '&nocache=' + Math.random();
+          script.onload = () => {
+            console.log('Admin panel script loaded successfully');
+            // Initialize after script loads
+            setTimeout(() => {
+              if (window.initializeAdminPanel) {
+                console.log('Calling initializeAdminPanel after script load...');
+                window.initializeAdminPanel();
+              } else {
+                console.log('initializeAdminPanel not found, retrying...');
+                setTimeout(() => {
+                  if (window.initializeAdminPanel) {
+                    console.log('Retrying initializeAdminPanel...');
+                    window.initializeAdminPanel();
+                  } else {
+                    console.error('initializeAdminPanel still not found after retry');
+                  }
+                }, 500);
+              }
+            }, 100);
+          };
+          script.onerror = () => {
+            console.error('Error loading admin panel script');
+            container.innerHTML = `
+              <div style="text-align: center; padding: 40px; color: #dc3545;">
+                <h3>Error cargando script de administración</h3>
+                <button onclick="window.loadAdminPanel()" style="background: #0b2431; color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 16px; cursor: pointer;">
+                  Reintentar
+                </button>
+              </div>
+            `;
+          };
+          document.head.appendChild(script);
+          
+          // Safety timeout to ensure initialization happens
+          setTimeout(() => {
+            if (!window.adminPanel || (!document.getElementById('solicitudesContainer').innerHTML.includes('No hay') && 
+                                       !document.getElementById('solicitudesContainer').innerHTML.includes('request-box') &&
+                                       document.getElementById('solicitudesContainer').innerHTML.includes('loading-spinner'))) {
+              console.warn('AdminPanel not properly initialized after timeout, forcing initialization...');
+              if (window.initializeAdminPanel) {
+                window.initializeAdminPanel();
+              }
+            }
+          }, 3000);
+        }, 200); // Increased timeout slightly
+       })
+             .catch(error => {
+         console.error('Error loading admin panel:', error);
+         container.innerHTML = `
+           <div style="text-align: center; padding: 40px; color: #dc3545;">
+             <h3>Error cargando panel de administración</h3>
+             <p>Por favor, recarga la página e inténtalo de nuevo.</p>
+             <button onclick="window.loadAdminPanel()" style="background: var(--reversa-blue, #0b2431); color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 16px; cursor: pointer;">
+               Reintentar
+             </button>
+           </div>
+         `;
+       });
+   }
+    
+    // Helper function to load admin script
+  window.loadAdminPanelScript = function() {
+     const script = document.createElement('script');
+     script.src = '/views/administracion/admin.js?t=' + Date.now(); // Add timestamp to prevent cache issues
+     script.onload = () => {
+       console.log('Admin panel script loaded successfully');
+     };
+     script.onerror = () => {
+       console.error('Error loading admin panel script');
+     };
+     document.head.appendChild(script);
+  }
+  
+  // Initialize admin panel logic when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', checkAdminStatus);
+  } else {
+    checkAdminStatus();
+  }
 })();
 </script>
 </body>
