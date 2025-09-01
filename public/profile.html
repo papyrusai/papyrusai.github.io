@@ -94,7 +94,7 @@
           <i class="fas fa-newspaper"></i> Boletín Diario
         </a>
         <a href="#" class="sidebar-item" data-target="content-busqueda">
-          <i class="fas fa-search"></i> Búsqueda y Estadísticas
+          <i class="fas fa-chart-line"></i> Tendencias Normativas
         </a>
         <a href="#" class="sidebar-item" data-target="content-listas">
           <i class="fas fa-list"></i> Tus listas
@@ -108,6 +108,10 @@
         <a href="#" class="sidebar-item" id="adminPanel" data-target="content-admin" style="display: none;">
           <i class="fas fa-shield-alt"></i> Admin
           <span id="adminNotificationBadge" class="admin-notification-badge" style="display: none;">0</span>
+        </a>
+        <!-- NEW: Internal Dashboard entry -->
+        <a href="#" class="sidebar-item" data-target="content-internal">
+          <i class="fas fa-clipboard-check"></i> Dashboard Interno
         </a>
       </div>
       
@@ -169,6 +173,9 @@
           <!-- El contenido del panel de administración se cargará aquí dinámicamente -->
         </div>
       </div>
+
+      <!-- NEW: Sección Dashboard Interno -->
+      <div id="content-internal" class="vision-section" style="display: none;"></div>
 
       <!-- Sección Cuenta (Contenido de marcador de posición) -->
       <div id="content-cuenta" class="vision-section">
@@ -246,6 +253,25 @@
 
       // Get user plan early to use throughout the code - make it global
       window.userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
+
+      // Email para gating del Dashboard Interno
+      window.__currentUserEmail = null;
+      try {
+        const e = document.getElementById('userEmail');
+        if (e && e.textContent) {
+          const t = e.textContent.trim();
+          window.__currentUserEmail = t.startsWith('"') && t.endsWith('"') ? JSON.parse(t) : t;
+        }
+      } catch(_) {}
+      // Ocultar la opción de Dashboard Interno a todos salvo tomas@reversa.ai
+      (function gateInternalMenu(){
+        const internalItem = document.querySelector('.sidebar-item[data-target="content-internal"]');
+        if (internalItem) {
+          if (window.__currentUserEmail !== 'tomas@reversa.ai') {
+            internalItem.style.display = 'none';
+          }
+        }
+      })();
 
       // Cargar las listas del usuario al inicio de la página
       loadUserListsFromBackend();
@@ -625,6 +651,62 @@
                 if (typeof window.hidePageLoaderOverlay === 'function') {
                     window.hidePageLoaderOverlay();
                 }
+            });
+    }
+
+    // NEW: Loader for Internal Dashboard view
+    let internalContentLoaded = false;
+    let internalContentLoading = false;
+    function loadInternalDashboardContent(callback){
+        const container = document.getElementById('content-internal');
+        if (!container) return;
+        if (internalContentLoaded) { if (typeof window.initializeInternalDashboard === 'function') window.initializeInternalDashboard(); if (callback) callback(); return; }
+        if (internalContentLoading) return;
+        internalContentLoading = true;
+        // Show a temporary loader
+        container.innerHTML = '<div style="padding:20px; text-align:center;"><div class="loader" style="border:4px solid rgba(11,36,49,.1); border-top-color:#0b2431; width:40px; height:40px; margin:10px auto; border-radius:50%; animation:spin 1s linear infinite;"></div><div style="color:#455862;">Cargando Dashboard Interno...</div></div>';
+        fetch('views/internal/dashboard_interno.html')
+            .then(r => { if (!r.ok) throw new Error('Network error'); return r.text(); })
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                // Append styles
+                doc.querySelectorAll('style, link[rel="stylesheet"]').forEach(el => document.head.appendChild(el.cloneNode(true)));
+                // Inject body content
+                container.innerHTML = doc.body.innerHTML;
+                // Execute scripts (resolve relative src)
+                const scripts = Array.from(doc.body.querySelectorAll('script'));
+                let idx = 0;
+                const loadNext = () => {
+                    if (idx >= scripts.length) {
+                        internalContentLoaded = true;
+                        internalContentLoading = false;
+                        if (typeof window.initializeInternalDashboard === 'function') window.initializeInternalDashboard();
+                        if (typeof window.hidePageLoaderOverlay === 'function') window.hidePageLoaderOverlay();
+                        if (callback) callback();
+                        return;
+                    }
+                    const s = scripts[idx++];
+                    const ns = document.createElement('script');
+                    if (s.src) {
+                        let src = s.getAttribute('src');
+                        if (!src.startsWith('http') && !src.startsWith('/')) src = '/views/internal/' + src;
+                        ns.src = src;
+                        ns.onload = loadNext; ns.onerror = loadNext;
+                        document.body.appendChild(ns);
+                    } else {
+                        ns.textContent = s.textContent;
+                        document.body.appendChild(ns);
+                        loadNext();
+                    }
+                };
+                loadNext();
+            })
+            .catch(err => {
+                console.error('Error loading dashboard interno:', err);
+                container.innerHTML = '<p style="color:red; text-align:center;">Error al cargar el Dashboard Interno.</p>';
+                internalContentLoading = false;
+                if (typeof window.hidePageLoaderOverlay === 'function') window.hidePageLoaderOverlay();
             });
     }
 
@@ -1181,6 +1263,17 @@ function loadBoletinDiarioContent(callback) {
             // *** NUEVO: Cargar contenido del tracker si es la sección Agentes ***
             if (targetId === 'content-agentes') {
                 loadTrackerContent();
+            }
+            
+            // NEW: Cargar contenido del Dashboard Interno
+            if (targetId === 'content-internal') {
+                // Gateo por email: solo tomas@reversa.ai puede ver/usar esta sección
+                if (window.__currentUserEmail === 'tomas@reversa.ai') {
+                  loadInternalDashboardContent();
+                } else {
+                  targetSection.innerHTML = '<div class="banner-error" style="margin:16px;">No tienes permisos para acceder al Dashboard Interno.</div>';
+                  if (typeof window.hidePageLoaderOverlay === 'function') window.hidePageLoaderOverlay();
+                }
             }
             
             // Cargar Búsqueda y Estadísticas

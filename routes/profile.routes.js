@@ -76,7 +76,7 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 			if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
 				const estructuraDoc = await database.collection('users').findOne(
 					{ _id: new ObjectId(req.user.estructura_empresa_id) },
-					{ projection: { cobertura_legal: 1 } }
+					{ projection: { cobertura_legal: 1, legacy_user_ids: 1 } }
 				);
 				if (estructuraDoc && estructuraDoc.cobertura_legal) coberturaSource = estructuraDoc.cobertura_legal;
 			}
@@ -169,18 +169,26 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 		console.log(`[profile] Rangos seleccionados: ${selectedRangos.length} - ${selectedRangos.join(', ')}`);
 		console.log(`[profile] Filtro de fechas: ${JSON.stringify(dateFilter)}`);
 		
-		// ENTERPRISE ADAPTER: Usar query builder adaptado para empresa/individual
-		const etiquetasQuery = buildEtiquetasQuery(req.user, selectedEtiquetas);
-		
 		// ENTERPRISE ADAPTER: Determinar userId correcto para filtrado
-		let targetUserId;
+		let targetUserIds;
 		if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
-			targetUserId = req.user.estructura_empresa_id.toString();
+			let legacyIds = [];
+			try {
+				const estructuraDoc = await database.collection('users').findOne(
+					{ _id: new ObjectId(req.user.estructura_empresa_id) },
+					{ projection: { legacy_user_ids: 1 } }
+				);
+				legacyIds = Array.isArray(estructuraDoc?.legacy_user_ids) ? estructuraDoc.legacy_user_ids.map(String) : [];
+			} catch(_){ legacyIds = []; }
+			targetUserIds = [req.user.estructura_empresa_id.toString(), ...legacyIds];
 		} else {
-			targetUserId = user._id.toString();
+			targetUserIds = [user._id.toString()];
 		}
 		
-		console.log(`[profile] Target User ID: ${targetUserId}`);
+		console.log(`[profile] Target User IDs: ${targetUserIds.join(', ')}`);
+		
+		// ENTERPRISE ADAPTER: Usar query builder multi-ID para empresa/individual
+		const etiquetasQuery = require('../services/enterprise.service').buildEtiquetasQueryForIds(Array.isArray(selectedEtiquetas) ? selectedEtiquetas : [], targetUserIds);
 		console.log(`[profile] Etiquetas Query: ${JSON.stringify(etiquetasQuery)}`);
 		
 		const query = {
@@ -288,9 +296,15 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 				const rangoToShow = doc.rango_titulo || 'Indefinido';
 				const etiquetasPersonalizadasHtml = (() => {
 					if (!doc.etiquetas_personalizadas) return '';
-					// ENTERPRISE ADAPTER: Usar targetUserId correcto
-					const userEtiquetas = doc.etiquetas_personalizadas[targetUserId];
-					if (!userEtiquetas || (Array.isArray(userEtiquetas) && userEtiquetas.length === 0) || (typeof userEtiquetas === 'object' && Object.keys(userEtiquetas).length === 0)) return '';
+					// ENTERPRISE ADAPTER: Usar primer userId con datos
+					let userEtiquetas = null;
+					for (const tid of targetUserIds) {
+						const val = doc.etiquetas_personalizadas ? doc.etiquetas_personalizadas[tid] : null;
+						if (!val) continue;
+						if (Array.isArray(val) && val.length) { userEtiquetas = val; break; }
+						if (typeof val === 'object' && val !== null && Object.keys(val).length) { userEtiquetas = val; break; }
+					}
+					if (!userEtiquetas) return '';
 					let etiquetasParaMostrar = [];
 					if (Array.isArray(userEtiquetas)) etiquetasParaMostrar = userEtiquetas; else if (typeof userEtiquetas === 'object') etiquetasParaMostrar = Object.keys(userEtiquetas);
 					return `
@@ -301,9 +315,13 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 				})();
 				const impactoAgentesHtml = (() => {
 					if (!doc.etiquetas_personalizadas) return '';
-					// ENTERPRISE ADAPTER: Usar targetUserId correcto
-					const userEtiquetas = doc.etiquetas_personalizadas[targetUserId];
-					if (!userEtiquetas || Array.isArray(userEtiquetas) || typeof userEtiquetas !== 'object') return '';
+					// ENTERPRISE ADAPTER: Usar primer userId con objeto de impacto
+					let userEtiquetas = null;
+					for (const tid of targetUserIds) {
+						const val = doc.etiquetas_personalizadas ? doc.etiquetas_personalizadas[tid] : null;
+						if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length) { userEtiquetas = val; break; }
+					}
+					if (!userEtiquetas) return '';
 					const etiquetasKeys = Object.keys(userEtiquetas);
 					if (etiquetasKeys.length === 0) return '';
 					return `
@@ -541,19 +559,35 @@ router.get('/data', async (req, res) => {
 			countsForChart: []
 		});
 	}
-		// ENTERPRISE ADAPTER: Determinar userId correcto para filtrado
-		let targetUserId;
+		// ENTERPRISE ADAPTER: Determinar userIds correctos para filtrado
+		let targetUserIds;
 		if (req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) {
-			targetUserId = req.user.estructura_empresa_id.toString();
+			let estructuraId = null;
+			try {
+				const estructuraDoc = await usersCollection.findOne(
+					{ _id: new ObjectId(req.user._id) },
+					{ projection: { estructura_empresa_id: 1 } }
+				);
+				estructuraId = estructuraDoc?.estructura_empresa_id || req.user.estructura_empresa_id;
+			} catch(_){ estructuraId = req.user.estructura_empresa_id; }
+			let legacyIds = [];
+			try {
+				const empresaDoc = await database.collection('users').findOne(
+					{ _id: (estructuraId instanceof ObjectId) ? estructuraId : new ObjectId(String(estructuraId)) },
+					{ projection: { legacy_user_ids: 1 } }
+				);
+				legacyIds = Array.isArray(empresaDoc?.legacy_user_ids) ? empresaDoc.legacy_user_ids.map(String) : [];
+			} catch(_){ legacyIds = []; }
+			targetUserIds = [String(estructuraId), ...legacyIds];
 		} else {
-			targetUserId = user._id.toString();
+			targetUserIds = [user._id.toString()];
 		}
 		
 		let selectedRangos = [];
 		if (rangoStr.trim() !== '') selectedRangos = rangoStr.split('||').map(s => s.trim()).filter(Boolean);
 		
-		// ENTERPRISE ADAPTER: Usar buildEtiquetasQuery para construir query con etiquetas (sin lowercasing)
-		const etiquetasQuery = buildEtiquetasQuery(req.user, Array.isArray(selectedEtiquetas) ? selectedEtiquetas : []);
+		// ENTERPRISE ADAPTER: Usar buildEtiquetasQueryForIds para construir query multi-ID (sin lowercasing)
+		const etiquetasQuery = require('../services/enterprise.service').buildEtiquetasQueryForIds(Array.isArray(selectedEtiquetas) ? selectedEtiquetas : [], targetUserIds);
 		
 		// Normalizar etiquetas para matching posterior (minúsculas) solo para comparar dentro de cada doc
 		const etiquetasForMatch = Array.isArray(selectedEtiquetas) ? selectedEtiquetas.map(e => String(e).toLowerCase()) : [];
@@ -650,16 +684,19 @@ router.get('/data', async (req, res) => {
 			if (!passesRangoFilter) continue;
 			let hasEtiquetasMatch = false;
 			let matchedEtiquetas = [];
-			// ENTERPRISE ADAPTER: Usar targetUserId correcto
-			if (doc.etiquetas_personalizadas && doc.etiquetas_personalizadas[targetUserId]) {
-				const userEtiquetas = doc.etiquetas_personalizadas[targetUserId];
-				if (Array.isArray(userEtiquetas)) {
-					const etiquetasCoincidentes = userEtiquetas.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
-					if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; }
-				} else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
-					const docEtiquetasKeys = Object.keys(userEtiquetas);
-					const etiquetasCoincidentes = docEtiquetasKeys.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
-					if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; }
+			// ENTERPRISE ADAPTER: Buscar match bajo cualquiera de los targetUserIds
+			if (doc.etiquetas_personalizadas) {
+				for (const tid of targetUserIds) {
+					const userEtiquetas = doc.etiquetas_personalizadas[tid];
+					if (!userEtiquetas) continue;
+					if (Array.isArray(userEtiquetas)) {
+						const etiquetasCoincidentes = userEtiquetas.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
+						if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; break; }
+					} else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
+						const docEtiquetasKeys = Object.keys(userEtiquetas);
+						const etiquetasCoincidentes = docEtiquetasKeys.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
+						if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; break; }
+					}
 				}
 			}
 			if (hasEtiquetasMatch) {
@@ -703,7 +740,13 @@ router.get('/data', async (req, res) => {
 		const totalAlerts = dailyCounts.reduce((a,b)=>a+b,0);
 		const impactCounts = { alto: 0, medio: 0, bajo: 0 };
 		for (const doc of allDocuments) {
-			let userEtiq = doc.etiquetas_personalizadas ? (doc.etiquetas_personalizadas[targetUserId] || doc.etiquetas_personalizadas[user._id.toString()]) : null;
+			let userEtiq = null;
+			if (doc.etiquetas_personalizadas) {
+				for (const tid of targetUserIds) {
+					const val = doc.etiquetas_personalizadas[tid];
+					if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length) { userEtiq = val; break; }
+				}
+			}
 			let level = '';
 			if (userEtiq && typeof userEtiq === 'object' && !Array.isArray(userEtiq)) {
 				const matchKeys = Array.isArray(doc.matched_etiquetas) && doc.matched_etiquetas.length ? doc.matched_etiquetas : Object.keys(userEtiq);
@@ -740,10 +783,13 @@ router.get('/data', async (req, res) => {
 				// Generar sección de impacto en agentes
 				const impactoAgentesHtml = (() => {
 					if (!doc.etiquetas_personalizadas) return '';
-					// ENTERPRISE ADAPTER: Usar targetUserId correcto (segunda instancia)
-					const userId = targetUserId;
-					const userEtiquetas = doc.etiquetas_personalizadas[userId];
-					if (!userEtiquetas || Array.isArray(userEtiquetas) || typeof userEtiquetas !== 'object') return '';
+								// ENTERPRISE ADAPTER: Usar primer userId con objeto de impacto (segunda instancia)
+			let userEtiquetas = null;
+			for (const tid of targetUserIds) {
+				const val = doc.etiquetas_personalizadas ? doc.etiquetas_personalizadas[tid] : null;
+				if (val && typeof val === 'object' && !Array.isArray(val) && Object.keys(val).length) { userEtiquetas = val; break; }
+			}
+			if (!userEtiquetas) return '';
 					const etiquetasKeys = Object.keys(userEtiquetas);
 					if (etiquetasKeys.length === 0) return '';
 					return `

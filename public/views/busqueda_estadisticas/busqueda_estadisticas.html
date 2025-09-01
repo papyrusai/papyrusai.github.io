@@ -1,21 +1,23 @@
 <div id="content-busqueda" class="vision-section">
   <div class="tendencias-container">
+    <div class="page-header">
+      <h2 class="page-title">Tendencias Normativas</h2>
+      <div class="page-subtitle">Estadísticas y tendencias generales de las fuentes normativas cubiertas por Reversa</div>
+    </div>
     <!-- Submenú Tabs -->
     <div class="tendencias-tabs">
-      <a id="tabPublicada" class="tab-link active" data-tab="publicada">Normativa publicada</a>
-      <a id="tabTramitacion" class="tab-link" data-tab="tramitacion">Normativa en tramitación</a>
-      <a id="tabSanciones" class="tab-link" data-tab="sanciones">Sanciones</a>
-      <div class="submenu-actions">
-        <button id="btnExportPdf" class="btn-ai">Exportar PDF</button>
-        <button id="btnCopyLink" class="btn-outline">Copiar enlace</button>
-      </div>
+      <a id="tabResumen" class="tab-link active" data-tab="resumen">Resumen</a>
+      <a id="tabPublicada" class="tab-link tab-disabled-soft" data-tab="publicada" title="Próximamente">Normativa publicada</a>
+      <a id="tabTramitacion" class="tab-link tab-disabled-soft" data-tab="tramitacion" title="Próximamente">Normativa en tramitación</a>
+      <a id="tabSanciones" class="tab-link tab-disabled-soft" data-tab="sanciones" title="Próximamente">Sanciones</a>
+
     </div>
 
     <!-- Coming soon placeholder (for tabs sin datos) -->
     <div id="comingSoonBlock" class="coming-soon" style="display:none;">
       <div class="coming-card">
         <div class="coming-title">Próximamente</div>
-        <div class="coming-text">Estamos preparando esta sección. Te avisaremos cuando esté disponible.</div>
+        <div class="coming-text" id="comingSoonText">Estamos preparando esta sección. Te avisaremos cuando esté disponible.</div>
       </div>
     </div>
 
@@ -106,7 +108,7 @@
         </div>
         <div class="filter-block small">
           <label class="filter-label">Outliers</label>
-          <label class="checkbox-group reversa-checkbox"><input type="checkbox" id="chkOutliers" class="checkbox" checked /> <span class="reversa-box"></span> Excluir "Adm. Pública" y "Dcho. Administrativo"</label>
+          <label class="checkbox-group reversa-checkbox smalltext"><input type="checkbox" id="chkOutliers" class="checkbox" checked /> <span class="reversa-box"></span> Excluir "Otras", "Administración pública" y "Derecho administrativo general"</label>
         </div>
         <div class="filter-actions">
           <button id="btnResetFiltros" class="btn-outline">Reset</button>
@@ -118,20 +120,21 @@
           <div class="periodo-row">
             <div class="chip-row" id="periodoChips">
               <button class="chip" data-range="30">30d</button>
-              <button class="chip" data-range="90">90d</button>
+              <button class="chip active" data-range="90">90d</button>
               <button class="chip" data-range="365">365d</button>
               <button class="chip" data-range="ytd">YTD</button>
               <button class="chip" data-range="custom">Personalizado</button>
             </div>
-            <div class="date-range" id="customRange" style="display:none;">
-              <input type="date" id="inputStartDate" class="input" />
+            <div class="date-range custom-range" id="customRange" style="display:none;">
+              <input type="date" id="inputStartDate" class="input custom-range-input" />
               <span class="date-sep">—</span>
-              <input type="date" id="inputEndDate" class="input" />
+              <input type="date" id="inputEndDate" class="input custom-range-input" />
             </div>
           </div>
         </div>
       </div>
       <div class="filters-meta">
+        <span id="dataAvailFrom">Datos disponibles desde 11/08/2025</span>
         <span id="lastUpdated">Última actualización: —</span>
         <span id="betaGateBadge" class="beta-gate-badge" style="display:none;">Solo se muestra tomas</span>
       </div>
@@ -140,9 +143,10 @@
     <div id="dashContent">
       <!-- Submenú Ámbito -->
       <div class="ambito-tabs">
-        <a class="tab-link ambito-link active" data-ambito="nacional">Nacional</a>
-        <a class="tab-link ambito-link" data-ambito="europeo">Europeo</a>
-        <a class="tab-link ambito-link" data-ambito="regional">Regional</a>
+        <a class="tab-link ambito-link active" data-ambito="resumen">Resumen</a>
+        <a class="tab-link ambito-link ambito-disabled" data-ambito="nacional" title="Próximamente">Nacional</a>
+        <a class="tab-link ambito-link ambito-disabled" data-ambito="europeo" title="Próximamente">Europeo</a>
+        <a class="tab-link ambito-link ambito-disabled" data-ambito="regional" title="Próximamente">Regional</a>
         <div id="regionalSelector" class="regional-selector" style="display:none;">
           <label class="filter-label" style="margin-right:6px;">Región</label>
           <div class="chip-select-wrap">
@@ -153,25 +157,6 @@
               <div class="select-icons"><span class="clear-icon" id="regionesClear">×</span><span class="caret">▾</span></div>
             </div>
             <div class="chip-dropdown" id="regionesDropdown">
-              <div class="dropdown-item" data-value="ES-AN">Andalucía</div>
-              <div class="dropdown-item" data-value="ES-AR">Aragón</div>
-              <div class="dropdown-item" data-value="ES-AS">Asturias</div>
-              <div class="dropdown-item" data-value="ES-IB">Illes Balears</div>
-              <div class="dropdown-item" data-value="ES-CN">Canarias</div>
-              <div class="dropdown-item" data-value="ES-CB">Cantabria</div>
-              <div class="dropdown-item" data-value="ES-CL">Castilla y León</div>
-              <div class="dropdown-item" data-value="ES-CM">Castilla-La Mancha</div>
-              <div class="dropdown-item" data-value="ES-CT">Cataluña</div>
-              <div class="dropdown-item" data-value="ES-EX">Extremadura</div>
-              <div class="dropdown-item" data-value="ES-GA">Galicia</div>
-              <div class="dropdown-item" data-value="ES-RI">La Rioja</div>
-              <div class="dropdown-item" data-value="ES-MD">Madrid</div>
-              <div class="dropdown-item" data-value="ES-MC">Murcia</div>
-              <div class="dropdown-item" data-value="ES-NC">Navarra</div>
-              <div class="dropdown-item" data-value="ES-PV">País Vasco</div>
-              <div class="dropdown-item" data-value="ES-VC">Comunidad Valenciana</div>
-              <div class="dropdown-item" data-value="ES-CE">Ceuta</div>
-              <div class="dropdown-item" data-value="ES-ML">Melilla</div>
               <div class="dropdown-item" data-value="Todos">Todos</div>
             </div>
           </div>
@@ -182,14 +167,6 @@
         <div class="kpi-card">
           <div class="kpi-label"># Normas</div>
           <div class="kpi-value" id="kpiNormas">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label"># Páginas</div>
-          <div class="kpi-value" id="kpiPaginas">—</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Páginas/Norma (mediana)</div>
-          <div class="kpi-value" id="kpiMediana">—</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Δ% vs periodo anterior</div>
@@ -211,34 +188,40 @@
           <div class="card-title-row">
             <h3>Evolución temporal</h3>
           </div>
-          <div class="chart-wrap"><canvas id="serieChart"></canvas></div>
-        </div>
-        <div class="card-block">
-          <div class="card-title-row">
-            <h3>Geografía</h3>
-            <span class="card-subtitle" id="geoSubtitle">Ranking CCAA (ES)</span>
+          <div class="chart-wrap">
+            <div class="chart-skeleton" id="serieSkeleton"></div>
+            <canvas id="serieChart"></canvas>
           </div>
-          <div class="chart-wrap"><canvas id="rankingChart"></canvas></div>
-          <div class="map-placeholder" id="mapPlaceholder">Mapa CCAA próximamente</div>
         </div>
         <div class="card-block">
           <div class="card-title-row"><h3>Rangos normativos</h3></div>
-          <div class="chart-wrap"><canvas id="rangosChart"></canvas></div>
+          <div class="chart-wrap">
+            <div class="chart-skeleton" id="rangosSkeleton"></div>
+            <canvas id="rangosChart"></canvas>
+          </div>
         </div>
         <div class="card-block">
           <div class="card-title-row"><h3>Sectores económicos</h3></div>
-          <div class="chart-wrap"><canvas id="divisionesChart"></canvas></div>
+          <div class="chart-wrap">
+            <div class="chart-skeleton" id="divisionesSkeleton"></div>
+            <canvas id="divisionesChart"></canvas>
+          </div>
         </div>
         <div class="card-block">
           <div class="card-title-row"><h3>Top ramas jurídicas</h3></div>
-          <div class="chart-wrap"><canvas id="ramasChart"></canvas></div>
+          <div class="chart-wrap">
+            <div class="chart-skeleton" id="ramasSkeleton"></div>
+            <canvas id="ramasChart"></canvas>
+          </div>
         </div>
       </div>
 
       <!-- Mapa de calor CCAA -->
       <div class="card-block grid-span-2 map-card" id="geoHeatmapCard">
-        <div class="card-title-row"><h3> Volumen normativa por CCAA)</h3><span class="card-subtitle" id="geoHeatmapSubtitle">Datos desde: —</span></div>
-        <div id="esHeatmap" class="heatmap-wrap"></div>
+        <div class="card-title-row"><h3>Volumen normativo por CCAA</h3><span class="card-subtitle" id="geoHeatmapSubtitle">Datos desde: —</span></div>
+        <div id="esHeatmap" class="heatmap-wrap">
+          <div class="heatmap-skeleton" id="heatmapSkeleton"></div>
+        </div>
         <div id="esLeafletMap" class="heatmap-wrap" style="display:none;"></div>
         <div class="heatmap-legend" id="esLegend"></div>
       </div>
@@ -250,18 +233,27 @@
 
   <style>
     /* Tokens mínimos y estilos específicos de la vista */
-    .tendencias-container { padding: 12px; }
-    .ambito-tabs { display:flex; align-items:flex-end; gap:16px; margin: 8px 0 12px 0; border-bottom:1px solid #e9ecef; }
-    .ambito-tabs .tab-link { padding:10px 4px; color: var(--text-color); font-weight:600; cursor:pointer; }
-    .ambito-tabs .tab-link.active { color:#0b2431; position:relative; }
+    .tendencias-container { padding: 12px; max-width: 100%; margin: 0 auto; box-sizing: border-box; }
+    .page-header { margin-bottom: 8px; }
+    .page-title { margin: 0; font-size: 22px; color: var(--text-color); }
+    .page-subtitle { margin-top: 4px; color:#6c757d; font-size: 13px; }
+    .ambito-tabs { display:flex; align-items:center; gap:16px; margin: 8px 0 12px 0; border-bottom:1px solid #e9ecef; position: relative; z-index: 10; }
+    .ambito-tabs .tab-link { padding:10px 4px; color: var(--text-color); font-weight:600; cursor:default; position:relative; }
+    .ambito-tabs .tab-link.active { color:#0b2431; }
     .ambito-tabs .tab-link.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px; background:#04db8d; border-radius:2px; }
-    .regional-selector { display:flex; align-items:center; gap:10px; margin-left: 24px; }
+    .ambito-tabs .ambito-disabled { color:#adb5bd; }
+    .ambito-tabs .ambito-disabled:hover { position: relative; z-index: 20; }
+    .ambito-tabs .ambito-disabled:hover::after { content:'Próximamente'; position:absolute; top: calc(100% + 4px); left:0; background:#0b2431; color:#fff; padding:6px 8px; border-radius:8px; white-space:nowrap; font-size:12px; box-shadow:0 8px 24px rgba(11,36,49,.15); }
+    .regional-selector { display:flex; align-items:center; gap:10px; margin-left: 24px; align-self: center; }
 
     /* Tabs menu */
-    .tendencias-tabs { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom: 12px; border-bottom:1px solid #e9ecef; }
+    .tendencias-tabs { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom: 12px; border-bottom:1px solid #e9ecef; position: relative; z-index: 10; }
     .tab-link { position:relative; padding:10px 4px; margin-right:16px; color: var(--text-color); text-decoration:none; font-weight:600; cursor:pointer; }
     .tab-link.active { color:#0b2431; }
     .tab-link.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px; background:#04db8d; border-radius:2px; }
+    .tab-disabled-soft { color:#adb5bd; }
+    .tab-disabled-soft:hover { position: relative; z-index: 20; }
+    .tab-disabled-soft:hover::after { content:'Próximamente'; position:absolute; top: calc(100% + 4px); left:0; background:#0b2431; color:#fff; padding:6px 8px; border-radius:8px; white-space:nowrap; font-size:12px; box-shadow:0 8px 24px rgba(11,36,49,.15); }
     .submenu-actions { margin-left:auto; display:flex; gap:8px; }
     .btn-ai { background: linear-gradient(135deg, #04db8d 0%, #0b2431 100%); color:white; border:0; border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; }
     .btn-outline { background: transparent; border:1px solid var(--text-color); color: var(--text-color); border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; }
@@ -287,6 +279,11 @@
     .date-sep { color: var(--text-color); opacity:.7; }
     .filters-meta { margin-top: 8px; font-size: 12px; color: #6c757d; display:flex; align-items:center; gap:12px; justify-content:space-between; }
 
+    /* Custom range */
+    .custom-range { background:#fff; border:1.5px solid #e9ecef; border-radius:12px; padding:8px 10px; box-shadow:0 2px 8px rgba(11,36,49,.04); }
+    .custom-range-input { border:1px solid #e9ecef; border-radius:10px; padding:6px 10px; font-size:12px; color:var(--text-color); cursor: pointer; }
+    .custom-range-input:focus { outline:none; border-color:#04db8d; box-shadow:0 0 0 3px rgba(4,219,141,.15); }
+
     /* Chip-select */
     .chip-select { display:flex; align-items:center; justify-content:space-between; gap:8px; border:1.5px solid #e9ecef; border-radius:12px; padding:6px 10px; min-height:44px; max-height:88px; overflow:auto; background:white; box-shadow: 0 2px 8px rgba(11,36,49,.04); cursor:text; }
     .chip-select.active { border-color:#04db8d; box-shadow: 0 0 0 3px rgba(4,219,141,.15); }
@@ -306,6 +303,14 @@
     .dropdown-item { padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
     .dropdown-item:hover { background:#f8f9fa; }
 
+    /* Alias clases estándar Reversa UI para chips (reutilizables) */
+    .reversa-chip-select { display:flex; align-items:center; justify-content:space-between; gap:8px; border:1.5px solid #e9ecef; border-radius:12px; padding:6px 10px; min-height:44px; background:white; box-shadow: 0 2px 8px rgba(11,36,49,.04); }
+    .reversa-chip-bubble { display:inline-flex; align-items:center; gap:8px; background: rgba(4,219,141,.08); color:#04db8d; padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:600; }
+    .reversa-chip-bubble.selected { background: rgba(4,219,141,.18); }
+
+    /* Cursor por defecto en elementos clicables */
+    .btn-ai:hover, .btn-outline:hover, .tab-link:hover, .chip:hover, .dropdown-item:hover, .chip-x:hover, .select-icons:hover, .clear-icon:hover, .ambito-link:not(.ambito-disabled):hover { cursor: pointer; }
+
     /* KPIs */
     .kpi-grid { display:grid; grid-template-columns: repeat(6, minmax(120px, 1fr)); gap:12px; margin-bottom: 16px; }
     .kpi-card { background:white; border:1px solid var(--border-color); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); }
@@ -313,8 +318,14 @@
     .kpi-value { font-size: 22px; font-weight:700; color: var(--text-color); }
 
     /* Cards */
-    .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card-block { position:relative; background:white; border:1px solid var(--border-color); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); }
+    .grid-2 { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 16px; 
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .card-block { position:relative; background:white; border:1px solid var(--border-color); border-radius: 14px; padding: 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); width: 100%; box-sizing: border-box; }
     .card-invert { background: var(--text-color); color: white; border-color: var(--text-color); }
     .card-invert .card-title-row h3, .card-invert .card-subtitle { color: white; }
     .card-title-row { display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px; }
@@ -341,6 +352,7 @@
     .reversa-box { width:18px; height:18px; border-radius:6px; border:1px solid #04db8d; box-shadow: inset 0 0 0 2px rgba(4,219,141,.2); background: rgba(4,219,141,.12); display:inline-block; position:relative; }
     .reversa-checkbox input[type="checkbox"]:checked + .reversa-box { background: #04db8d; border-color:#04db8d; }
     .reversa-checkbox input[type="checkbox"]:checked + .reversa-box::after { content:''; position:absolute; left:5px; top:2px; width:5px; height:10px; border:2px solid white; border-top:none; border-left:none; transform: rotate(45deg); }
+    .reversa-checkbox.smalltext { font-size: 12px; }
 
     /* Toasts */
     .toast-container { position: fixed; top: 16px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
@@ -349,8 +361,66 @@
     .toast.success { border-left-color: #04db8d; }
     .toast.error { border-left-color: #d32f2f; }
 
-    /* Beta gate badge */
-    .beta-gate-badge { margin-left:auto; background: #fff8e1; color:#8a6d3b; border:1px solid #ffe0a3; padding:4px 8px; border-radius:8px; font-size:11px; font-weight:600; }
+      /* Beta gate badge */
+  .beta-gate-badge { margin-left:auto; background: #fff8e1; color:#8a6d3b; border:1px solid #ffe0a3; padding:4px 8px; border-radius:8px; font-size:11px; font-weight:600; }
+
+  /* Skeleton loaders */
+  .chart-skeleton {
+    width: 100%;
+    height: 320px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 2s infinite;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .chart-skeleton::before {
+    content: '';
+    width: 80%;
+    height: 60%;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  .chart-skeleton::after {
+    content: 'Cargando gráfica...';
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .heatmap-skeleton {
+    width: 100%;
+    height: 420px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 2s infinite;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #6c757d;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .heatmap-skeleton::before {
+    content: 'Cargando mapa de calor...';
+  }
+
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { position: absolute; top: 0; left: 0; opacity: 0; transition: opacity 0.3s ease; }
+  .chart-wrap canvas.loaded { opacity: 1; }
 
     /* Beta gate: default hide dashboard for non-allowed users to avoid flash */
     .tendencias-container:not(.beta-allowed) .tendencias-tabs,
@@ -358,12 +428,45 @@
     .tendencias-container:not(.beta-allowed) #dashContent { display: none !important; }
     .tendencias-container:not(.beta-allowed) #comingSoonBlock { display: block !important; }
 
-    @media (max-width: 1100px) {
+    /* Responsive design mejorado */
+    @media (max-width: 1400px) {
+      .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+      .tendencias-container { padding: 10px; }
+    }
+    @media (max-width: 1200px) {
       .kpi-grid { grid-template-columns: repeat(3, 1fr); }
-      .grid-2 { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+      .chart-wrap { height: 280px; }
+      .tendencias-container { padding: 8px; }
+    }
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .filters-row { flex-direction: column; align-items: stretch; }
+      .filter-block { min-width: unset; flex: 1; }
+      .chart-wrap { height: 260px; }
+      .tendencias-filters { margin: 0 -4px 12px -4px; padding: 8px; }
+    }
+    @media (max-width: 768px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .grid-2 { gap: 8px; }
+      .card-block { padding: 10px; }
+      .chart-wrap { height: 240px; }
+      .heatmap-wrap { height: 300px; }
     }
     @media (max-width: 640px) {
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .tendencias-filters { padding: 6px; margin: 0 -2px 8px -2px; }
+      .card-block { padding: 8px; }
+      .chart-wrap { height: 220px; }
+      .heatmap-wrap { height: 280px; }
+      .filter-actions { margin-left: 0; margin-top: 8px; }
+    }
+    @media (max-width: 480px) {
+      .tendencias-container { padding: 4px; }
+      .kpi-card { padding: 8px; }
+      .card-title-row h3 { font-size: 14px; }
+      .chart-wrap { height: 200px; }
+      .heatmap-wrap { height: 250px; }
     }
   </style>
 

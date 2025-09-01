@@ -3,7 +3,7 @@ App bootstrap file: Punto de entrada principal del servidor Express
 - Carga variables de entorno y crea la instancia de Express
 - Configura middlewares base: CORS, JSON/urlencoded, trust proxy, sesión con MongoStore y Passport
 - Sirve archivos estáticos desde public/, prompts/ y /dist
-- Monta routers de dominio: auth, profile, static, normativa, feedback, billing, user, generacioncontenido, agentes, listas, onboarding, boletin
+- Monta routers de dominio: auth, profile, static, normativa, feedback, billing, user, generacioncontenido, agentes, listas, onboarding, boletin, enterprise, permisos, fuentes, stats
 - Expone endpoint /api-key para Perplexity API
 - Inicia servidor con startServer(port) con manejo automático de puertos ocupados
 
@@ -97,6 +97,7 @@ const onboardingRoutes = require('./routes/onboarding.routes');
 const enterpriseRoutes = require('./routes/enterprise.routes');
 const permisosRoutes = require('./routes/permisos.routes');
 const etiquetasRoutes = require('./routes/etiquetas.routes');
+const fuentesRoutes = require('./routes/fuentes.routes');
 
 // Mount routers
 app.use(authRoutes);
@@ -113,6 +114,13 @@ app.use(onboardingRoutes);
 app.use(etiquetasRoutes);    // New unified etiquetas endpoints
 app.use(enterpriseRoutes);   // Must be before permisosRoutes (contains /api/user-context)
 app.use(permisosRoutes);
+app.use(fuentesRoutes);
+const statsRoutes = require('./routes/stats.routes');
+app.use(statsRoutes);
+
+// NEW: Internal dashboard routes
+const internalRoutes = require('./routes/internal.routes');
+app.use(internalRoutes);
 
 // Middleware to ensure user is authenticated
 function ensureAuthenticated(req, res, next) {

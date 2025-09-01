@@ -90,6 +90,11 @@
     100% { transform: rotate(360deg); }
   }
 
+  /* Reversa UI styles for dropdown button */
+  .dropbtn { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:8px 12px; color:#0b2431; font-weight:600; display:inline-flex; align-items:center; gap:8px; }
+  .dropbtn:hover { box-shadow:0 2px 8px rgba(11,36,49,.08); }
+  .dropdown-content { border:1px solid #e8ecf0; border-radius:12px; box-shadow:0 8px 24px rgba(11,36,49,.12); }
+  
   /* Estilos para feedback thumbs */
   .fa.fa-thumbs-up,
   .fa.fa-thumbs-down,
@@ -100,20 +105,20 @@
     border-radius: 4px;
     transition: all 0.2s ease;
   }
-
+  
   .fa.fa-thumbs-up:hover,
   .fa.fa-thumbs-down:hover,
   .fas.fa-thumbs-up:hover,
   .fas.fa-thumbs-down:hover {
     background-color: rgba(108, 117, 125, 0.1);
   }
-
+  
   /* Estilos para el dropdown de feedback */
   .feedback-dropdown {
     position: fixed;
     z-index: 10000;
   }
-
+  
   .feedback-dropdown-content {
     background: white;
     border: 1px solid #dee2e6;
@@ -123,21 +128,21 @@
     min-width: 250px;
     max-width: 350px;
   }
-
+  
   .feedback-dropdown-content h4 {
     margin: 0 0 15px 0;
     color: #0b2431;
     font-size: 16px;
     font-weight: 600;
   }
-
+  
   .feedback-options {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-bottom: 15px;
   }
-
+  
   .feedback-option-btn {
     background: none;
     border: 1px solid #0b2431;
@@ -149,24 +154,24 @@
     font-weight: 500;
     transition: all 0.2s ease;
   }
-
+  
   .feedback-option-btn:hover {
     box-shadow: 0 2px 8px rgba(11, 36, 49, 0.1);
     transform: translateY(-1px);
   }
-
+  
   .feedback-option-btn:active {
     transform: translateY(0);
     box-shadow: 0 1px 4px rgba(11, 36, 49, 0.15);
   }
-
+  
   .feedback-otro-container {
     margin-top: 15px;
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
-
+  
   .feedback-otro-input {
     padding: 10px 16px;
     border: 1px solid #0b2431;
@@ -175,11 +180,11 @@
     outline: none;
     transition: all 0.2s ease;
   }
-
+  
   .feedback-otro-input:focus {
     box-shadow: 0 0 0 2px rgba(11, 36, 49, 0.1);
   }
-
+  
   .feedback-submit-btn {
     background: none;
     border: 1px solid #0b2431;
@@ -192,12 +197,12 @@
     transition: all 0.2s ease;
     align-self: flex-end;
   }
-
+  
   .feedback-submit-btn:hover {
     box-shadow: 0 2px 8px rgba(11, 36, 49, 0.1);
     transform: translateY(-1px);
   }
-
+  
   .feedback-cancel-btn {
     background: none;
     border: 1px solid #6c757d;
@@ -210,12 +215,12 @@
     transition: all 0.2s ease;
     margin-top: 10px;
   }
-
+  
   .feedback-cancel-btn:hover {
     box-shadow: 0 2px 8px rgba(108, 117, 125, 0.1);
     transform: translateY(-1px);
   }
-
+  
   /* Animación para el mensaje de éxito */
   @keyframes fadeInOut {
     0% { opacity: 0; transform: translateY(-10px); }
@@ -223,18 +228,18 @@
     85% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(-10px); }
   }
-
+  
   .feedback-success-message {
     animation: fadeInOut 2s ease-in-out;
   }
-
+  
   /* Estilos para botón Guardar y dropdown de listas */
   .guardar-button {
     position: relative;
     display: inline-block;
     margin-top: 10px;
   }
-
+  
   .save-btn {
     background: transparent;
     color: #666;
@@ -249,20 +254,20 @@
     gap: 6px;
     transition: all 0.2s ease;
   }
-
+  
   .save-btn:hover {
     color: #0b2431;
     border-color: #0b2431;
     background: transparent;
   }
-
+  
   .save-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     color: #999;
     border-color: transparent;
   }
-
+  
   .lists-dropdown {
     position: absolute;
     top: 100%;
@@ -275,11 +280,11 @@
     z-index: 1000;
     display: none;
   }
-
+  
   .lists-dropdown.show {
     display: block;
   }
-
+  
   .lists-dropdown-header {
     padding: 12px 16px;
     border-bottom: 1px solid #e9ecef;
@@ -289,7 +294,7 @@
     font-weight: 600;
     color: #0b2431;
   }
-
+  
   .save-ok-btn {
     background: #04db8d;
     color: white;
@@ -300,70 +305,70 @@
     font-size: 12px;
     font-weight: 500;
   }
-
+  
   .lists-content {
     /* Solo contiene el padding, no scroll */
     padding: 8px 0 0 0;
   }
-
+  
   .lists-container {
     max-height: 120px; /* Altura fija para las listas solamente */
     overflow-y: auto;
     overflow-x: hidden;
     padding: 0 16px;
   }
-
+  
   /* Estilo del scrollbar para el contenedor de listas */
   .lists-container::-webkit-scrollbar {
     width: 6px;
   }
-
+  
   .lists-container::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 3px;
   }
-
+  
   .lists-container::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 3px;
   }
-
+  
   .lists-container::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
   }
-
+  
   .list-item {
     display: flex;
     align-items: center;
     padding: 8px 0;
     cursor: pointer;
   }
-
+  
   .list-item:hover {
     background-color: #f8f9fa;
   }
-
+  
   .checkbox-container {
     position: relative;
     margin-right: 12px;
   }
-
+  
   .checkbox-loader {
     display: none;
     color: #04db8d;
   }
-
+  
   .list-label {
     flex: 1;
     cursor: pointer;
     user-select: none;
   }
-
+  
   .list-name {
     font-size: 14px;
     color: #0b2431;
   }
-
+  
   .add-new-list {
     padding: 12px 16px;
     border-top: 1px solid #e9ecef;
@@ -376,18 +381,18 @@
     gap: 8px;
     transition: background-color 0.2s;
   }
-
+  
   .add-new-list:hover {
     background-color: #f8f9fa;
   }
-
+  
   .new-list-form {
     display: none;
     padding: 16px;
     border-top: 1px solid #e9ecef;
     background-color: #f8f9fa;
   }
-
+  
   .new-list-input {
     width: 100%;
     padding: 8px 12px;
@@ -396,13 +401,13 @@
     font-size: 14px;
     margin-bottom: 12px;
   }
-
+  
   .new-list-buttons {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
   }
-
+  
   .new-list-btn {
     padding: 6px 12px;
     border-radius: 4px;
@@ -411,25 +416,25 @@
     cursor: pointer;
     border: 1px solid transparent;
   }
-
+  
   .new-list-btn.cancel {
     background: white;
     border-color: #dee2e6;
     color: #6c757d;
   }
-
+  
   .new-list-btn.save {
     background: #04db8d;
     color: white;
   }
-
+  
   .no-lists-message {
     padding: 16px;
     text-align: center;
     color: #6c757d;
     font-style: italic;
   }
-
+  
   /* Estilos para el botón Buscar */
   #buscarBtn {
     background-color: #0b2431;
@@ -451,7 +456,7 @@
     gap: 8px;
     line-height: 1;
   }
-
+  
   #buscarBtn::before {
     content: "";
     display: inline-block;
@@ -463,25 +468,25 @@
     background-position: center;
     margin-right: 2px;
   }
-
+  
   #buscarBtn:hover {
     background-color: #1a3a4a;
     box-shadow: 0 4px 12px rgba(11, 36, 49, 0.2);
     transform: translateY(-1px);
   }
-
+  
   #buscarBtn:active {
     transform: translateY(0);
     box-shadow: 0 2px 6px rgba(11, 36, 49, 0.3);
   }
-
+  
   #buscarBtn:disabled {
     background-color: #6c757d;
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
   }
-
+  
   /* Paginación (Reversa style) */
   .pagination-container {
     display: flex;
@@ -723,6 +728,30 @@
 </div> <!-- Fin de .tracker-container -->
 
 <!-- Scripts que necesita el tracker -->
+<script>
+// Registrar HiDPI para Chart.js si ya está cargado más adelante
+(function(){
+  const ReversaHiDpiPlugin = {
+    id: 'reversaHiDpi',
+    beforeInit(chart){
+      const dpr = Math.max(2, (window.devicePixelRatio || 1));
+      if (!chart.options.devicePixelRatio) chart.options.devicePixelRatio = dpr;
+    },
+    beforeDatasetsDraw(chart){
+      const ctx = chart && chart.ctx; if (ctx){
+        try { ctx.imageSmoothingEnabled = true; } catch(_e){}
+        try { ctx.imageSmoothingQuality = 'high'; } catch(_e){}
+      }
+    }
+  };
+  function tryRegister(){
+    if (window.Chart){ try { Chart.register(ReversaHiDpiPlugin); Chart.defaults.devicePixelRatio = Math.max(2, (window.devicePixelRatio || 1)); } catch(_e){} }
+  }
+  // Intentar ahora y de nuevo tras carga de tracker.js (si este importa Chart)
+  tryRegister();
+  window.addEventListener('load', tryRegister);
+})();
+</script>
 <script src="tracker.js"></script>
 <script src="/views/configuracion/carpetas_agentes.js"></script>
 <script>

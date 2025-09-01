@@ -80,7 +80,7 @@ async function migrateUsersToEmpresa(input) {
         const allowedEmpresaFields = [
             'company_name', 'web', 'detalle_empresa', 'interes', 'tamaño_empresa', 'perfil_regulatorio',
             'website_extraction_status', 'industry_tags', 'sub_industria_map', 'rama_juridicas', 'sub_rama_map',
-            'cobertura_legal', 'rangos', 'etiquetas_personalizadas', 'tipo_empresa'
+            'cobertura_legal', 'rangos', 'etiquetas_personalizadas', 'tipo_empresa', 'legacy_user_ids'
         ];
         allowedEmpresaFields.forEach(k => {
             if (empresaData[k] !== undefined) estructuraUpdate[k] = empresaData[k];
@@ -1508,6 +1508,27 @@ function buildEtiquetasQuery(user, selectedEtiquetas) {
     return query;
 }
 
+function buildEtiquetasQueryForIds(selectedEtiquetas, userIds) {
+    if (!selectedEtiquetas || selectedEtiquetas.length === 0 || !Array.isArray(userIds) || userIds.length === 0) {
+        return {};
+    }
+    const userIdStrings = userIds.map(id => String(id));
+    const orBlocks = [];
+    userIdStrings.forEach(id => {
+        // Estructura nueva (objeto por etiqueta)
+        orBlocks.push({
+            $or: selectedEtiquetas.map(etiqueta => ({
+                [`etiquetas_personalizadas.${id}.${etiqueta}`]: { $exists: true }
+            }))
+        });
+        // Estructura antigua (array de etiquetas)
+        orBlocks.push({
+            [`etiquetas_personalizadas.${id}`]: { $in: selectedEtiquetas }
+        });
+    });
+    return { $or: orBlocks };
+}
+
 // Actualizar exportaciones
 module.exports = {
     // Lectura/escritura etiquetas
@@ -1545,6 +1566,7 @@ module.exports = {
     updateEtiquetasPersonalizadasAdapter, 
     getEtiquetasSeleccionadasAdapter,
     buildEtiquetasQuery,
+    buildEtiquetasQueryForIds,
 
     // Migración
     migrateUsersToEmpresa

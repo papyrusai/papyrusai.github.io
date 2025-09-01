@@ -34,6 +34,104 @@ showConfirmationModal({
 
 ---
 
+## 🗓️ Date Picker (Calendario) - Estándar Reversa
+
+- **Comportamiento**:
+  - El calendario nativo se abre al hacer click o focus en el `input[type="date"]` (no solo en el icono), usando `input.showPicker()` cuando está disponible.
+  - El cursor cambia a `pointer` sobre los inputs de fecha.
+  - El rango personalizado se muestra en un contenedor con borde y sombra sutil.
+- **Estilos**:
+```css
+.custom-range { background:#fff; border:1.5px solid var(--neutral-300); border-radius:12px; padding:8px 10px; box-shadow:0 2px 8px rgba(11,36,49,.04); }
+.custom-range-input { border:1px solid var(--neutral-300); border-radius:10px; padding:6px 10px; font-size:12px; color:var(--reversa-blue); cursor: pointer; }
+.custom-range-input:focus { outline:none; border-color: var(--reversa-green); box-shadow:0 0 0 3px rgba(4,219,141,.15); }
+```
+- **JavaScript**:
+```javascript
+// Utilidad estándar
+window.ReversaUI = window.ReversaUI || {};
+window.ReversaUI.openNativeDatePicker = function(input){ if (!input) return; try { input.showPicker && input.showPicker(); } catch(_){} };
+
+// Uso recomendado
+const start = document.getElementById('inputStartDate');
+const end = document.getElementById('inputEndDate');
+['click','focus'].forEach(evt => start?.addEventListener(evt, ()=> ReversaUI.openNativeDatePicker(start)));
+['click','focus'].forEach(evt => end?.addEventListener(evt, ()=> ReversaUI.openNativeDatePicker(end)));
+```
+
+---
+
+## 🧩 Chip-Select y Chips (Filtros) - Estándar Reversa
+
+- **Patrón**: Componente de selección múltiple con chips removibles y dropdown de opciones.
+- **Estados**: activo, enfoque, selección "Todos" (resetea), eliminación mediante `×`.
+- **Estilos base**:
+```css
+.reversa-chip-select { display:flex; align-items:center; justify-content:space-between; gap:8px; border:1.5px solid var(--neutral-300); border-radius:12px; padding:6px 10px; min-height:44px; background:white; box-shadow:0 2px 8px rgba(11,36,49,.04); }
+.reversa-chip-bubble { display:inline-flex; align-items:center; gap:8px; background: rgba(4,219,141,.08); color:var(--reversa-green); padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:600; }
+.reversa-chip-bubble.selected { background: rgba(4,219,141,.18); }
+.reversa-chip-x { cursor:pointer; opacity:.7; }
+.reversa-chip-x:hover { opacity:1; }
+.reversa-chip-dropdown { display:none; position:absolute; left:0; top:calc(100% + 2px); background:white; border:1px solid var(--neutral-300); border-radius:12px; box-shadow:0 8px 24px rgba(11,36,49,.12); padding:8px; max-height:300px; overflow:auto; min-width:100%; z-index:1000; }
+.reversa-chip-dropdown.open { display:block; }
+.reversa-dropdown-item { padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
+.reversa-dropdown-item:hover { background:var(--neutral-100); }
+```
+- **Lógica sugerida**:
+```javascript
+function bindReversaChipSelect({ box, chipsContainer, dropdown, clearBtn, getState, setState }){
+  function open(){
+    box.classList.add('active');
+    const rect = box.getBoundingClientRect();
+    dropdown.style.minWidth = rect.width + 'px';
+    dropdown.classList.add('open');
+  }
+  function close(){ dropdown.classList.remove('open'); box.classList.remove('active'); }
+  function render(){
+    chipsContainer.innerHTML='';
+    getState().forEach(v => {
+      const span = document.createElement('span');
+      span.className = 'reversa-chip-bubble selected';
+      span.innerHTML = `${v} <span class="reversa-chip-x">×</span>`;
+      span.querySelector('.reversa-chip-x').onclick = (e)=>{ e.stopPropagation(); remove(v); };
+      chipsContainer.appendChild(span);
+    });
+  }
+  function add(value){
+    const values = getState();
+    const next = (value === 'Todos') ? ['Todos'] : Array.from(new Set(values.filter(x=>x!=='Todos').concat(value)));
+    setState(next); render();
+  }
+  function remove(value){
+    let next = getState().filter(v=>v!==value);
+    if (next.length===0) next=['Todos'];
+    setState(next); render();
+  }
+  box.onclick = (e)=>{ e.stopPropagation(); open(); };
+  clearBtn.onclick = (e)=>{ e.stopPropagation(); setState(['Todos']); render(); };
+  dropdown.onclick = (e)=>{ const it=e.target.closest('.reversa-dropdown-item'); if (!it) return; e.stopPropagation(); add(it.dataset.value); };
+  document.addEventListener('click', ()=> close());
+  render();
+}
+```
+
+---
+
+## 🖱️ Cursores en Elementos Clicables - Estándar
+
+- Por defecto, todo elemento interactivo debe mostrar cursor `pointer` en hover.
+```css
+.btn:hover,
+.link:hover,
+.tab-link:hover,
+.chip:hover,
+.dropdown-item:hover,
+.icon-button:hover,
+.clear-icon:hover { cursor: pointer; }
+```
+
+---
+
 ## 🎨 PALETA DE COLORES
 
 ### **Colores Brand**

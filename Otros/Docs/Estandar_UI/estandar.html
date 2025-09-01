@@ -695,16 +695,6 @@
                     <button class="btn btn-outline btn-lg">Large</button>
                 </div>
             </div>
-
-            <div class="subsection">
-                <h3 class="subsection-title">Con Iconos</h3>
-                <div class="flex flex-gap">
-                    <button class="btn btn-outline"><i class="fas fa-download"></i> Descargar</button>
-                    <button class="btn btn-filled"><i class="fas fa-save"></i> Guardar</button>
-                    <button class="btn btn-icon btn-outline"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-icon btn-filled"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
         </section>
 
         <!-- Inputs y Formularios -->
@@ -731,28 +721,29 @@
             </div>
 
             <div class="subsection">
-                <h3 class="subsection-title">Checkboxes y Radios</h3>
-                <div class="grid grid-2">
-                    <div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="check1" class="checkbox" checked>
-                            <label for="check1">Opción seleccionada</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="check2" class="checkbox">
-                            <label for="check2">Opción no seleccionada</label>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="radio-group">
-                            <input type="radio" id="radio1" name="radio" class="radio" checked>
-                            <label for="radio1">Opción A</label>
-                        </div>
-                        <div class="radio-group">
-                            <input type="radio" id="radio2" name="radio" class="radio">
-                            <label for="radio2">Opción B</label>
-                        </div>
-                    </div>
+                <h3 class="subsection-title">Calendario (Date Picker)</h3>
+                <div class="custom-range" style="max-width: 420px;">
+                    <input type="date" id="demoStart" class="input custom-range-input" />
+                    <span class="date-sep" style="margin:0 8px; color: var(--neutral-600);">—</span>
+                    <input type="date" id="demoEnd" class="input custom-range-input" />
+                </div>
+            </div>
+        </section>
+
+        <!-- Chips y Filtros -->
+        <section class="section">
+            <h2 class="section-title">Chip-Select (Filtros)</h2>
+            <div style="position:relative; max-width: 520px;">
+                <div class="reversa-chip-select" id="demoChipBox">
+                    <div class="chips" id="demoChips"></div>
+                    <div class="select-icons" id="demoClear" title="Limpiar">×</div>
+                </div>
+                <div class="reversa-chip-dropdown" id="demoDropdown">
+                    <div class="reversa-dropdown-item" data-value="Todos">Todos</div>
+                    <div class="reversa-dropdown-item" data-value="Tecnología">Tecnología</div>
+                    <div class="reversa-dropdown-item" data-value="Energía">Energía</div>
+                    <div class="reversa-dropdown-item" data-value="Finanzas">Finanzas</div>
+                    <div class="reversa-dropdown-item" data-value="Sanidad">Sanidad</div>
                 </div>
             </div>
         </section>
@@ -1190,6 +1181,34 @@
                 }
             });
         });
+
+        // Calendario demo: abrir nativo al click/focus
+        (function(){
+          window.ReversaUI = window.ReversaUI || {};
+          window.ReversaUI.openNativeDatePicker = function(input){ if (!input) return; try { input.showPicker && input.showPicker(); } catch(_){} };
+          const ds = document.getElementById('demoStart'); const de = document.getElementById('demoEnd');
+          ['click','focus'].forEach(evt => ds?.addEventListener(evt, ()=> ReversaUI.openNativeDatePicker(ds)));
+          ['click','focus'].forEach(evt => de?.addEventListener(evt, ()=> ReversaUI.openNativeDatePicker(de)));
+        })();
+
+        // Chip-select demo
+        (function(){
+          const box = document.getElementById('demoChipBox');
+          const chips = document.getElementById('demoChips');
+          const dd = document.getElementById('demoDropdown');
+          const clr = document.getElementById('demoClear');
+          let values = ['Todos'];
+          function render(){ chips.innerHTML=''; values.forEach(v=>{ const s=document.createElement('span'); s.className='reversa-chip-bubble selected'; s.innerHTML = v+" <span class='reversa-chip-x'>×</span>"; s.querySelector('.reversa-chip-x').onclick=(e)=>{ e.stopPropagation(); remove(v); }; chips.appendChild(s); }); }
+          function open(){ box.classList.add('active'); const rect=box.getBoundingClientRect(); dd.style.minWidth=rect.width+'px'; dd.classList.add('open'); }
+          function close(){ dd.classList.remove('open'); box.classList.remove('active'); }
+          function add(v){ values = (v==='Todos')? ['Todos'] : Array.from(new Set(values.filter(x=>x!=='Todos').concat(v))); render(); }
+          function remove(v){ values = values.filter(x=>x!==v); if(values.length===0) values=['Todos']; render(); }
+          box.onclick = (e)=>{ e.stopPropagation(); open(); };
+          clr.onclick = (e)=>{ e.stopPropagation(); values=['Todos']; render(); };
+          dd.onclick = (e)=>{ const it=e.target.closest('.reversa-dropdown-item'); if(!it) return; e.stopPropagation(); add(it.dataset.value); };
+          document.addEventListener('click', ()=> close());
+          render();
+        })();
 
         // Log de interacciones para demostración
         console.log('🎨 Reversa UI Standard Showcase cargado correctamente');

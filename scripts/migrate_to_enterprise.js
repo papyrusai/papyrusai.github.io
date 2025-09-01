@@ -18,6 +18,7 @@ const { MongoClient, ObjectId } = require('mongodb');
  * - MIGRATE_DEFAULT_PERMISO: 'lectura' | 'edicion' (defaults to 'lectura')
  * - MIGRATE_DRY_RUN: 'true' | 'false' (defaults to 'true')
  * - MIGRATE_USE_ADMIN_AS_EMPRESA_ID: 'true' | 'false' (defaults to 'true')
+ * - MIGRATE_LEGACY_USER_EMAILS: comma-separated emails whose historical matches must be preserved
  */
 
 const CONFIG = {
@@ -29,7 +30,11 @@ const CONFIG = {
   adminEmail: (process.env.MIGRATE_ADMIN_EMAIL || 'tomas@reversa.ai').trim(),
   defaultPermiso: (process.env.MIGRATE_DEFAULT_PERMISO || 'lectura').toLowerCase(), // 'lectura' | 'edicion'
   dryRun: String(process.env.MIGRATE_DRY_RUN || 'true').toLowerCase() === 'true',
-  useAdminIdAsEmpresaId: String(process.env.MIGRATE_USE_ADMIN_AS_EMPRESA_ID || 'true').toLowerCase() === 'true'
+  useAdminIdAsEmpresaId: String(process.env.MIGRATE_USE_ADMIN_AS_EMPRESA_ID || 'true').toLowerCase() === 'true',
+  legacyUserEmails: (process.env.MIGRATE_LEGACY_USER_EMAILS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
 };
 
 const FIELDS_TO_COPY = [
@@ -308,6 +313,18 @@ async function main() {
       admin_principal_id: estructura.admin_principal_id || adminNewId,
       updated_at: now
     };
+
+    // Build legacy_user_ids from MIGRATE_LEGACY_USER_EMAILS if provided
+    let legacyUserIds = [];
+    if (Array.isArray(CONFIG.legacyUserEmails) && CONFIG.legacyUserEmails.length > 0) {
+      const legacyUsers = targetUsers.filter(u => CONFIG.legacyUserEmails.map(e => e.toLowerCase()).includes((u.email || '').toLowerCase()));
+      legacyUserIds = legacyUsers.map(u => new ObjectId(String(u._id)));
+      if (legacyUserIds.length > 0) {
+        const currentLegacy = Array.isArray(estructura.legacy_user_ids) ? estructura.legacy_user_ids : [];
+        const merged = uniqueArray([ ...currentLegacy.map(String), ...legacyUserIds.map(String) ]).map(id => new ObjectId(String(id)));
+        setUpdate.legacy_user_ids = merged;
+      }
+    }
     const setBackups = {};
 
     function assignIfProvided(fieldName, value, mergeStrategy = 'replace') {

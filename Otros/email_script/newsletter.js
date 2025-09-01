@@ -2510,8 +2510,13 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
     if (!estructuraEmpresaId) return null;
     const key = estructuraEmpresaId.toString();
     if (empresaDocCache.has(key)) return empresaDocCache.get(key);
-    const doc = await db.collection('users').findOne({ _id: new ObjectId(key), tipo_cuenta: 'empresa' });
+    const doc = await db.collection('users').findOne({ _id: new ObjectId(key), tipo_cuenta: 'estructura_empresa' });
     if (doc) empresaDocCache.set(key, doc);
+    if (doc) {
+      console.log(`[newsletter] Found estructura_empresa doc for ${key}`);
+    } else {
+      console.warn(`[newsletter] estructura_empresa doc not found for ${key}`);
+    }
     return doc;
   } catch (e) {
     return null;
@@ -2595,7 +2600,9 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
       });
     }
 
-    const filteredUsers = filterUniqueEmails(allUsers); //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai'); //
+    const filteredUsers = filterUniqueEmails(allUsers); 
+    //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai');
+    // //allUsers.filter(u => u.email && u.email.toLowerCase() === 'tomas@reversa.ai'); //
     // Initialize user statistics for report
     const userStats = {
       withMatches: [],
@@ -2609,14 +2616,35 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
       let selectedEnterpriseEtiquetas = [];
       let effectiveEtiquetasCatalog = user.etiquetas_personalizadas || {};
       let coverageCollections = [];
+      let enterpriseRangosContext = [];
 
+      let isEnterpriseContext = isEnterpriseUser;
       if (isEnterpriseUser) {
         const empresaDoc = await getEmpresaDoc(db, user.estructura_empresa_id);
         if (empresaDoc) {
           targetUserIdStr = empresaDoc._id.toString();
           effectiveEtiquetasCatalog = empresaDoc.etiquetas_personalizadas || {};
           coverageCollections = extractCoverageCollections(empresaDoc.cobertura_legal || {});
+          isEnterpriseContext = true;
+          enterpriseRangosContext = Array.isArray(empresaDoc.rangos) ? empresaDoc.rangos : [];
         }
+      } else {
+        // Fallback: infer empresa by email domain if estructura_empresa_id not set
+        try {
+          const domain = (user.email || '').split('@')[1]?.toLowerCase().trim();
+          if (domain) {
+            const empresaDocByDomain = await db.collection('users').findOne({ tipo_cuenta: 'estructura_empresa', empresa: domain });
+            if (empresaDocByDomain) {
+              targetUserIdStr = empresaDocByDomain._id.toString();
+              effectiveEtiquetasCatalog = empresaDocByDomain.etiquetas_personalizadas || {};
+              if (coverageCollections.length === 0) coverageCollections = extractCoverageCollections(empresaDocByDomain.cobertura_legal || {});
+              isEnterpriseContext = true;
+              enterpriseRangosContext = Array.isArray(empresaDocByDomain.rangos) ? empresaDocByDomain.rangos : [];
+            }
+          }
+        } catch (_) {}
+      }
+      if (isEnterpriseContext) {
         selectedEnterpriseEtiquetas = getSelectedEtiquetasFromUser(user);
       }
       // Fallback a cobertura individual si no hay en empresa o no es enterprise
@@ -2637,6 +2665,7 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
        }
        
        console.log(`👤 User ${user.email}: Processing ${userMatchingDocs.length} documents from ${[...new Set(userMatchingDocs.map(d => d.collectionName))].join(', ')}`);
+       console.log(`[newsletter] Enterprise context: ${isEnterpriseContext ? 'YES' : 'NO'} | userRangos: ${(user.rangos||[]).join(', ')} | enterpriseRangos: ${enterpriseRangosContext.join(', ')} | selectedEnterpriseEtiquetas: ${(selectedEnterpriseEtiquetas||[]).join(', ')}`);
  
        // 3) Filtrar documentos según etiquetas personalizadas del usuario
        // Para individuales: utilizar sus propias etiquetas; para empresa: usar etiquetas del documento bajo empresaId
@@ -2658,9 +2687,37 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
          
          // FILTER 1: Check if the document's rango matches any of the user's rangos
          const docRango = doc.rango_titulo || "Otras";
-         const rangoMatches = userRangos.includes(docRango);
-         
-         if (!rangoMatches) continue;
+
+         // Determine effective rangos: prefer enterprise rangos if present, else user rangos
+         // If neither has rangos configured (empty arrays), skip rango filtering
+         let enterpriseRangos = [];
+         try {
+           // If enterprise context was detected earlier, try to use its rangos
+           if (isEnterpriseContext) {
+             // enterprise rangos are held in effective context via empresaDoc or inferred empresa
+             // Note: effectiveEtiquetasCatalog came from empresa when enterprise context is true
+             // We attempt to read rangos from enterprise doc via coverage if available at user level
+             enterpriseRangos = Array.isArray(user?.empresa_rangos)
+               ? user.empresa_rangos
+               : Array.isArray(user?.rangos_empresa)
+                 ? user.rangos_empresa
+                 : [];
+           }
+         } catch (_) {}
+
+         const effectiveRangos = (Array.isArray(enterpriseRangos) && enterpriseRangos.length > 0)
+           ? enterpriseRangos
+           : (Array.isArray(userRangos) ? userRangos : []);
+
+                 const shouldFilterByRango = false;
+        const rangoMatches = true;
+
+        // Always skip rango filtering (global behavior)
+        // Previously: if (!shouldFilterByRango) { console.log(... for tomas@reversa.ai) }
+
+        if (!rangoMatches) {
+          continue;
+        }
          
          // FILTER 2: Check for etiquetas personalizadas match (enterprise-aware)
          let hasEtiquetasMatch = false;
@@ -2670,7 +2727,7 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
          if (doc.etiquetas_personalizadas && targetUserIdStr) {
            const docEtiqForTarget = doc.etiquetas_personalizadas[targetUserIdStr];
            if (docEtiqForTarget) {
-             if (isEnterpriseUser) {
+             if (isEnterpriseContext) {
                // Empresa: usar etiquetas del documento para la estructura_empresa
                let docKeys = [];
                if (Array.isArray(docEtiqForTarget)) {

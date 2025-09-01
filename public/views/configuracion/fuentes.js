@@ -5,233 +5,313 @@ function populateFuentes(cobertura_legal) {
   // Check if user has etiquetas_personalizadas and show/hide banner accordingly
   checkAndShowAgentesRegulatoryBanner();
 
-  const fuentesData = {
-    "Boletines Oficiales": {
-        "A) Europeos y Nacionales": [
-            { sigla: "DOUE", nombre: "Diario Oficial de la Unión Europea", tipo: "fuentes-gobierno" },
-            { sigla: "BOE", nombre: "Boletín Oficial del Estado", tipo: "fuentes-gobierno" },
-            { sigla: "BOPA_ANDORRA", nombre: "BOPA Andorra", tipo: "fuentes-gobierno" },
-        ],
-        "B) Regionales": [
-            { sigla: "BOPV", nombre: "Boletín Oficial del País Vasco", tipo: "fuentes-gobierno" },
-            { sigla: "CGCC", nombre: "Consejo de Gobierno Comunidad de Catalunya", tipo: "fuentes-gobierno" },
-            { sigla: "DOGC", nombre: "Diari Oficial de la Generalitat de Catalunya", tipo: "fuentes-gobierno" },
-            { sigla: "DOG", nombre: "Diario Oficial de Galicia", tipo: "fuentes-gobierno" },
-            { sigla: "BOC", nombre: "Boletín Oficial de Cantabria", tipo: "fuentes-gobierno" },
-            { sigla: "BORM", nombre: "Boletín Oficial de la Región de Murcia", tipo: "fuentes-gobierno" },
-            { sigla: "BOA", nombre: "Boletín Oficial de Aragón", tipo: "fuentes-gobierno" },
-            { sigla: "BOCM", nombre: "Boletín Oficial de la Comunidad de Madrid", tipo: "fuentes-gobierno" },
-            { sigla: "DOE", nombre: "Diario Oficial de Extremadura", tipo: "fuentes-gobierno" },
-            { sigla: "BOCYL", nombre: "Boletín Oficial de Castilla y León", tipo: "fuentes-gobierno" },
-            { sigla: "BOJA", nombre: "Boletín Oficial de la Junta de Andalucía", tipo: "fuentes-gobierno" },
-            { sigla: "BOIB", nombre: "Boletín Oficial de las Islas Baleares", tipo: "fuentes-gobierno" },
-            { sigla: "BOPA", nombre: "Boletín Oficial del Principado de Asturias", tipo: "fuentes-gobierno" },
-            { sigla: "DOGV", nombre: "Diario Oficial de la Generalitat Valenciana", tipo: "fuentes-gobierno" },
-            { sigla: "BOCA", nombre: "Boletín Oficial de Canarias", tipo: "fuentes-gobierno" },
-            { sigla: "BOR", nombre: "Boletín Oficial de La Rioja", tipo: "fuentes-gobierno" },
-            { sigla: "BON", nombre: "Boletín Oficial de Navarra", tipo: "fuentes-gobierno" },
-            { sigla: "DOCM", nombre: "Diario Oficial de Castilla-La Mancha", tipo: "fuentes-gobierno" },
-        ]
-    },
-    "Reguladores": [
-        { sigla: "EBA", nombre: "European Banking Authority", tipo: "fuentes-reguladores" },
-        { sigla: "EBA_QA", nombre: "European Banking Authority (QA)", tipo: "fuentes-reguladores" },
-        { sigla: "ESMA", nombre: "European Securities and Markets Authority", tipo: "fuentes-reguladores" },
-        { sigla: "ESMA_QA", nombre: "European Securities and Markets Authority (QA)", tipo: "fuentes-reguladores" },
-        { sigla: "CNMV", nombre: "Comisión Nacional del Mercado de Valores", tipo: "fuentes-reguladores" },
-        { sigla: "INCIBE", nombre: "Instituto Nacional de Ciberseguridad", tipo: "fuentes-reguladores" },
-        { sigla: "CNMC", nombre: "Comisión Nacional de los Mercados y la Competencia", tipo: "fuentes-reguladores" },
-        { sigla: "AEPD", nombre: "Agencia Española de Protección de Datos", tipo: "fuentes-reguladores" },
-        { sigla: "NIST", nombre: "National Institute of Standards and Technology", tipo: "fuentes-reguladores" },
-        { sigla: "EDPB", nombre: "European Data Protection Board", tipo: "fuentes-reguladores" },
-        { sigla: "SEPBLAC", nombre: "Servicio Ejecutivo de la Comisión de Prevención del Blanqueo de Capitales e Infracciones Monetarias", tipo: "fuentes-reguladores" },
-        { sigla: "AEPD_guias", nombre: "Agencia Española de Protección de Datos - Guías", tipo: "fuentes-reguladores" },
-
-    ],
-    "Actividad Parlamentaria": [
-      { sigla: "BOCG", nombre: "Boletín Oficial de las Cortes Generales", tipo: "fuentes-gobierno" },
-      { sigla: "EUROPARL_WEEKLY_AGENDA", nombre: "Agenda semanal del Parlamento Europeo", tipo: "fuentes-gobierno" },
-      { sigla: "EUROPARL_LATEST_DOCS", nombre: "Últimos documentos del Parlamento Europeo", tipo: "fuentes-gobierno" },
-      { sigla: "EUROPARL_EVENTS", nombre: "Eventos del Parlamento Europeo", tipo: "fuentes-gobierno" },
-      { sigla: "EUROPARL_MEETINGS", nombre: "Reuniones del Parlamento Europeo", tipo: "fuentes-gobierno" },
-      { sigla: "DANISH_PRESIDENCY_MEETINGS", nombre: "Reuniones Presidencia Danesa del Consejo de la UE", tipo: "fuentes-gobierno" },
-      { sigla: "SENADO_AGENDA", nombre: "Agenda del Senado", tipo: "fuentes-gobierno" },
-      { sigla: "SENADO_LEYES_EN_TRAMITACION", nombre: "Leyes en tramitación del Senado", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_ECONOMIA_CONSULTAS", nombre: "Participación Economía Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_DEFENSA_AUDIENCIAS", nombre: "Participación Defensa Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_DEFENSA_CONSULTAS", nombre: "Participación Defensa Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_DERECHOS_SOCIALES_AUDIENCIAS", nombre: "Participación Derechos Sociales Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_HACIENDA_AUDIENCIAS", nombre: "Participación Hacienda Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_EXTERIORES_AUDIENCIAS", nombre: "Participación Exteriores Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_IGUALDAD_AUDIENCIAS", nombre: "Participación Igualdad Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_EXTERIORES_CONSULTAS", nombre: "Participación Exteriores Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_PROYECTOS_NORMATIVOS", nombre: "Participación Transición Ecológica Proyectos Normativos", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSFORMACION_DIGITAL_CONSULTAS", nombre: "Participación Transformación Digital Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_POLITICA_TERRITORIAL_CONSULTAS", nombre: "Participación Política Territorial Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_AGRICULTURA_PARTICIPACION_PUBLICA_OTROS_DOCUMENTOS", nombre: "Participación Agricultura Participación Pública Otros Documentos", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_AGRICULTURA_PARTICIPACION_PUBLICA_PROYECTOS_NORMATIVOS", nombre: "Participación Agricultura Participación Pública Proyectos Normativos", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_SANIDAD_AUDIENCIAS", nombre: "Participación Sanidad Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_EDUCACION_CONSULTAS", nombre: "Participación Educación Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_PRESIDENCIA_JUSTICIA", nombre: "Participación Presidencia Justicia", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_IGUALDAD_CONSULTAS", nombre: "Participación Igualdad Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_OTROS_DOCUMENTOS", nombre: "Participación Transición Ecológica Otros Documentos", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_ECONOMIA_AUDIENCIAS", nombre: "Participación Economía Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_POLITICA_TERRITORIAL_AUDIENCIAS", nombre: "Participación Política Territorial Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_INDUSTRIA_Y_PYME", nombre: "Participación Industria y PYME", tipo: "fuentes-gobierno" },
-      { sigla: "OEIL", nombre: "OEIL - European Parliament Legislative Observatory", tipo: "fuentes-gobierno" },
-      { sigla: "EUROPARL_PLENARY_AGENDA", nombre: "Agenda del Pleno del Parlamento Europeo", tipo: "fuentes-gobierno" },
-      { sigla: "CONSILIUM_MEETINGS", nombre: "Reuniones del Consejo de la UE", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_CIENCIA_AUDIENCIAS", nombre: "Participación Ciencia Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_CIENCIA_CONSULTAS", nombre: "Participación Ciencia Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_CULTURA_AUDIENCIAS", nombre: "Participación Cultura Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_CULTURA_CONSULTAS", nombre: "Participación Cultura Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_DERECHOS_SOCIALES_CONSULTAS", nombre: "Participación Derechos Sociales Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_EDUCACION_AUDIENCIAS", nombre: "Participación Educación Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_HACIENDA_CONSULTAS", nombre: "Participación Hacienda Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_INCLUSION_AUDIENCIAS", nombre: "Participación Inclusión Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_INCLUSION_CONSULTAS", nombre: "Participación Inclusión Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_INDUSTRIA_SUBSECRETARIA", nombre: "Participación Industria Subsecretaría", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_INTERIOR_AUDIENCIAS", nombre: "Participación Interior Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_INTERIOR_CONSULTAS", nombre: "Participación Interior Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_JUVENTUD_AUDIENCIAS", nombre: "Participación Juventud Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_JUVENTUD_CONSULTAS", nombre: "Participación Juventud Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_PRESIDENCIA_AUDIENCIAS", nombre: "Participación Presidencia Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_PRESIDENCIA_CONSULTAS", nombre: "Participación Presidencia Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_SANIDAD_CONSULTAS", nombre: "Participación Sanidad Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRABAJO_AUDIENCIAS", nombre: "Participación Trabajo Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRABAJO_CONSULTAS", nombre: "Participación Trabajo Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSFORMACION_DIGITAL_AUDIENCIAS", nombre: "Participación Transformación Digital Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_PARTICIPACION_PUBLICA_OTROS_DOCUMENTOS", nombre: "Participación Transición Ecológica Participación Pública Otros Documentos", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSICION_ECOLOGICA_PARTICIPACION_PUBLICA_PROYECTOS_NORMATIVOS", nombre: "Participación Transición Ecológica Participación Pública Proyectos Normativos", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSPORTES_AUDIENCIAS", nombre: "Participación Transportes Audiencias", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TRANSPORTES_CONSULTAS", nombre: "Participación Transportes Consultas", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_TURISMO", nombre: "Participación Turismo", tipo: "fuentes-gobierno" },
-      { sigla: "PARTICIPACION_VIVIENDA_TODO", nombre: "Participación Vivienda Todo", tipo: "fuentes-gobierno" },
-    ],
-    "Comunicados y prensa":[
-    { sigla: "CEPC", nombre: "Comisión Europea Press Corner", tipo: "fuentes-gobierno" },
-    { sigla: "NIST_NEWS", nombre: "National Institute of Standards and Technology News", tipo: "fuentes-reguladores" },
-    { sigla: "EIOPA_news", nombre: "European Insurance and Occupational Pensions Authority News", tipo: "fuentes-reguladores" },
-    { "sigla": "EUROPARL_NOTICIAS", "nombre": "Sala de prensa del Parlamento Europeo", "tipo": "fuentes-gobierno" },
-    { "sigla": "CEPC", "nombre": "Sala de prensa de la Comisión Europea", "tipo": "fuentes-gobierno" },
-    { "sigla": "CE_ALL_NOTICIAS", "nombre": "Noticias de la Comisión Europea", "tipo": "fuentes-gobierno" },
-    { "sigla": "DANISH_PRESIDENCY_NOTICIAS", "nombre": "Web de la Presidencia danesa del Consejo de la UE", "tipo": "fuentes-gobierno" },
-    { "sigla": "CONSEJO_ESTADO_NOTICIAS", "nombre": "Consejo de Estado - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "COMUNIDAD_VALENCIANA_NOTICIAS", "nombre": "Comunitat Valenciana - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "COMUNIDAD_MADRID_NOTICIAS", "nombre": "Comunidad de Madrid - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "CONGRESO_NOTICIAS", "nombre": "Congreso de los Diputados - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "ASTURIAS_NOTICIAS", "nombre": "Principado de Asturias - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "CANARIAS_NOTICIAS", "nombre": "Gobierno de Canarias - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "EXTREMADURA_NOTICIAS", "nombre": "Junta de Extremadura - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "ANDALUCIA_NOTICIAS", "nombre": "Junta de Andalucía - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "ANDORRA_NOTICIAS", "nombre": "Gobierno de Andorra - Noticias", "tipo": "fuentes-gobierno" },
-    ],
-    "Organismos Gubernamentales": [
-    { "sigla": "MITES_NOTICIAS", "nombre": "Ministerio de Trabajo", "tipo": "fuentes-gobierno" },
-    { "sigla": "MITECO_NOTICIAS", "nombre": "Ministerio de Transición Ecológica", "tipo": "fuentes-gobierno" },
-    { "sigla": "MAPA_NOTICIAS", "nombre": "Ministerio de Agricultura, Pesca y Alimentación", "tipo": "fuentes-gobierno" },
-    { "sigla": "EXTERIORES_NOTICIAS", "nombre": "Ministerio de Asuntos Exteriores", "tipo": "fuentes-gobierno" },
-    { "sigla": "MICIU_NOTICIAS", "nombre": "Ministerio de Ciencia, Innovación y Universidades", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_CULTURA_NOTICIAS", "nombre": "Ministerio de Cultura", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_DEFENSA_NOTICIAS", "nombre": "Ministerio de Defensa", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_DCSA_NOTICIAS", "nombre": "Ministerio de Derechos Sociales, Consumo y Agenda 2030", "tipo": "fuentes-gobierno" },
-    { "sigla": "MINECO_NOTICIAS", "nombre": "Ministerio de Economía, Comercio y Empresa", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_EDUCACIONFPYDEPORTES_NOTICIAS", "nombre": "Ministerio de Educación", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_HACIENDA_NOTICIAS", "nombre": "Ministerio de Hacienda", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_INDUSTRIAYTURISMO_NOTICIAS", "nombre": "Ministerio de Industria y Turismo", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_INTERIOR_NOTICIAS", "nombre": "Ministerio del Interior", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_JUSTICIA_NOTICIAS", "nombre": "Ministerio de Justicia", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_MPT_NOTICIAS", "nombre": "Ministerio de Política Territorial", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_SANIDAD_NOTICIAS", "nombre": "Ministerio de Sanidad", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_DIGITAL_NOTICIAS", "nombre": "Ministerio de Transformación Digital", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_MIVAU_NOTICIAS", "nombre": "Ministerio de Vivienda", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_INCLUSION_NOTICIAS", "nombre": "Ministerio de Inclusión", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_JUVENTUDEINFANCIA_NOTICIAS", "nombre": "Ministerio de Juventud e Infancia", "tipo": "fuentes-gobierno" },
-    { "sigla": "MIN_TRANSPORTES_NOTICIAS", "nombre": "Ministerio de Transportes", "tipo": "fuentes-gobierno" },
-    { "sigla": "MONCLOA_NOTICIAS", "nombre": "Moncloa - Noticias", "tipo": "fuentes-gobierno" },
-    { "sigla": "MONCLOA_REFERENCIAS", "nombre": "Moncloa - Referencias", "tipo": "fuentes-gobierno" },
-    { "sigla": "MONCLOA_AGENDA", "nombre": "Moncloa - Agenda", "tipo": "fuentes-gobierno" },
-    { "sigla": "CONGRESO_AGENDA", "nombre": "Congreso de los Diputados - Agenda", "tipo": "fuentes-gobierno" },
-    { "sigla": "ASTURIAS_CONSEJO_GOBIERNO_NOTICIAS", "nombre": "Principado de Asturias - Consejo de Gobierno", "tipo": "fuentes-gobierno" },
-    { "sigla": "EXTREMADURA_CONSEJO_GOBIERNO", "nombre": "Junta de Extremadura - Consejo de Gobierno", "tipo": "fuentes-gobierno" },
-    { "sigla": "COMUNIDAD_VALENCIANA_ACTOS", "nombre": "Generalitat Valenciana - Actos", "tipo": "fuentes-gobierno" },
-    { "sigla": "ANDALUCIA_ULTIMA_SESION_CONSEJO_GOBIERNO", "nombre": "Junta de Andalucía - Última sesión del Consejo de Gobierno", "tipo": "fuentes-gobierno" }
-    ]
-  };
-  
-  let html = '';
-  const itemsPerPage = 4;
-
-  const createGrid = (items, sectionKey) => {
-      let gridHtml = `<div class="fuentes-grid-container" data-section="${sectionKey}"><div class="fuentes-grid">`;
-      items.forEach(fuente => {
-          gridHtml += `<div class="fuente-box" data-sigla="${fuente.sigla}" data-tipo="${fuente.tipo}" data-section="${sectionKey}"><strong>${fuente.sigla}</strong><span>${fuente.nombre}</span><div class=\"tick-badge\">✓</div></div>`;
-      });
-      gridHtml += `</div>`;
-      // Always add navigation arrows for sections with more than 4 items
-      if (items.length > itemsPerPage) {
-          gridHtml += `<div class="grid-nav-arrow prev" style="display: none;"><i class="fas fa-chevron-left"></i></div><div class="grid-nav-arrow next"><i class="fas fa-chevron-right"></i></div>`;
-      }
-      gridHtml += `</div>`;
-      return gridHtml;
-  };
-
-  for (const sectionTitle in fuentesData) {
-      const sectionKey = sectionTitle.toLowerCase().replace(/\s+/g, '-');
-      html += `<div class="section-header">`;
-      html += `<h3 class="summary-title">${sectionTitle}</h3>`;
-      html += `<div class="selected-tags-container" id="selected-tags-${sectionKey}"></div>`;
-      // Add save button only for the first section (Boletines)
-      if (sectionTitle === "Boletines Oficiales") {
-          html += `<button id="saveFuentesBtn" class="save-fuentes-btn-inline">Guardar</button>`;
-          html += `<div id="saveStatus" class="save-status"></div>`;
-      }
-      html += `</div>`;
-      const sectionContent = fuentesData[sectionTitle];
-
-      if (Array.isArray(sectionContent)) { // For Reguladores, Normativa
-          html += createGrid(sectionContent, sectionKey);
-      } else { // For Boletines with subsections
-          for (const subsectionTitle in sectionContent) {
-              html += `<div class="fuentes-subsection">`;
-              const subsectionKey = subsectionTitle.toLowerCase().replace(/[()]/g, '').replace(/\s+/g, '-');
-              html += `<div class="section-header">`;
-              html += `<h4 class="fuentes-subsection-title">${subsectionTitle}</h4>`;
-              html += `<div class="selected-tags-container" id="selected-tags-${subsectionKey}"></div>`;
-              html += `</div>`;
-              html += createGrid(sectionContent[subsectionTitle], subsectionKey);
-              html += `</div>`;
-          }
-      }
+  // Inject minimal styles for filters and chips (scoped to configuracion)
+  if (!document.getElementById('fuentesFiltersStyles')) {
+    const style = document.createElement('style');
+    style.id = 'fuentesFiltersStyles';
+    style.textContent = `
+    /* Filters card */
+    #configuracion-iframe-container .fuentes-filters-card { position: sticky; top: 0; z-index: 5; background: #fff; border: 1px solid var(--neutral-350, #e8ecf0); border-radius: 12px; padding: 12px 12px 12px 12px; box-shadow: 0 2px 8px rgba(11,36,49,.06); margin-bottom: 16px; }
+    #configuracion-iframe-container .fuentes-filters-card .filters-reset { position:absolute; top:8px; right:8px; padding:4px 10px; font-size:12px; border-radius:14px; }
+    #configuracion-iframe-container .fuentes-filters-card .filters-row { display:grid; grid-template-columns: 260px 260px 1fr; column-gap:20px; row-gap:16px; align-items:end; }
+    #configuracion-iframe-container .fuentes-filters-card .filters-row + .filters-row { margin-top: 14px; }
+    #configuracion-iframe-container .filter-block { display:flex; flex-direction:column; gap:4px; min-width: 220px; flex:1; position: relative; }
+    #configuracion-iframe-container .filter-actions { margin-left:auto; }
+    #configuracion-iframe-container .filter-label { font-weight:600; color: var(--text-color, #455862); font-size: 14px; }
+    /* Chips */
+    #configuracion-iframe-container .chip-select { display:flex; align-items:center; justify-content:space-between; gap:8px; border:1.5px solid #e9ecef; border-radius:12px; padding:6px 10px; min-height:44px; max-height:44px; overflow:hidden; background:#fff; box-shadow: 0 2px 8px rgba(11,36,49,.04); cursor:text; transition: box-shadow .2s ease, border-color .2s ease; }
+    #configuracion-iframe-container .chip-select.fixed { width: 260px; }
+    #configuracion-iframe-container .chip-select.active { border-color:#04db8d; box-shadow: 0 0 0 3px rgba(4,219,141,.15); }
+    #configuracion-iframe-container .chips { display:flex; gap:6px; flex-wrap:nowrap; overflow:hidden; }
+    #configuracion-iframe-container .chip-bubble { display:inline-flex; align-items:center; gap:8px; background: rgba(4,219,141,.08); color:#04db8d; padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:600; cursor:default; white-space:nowrap; }
+    #configuracion-iframe-container .chip-bubble .chip-x { cursor:pointer; opacity:.7; }
+    #configuracion-iframe-container .chip-bubble .chip-x:hover { opacity:1; }
+    #configuracion-iframe-container .btn-reset { background: transparent; border:1px solid var(--text-color, #455862); color: var(--text-color, #455862); border-radius:20px; padding:8px 16px; font-weight:600; cursor:pointer; }
+    #configuracion-iframe-container .select-icons { display:flex; align-items:center; gap:10px; color:#455862; }
+    #configuracion-iframe-container .clear-icon { cursor:pointer; opacity:.7; }
+    #configuracion-iframe-container .clear-icon:hover { opacity:1; }
+    #configuracion-iframe-container .caret { font-size:12px; }
+    #configuracion-iframe-container .chip-dropdown { display:none; position:absolute; background:#fff; border:1px solid #e9ecef; border-radius:12px; box-shadow:0 8px 24px rgba(11,36,49,.12); padding:8px; max-height:260px; overflow:auto; min-width:240px; z-index:100; overscroll-behavior: contain; }
+    #configuracion-iframe-container .chip-dropdown.open { display:block; }
+    #configuracion-iframe-container .dropdown-item { padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
+    #configuracion-iframe-container .dropdown-item:hover { background:#f8f9fa; }
+    #configuracion-iframe-container .selected-tag { width: max-content; max-width: 100%; }
+    /* Subsection underline */
+    #configuracion-iframe-container .fuentes-subsection { border-bottom: 1px solid #e9ecef; padding-bottom: 25px; margin-bottom: 20px; }
+    /* Selected tags 2-row horizontal scroll */
+    #configuracion-iframe-container .selected-tags-container { overflow-x: auto; overflow-y: hidden; max-height: 60px; padding-bottom: 32px; -webkit-overflow-scrolling: touch; scrollbar-gutter: stable both-edges; scrollbar-width: thin; scrollbar-color: #c1c9d0 transparent; }
+    #configuracion-iframe-container .selected-tags-container::-webkit-scrollbar { height: 10px; }
+    #configuracion-iframe-container .selected-tags-container::-webkit-scrollbar-track { background: transparent; }
+    #configuracion-iframe-container .selected-tags-container::-webkit-scrollbar-thumb { background: #c1c9d0; border-radius: 8px; }
+    #configuracion-iframe-container .selected-tags-track { display: inline-flex; flex-direction: column; gap: 5px; }
+    #configuracion-iframe-container .selected-tags-row { display: inline-flex; gap: 5px; align-items: center; }
+    /* Toast */
+    #fuentesToast { position: fixed; top: 20px; right: 20px; z-index: 4000; display: none; background: #fff; color: var(--dark-color, #0b2431); border-left: 4px solid #04db8d; border: 1px solid var(--neutral-350, #e8ecf0); padding: 10px 12px; border-radius: 10px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); font-weight: 600; font-size: 14px; min-width: 280px; }
+    #fuentesToast.error { border-left-color: #d32f2f; }
+    #fuentesToast.info { border-left-color: #455862; }
+    `;
+    document.head.appendChild(style);
   }
-  container.innerHTML = html;
- 
-  // Preload plan limits once for instant UX on click (no per-click fetch)
+
+  // Toast helper
+  function showToast(type, text, ms = 2600) {
+    let el = document.getElementById('fuentesToast');
+    if (!el) { el = document.createElement('div'); el.id = 'fuentesToast'; document.body.appendChild(el); }
+    el.className = type ? type : '';
+    el.textContent = text;
+    el.style.display = 'block';
+    clearTimeout(showToast.__t);
+    showToast.__t = setTimeout(() => { el.style.display = 'none'; }, ms);
+  }
+
+  // Plan limits (instant UX)
   const fuentesLimits = { limitFuentes: null };
   function getDefaultFuentesLimits(plan) {
-      switch (plan) {
-          case 'plan1': return { limit_fuentes: 4 };
-          case 'plan2': return { limit_fuentes: 10 };
-          case 'plan3': return { limit_fuentes: 10 };
-          case 'plan4': return { limit_fuentes: null }; // unlimited
-          default: return { limit_fuentes: 0 };
-      }
+    switch (plan) {
+      case 'plan1': return { limit_fuentes: 4 };
+      case 'plan2': return { limit_fuentes: 10 };
+      case 'plan3': return { limit_fuentes: 10 };
+      case 'plan4': return { limit_fuentes: null }; // ilimitado
+      default: return { limit_fuentes: 0 };
+    }
   }
   try {
-      const initialPlan = (window.userPlan || 'plan1');
-      const defaults = getDefaultFuentesLimits(initialPlan);
-      fuentesLimits.limitFuentes = defaults.limit_fuentes;
+    const initialPlan = (window.userPlan || 'plan1');
+    const defaults = getDefaultFuentesLimits(initialPlan);
+    fuentesLimits.limitFuentes = defaults.limit_fuentes;
   } catch (e) {}
   fetch('/api/get-user-data')
-      .then(res => res.json())
-      .then(userData => {
-          const defaults = getDefaultFuentesLimits(userData.subscription_plan || 'plan1');
-          fuentesLimits.limitFuentes = (userData.limit_fuentes !== undefined ? userData.limit_fuentes : defaults.limit_fuentes);
-      })
-      .catch(err => console.error('Error preloading fuentes limits:', err));
-  
-  // Pagination logic - Apply to all grid containers
-  document.querySelectorAll('.fuentes-grid-container').forEach(gridContainer => {
+    .then(res => res.json())
+    .then(userData => {
+      const defaults = getDefaultFuentesLimits(userData.subscription_plan || 'plan1');
+      fuentesLimits.limitFuentes = (userData.limit_fuentes !== undefined ? userData.limit_fuentes : defaults.limit_fuentes);
+    })
+    .catch(err => console.error('Error preloading fuentes limits:', err));
+
+  // Selection state
+  const selectedSiglas = new Set();
+  const siglaToTipo = new Map(); // SIGLA -> tipo_fuente
+  const siglaToMeta = new Map(); // SIGLA -> full meta
+
+  // Preselect from cobertura_legal (normalize to UPPERCASE)
+  const selectedFuentes = (cobertura_legal?.fuentes_gobierno || cobertura_legal?.['fuentes-gobierno'] || cobertura_legal?.fuentes || []).map(f => (f||'').toUpperCase());
+  const selectedReguladores = (cobertura_legal?.fuentes_reguladores || cobertura_legal?.['fuentes-reguladores'] || cobertura_legal?.['fuentes-regulador'] || cobertura_legal?.reguladores || []).map(f => (f||'').toUpperCase());
+  [...selectedFuentes, ...selectedReguladores].forEach(s => s && selectedSiglas.add(s));
+
+  // Filters state
+  const state = { nivel_geografico: 'Todos', pais: 'Todos', region: 'Todos', tipo_fuente: 'Todos' };
+  let facetsCache = null;
+
+  // Build filters UI
+  const filtersCard = document.createElement('div');
+  filtersCard.className = 'fuentes-filters-card';
+  filtersCard.style.position = 'relative';
+  filtersCard.innerHTML = `
+    <button id="btnResetFuentesFiltros" class="btn-reset filters-reset">Reset</button>
+    <div class="filters-row">
+      <div class="filter-block">
+        <label class="filter-label">Nivel geográfico</label>
+        <div class="chip-select fixed" id="nivelSelect">
+          <div class="chips" id="nivelChips"><span class="chip-bubble" data-value="Todos">Todos <span class="chip-x">×</span></span></div>
+          <div class="select-icons"><span class="clear-icon" id="nivelClear">×</span><span class="caret">▾</span></div>
+        </div>
+        <div class="chip-dropdown" id="nivelDropdown"></div>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label">Tipo de fuente</label>
+        <div class="chip-select fixed" id="tipoSelect">
+          <div class="chips" id="tipoChips"><span class="chip-bubble" data-value="Todos">Todos <span class="chip-x">×</span></span></div>
+          <div class="select-icons"><span class="clear-icon" id="tipoClear">×</span><span class="caret">▾</span></div>
+        </div>
+        <div class="chip-dropdown" id="tipoDropdown"></div>
+      </div>
+    </div>
+    <div class="filters-row" id="extraFilters" style="display:none;">
+      <div class="filter-block" id="blockPais" style="display:none;">
+        <label class="filter-label">País</label>
+        <div class="chip-select fixed" id="paisSelect">
+          <div class="chips" id="paisChips"><span class="chip-bubble" data-value="Todos">Todos <span class="chip-x">×</span></span></div>
+          <div class="select-icons"><span class="clear-icon" id="paisClear">×</span><span class="caret">▾</span></div>
+        </div>
+        <div class="chip-dropdown" id="paisDropdown"></div>
+      </div>
+      <div class="filter-block" id="blockRegion" style="display:none;">
+        <label class="filter-label">Región</label>
+        <div class="chip-select fixed" id="regionSelect">
+          <div class="chips" id="regionChips"><span class="chip-bubble" data-value="Todos">Todos <span class="chip-x">×</span></span></div>
+          <div class="select-icons"><span class="clear-icon" id="regionClear">×</span><span class="caret">▾</span></div>
+        </div>
+        <div class="chip-dropdown" id="regionDropdown"></div>
+      </div>
+    </div>`;
+  // Insert filters above container
+  container.parentElement.insertBefore(filtersCard, container);
+
+  // Helpers to render chip groups
+  function renderChips(elId, values, current, onSelect) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '';
+    const v = Array.isArray(values) ? values[0] : values;
+    const label = (!v || String(v) === 'Todos') ? 'Todos' : v;
+    const span = document.createElement('span');
+    span.className = 'chip-bubble';
+    span.dataset.value = label;
+    span.innerHTML = `${label} <span class="chip-x">×</span>`;
+    span.querySelector('.chip-x').addEventListener('click', (e) => { e.stopPropagation(); onSelect && onSelect('Todos'); });
+    el.appendChild(span);
+  }
+
+  function updateExtraFiltersVisibility() {
+    const extra = document.getElementById('extraFilters');
+    const blockPais = document.getElementById('blockPais');
+    const blockRegion = document.getElementById('blockRegion');
+    const showPais = (state.nivel_geografico === 'Nacional' || state.nivel_geografico === 'Regional');
+    const showRegion = (state.nivel_geografico === 'Regional');
+    extra.style.display = (showPais || showRegion) ? 'flex' : 'none';
+    blockPais.style.display = showPais ? 'flex' : 'none';
+    blockRegion.style.display = showRegion ? 'flex' : 'none';
+  }
+
+  function bindSingleSelect({ selectId, chipsId, dropdownId, clearId, values, getValue, setValue, onChange }) {
+    const selectEl = document.getElementById(selectId);
+    const chipsEl = document.getElementById(chipsId);
+    const dropdownEl = document.getElementById(dropdownId);
+    const clearEl = document.getElementById(clearId);
+    if (!selectEl || !chipsEl || !dropdownEl) return;
+
+    function close() { dropdownEl.classList.remove('open'); selectEl.classList.remove('active'); }
+    function open() {
+      // position dropdown under select (2px gap), aligned to left, within filter-block
+      const parentBlock = selectEl.closest('.filter-block');
+      const parentRect = parentBlock.getBoundingClientRect();
+      const rect = selectEl.getBoundingClientRect();
+      const left = rect.left - parentRect.left;
+      const top = rect.top - parentRect.top + rect.height + 2;
+      dropdownEl.style.left = left + 'px';
+      dropdownEl.style.top = top + 'px';
+      dropdownEl.style.minWidth = rect.width + 'px';
+      dropdownEl.classList.add('open');
+      selectEl.classList.add('active');
+    }
+
+    // Populate dropdown
+    dropdownEl.innerHTML = '';
+    (values || []).forEach(v => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.textContent = v;
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setValue(v);
+        renderChips(chipsId, v, v, (nv) => { setValue(nv); onChange && onChange(); });
+        close();
+        onChange && onChange();
+      });
+      dropdownEl.appendChild(item);
+    });
+
+    // Initial chips render (hide when Todos)
+    renderChips(chipsId, getValue(), getValue(), (nv) => { setValue(nv); onChange && onChange(); });
+
+    selectEl.addEventListener('click', (e) => { e.stopPropagation(); const isOpen = dropdownEl.classList.contains('open'); if (!isOpen) open(); else close(); });
+    clearEl && clearEl.addEventListener('click', (e) => { e.stopPropagation(); setValue('Todos'); renderChips(chipsId, 'Todos', 'Todos', (nv)=>{ setValue(nv); onChange && onChange(); }); onChange && onChange(); });
+    document.addEventListener('click', (e) => { if (!selectEl.contains(e.target) && !dropdownEl.contains(e.target)) close(); });
+  }
+
+  async function loadFacets() {
+    if (facetsCache) return facetsCache;
+    const r = await fetch('/api/info-fuentes/facets');
+    const j = await r.json();
+    facetsCache = (j && j.facets) || {};
+    return facetsCache;
+  }
+
+  async function renderFilters() {
+    const facets = await loadFacets();
+    const niveles = ['Todos', ...((facets.nivel_geografico || []).filter(Boolean))];
+    const tipos = ['Todos', ...((facets.tipo_fuente || []).filter(Boolean))];
+
+    bindSingleSelect({
+      selectId: 'nivelSelect', chipsId: 'nivelChips', dropdownId: 'nivelDropdown', clearId: 'nivelClear',
+      values: niveles,
+      getValue: () => state.nivel_geografico,
+      setValue: (v) => { state.nivel_geografico = v; state.pais = 'Todos'; state.region = 'Todos'; updateExtraFiltersVisibility(); renderPaisRegionControls(); },
+      onChange: () => { loadAndRender(); }
+    });
+
+    bindSingleSelect({
+      selectId: 'tipoSelect', chipsId: 'tipoChips', dropdownId: 'tipoDropdown', clearId: 'tipoClear',
+      values: tipos,
+      getValue: () => state.tipo_fuente,
+      setValue: (v) => { state.tipo_fuente = v; },
+      onChange: () => { loadAndRender(); }
+    });
+
+    updateExtraFiltersVisibility();
+    renderPaisRegionControls();
+  }
+
+  function renderPaisRegionControls() {
+    const facets = facetsCache || {};
+    if (state.nivel_geografico === 'Nacional') {
+      const paises = ['Todos', ...((facets.pais_nacional || []).filter(Boolean))];
+      bindSingleSelect({
+        selectId: 'paisSelect', chipsId: 'paisChips', dropdownId: 'paisDropdown', clearId: 'paisClear',
+        values: paises,
+        getValue: () => state.pais,
+        setValue: (v) => { state.pais = v; },
+        onChange: () => { loadAndRender(); }
+      });
+    } else if (state.nivel_geografico === 'Regional') {
+      const paises = ['Todos', ...((facets.pais_regional || []).filter(Boolean))];
+      const regiones = ['Todos', ...((facets.regiones_regional || []).filter(Boolean))];
+      bindSingleSelect({
+        selectId: 'paisSelect', chipsId: 'paisChips', dropdownId: 'paisDropdown', clearId: 'paisClear',
+        values: paises,
+        getValue: () => state.pais,
+        setValue: (v) => { state.pais = v; },
+        onChange: () => { loadAndRender(); }
+      });
+      bindSingleSelect({
+        selectId: 'regionSelect', chipsId: 'regionChips', dropdownId: 'regionDropdown', clearId: 'regionClear',
+        values: regiones,
+        getValue: () => state.region,
+        setValue: (v) => { state.region = v; },
+        onChange: () => { loadAndRender(); }
+      });
+    }
+  }
+
+  document.getElementById('btnResetFuentesFiltros').addEventListener('click', () => {
+    state.nivel_geografico = 'Todos';
+    state.tipo_fuente = 'Todos';
+    state.pais = 'Todos';
+    state.region = 'Todos';
+    renderFilters();
+    loadAndRender();
+  });
+
+  // Pagination config
+  const itemsPerPage = 4;
+  const createGrid = (items, sectionKey) => {
+    let gridHtml = `<div class="fuentes-grid-container" data-section="${sectionKey}"><div class="fuentes-grid">`;
+    items.forEach(fuente => {
+      const isReg = (fuente.tipo_fuente === 'Reguladores');
+      const tipoCobertura = isReg ? 'fuentes-reguladores' : 'fuentes-gobierno';
+      const isSelected = selectedSiglas.has((fuente.sigla||'').toUpperCase());
+      gridHtml += `<div class="fuente-box${isSelected ? ' selected': ''}" data-sigla="${fuente.sigla}" data-tipo="${tipoCobertura}" data-section="${sectionKey}"><strong data-full="${fuente.sigla} - ${fuente.nombre}">${fuente.sigla}</strong><span>${fuente.nombre}</span><div class=\"tick-badge\">✓</div></div>`;
+    });
+    gridHtml += `</div>`;
+    if (items.length > itemsPerPage) {
+      gridHtml += `<div class="grid-nav-arrow prev" style="display: none;"><i class="fas fa-chevron-left"></i></div><div class="grid-nav-arrow next"><i class="fas fa-chevron-right"></i></div>`;
+    }
+    gridHtml += `</div>`;
+    return gridHtml;
+  };
+
+  function bindGridPagination(root) {
+    root.querySelectorAll('.fuentes-grid-container').forEach(gridContainer => {
       const grid = gridContainer.querySelector('.fuentes-grid');
       const items = Array.from(grid.querySelectorAll('.fuente-box'));
       const prevArrow = gridContainer.querySelector('.prev');
@@ -239,224 +319,216 @@ function populateFuentes(cobertura_legal) {
       let currentPage = 0;
       const totalItems = items.length;
       const totalPages = Math.ceil(totalItems / itemsPerPage);
-
       function showPage(page) {
-          items.forEach((item, index) => {
-              const isVisible = index >= page * itemsPerPage && index < (page + 1) * itemsPerPage;
-              item.style.display = isVisible ? 'flex' : 'none';
-          });
-
-          // Show/hide arrows based on current page and total pages
-          if (prevArrow) prevArrow.style.display = page > 0 ? 'flex' : 'none';
-          if (nextArrow) nextArrow.style.display = page < totalPages - 1 ? 'flex' : 'none';
+        items.forEach((item, index) => {
+          const isVisible = index >= page * itemsPerPage && index < (page + 1) * itemsPerPage;
+          item.style.display = isVisible ? 'flex' : 'none';
+        });
+        if (prevArrow) prevArrow.style.display = page > 0 ? 'flex' : 'none';
+        if (nextArrow) nextArrow.style.display = page < totalPages - 1 ? 'flex' : 'none';
       }
-
-      // Initialize first page display
-      if (totalItems > 0) {
-          showPage(0);
-      }
-
-      // Add event listeners for navigation
-      if (nextArrow) {
-          nextArrow.addEventListener('click', () => {
-              if (currentPage < totalPages - 1) {
-                  currentPage++;
-                  showPage(currentPage);
-              }
-          });
-      }
-      if (prevArrow) {
-          prevArrow.addEventListener('click', () => {
-              if (currentPage > 0) {
-                  currentPage--;
-                  showPage(currentPage);
-              }
-          });
-      }
-  });
-
-  // Function to update selected tags display
-  function updateSelectedTags() {
-      // Clear all tag containers
-      document.querySelectorAll('.selected-tags-container').forEach(container => {
-          container.innerHTML = '';
-      });
-
-      // Get all selected boxes and group by section
-      const selectedBySection = {};
-      document.querySelectorAll('.fuente-box.selected').forEach(box => {
-          const sigla = box.dataset.sigla;
-          const sectionKey = box.dataset.section;
-          
-          if (!selectedBySection[sectionKey]) {
-              selectedBySection[sectionKey] = [];
-          }
-          selectedBySection[sectionKey].push(sigla);
-      });
-
-      // Update each section's tags
-      Object.keys(selectedBySection).forEach(sectionKey => {
-          const container = document.getElementById(`selected-tags-${sectionKey}`);
-          if (container) {
-              selectedBySection[sectionKey].forEach(sigla => {
-                  const tag = document.createElement('span');
-                  tag.className = 'selected-tag';
-                  tag.textContent = sigla;
-                  container.appendChild(tag);
-              });
-          }
-      });
+      if (totalItems > 0) showPage(0);
+      if (nextArrow) nextArrow.addEventListener('click', () => { if (currentPage < totalPages - 1) { currentPage++; showPage(currentPage); } });
+      if (prevArrow) prevArrow.addEventListener('click', () => { if (currentPage > 0) { currentPage--; showPage(currentPage); } });
+    });
   }
 
-  // Add click listeners and pre-select
-  // Normalizar las fuentes existentes (convertir todo a mayúsculas para comparación)
-  const selectedFuentes = (cobertura_legal?.fuentes_gobierno || 
-                         cobertura_legal?.['fuentes-gobierno'] || 
-                         cobertura_legal?.fuentes || []).map(f => f.toUpperCase());
-  const selectedReguladores = (cobertura_legal?.fuentes_reguladores || 
-                             cobertura_legal?.['fuentes-reguladores'] || 
-                             cobertura_legal?.['fuentes-regulador'] ||  // Para usuarios muy antiguos
-                             cobertura_legal?.reguladores || []).map(f => f.toUpperCase());
-  const allSelections = [...selectedFuentes, ...selectedReguladores];
-
-  document.querySelectorAll('.fuente-box').forEach(box => {
-      // Comparar en mayúsculas para evitar problemas de case sensitivity
-      if (allSelections.includes(box.dataset.sigla.toUpperCase())) {
-          box.classList.add('selected');
+  function updateSelectedTags() {
+    // Clear all tag containers
+    document.querySelectorAll('.selected-tags-container').forEach(c => { c.innerHTML = ''; });
+    // Build map type -> selected siglas present in that type
+    const byType = {};
+    selectedSiglas.forEach(sig => {
+      const tipo = siglaToTipo.get(sig) || 'Otros';
+      if (!byType[tipo]) byType[tipo] = [];
+      byType[tipo].push(sig);
+    });
+    Object.keys(byType).forEach(tipo => {
+      const sectionKey = tipo.toLowerCase().replace(/\s+/g, '-');
+      const containerTags = document.getElementById(`selected-tags-${sectionKey}`);
+      if (containerTags) {
+        const track = document.createElement('div');
+        track.className = 'selected-tags-track';
+        const rowTop = document.createElement('div');
+        rowTop.className = 'selected-tags-row';
+        const rowBottom = document.createElement('div');
+        rowBottom.className = 'selected-tags-row';
+        (byType[tipo] || []).forEach((sigla, index) => {
+          const tag = document.createElement('span');
+          tag.className = 'selected-tag';
+          tag.textContent = sigla;
+          if ((index % 2) === 0) rowTop.appendChild(tag); else rowBottom.appendChild(tag);
+        });
+        track.appendChild(rowTop);
+        track.appendChild(rowBottom);
+        containerTags.appendChild(track);
       }
+    });
+  }
+
+  function bindSelectionHandlers(root) {
+    root.querySelectorAll('.fuente-box').forEach(box => {
       box.addEventListener('click', () => {
-          const isSelecting = !box.classList.contains('selected');
-          if (isSelecting) {
-              const limit = fuentesLimits.limitFuentes;
-              if (limit !== null) {
-                  const currentCount = document.querySelectorAll('.fuente-box.selected').length;
-                  if (currentCount >= limit) {
-                      alert(`Has alcanzado el límite de ${limit} fuentes para tu plan actual. Para seleccionar más fuentes, actualiza tu suscripción.`);
-                      return;
-                  }
-              }
+        const sigla = (box.dataset.sigla || '').toUpperCase();
+        const isSelecting = !selectedSiglas.has(sigla);
+        if (isSelecting) {
+          const limit = fuentesLimits.limitFuentes;
+          if (limit !== null) {
+            const currentCount = selectedSiglas.size;
+            if (currentCount >= limit) {
+              showToast('error', `Has alcanzado el límite de ${limit} fuentes para tu plan actual. Para seleccionar más fuentes, actualiza tu suscripción.`);
+              return;
+            }
           }
-          // Instant UI feedback
-          box.classList.toggle('selected');
-          updateSelectedTags();
+          selectedSiglas.add(sigla);
+          box.classList.add('selected');
+        } else {
+          selectedSiglas.delete(sigla);
+          box.classList.remove('selected');
+        }
+        updateSelectedTags();
       });
-  });
+    });
+  }
 
-  // Initial tags update
-  updateSelectedTags();
+  async function loadAndRender() {
+    // Build query
+    const params = new URLSearchParams();
+    if (state.nivel_geografico && state.nivel_geografico !== 'Todos') params.append('nivel_geografico', state.nivel_geografico);
+    if (state.pais && state.pais !== 'Todos') params.append('pais', state.pais);
+    if (state.region && state.region !== 'Todos') params.append('region', state.region);
+    if (state.tipo_fuente && state.tipo_fuente !== 'Todos') params.append('tipo_fuente', state.tipo_fuente);
 
-  // Save button logic
-  const saveBtnEl = document.getElementById('saveFuentesBtn');
-  if (saveBtnEl) saveBtnEl.addEventListener('click', async () => {
-      const saveBtn = document.getElementById('saveFuentesBtn');
-      const saveStatus = document.getElementById('saveStatus');
-      
-      // Clear any previous status and show loader
-      saveStatus.textContent = '';
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = '<div class="button-spinner"></div>';
-      saveBtn.classList.add('loading');
-      
-      try {
-          const newCobertura = {
-              'fuentes-gobierno': [],
-              'fuentes-reguladores': [],
-              'fuentes-tramitacion': [] // This key exists but isn't part of the final payload
-          };
-          document.querySelectorAll('.fuente-box.selected').forEach(box => {
-              const tipo = box.dataset.tipo;
-              const sigla = box.dataset.sigla;
-              if (newCobertura[tipo]) {
-                  newCobertura[tipo].push(sigla);
-              }
-          });
-          
-          const cobertura_legal = {
-              fuentes_gobierno: newCobertura['fuentes-gobierno'],
-              fuentes_reguladores: newCobertura['fuentes-reguladores']
-          };
-          
-          const rangos = ["Acuerdos Internacionales","Normativa Europea","Legislacion Nacional","Normativa Reglamentaria","Decisiones Judiciales","Doctrina Administrativa","Comunicados, Guias y Opiniones Consultivas","Consultas Publicas","Normativa en tramitación","Otras"];
+    const r = await fetch(`/api/info-fuentes?${params.toString()}`);
+    const j = await r.json();
+    const data = (j && j.data) || [];
 
-          // Use resolver if available, otherwise fallback to legacy method
-          let result;
-          if (typeof window.EtiquetasResolver !== 'undefined') {
-              result = await window.EtiquetasResolver.updateCoberturaLegal(cobertura_legal, rangos);
-              
-              if (!result.success) {
-                  if (result.conflict) {
-                      // Handle version conflict
-                      window.EtiquetasResolver.handleVersionConflict(result);
-                      return;
-                  }
-                  
-                  if (result.permission_error) {
-                      // Show permission error
-                      saveStatus.textContent = result.error || 'Sin permisos para editar fuentes empresariales';
-                      saveBtn.classList.remove('loading');
-                      saveBtn.innerHTML = 'Guardar';
-                      saveBtn.disabled = false;
-                      return;
-                  }
-                  
-                  throw new Error(result.error || 'Error actualizando fuentes');
-              }
-          } else {
-              // Fallback to legacy method
-              console.warn('EtiquetasResolver not available, using legacy method');
-              const response = await fetch('/api/update-user-data', {
-                  method: 'POST',
-                  headers: {'Content-Type': 'application/json'},
-                  body: JSON.stringify({ cobertura_legal, rangos })
-              });
-              
-              if (!response.ok) {
-                  const error = await response.json();
-                  throw new Error(error.error || 'Error actualizando fuentes');
-              }
-              
-              result = await response.json();
+    // Rebuild maps (include all fetched docs for tag classification)
+    siglaToTipo.clear();
+    siglaToMeta.clear();
+    data.forEach(d => {
+      const key = (d.sigla||'').toUpperCase();
+      siglaToTipo.set(key, d.tipo_fuente);
+      siglaToMeta.set(key, d);
+    });
+
+    // Group by tipo_fuente
+    const grouped = {};
+    data.forEach(d => { (grouped[d.tipo_fuente] = grouped[d.tipo_fuente] || []).push(d); });
+
+    // Build HTML (header with Guardar + sections)
+    let html = '';
+    html += `<div class="section-header">`;
+    html += `<h3 class="summary-title" style="margin-right:auto;">Fuentes</h3>`;
+    html += `<button id="saveFuentesBtn" class="save-fuentes-btn-inline">Guardar</button>`;
+    html += `<div id="saveStatus" class="save-status"></div>`;
+    html += `</div>`;
+
+    // Ordered sections
+    const tipoOrder = ['Boletines Oficiales','Reguladores','Actividad Parlamentaria','Organismos Gubernamentales','Comunicados y prensa'];
+    const keys = Object.keys(grouped).sort((a,b)=> tipoOrder.indexOf(a) - tipoOrder.indexOf(b));
+    keys.forEach(tipo => {
+      const sectionKey = tipo.toLowerCase().replace(/\s+/g, '-');
+      html += `<div class="fuentes-subsection">`;
+      html += `<div class="section-header" style="margin-bottom:6px;">`;
+      html += `<h4 class="fuentes-subsection-title">${tipo}</h4>`;
+      html += `</div>`;
+      html += `<div class="selected-tags-container" id="selected-tags-${sectionKey}" style="margin-bottom:10px;"></div>`;
+      html += createGrid(grouped[tipo], sectionKey);
+      html += `</div>`;
+    });
+
+    container.innerHTML = html;
+
+    // Attach grid pagination and selection handlers
+    bindGridPagination(container);
+    bindSelectionHandlers(container);
+
+    // Render selected tags
+    updateSelectedTags();
+
+    // Bind save
+    const saveBtnEl = document.getElementById('saveFuentesBtn');
+    if (saveBtnEl) saveBtnEl.addEventListener('click', onSave);
+  }
+
+  async function onSave() {
+    const saveBtn = document.getElementById('saveFuentesBtn');
+    const saveStatus = document.getElementById('saveStatus');
+
+    saveStatus.textContent = '';
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<div class="button-spinner"></div>';
+    saveBtn.classList.add('loading');
+
+    try {
+      // Build cobertura_legal from selectedSiglas using tipo_fuente mapping
+      const newCobertura = { 'fuentes-gobierno': [], 'fuentes-reguladores': [], 'fuentes-tramitacion': [] };
+      selectedSiglas.forEach(sig => {
+        const meta = siglaToMeta.get(sig) || {};
+        const tipo = (meta.tipo_fuente === 'Reguladores') ? 'fuentes-reguladores' : 'fuentes-gobierno';
+        if (!newCobertura[tipo].includes(sig)) newCobertura[tipo].push(sig);
+      });
+
+      const cobertura_legal = {
+        fuentes_gobierno: newCobertura['fuentes-gobierno'],
+        fuentes_reguladores: newCobertura['fuentes-reguladores']
+      };
+
+      const rangos = ["Acuerdos Internacionales","Normativa Europea","Legislacion Nacional","Normativa Reglamentaria","Decisiones Judiciales","Doctrina Administrativa","Comunicados, Guias y Opiniones Consultivas","Consultas Publicas","Normativa en tramitación","Otras"];
+
+      let result;
+      if (typeof window.EtiquetasResolver !== 'undefined') {
+        result = await window.EtiquetasResolver.updateCoberturaLegal(cobertura_legal, rangos);
+        if (!result.success) {
+          if (result.conflict) { window.EtiquetasResolver.handleVersionConflict(result); return; }
+          if (result.permission_error) {
+            saveStatus.textContent = result.error || 'Sin permisos para editar fuentes empresariales';
+            saveBtn.classList.remove('loading');
+            saveBtn.innerHTML = 'Guardar';
+            saveBtn.disabled = false;
+            return;
           }
-
-          if (result.success) {
-              // Show success state
-              saveBtn.classList.remove('loading');
-              saveBtn.innerHTML = '✓ Guardado';
-              saveBtn.classList.add('success');
-              
-              // Refresh usage tracker after successful save
-              try {
-                  const response = await fetch('/api/get-user-data');
-                  const userData = await response.json();
-                  if (typeof updateUsageTrackers === 'function') {
-                      updateUsageTrackers(userData);
-                  }
-              } catch (err) {
-                  console.error('Error updating tracker:', err);
-              }
-              
-              // Reset after 2 seconds
-              setTimeout(() => {
-                  saveBtn.innerHTML = 'Guardar';
-                  saveBtn.classList.remove('success');
-                  saveBtn.disabled = false;
-              }, 2000);
-          } else {
-              // Show error
-              saveBtn.classList.remove('loading');
-              saveBtn.innerHTML = 'Guardar';
-              saveStatus.textContent = 'Error, pruebe de nuevo';
-              saveBtn.disabled = false;
-          }
-
-      } catch (err) {
-          console.error('Error saving fuentes:', err);
-          saveBtn.classList.remove('loading');
-          saveBtn.innerHTML = 'Guardar';
-          saveStatus.textContent = err.message || 'Error, pruebe de nuevo';
-          saveBtn.disabled = false;
+          throw new Error(result.error || 'Error actualizando fuentes');
+        }
+      } else {
+        const response = await fetch('/api/update-user-data', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ cobertura_legal, rangos })
+        });
+        if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Error actualizando fuentes'); }
+        result = await response.json();
       }
-  });
+
+      if (result.success) {
+        saveBtn.classList.remove('loading');
+        saveBtn.innerHTML = '✓ Guardado';
+        saveBtn.classList.add('success');
+        showToast('success', 'Fuentes guardadas correctamente');
+        try {
+          const response = await fetch('/api/get-user-data');
+          const userData = await response.json();
+          if (typeof updateUsageTrackers === 'function') { updateUsageTrackers(userData); }
+        } catch (err) { console.error('Error updating tracker:', err); }
+        setTimeout(() => { saveBtn.innerHTML = 'Guardar'; saveBtn.classList.remove('success'); saveBtn.disabled = false; }, 2000);
+      } else {
+        saveBtn.classList.remove('loading');
+        saveBtn.innerHTML = 'Guardar';
+        saveStatus.textContent = 'Error, pruebe de nuevo';
+        saveBtn.disabled = false;
+      }
+    } catch (err) {
+      console.error('Error saving fuentes:', err);
+      saveBtn.classList.remove('loading');
+      saveBtn.innerHTML = 'Guardar';
+      saveStatus.textContent = err.message || 'Error, pruebe de nuevo';
+      saveBtn.disabled = false;
+    }
+  }
+
+  // Initial render
+  renderFilters();
+  loadAndRender();
 }
 
 // Expose globally

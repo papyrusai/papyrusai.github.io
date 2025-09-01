@@ -604,7 +604,7 @@ function renderAgentsGrid(etiquetas){
       // Check if there are ANY favorite agents at all (not just in current location)
       const allFavorites = Array.from(favSet).filter(k => !k.startsWith('folder:'));
       if (allFavorites.length === 0) {
-        html = '<div style="color:#7a8a93; font-size:14px;">No hay favoritos seleccionados. Selecciona tus agentes favoritos para tener una visión personalizada, marcándolos clickando en la estrella ⭐</div>';
+        html = '<div style="color:#7a8a93; font-size:14px;">No hay agentes suscritos. Suscríbete a agentes para tener una visión personalizada haciendo clic en la estrella ⭐</div>';
       } else {
         // If there are favorites but none in current location, show nothing to keep UI clean
         html = '';
@@ -718,11 +718,11 @@ function renderAgentsGrid(etiquetas){
     star.addEventListener('mouseleave', () => {
       const blackTips = document.querySelectorAll('body > div');
       blackTips.forEach(el => {
-        if (el && el.textContent === 'Selecciona para añadir a favoritos') el.remove();
+        if (el && el.textContent === 'Selecciona para suscribirte a este agente') el.remove();
       });
     });
     
-    attachBlackTooltip(star, 'Selecciona para añadir a favoritos');
+    attachBlackTooltip(star, 'Selecciona para suscribirte a este agente');
     star.addEventListener('click', async ()=>{
       try{
         // toggle UI instantly
@@ -2712,7 +2712,7 @@ function renderAgentsGridCoordinated(etiquetas) {
       // Check if there are ANY favorite agents at all (not just in current location)
       const allFavorites = Array.from(favSet).filter(k => !k.startsWith('folder:'));
       if (allFavorites.length === 0) {
-        html = '<div style="color:#7a8a93; font-size:14px;">No hay favoritos seleccionados. Selecciona tus agentes favoritos para tener una visión personalizada, marcándolos clickando en la estrella ⭐</div>';
+        html = '<div style="color:#7a8a93; font-size:14px;">No hay agentes suscritos. Suscríbete a agentes para tener una visión personalizada haciendo clic en la estrella ⭐</div>';
       } else {
         // If there are favorites but none in current location, show nothing to keep UI clean
         html = '';
@@ -2837,11 +2837,11 @@ function renderAgentsGridCoordinated(etiquetas) {
     star.addEventListener('mouseleave', () => {
       const blackTips = document.querySelectorAll('body > div');
       blackTips.forEach(el => {
-        if (el && el.textContent === 'Selecciona para añadir a favoritos') el.remove();
+        if (el && el.textContent === 'Selecciona para suscribirte a este agente') el.remove();
       });
     });
     
-    attachBlackTooltip(star, 'Selecciona para añadir a favoritos');
+    attachBlackTooltip(star, 'Selecciona para suscribirte a este agente');
     star.addEventListener('click', async ()=>{
       try{
         // toggle UI instantly

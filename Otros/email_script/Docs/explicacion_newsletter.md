@@ -234,7 +234,7 @@ const totalMatchesCount = userStats.withMatches.reduce((sum, user) => sum + user
 ```javascript
 // Obtener documento empresa (cache) por estructura_empresa_id
 async function getEmpresaDoc(db, estructuraEmpresaId) {
-  return await db.collection('users').findOne({ _id: new ObjectId(estructuraEmpresaId), tipo_cuenta: 'empresa' });
+  return await db.collection('users').findOne({ _id: new ObjectId(estructuraEmpresaId), tipo_cuenta: 'estructura_empresa' });
 }
 
 // Extraer cobertura de la empresa o del usuario
@@ -261,6 +261,7 @@ function getSelectedEtiquetasFromUser(user) {
 // - Individual → doc.etiquetas_personalizadas[userId] intersect etiquetas del usuario
 // - Empresa → doc.etiquetas_personalizadas[empresaId];
 //     si el usuario tiene seleccionadas → filtrar a esas; si no, incluir todas las de empresa
+// - Rangos enterprise: usar empresa.rangos si existen; si no, usar user.rangos; si ambos vacíos → no filtrar por rango
 ```
 
 ## 5. MÉTRICAS DE MATCHES

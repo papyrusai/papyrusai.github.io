@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reversa - Actualización de producto: cuentas de empresa, panel de adminsitrador y organizacion de agentes</title>
+  <style>
+    body { margin:0; padding:0; background:#f8f9fa; color:#0b2431; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif; }
+    .wrapper { width:100%; background:#f8f9fa; padding:24px 0; }
+    .container { width:100%; max-width:720px; margin:0 auto; background:#ffffff; border:1px solid #e8ecf0; border-radius:16px; overflow:hidden; box-shadow:0 8px 24px rgba(11,36,49,.06); }
+    .header { padding:28px 28px 20px; background:linear-gradient(135deg, #04db8d 0%, #0b2431 100%); color:#fff; }
+    .brand { display:flex; align-items:center; gap:12px; }
+    .brand-logo { width:28px; height:28px; border-radius:6px; background:rgba(255,255,255,.15); display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .brand-name { font-size:16px; font-weight:600; letter-spacing:.2px; opacity:.9; }
+    .title { margin-top:14px; font-size:24px; font-weight:700; line-height:1.25; }
+    .preheader { margin-top:8px; color:rgba(255,255,255,.9); font-size:14px; }
+
+    .section { padding:24px 28px; border-top:1px solid #f1f1f1; }
+    .section:first-of-type { border-top:none; }
+    .h2 { font-size:18px; font-weight:700; margin:0 0 12px; color:#0b2431; }
+    .h3 { font-size:16px; font-weight:700; margin:16px 0 8px; color:#0b2431; }
+    .p { margin:0 0 10px; font-size:14px; color:#455862; line-height:1.6; }
+
+    .list { margin:10px 0 0 0; padding-left:18px; }
+    .list li { margin:6px 0; font-size:14px; color:#455862; }
+
+    .feature { display:flex; gap:14px; align-items:flex-start; padding:10px 0; }
+    .badge { flex:0 0 28px; height:28px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#0b2431; border:1px solid #e9ecef; }
+    .feature-content { flex:1; }
+
+    .screenshot { margin:14px 0; padding:0; border:1px solid #e8ecf0; border-radius:12px; overflow:hidden; background:#ffffff; display:inline-block; }
+
+    .cta-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; }
+    .btn { border-radius:20px; padding:10px 16px; font-weight:700; font-size:14px; text-decoration:none; display:inline-block; border:1px solid #0b2431; }
+    .btn-primary { background:#0b2431; color:#fff; border-color:#0b2431; }
+    .btn-outline { background:#fff; color:#0b2431; border-color:#0b2431; }
+    .note { margin-top:8px; font-size:12px; color:#6c757d; }
+
+    .benefits { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-top:12px; }
+    .card { border:1px solid #e8ecf0; border-radius:12px; padding:14px; background:#ffffff; }
+
+    .footer { padding:18px 28px 26px; font-size:12px; color:#6c757d; text-align:center; }
+    .tag { display:inline-block; padding:2px 8px; font-size:11px; border-radius:999px; background:rgba(4,219,141,.12); color:#04db8d; border:1px solid rgba(4,219,141,.35); font-weight:700; letter-spacing:.2px; }
+    .ico { color:#0b2431; font-weight:700; margin-right:8px; }
+    .ico-svg { width:18px; height:18px; fill:#0b2431; margin-right:8px; vertical-align:-3px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header">
+        <div class="brand">
+          <div class="brand-logo" style="background:transparent; border-radius:0; width:auto; height:auto;">
+            <img src="./reversa_white.png" alt="Reversa" style="height:28px; display:block;" />
+          </div>
+          <div class="brand-name"> • Actualización de producto</div>
+        </div>
+        <div class="title">Novedades: cuentas de empresa, permisos y organización de agentes</div>
+        <div class="preheader">Pensado para facilitar la gestión normativa a escala, la colaboración entre usuarios y la estructuración de agentes.</div>
+      </div>
+
+      <div class="section">
+        <div class="p">Nuevas funcionalidades incluidas en producto para permitir el <strong>seguimiento normativo a escala</strong> para <strong>enterprises</strong>, <strong>equipos del conocimiento</strong> y <strong>equipos de regulación</strong>.  Funcionalidad colaborativa con interfaz sencilla para manejar distintos <strong>radares normativos</strong> y organizar tus agentes por temas, áreas o clientes. <strong>Disponible para clientes con “Uso colaborativo en equipo de Reversa”</strong> en los paquetes <strong>Growth</strong> y <strong>Business</strong>.</div>
+      </div>
+
+      <div class="section">
+        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v2H3V5zm2 6h14v2H5v-2zm-2 6h18v2H3v-2z"/></svg>1) Espacio de empresa (colaborativo)</div>
+        <div class="feature">
+          <div class="badge">1</div>
+          <div class="feature-content">
+            <div class="h3">Conexión automática por dominio</div>
+            <p class="p">Automatiza el <strong>onboarding de nuevos usuarios</strong>: si su email es corporativo (por ejemplo, nombre@tuempresa.com), su cuenta hereda automáticamente los <strong>datos previos configurados de la empresa</strong>. Sin fricción ni configuración técnica.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="badge">2</div>
+          <div class="feature-content">
+            <div class="h3">Permisos por usuario</div>
+            <p class="p">Control claro de acceso: <strong>Admin</strong> (gestiona todo), <strong>Edición</strong> (puede modificar), <strong>Lectura</strong> (solo ver). Ideal para equipos con distintos niveles de responsabilidad. Los permisos se gestionan desde el <strong>Panel de Administración</strong>, visible en la cuenta del usuario de la empresa designado como “Admin”.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="badge">3</div>
+          <div class="feature-content">
+            <div class="h3">Agentes colaborativos</div>
+            <p class="p">Las ediciones que realicen los usuarios en los agentes se <strong>actualizan y comparten</strong> en tiempo real con el resto del equipo. Toda la organización trabaja siempre sobre la <strong>misma fuente de verdad</strong>.</p>
+          </div>
+        </div>
+        <div class="screenshot">
+          <img src="./captura_1_agentes.png" alt="Panel de empresa con usuarios y permisos" style="max-width:100%; height:auto; display:block;" />
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8l-6-4h-6zM4 18V6h5.17L12 8.83V18H4z"/></svg>2) Carpetas para organizar tus agentes</div>
+        <p class="p">Crea carpetas por <em>cliente, materia, área o proyecto</em>. Arrastra y suelta para reordenar y mantener todo claro.</p>
+        <ul class="list">
+          <li>Crear, renombrar, mover y eliminar carpetas.</li>
+          <li>Arrastrar agentes a carpetas (o a la raíz).</li>
+          <li>Historial y controles para evitar conflictos entre usuarios.</li>
+        </ul>
+        <div class="screenshot">
+          <img src="./captura_2_agentes.png" alt="Vista de carpetas con agentes organizados" style="max-width:100%; height:auto; display:block;" />
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>3) “Agentes Suscritos”: tu selección personal</div>
+        <p class="p">Marca los agentes que más te interesan con la estrella ⭐ para ver una vista enfocada en <strong>Agentes Suscritos</strong>. Así reduces ruido y te centras en lo relevante.</p>
+        <ul class="list">
+          <li>Activa el filtro “Agentes Suscritos” para ver solo los que te importan.</li>
+          <li>Puedes suscribirte o dejar de suscribirte con un clic en la estrella.</li>
+        </ul>
+        <div class="screenshot">
+          <img src="./captura_3_agentes.png" alt="Vista de Agentes Suscritos activa" style="max-width:100%; height:auto; display:block;" />
+        </div>
+      </div>
+
+      <!-- Removed "Cómo empezar" section as per request -->
+
+      <div class="section">
+        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>Beneficios de la actualización para empresas</div>
+        <div class="benefits">
+          <div class="card">
+            <div class="h3" style="margin-top:0">Colaboración real</div>
+            <p class="p" style="margin-bottom:0">Todos trabajan con los mismos agentes y definiciones, sin duplicados.</p>
+          </div>
+          <div class="card">
+            <div class="h3" style="margin-top:0">Orden y foco</div>
+            <p class="p" style="margin-bottom:0">Carpetas por materia/cliente y vista de <strong>Agentes Suscritos</strong> para priorizar.</p>
+          </div>
+          <div class="card">
+            <div class="h3" style="margin-top:0">Control</div>
+            <p class="p" style="margin-bottom:0">Permisos por rol y registro de cambios para máxima trazabilidad.</p>
+          </div>
+          <div class="card">
+            <div class="h3" style="margin-top:0">Rapidez</div>
+            <p class="p" style="margin-bottom:0">Menos tiempo buscando, más tiempo analizando y decidiendo.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8V4l8 8-8 8v-4H4V8z"/></svg>Próximamente…</div>
+        <ul class="list">
+          <li><strong>Dashboard personalizado</strong> con <em>insights</em> cuantitativos y estratégicos sobre el radar normativo y los agentes de cada usuario.</li>
+          <li><strong>Tendencias normativas</strong> y estadísticas sobre el panorama regulatorio a nivel nacional, regional y europeo.</li>
+        </ul>
+        <p class="p" style="margin-top:8px; color:#455862;">Seguiremos trabajando para crear la solución más completa para la sobrerregulación.</p>
+      </div>
+
+      <div class="section" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <span class="tag">NOVEDAD</span>
+        <div class="p" style="margin:0;">¿Te ayudamos a configurarlo? Responde a este correo y lo hacemos contigo.</div>
+      </div>
+
+      <div class="footer">
+        Reversa © 2025 · Transformamos el riesgo regulatorio en ventaja competitiva<br>
+        Si no deseas recibir más actualizaciones, responde con “BAJA”.
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

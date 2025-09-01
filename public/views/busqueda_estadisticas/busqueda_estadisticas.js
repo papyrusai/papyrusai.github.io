@@ -2,10 +2,30 @@
   // Ensure Chart.js is available (loaded elsewhere like profile.html)
   // Dummy data generator and state management for the tendencias dashboard
 
+  const ReversaUI = window.ReversaUI || (window.ReversaUI = {});
+  ReversaUI.openNativeDatePicker = function(input){ if (!input) return; try { input.showPicker && input.showPicker(); } catch(_e) { /* no-op */ } };
+  ReversaUI.isClickable = function(el){ return !!el && (el.tagName === 'A' || el.tagName === 'BUTTON' || el.classList.contains('chip') || el.classList.contains('dropdown-item')); };
+
+  // HiDPI Chart.js plugin and defaults to increase canvas resolution
+  const ReversaHiDpiPlugin = {
+    id: 'reversaHiDpi',
+    beforeInit(chart){
+      const dpr = Math.max(2, (window.devicePixelRatio || 1));
+      if (!chart.options.devicePixelRatio) chart.options.devicePixelRatio = dpr;
+    },
+    beforeDatasetsDraw(chart){
+      const ctx = chart && chart.ctx;
+      if (ctx) {
+        try { ctx.imageSmoothingEnabled = true; } catch(_e){}
+        try { ctx.imageSmoothingQuality = 'high'; } catch(_e){}
+      }
+    }
+  };
+
   const state = {
-    tab: 'publicada', // 'publicada' | 'tramitacion' | 'sanciones'
-    ambito: 'nacional', // 'nacional' | 'europeo' | 'regional'
-    ccaa: [],
+    tab: 'resumen', // 'resumen' | 'publicada' | 'tramitacion' | 'sanciones'
+    ambito: 'resumen', // 'resumen' | 'nacional' | 'europeo' | 'regional'
+    ccaa: ['Todos'],
     periodo: { preset: '90', start: null, end: null },
     rangos: ['Todos'],
     divisiones: ['Todos'],
@@ -85,6 +105,31 @@
 
   function $(id){ return document.getElementById(id); }
 
+  function showSkeletonLoaders(){
+    // Show chart skeleton loaders
+    const chartSkeletons = ['serieSkeleton', 'rangosSkeleton', 'divisionesSkeleton', 'ramasSkeleton'];
+    chartSkeletons.forEach(id => {
+      const skeleton = $(id);
+      if (skeleton) skeleton.style.display = 'flex';
+    });
+    
+    // Show heatmap skeleton loader
+    const heatmapSkeleton = $('heatmapSkeleton');
+    if (heatmapSkeleton) heatmapSkeleton.style.display = 'flex';
+    
+    // Hide canvas elements
+    const canvases = ['serieChart', 'rangosChart', 'divisionesChart', 'ramasChart'];
+    canvases.forEach(id => {
+      const canvas = $(id);
+      if (canvas) canvas.classList.remove('loaded');
+    });
+  }
+
+  function hideHeatmapSkeleton(){
+    const heatmapSkeleton = $('heatmapSkeleton');
+    if (heatmapSkeleton) heatmapSkeleton.style.display = 'none';
+  }
+
   function fmtNumber(n){
     if (n == null) return '—';
     if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
@@ -138,82 +183,129 @@
   }
 
   function renderCharts(){
-    // Coming soon tabs
-    const comingSoon = (state.tab === 'tramitacion' || state.tab === 'sanciones');
+    console.log('[renderCharts] Called with state:', { 
+      tab: state.tab, 
+      ambito: state.ambito, 
+      periodo: state.periodo,
+      rangos: state.rangos,
+      divisiones: state.divisiones,
+      ramas: state.ramas,
+      excluirOutliers: state.excluirOutliers
+    });
+    
+    // Show skeleton loaders while loading
+    showSkeletonLoaders();
+    
+    const isResumenView = (state.tab === 'resumen' && state.ambito === 'resumen');
     const dash = document.getElementById('dashContent');
     const soon = document.getElementById('comingSoonBlock');
+    const filters = document.querySelector('.tendencias-filters');
     if (dash && soon){
-      dash.style.display = comingSoon ? 'none' : 'block';
-      soon.style.display = comingSoon ? 'block' : 'none';
-      if (comingSoon) return;
+      if (isResumenView){
+        if (filters) filters.style.display = 'block';
+        dash.style.display = 'block';
+        soon.style.display = 'none';
+      } else {
+        if (filters) filters.style.display = 'none';
+        dash.style.display = 'none';
+        soon.style.display = 'block';
+        updateComingSoonText();
+        return;
+      }
     }
 
-    // labels (monthly only)
-    const labels = generateMonthlyLabels(12);
+    // Fetch and render real data
+    fetchTendencias().then(data => {
+      console.log('[renderCharts] Data received from fetchTendencias:', data);
+      
+      if (!data){
+        console.log('[renderCharts] No data received, using fallback dummy data');
+        // fallback to previous dummy behavior if needed
+        const labels = generateMonthlyLabels(12);
+        const datasets = [buildDataset('Total', randomSeries(labels.length, 30), 0)];
+        upsertLineChart('serieChart', 'serie', labels, datasets, state.periodo);
+        upsertBarChart('rangosChart', 'rangos', ['Ley','Real Decreto','Orden','Resolución','Reglamento'], [{ label: '#', data: [10,20,30,15,12], backgroundColor: 'rgba(11,36,49,0.85)' }]);
+        upsertBarChart('divisionesChart', 'divisiones', ['Tecnología','Energía','Finanzas','Sanidad'], [{ label: '#', data: [12,25,10,18], backgroundColor: 'rgba(11,36,49,0.85)' }], 'horizontal');
+        upsertBarChart('ramasChart', 'ramas', ['Laboral','Fiscal','Mercantil','Administrativo'], [{ label: '#', data: [5,9,12,7], backgroundColor: 'rgba(69,88,98,0.9)' }], 'horizontal');
+        return;
+      }
 
-    // Serie temporal (sin apilado)
-    const datasets = [buildDataset('Total', randomSeries(labels.length, 30), 0)];
+      console.log('[renderCharts] Rendering charts with real data');
+      const labels = data.labels || [];
+      const serieData = (data.series && data.series[0] && data.series[0].data) || [];
+      console.log('[renderCharts] Series data:', { labels, serieData });
+      upsertLineChart('serieChart', 'serie', labels, [buildDataset('Total', serieData, 0)], state.periodo);
 
-    upsertLineChart('serieChart', 'serie', labels, datasets);
+      const rangosLabels = (data.rangos || []).map(x=>x.label);
+      const rangosValues = (data.rangos || []).map(x=>x.value);
+      console.log('[renderCharts] Rangos data:', { labels: rangosLabels, values: rangosValues });
+      upsertBarChart('rangosChart', 'rangos', rangosLabels, [{ label: '#', data: rangosValues, backgroundColor: 'rgba(11,36,49,0.85)' }]);
 
-    // Ranking CCAA
-    const ccaa = ['ES-AN','ES-AR','ES-AS','ES-CT','ES-GA','ES-MD','ES-PV','ES-VC'];
-    const values = ccaa.map(()=> Math.round(50 + Math.random()*300));
-    upsertBarChart('rankingChart', 'ranking', ccaa, [{ label: 'Volumen', data: values, backgroundColor: values.map(()=> 'rgba(11,36,49,0.85)') }], 'horizontal');
+      const divLabels = (data.divisiones || []).map(x=>x.label);
+      const divValues = (data.divisiones || []).map(x=>x.value);
+      console.log('[renderCharts] Divisiones data:', { labels: divLabels, values: divValues });
+      upsertBarChart('divisionesChart', 'divisiones', divLabels, [{ label: '#', data: divValues, backgroundColor: 'rgba(11,36,49,0.85)' }], 'horizontal');
 
-    // Rangos (barras azul oscuro como resto)
-    const rangos = ['Ley','Real Decreto','Orden','Resolución','Reglamento'];
-    const datosRangos = rangos.map(()=> Math.round(10+Math.random()*60));
-    upsertBarChart('rangosChart', 'rangos', rangos, [{ label: '#', data: datosRangos, backgroundColor: 'rgba(11,36,49,0.85)' }]);
+      const ramasLabels = (data.ramas || []).map(x=>x.label);
+      const ramasValues = (data.ramas || []).map(x=>x.value);
+      console.log('[renderCharts] Ramas data:', { labels: ramasLabels, values: ramasValues });
+      upsertBarChart('ramasChart', 'ramas', ramasLabels, [{ label: '#', data: ramasValues, backgroundColor: 'rgba(69,88,98,0.9)' }], 'horizontal');
 
-    // Sectores económicos
-    const divisiones = ['Tecnología','Energía','Finanzas','Sanidad','Transporte','Industria','Administración pública'];
-    const datosDiv = divisiones.map(()=> Math.round(10+Math.random()*80));
-    upsertBarChart('divisionesChart', 'divisiones', divisiones, [{ label: '#', data: datosDiv, backgroundColor: 'rgba(11,36,49,0.85)' }], 'horizontal');
+      const k = data.kpis || {};
+      console.log('[renderCharts] KPIs data:', k);
+      $('kpiNormas').textContent = fmtNumber(k.total || 0);
+      $('kpiDelta').textContent = (k.delta_pct == null) ? 'N/A' : `${k.delta_pct.toFixed(1)}%`;
+      $('kpiTopRango').textContent = k.top_rango || '—';
+      $('kpiTopDivision').textContent = k.top_division || '—';
 
-    // Ramas
-    const ramas = ['Laboral','Fiscal','Mercantil','Administrativo','Digital','Consumo'];
-    const datosRamas = ramas.map(()=> Math.round(5+Math.random()*50));
-    upsertBarChart('ramasChart', 'ramas', ramas, [{ label: '#', data: datosRamas, backgroundColor: 'rgba(69,88,98,0.9)' }], 'horizontal');
+      console.log('[tendencias] payload', { periodo: state.periodo, rangos: state.rangos, divisiones: state.divisiones, ramas: state.ramas, excluirOutliers: state.excluirOutliers });
+      console.log('[tendencias] response', { total: k.total, labels: (data.labels||[]).length, rangos: (data.rangos||[]).slice(0,5), divisiones: (data.divisiones||[]).slice(0,5) });
 
-    // KPIs
-    const totalSeries = datasets.length === 1 ? datasets[0].data : datasets.reduce((acc, ds) => acc.map((v,i)=> v + ds.data[i]), new Array(labels.length).fill(0));
-    const k = computeKPIs(totalSeries);
-    $('kpiNormas').textContent = fmtNumber(k.total);
-    $('kpiPaginas').textContent = fmtNumber(k.paginas);
-    $('kpiMediana').textContent = fmtNumber(k.mediana);
-    $('kpiDelta').textContent = `${k.delta}%`;
-    $('kpiTopRango').textContent = k.topRango;
-    $('kpiTopDivision').textContent = k.topDivision;
+      setHeatmapData(data.heatmap || null);
+      renderSpainHeatmap();
 
-    // Meta
-    const nowStr = new Date().toLocaleString();
-    $('lastUpdated').textContent = `Última actualización: ${nowStr}`;
-
-    // Geo subtitle (dynamic start date)
-    const startDate = computeStartDateLabel(state.periodo);
-    const geoSub = document.getElementById('geoHeatmapSubtitle');
-    if (geoSub) geoSub.textContent = `Datos desde: ${startDate}`;
-
-    // Heatmap: prefer static D3 choropleth (minimalista, sin tiles); Leaflet queda como fallback
-    renderSpainHeatmap();
+      const nowStr = new Date().toLocaleString();
+      $('lastUpdated').textContent = `Última actualización: ${nowStr}`;
+      const startDate = computeStartDateLabel(state.periodo);
+      const geoSub = document.getElementById('geoHeatmapSubtitle');
+      if (geoSub) geoSub.textContent = `Datos desde: ${startDate}`;
+    }).catch(err => {
+      console.error('[renderCharts] Error in fetchTendencias:', err);
+    });
   }
 
-  function upsertLineChart(canvasId, key, labels, datasets){
+  function upsertLineChart(canvasId, key, labels, datasets, periodo){
     const ctx = $(canvasId);
     if (!ctx) return;
     if (charts[key]) { charts[key].destroy(); charts[key]=null; }
+    
+    // Hide skeleton loader for this chart
+    const skeletonId = canvasId.replace('Chart', 'Skeleton');
+    const skeleton = $(skeletonId);
+    if (skeleton) skeleton.style.display = 'none';
+    
+    // Solo aplicar configuración temporal del eje X a la gráfica de "Evolución temporal" (serieChart)
+    const isTemporalChart = canvasId === 'serieChart';
     charts[key] = new Chart(ctx, {
       type: 'line',
       data: { labels, datasets },
-      options: baseOptions('line')
+      options: baseOptions('line', isTemporalChart ? periodo : null)
     });
+    
+    // Show canvas with fade-in effect
+    ctx.classList.add('loaded');
   }
 
   function upsertBarChart(canvasId, key, labels, datasets, orientation){
     const ctx = $(canvasId);
     if (!ctx) return;
     if (charts[key]) { charts[key].destroy(); charts[key]=null; }
+    
+    // Hide skeleton loader for this chart
+    const skeletonId = canvasId.replace('Chart', 'Skeleton');
+    const skeleton = $(skeletonId);
+    if (skeleton) skeleton.style.display = 'none';
+    
     const opts = baseOptions('bar');
     if (orientation === 'horizontal'){
       opts.indexAxis = 'y';
@@ -223,13 +315,38 @@
       data: { labels, datasets },
       options: opts
     });
+    
+    // Show canvas with fade-in effect
+    ctx.classList.add('loaded');
   }
 
-  function baseOptions(type){
+  function baseOptions(type, periodo){
     const gridColor = 'rgba(108,117,125,0.12)';
+    
+    // Solo configurar eje temporal si se pasa un periodo (para gráficas temporales)
+    const isTemporalChart = periodo !== null && periodo !== undefined;
+    const numDays = isTemporalChart ? calculatePeriodDays(periodo) : null;
+    
+    const xAxisConfig = { 
+      grid: { color: gridColor, drawBorder: false }, 
+      ticks: { 
+        color: colors.slate
+      }
+    };
+
+    // Solo aplicar configuración temporal del eje X si es una gráfica temporal
+    if (isTemporalChart) {
+      xAxisConfig.ticks.autoSkip = false;
+      xAxisConfig.ticks.callback = function(value, index) {
+        const label = this.getLabelForValue(value);
+        return formatXAxisLabel(label, index, numDays);
+      };
+    }
+    
     return {
       responsive: true,
       maintainAspectRatio: false,
+      devicePixelRatio: Math.max(2, (window.devicePixelRatio || 1)),
       plugins: {
         legend: { display: type !== 'line' || true, labels: { color: colors.slate } },
         tooltip: {
@@ -244,11 +361,50 @@
         zoom: undefined
       },
       scales: {
-        x: { grid: { color: gridColor, drawBorder: false }, ticks: { color: colors.slate } },
+        x: xAxisConfig,
         y: { grid: { color: gridColor, drawBorder: false }, ticks: { color: colors.slate }, beginAtZero: true }
       },
       layout: { padding: { left: 8, right: 8, top: 8, bottom: 8 } }
     };
+  }
+
+  function calculatePeriodDays(periodo) {
+    if (!periodo) return 90; // Default
+    
+    switch(periodo.preset) {
+      case '30': return 30;
+      case '90': return 90;
+      case '365': return 365;
+      case 'ytd': 
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 1);
+        return Math.ceil((now - start) / (1000 * 60 * 60 * 24));
+      case 'custom':
+        if (periodo.start && periodo.end) {
+          const startDate = new Date(periodo.start);
+          const endDate = new Date(periodo.end);
+          return Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        }
+        return 90;
+      default: return 90;
+    }
+  }
+
+  function formatXAxisLabel(label, index, numDays) {
+    if (!label) return '';
+    
+    // 30 días: referencias cada 2 días (mostrar MM/DD)
+    if (numDays <= 30) {
+      return index % 2 === 0 ? label.slice(5).replace('-', '/') : '';
+    }
+    
+    // 90 días: referencias cada 7 días (mostrar MM/DD)
+    if (numDays <= 92) {
+      return index % 7 === 0 ? label.slice(5).replace('-', '/') : '';
+    }
+    
+    // 365 días y YTD: referencias mensuales (solo primero de mes, mostrar YYYY-MM)
+    return label && label.endsWith('-01') ? label.slice(0, 7) : '';
   }
 
   // --- Spain heatmap (TopoJSON + D3 composite projection) ---
@@ -335,18 +491,19 @@
   function colorScale(val, min, max){
     const tRaw = (val - min) / (max - min || 1);
     const t = Math.max(0, Math.min(1, tRaw));
-    // Reversa tri-stop gradient: light-green -> green -> dark-blue
-    const s = { r: 217, g: 248, b: 238 }; // light Reversa green
-    const g = { r: 4,   g: 219, b: 141 }; // Reversa green
-    const b = { r: 11,  g: 36,  b: 49  }; // Reversa dark blue
+    // Reversa tri-stop gradient with extended mid range emphasis
+    const s = { r: 217, g: 248, b: 238 };
+    const g = { r: 4,   g: 219, b: 141 };
+    const b = { r: 11,  g: 36,  b: 49  };
+    const mid = 0.7; // widen mid (green) region for better discrimination
     let rr, gg, bb;
-    if (t <= 0.5) {
-      const tt = t / 0.5; // 0..1 from start to mid
+    if (t <= mid) {
+      const tt = t / mid;
       rr = Math.round(s.r + (g.r - s.r) * tt);
       gg = Math.round(s.g + (g.g - s.g) * tt);
       bb = Math.round(s.b + (g.b - s.b) * tt);
     } else {
-      const tt = (t - 0.5) / 0.5; // 0..1 from mid to end
+      const tt = (t - mid) / (1 - mid);
       rr = Math.round(g.r + (b.r - g.r) * tt);
       gg = Math.round(g.g + (b.g - g.g) * tt);
       bb = Math.round(g.b + (b.b - g.b) * tt);
@@ -391,10 +548,13 @@
   function renderSpainHeatmap(){
     const container = document.getElementById('esHeatmap');
     if (!container) return;
+    
+    // Hide heatmap skeleton loader
+    hideHeatmapSkeleton();
+    
     container.innerHTML = '';
 
-    // If ámbito not ES-related, show placeholder quietly
-    const isES = (state.ambito === 'autonomico' || state.ambito === 'nacional');
+    const isES = (state.ambito === 'nacional' || state.ambito === 'regional' || state.ambito === 'resumen');
     if (!isES){
       const placeholder = document.createElement('div');
       placeholder.className = 'map-placeholder';
@@ -405,7 +565,6 @@
       return;
     }
 
-    // Load libs and data, then draw
     ensureGeoLibs().then(() => fetchSpainTopo()).then((topo) => {
       if (!topo || !window.d3) {
         const fallback = document.createElement('div');
@@ -428,18 +587,33 @@
 
         const features = topojsonRef.feature(topo, topo.objects.autonomous_regions).features;
 
-        // Build dummy values (0..100) per ISO code
+        // Prefer server byIso mapping; fallback to byRegionName
         const valuesByIso = {};
-        features.forEach(f => {
-          const name = (f.properties && (f.properties.name || f.properties.NAME)) || '';
-          const iso = CCAA_NAME_TO_ISO[name] || null;
-          if (iso) valuesByIso[iso] = Math.round(Math.random()*100);
-        });
+        if (__tendenciasHeatmap && __tendenciasHeatmap.byIso){
+          Object.assign(valuesByIso, __tendenciasHeatmap.byIso);
+        } else if (__tendenciasHeatmap && __tendenciasHeatmap.byRegionName){
+          features.forEach(f => {
+            const name = (f.properties && (f.properties.name || f.properties.NAME)) || '';
+            const iso = CCAA_NAME_TO_ISO[name] || null;
+            if (iso) {
+              const variants = [name, name.replace('Comunidad de ', ''), name.replace('Comunitat ', 'Comunidad ').replace('Valenciana', 'Valenciana')];
+              let v = 0;
+              for (const vv of variants){ if (__tendenciasHeatmap.byRegionName[vv] != null){ v = __tendenciasHeatmap.byRegionName[vv]; break; } }
+              valuesByIso[iso] = v;
+            }
+          });
+        } else {
+          features.forEach(f => {
+            const name = (f.properties && (f.properties.name || f.properties.NAME)) || '';
+            const iso = CCAA_NAME_TO_ISO[name] || null;
+            if (iso) valuesByIso[iso] = Math.round(Math.random()*100);
+          });
+        }
+
         const vals = Object.values(valuesByIso);
         const vmax = Math.max(100, ...vals);
         const vmin = 0;
 
-        // Prepare SVG
         const wrap = document.createElement('div');
         wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.height='100%';
         const size = getWrapperSize(container);
@@ -452,7 +626,6 @@
         svgEl.style.background = '#ffffff';
         wrap.appendChild(svgEl);
 
-        // Tooltip (custom)
         const tip = document.createElement('div');
         tip.style.position='absolute'; tip.style.pointerEvents='none'; tip.style.transform='translate(-50%, -120%)';
         tip.style.background='white'; tip.style.border='1px solid #e9ecef'; tip.style.boxShadow='0 8px 24px rgba(11,36,49,.15)';
@@ -462,14 +635,11 @@
         container.appendChild(wrap);
         wrap.appendChild(tip);
 
-        // Projection and path
         const projection = (d3Ref.geoConicConformalSpain && typeof d3Ref.geoConicConformalSpain === 'function') ? d3Ref.geoConicConformalSpain() : d3Ref.geoMercator();
-        // Fit projection accurately to the FC size
         const featureCollection = topojsonRef.feature(topo, topo.objects.autonomous_regions);
         fitProjectionToSize(projection, featureCollection, size.width, size.height, d3Ref);
         const pathGen = d3Ref.geoPath(projection);
 
-        // Draw regions
         const gEl = document.createElementNS('http://www.w3.org/2000/svg','g');
         svgEl.appendChild(gEl);
         features.forEach(d => {
@@ -485,55 +655,29 @@
           pathNode.setAttribute('stroke', '#ffffff');
           pathNode.setAttribute('stroke-width', '1.2');
           pathNode.style.cursor = 'pointer';
-          // Highlight on hover (bring to front + subtle emphasis)
-          pathNode.addEventListener('mouseenter', ()=>{
-            try { if (pathNode.parentNode) pathNode.parentNode.appendChild(pathNode); } catch(_e){}
-            pathNode.setAttribute('stroke-width', '2.2');
-            pathNode.style.filter = 'brightness(1.06)';
-          });
+          pathNode.addEventListener('mouseenter', ()=>{ try { if (pathNode.parentNode) pathNode.parentNode.appendChild(pathNode); } catch(_e){}; pathNode.setAttribute('stroke-width','2.2'); pathNode.style.filter='brightness(1.06)'; });
           pathNode.addEventListener('mousemove', (event)=>{
             const rect = svgEl.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            tip.innerHTML = `<div style=\"font-weight:700;margin-bottom:4px;\">${name}</div>
-              <div style=\"display:flex;align-items:center;gap:8px;\">\n                <span style=\"font-size:12px;color:#6c757d;\">Volumen:</span>\n                <span style=\"font-weight:700;\">${v}</span>\n              </div>`;
-            tip.style.left = x + 'px';
-            tip.style.top = y + 'px';
-            tip.style.display = 'block';
+            const x = event.clientX - rect.left; const y = event.clientY - rect.top;
+            const displayName = (iso === 'ES-PV') ? 'País Vasco' : (iso === 'ES-CT' ? 'Cataluña' : name);
+            const extra = (iso === 'ES-CT') ? 'Todas las secciones integradas desde: 30/08/2025' : (iso === 'ES-PV' ? 'Solo computa disposiciones generales' : '');
+            tip.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${displayName}</div><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:12px;color:#6c757d;">Volumen:</span><span style="font-weight:700;">${v}</span></div>${extra ? `<div style="margin-top:4px;font-size:12px;color:#6c757d;">${extra}</div>` : ''}`;
+            tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.display='block';
           });
-          pathNode.addEventListener('mouseleave', ()=>{
-            tip.style.display='none';
-            pathNode.setAttribute('stroke-width', '1.2');
-            pathNode.style.filter = '';
-          });
-          pathNode.addEventListener('click', ()=>{
-            if (!iso) return;
-            if (!state.ccaa.includes(iso)) state.ccaa = [iso];
-            if ($('selectCCAA')) Array.from($('selectCCAA').options).forEach(o=> o.selected = state.ccaa.includes(o.value));
-            renderCharts();
-          });
+          pathNode.addEventListener('mouseleave', ()=>{ tip.style.display='none'; pathNode.setAttribute('stroke-width','1.2'); pathNode.style.filter=''; });
+          pathNode.addEventListener('click', ()=>{ if (!iso) return; if (!state.ccaa.includes(iso)) state.ccaa = [iso]; if ($('selectCCAA')) Array.from($('selectCCAA').options).forEach(o=> o.selected = state.ccaa.includes(o.value)); invalidateStatsCache(); renderCharts(); });
           gEl.appendChild(pathNode);
         });
 
-        // Composition borders (projection zones)
         if (typeof projection.getCompositionBorders === 'function'){
           const borderPath = document.createElementNS('http://www.w3.org/2000/svg','path');
           borderPath.setAttribute('d', projection.getCompositionBorders());
-          borderPath.setAttribute('fill','none');
-          borderPath.setAttribute('stroke','#e9ecef');
-          borderPath.setAttribute('stroke-width','1');
+          borderPath.setAttribute('fill','none'); borderPath.setAttribute('stroke','#e9ecef'); borderPath.setAttribute('stroke-width','1');
           svgEl.appendChild(borderPath);
         }
 
-        // Legend
         const legend = document.getElementById('esLegend');
-        if (legend){
-          legend.innerHTML = '';
-          const minL = document.createElement('span'); minL.className='legend-label'; minL.textContent='Menos';
-          const bar = document.createElement('div'); bar.className='legend-bar';
-          const maxL = document.createElement('span'); maxL.className='legend-label'; maxL.textContent='Más';
-          legend.appendChild(minL); legend.appendChild(bar); legend.appendChild(maxL);
-        }
+        if (legend){ legend.innerHTML=''; const minL=document.createElement('span'); minL.className='legend-label'; minL.textContent='Menos'; const bar=document.createElement('div'); bar.className='legend-bar'; const maxL=document.createElement('span'); maxL.className='legend-label'; maxL.textContent='Más'; legend.appendChild(minL); legend.appendChild(bar); legend.appendChild(maxL); }
       } catch (err) {
         console.error('Error renderizando mapa', err);
         const fallback = document.createElement('div');
@@ -585,7 +729,7 @@
     const svgEl = document.getElementById('esHeatmap');
     if (!mapEl) return;
 
-    const isES = (state.ambito === 'autonomico' || state.ambito === 'nacional');
+    const isES = (state.ambito === 'nacional' || state.ambito === 'regional' || state.ambito === 'resumen');
     if (!isES){ mapEl.style.display='none'; if (svgEl) svgEl.style.display='none'; return; }
 
     ensureLeaflet().then(()=> fetchSpainGeoJSON()).then(geo =>{
@@ -626,19 +770,19 @@
       });
 
       function getColor(v){
-        // Reversa tri-stop gradient (light-green -> green -> dark-blue)
         const t = Math.max(0, Math.min(1, (v||0)/100));
-        const s = { r: 217, g: 248, b: 238 }; // light Reversa green
-        const g = { r: 4,   g: 219, b: 141 }; // Reversa green
-        const b = { r: 11,  g: 36,  b: 49  }; // Reversa dark blue
+        const s = { r: 217, g: 248, b: 238 };
+        const g = { r: 4,   g: 219, b: 141 };
+        const b = { r: 11,  g: 36,  b: 49  };
+        const mid = 0.7;
         let rr, gg, bb;
-        if (t <= 0.5) {
-          const tt = t / 0.5;
+        if (t <= mid) {
+          const tt = t / mid;
           rr = Math.round(s.r + (g.r - s.r) * tt);
           gg = Math.round(s.g + (g.g - s.g) * tt);
           bb = Math.round(s.b + (g.b - s.b) * tt);
         } else {
-          const tt = (t - 0.5) / 0.5;
+          const tt = (t - mid) / (1 - mid);
           rr = Math.round(g.r + (b.r - g.r) * tt);
           gg = Math.round(g.g + (b.g - g.g) * tt);
           bb = Math.round(g.b + (b.b - g.b) * tt);
@@ -661,21 +805,23 @@
       function onEach(feature, layer){
         const name = (feature.properties && (feature.properties.name || feature.properties.ccaa_name || feature.properties.nom_comunidad)) || '';
         const v = valuesByName[name] || 0;
+        const iso = CCAA_NAME_TO_ISO[name] || null;
+        const displayName = (iso === 'ES-PV') ? 'País Vasco' : (iso === 'ES-CT' ? 'Cataluña' : name);
+        const extra = (iso === 'ES-CT') ? 'Todas las secciones integradas desde: 30/08/2025' : (iso === 'ES-PV' ? 'Solo computa disposiciones generales' : '');
         layer.on({
           mouseover: (e)=>{ e.target.setStyle({ weight: 2.5, color: '#e9ecef', fillOpacity: 1 }); try { e.target.bringToFront && e.target.bringToFront(); } catch(_e){} },
           mouseout: (e)=>{ gj.resetStyle(e.target); },
           click: ()=>{
-            // Map name to ISO known mapping used elsewhere if possible
-            const iso = CCAA_NAME_TO_ISO[name] || null;
             if (iso){ state.ccaa = [iso]; if ($('selectCCAA')) Array.from($('selectCCAA').options).forEach(o=> o.selected = state.ccaa.includes(o.value)); }
             renderCharts();
           }
         });
-        layer.bindTooltip(`<div style="font-weight:700;margin-bottom:4px;">${name}</div>
+        const extraHtml = extra ? `<div style="margin-top:4px;font-size:12px;color:#6c757d;">${extra}</div>` : '';
+        layer.bindTooltip(`<div style="font-weight:700;margin-bottom:4px;">${displayName}</div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:12px;color:#6c757d;">Volumen:</span>
             <span style="font-weight:700;">${v}</span>
-          </div>`, { sticky: true, direction: 'top', opacity: 0.95 });
+          </div>${extraHtml}`, { sticky: true, direction: 'top', opacity: 0.95 });
       }
 
       const gj = L.geoJSON(geo, { style, onEachFeature: onEach }).addTo(map);
@@ -690,7 +836,120 @@
     });
   }
 
-  function bindChipSelect({boxId, chipsId, dropdownId, clearId, stateArray}){
+  // --- Facets for dynamic region/country dropdown ---
+  let __facets = null;
+  function loadFacets(){
+    if (__facets) return Promise.resolve(__facets);
+    return fetch('/api/info-fuentes/facets')
+      .then(r=> r.ok ? r.json() : Promise.reject(new Error('facets error')))
+      .then(j=> { __facets = (j && j.facets) || (j && j.data && j.data.facets) || null; return __facets; })
+      .catch(()=> { __facets = { pais_nacional: [], regiones_regional: [] }; return __facets; });
+  }
+
+  function fetchStatsFacets(){
+    return fetch('/api/stats/facets').then(r=> r.ok ? r.json() : Promise.reject()).then(j=> j.facets || { rangos: [], divisiones: [], ramas: [] }).catch(()=> ({ rangos: [], divisiones: [], ramas: [] }));
+  }
+
+  function updateStatsDropdown(dropdownId, values){
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    dropdown.innerHTML = '';
+    const todos = document.createElement('div'); todos.className='dropdown-item'; todos.dataset.value='Todos'; todos.textContent='Todos'; dropdown.appendChild(todos);
+    values.forEach(v => { const d = document.createElement('div'); d.className='dropdown-item'; d.dataset.value = v; d.textContent = v; dropdown.appendChild(d); });
+  }
+
+  // Simple in-memory cache to avoid duplicate server calls while adjusting filters
+  const __statsCache = new Map();
+  function buildCacheKey(){
+    const payload = {
+      periodo: state.periodo,
+      rangos: state.rangos,
+      divisiones: state.divisiones,
+      ramas: state.ramas,
+      excluirOutliers: state.excluirOutliers
+    };
+    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  }
+
+  function invalidateStatsCache(){ __statsCache.clear(); }
+
+  function fetchTendencias(){
+    const key = buildCacheKey();
+    console.log('[fetchTendencias] Cache key:', key);
+    console.log('[fetchTendencias] Cache has key:', __statsCache.has(key));
+    
+    if (__statsCache.has(key)) {
+      console.log('[fetchTendencias] Using cached data');
+      return Promise.resolve(__statsCache.get(key));
+    }
+    
+    console.log('[fetchTendencias] Sending request with payload:', {
+      periodo: state.periodo,
+      rangos: state.rangos,
+      divisiones: state.divisiones,
+      ramas: state.ramas,
+      excluirOutliers: state.excluirOutliers
+    });
+    
+    return fetch('/api/stats/tendencias', { 
+      method:'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({
+        periodo: state.periodo,
+        rangos: state.rangos,
+        divisiones: state.divisiones,
+        ramas: state.ramas,
+        excluirOutliers: state.excluirOutliers
+      }) 
+    }).then(r=> {
+      if (!r.ok) {
+        console.error('[fetchTendencias] HTTP error:', r.status, r.statusText);
+        return Promise.reject(new Error(`HTTP ${r.status}: ${r.statusText}`));
+      }
+      return r.json();
+    }).then(j=>{
+      console.log('[fetchTendencias] Response received:', j);
+      const data = j && j.data ? j.data : null;
+      if (data) {
+        __statsCache.set(key, data);
+        console.log('[fetchTendencias] Data cached successfully');
+      } else {
+        console.warn('[fetchTendencias] No data in response:', j);
+      }
+      return data;
+    }).catch((err)=> {
+      console.error('[fetchTendencias] Request failed:', err);
+      return null;
+    });
+  }
+
+  // Injected heatmap data for D3/Leaflet renderers
+  let __tendenciasHeatmap = null;
+  function setHeatmapData(h){ __tendenciasHeatmap = h; }
+
+  function setRegionalLabel(){
+    const lbl = document.querySelector('#regionalSelector .filter-label');
+    if (!lbl) return;
+    if (state.ambito === 'nacional') lbl.textContent = 'País';
+    else if (state.ambito === 'regional') lbl.textContent = 'Región';
+    else lbl.textContent = 'Región';
+  }
+
+  function updateRegionesDropdown(){
+    const dropdown = document.getElementById('regionesDropdown');
+    if (!dropdown) return Promise.resolve();
+    return loadFacets().then(facets => {
+      const values = state.ambito === 'nacional' ? (facets.pais_nacional || []) : (state.ambito === 'regional' ? (facets.regiones_regional || []) : []);
+      const unique = Array.from(new Set(values.filter(Boolean)));
+      // Rebuild
+      dropdown.innerHTML = '';
+      const todos = document.createElement('div'); todos.className='dropdown-item'; todos.dataset.value='Todos'; todos.textContent='Todos';
+      dropdown.appendChild(todos);
+      unique.forEach(v => { const d = document.createElement('div'); d.className='dropdown-item'; d.dataset.value = v; d.textContent = v; dropdown.appendChild(d); });
+    });
+  }
+
+  function bindChipSelect({boxId, chipsId, dropdownId, clearId, stateArray, beforeOpen}){
     const box = document.getElementById(boxId);
     const chipsContainer = document.getElementById(chipsId);
     const dropdown = document.getElementById(dropdownId);
@@ -700,6 +959,7 @@
       box.classList.add('active');
       const rect = box.getBoundingClientRect();
       dropdown.style.minWidth = rect.width + 'px';
+      if (typeof beforeOpen === 'function') beforeOpen({ dropdown, addValue });
       dropdown.classList.add('open');
     }
     function close(){ dropdown.classList.remove('open'); box.classList.remove('active'); }
@@ -721,6 +981,8 @@
     }
 
     function addValue(value){
+      console.log('[chipSelect] addValue called with:', { target: stateArray, value, currentState: state[stateArray] });
+      
       if (value === 'Todos') {
         state[stateArray] = ['Todos'];
       } else {
@@ -728,52 +990,70 @@
         if (!current.includes(value)) current.push(value);
         state[stateArray] = current;
       }
+      
+      console.log('[chipSelect] add', { target: stateArray, value, newState: state[stateArray] });
       renderChips();
+      console.log('[chipSelect] about to invalidate cache and render charts');
+      invalidateStatsCache();
       renderCharts();
     }
 
     function removeValue(value){
+      console.log('[chipSelect] removeValue called with:', { target: stateArray, value, currentState: state[stateArray] });
+      
       let current = state[stateArray].slice();
       current = current.filter(v => v !== value);
       if (current.length === 0) current = ['Todos'];
       state[stateArray] = current;
+      
+      console.log('[chipSelect] remove', { target: stateArray, value, newState: state[stateArray] });
       renderChips();
+      console.log('[chipSelect] about to invalidate cache and render charts');
+      invalidateStatsCache();
       renderCharts();
     }
 
     box.addEventListener('click', (e)=>{ e.stopPropagation(); open(); });
-    clearBtn.addEventListener('click', (e)=>{ e.stopPropagation(); state[stateArray] = ['Todos']; renderChips(); renderCharts(); });
-    dropdown.querySelectorAll('.dropdown-item').forEach(item => item.addEventListener('click', (e)=>{
+    clearBtn.addEventListener('click', (e)=>{ e.stopPropagation(); state[stateArray] = ['Todos']; renderChips(); invalidateStatsCache(); renderCharts(); });
+    dropdown.addEventListener('click', (e)=>{
+      const target = e.target.closest('.dropdown-item');
+      if (!target) return;
       e.stopPropagation();
-      const val = item.dataset.value;
+      const val = target.dataset.value;
       addValue(val);
-    }));
+    });
     document.addEventListener('click', ()=> close());
 
     renderChips();
   }
 
   function bindEvents(){
-    // Tabs
-    document.querySelectorAll('.tab-link').forEach(btn => {
+    // Tabs (top menu only)
+    document.querySelectorAll('.tendencias-tabs .tab-link').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.tab-link').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.tendencias-tabs .tab-link').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         state.tab = btn.dataset.tab;
         renderCharts();
       });
     });
 
-    // Ambito submenu
+    // Ambito submenu (disable non-resumen interactions)
     document.querySelectorAll('.ambito-link')?.forEach(a => {
-      a.addEventListener('click', ()=>{
+      a.addEventListener('click', (ev)=>{
+        const value = a.dataset.ambito;
+        if (value !== 'resumen') {
+          // disabled: show coming soon text only, do not change state
+          updateComingSoonText();
+          renderCharts();
+          return;
+        }
         document.querySelectorAll('.ambito-link').forEach(x=> x.classList.remove('active'));
         a.classList.add('active');
-        const value = a.dataset.ambito;
         state.ambito = value;
-        const showRegional = value === 'regional';
         const regSel = document.getElementById('regionalSelector');
-        if (regSel) regSel.style.display = showRegional ? 'flex' : 'none';
+        if (regSel) regSel.style.display = 'none';
+        setRegionalLabel();
         renderCharts();
       });
     });
@@ -782,8 +1062,8 @@
     bindChipSelect({ boxId:'rangosSelect', chipsId:'rangosChips', dropdownId:'rangosDropdown', clearId:'rangosClear', stateArray:'rangos' });
     bindChipSelect({ boxId:'divisionesSelect', chipsId:'divisionesChips', dropdownId:'divisionesDropdown', clearId:'divisionesClear', stateArray:'divisiones' });
     bindChipSelect({ boxId:'ramasSelect', chipsId:'ramasChips', dropdownId:'ramasDropdown', clearId:'ramasClear', stateArray:'ramas' });
-    // Regional chip-select
-    bindChipSelect({ boxId:'regionesSelect', chipsId:'regionesChips', dropdownId:'regionesDropdown', clearId:'regionesClear', stateArray:'ccaa' });
+    // Regional chip-select (dynamic)
+    bindChipSelect({ boxId:'regionesSelect', chipsId:'regionesChips', dropdownId:'regionesDropdown', clearId:'regionesClear', stateArray:'ccaa', beforeOpen: ()=>{ updateRegionesDropdown(); } });
 
     // Period chips
     document.querySelectorAll('#periodoChips .chip').forEach(chip => {
@@ -794,20 +1074,31 @@
         state.periodo = { preset, start: null, end: null };
         const custom = $('customRange');
         if (custom) custom.style.display = preset === 'custom' ? 'flex' : 'none';
+        invalidateStatsCache();
         renderCharts();
       });
     });
 
-    $('inputStartDate')?.addEventListener('change', (e)=>{ state.periodo.start = e.target.value; renderCharts(); });
-    $('inputEndDate')?.addEventListener('change', (e)=>{ state.periodo.end = e.target.value; renderCharts(); });
+    // Native date picker open on click/focus for better UX
+    const startInput = $('inputStartDate');
+    const endInput = $('inputEndDate');
+    if (startInput){
+      ['click','focus'].forEach(evt => startInput.addEventListener(evt, ()=> ReversaUI.openNativeDatePicker(startInput)));
+    }
+    if (endInput){
+      ['click','focus'].forEach(evt => endInput.addEventListener(evt, ()=> ReversaUI.openNativeDatePicker(endInput)));
+    }
+
+    $('inputStartDate')?.addEventListener('change', (e)=>{ state.periodo.start = e.target.value; invalidateStatsCache(); renderCharts(); });
+    $('inputEndDate')?.addEventListener('change', (e)=>{ state.periodo.end = e.target.value; invalidateStatsCache(); renderCharts(); });
 
     // Outliers
-    $('chkOutliers')?.addEventListener('change', (e)=>{ state.excluirOutliers = e.target.checked; renderCharts(); });
+    $('chkOutliers')?.addEventListener('change', (e)=>{ state.excluirOutliers = e.target.checked; invalidateStatsCache(); renderCharts(); });
 
     // Reset
     $('btnResetFiltros')?.addEventListener('click', ()=>{
-      state.ambito = 'nacional';
-      state.ccaa = [];
+      state.ambito = 'resumen';
+      state.ccaa = ['Todos'];
       state.periodo = { preset: '90', start: null, end: null };
       state.rangos = ['Todos'];
       state.divisiones = ['Todos'];
@@ -815,8 +1106,8 @@
       state.excluirOutliers = true;
       // UI
       document.querySelectorAll('.ambito-link').forEach(x=> x.classList.remove('active'));
-      const ambNat = document.querySelector('.ambito-link[data-ambito="nacional"]');
-      if (ambNat) ambNat.classList.add('active');
+      const ambRes = document.querySelector('.ambito-link[data-ambito="resumen"]');
+      if (ambRes) ambRes.classList.add('active');
       const regSel = document.getElementById('regionalSelector');
       if (regSel) regSel.style.display = 'none';
       document.querySelectorAll('#periodoChips .chip').forEach(c=>c.classList.remove('active'));
@@ -834,7 +1125,7 @@
         bindChipSelect({ boxId:'rangosSelect', chipsId:'rangosChips', dropdownId:'rangosDropdown', clearId:'rangosClear', stateArray:'rangos' });
         bindChipSelect({ boxId:'divisionesSelect', chipsId:'divisionesChips', dropdownId:'divisionesDropdown', clearId:'divisionesClear', stateArray:'divisiones' });
         bindChipSelect({ boxId:'ramasSelect', chipsId:'ramasChips', dropdownId:'ramasDropdown', clearId:'ramasClear', stateArray:'ramas' });
-        bindChipSelect({ boxId:'regionesSelect', chipsId:'regionesChips', dropdownId:'regionesDropdown', clearId:'regionesClear', stateArray:'ccaa' });
+        bindChipSelect({ boxId:'regionesSelect', chipsId:'regionesChips', dropdownId:'regionesDropdown', clearId:'regionesClear', stateArray:'ccaa', beforeOpen: ()=>{ updateRegionesDropdown(); } });
         renderCharts();
       }, 0);
     });
@@ -849,6 +1140,23 @@
       navigator.clipboard.writeText(url.toString());
       showToast('success', 'Enlace copiado.');
     });
+  }
+
+  function updateComingSoonText(){
+    const el = document.getElementById('comingSoonText');
+    if (!el) return;
+    // Prefer top-level selection if not resumen; otherwise use ambito
+    let section = '';
+    if (state.tab !== 'resumen') {
+      const activeTop = document.querySelector('.tendencias-tabs .tab-link.active');
+      section = (activeTop && activeTop.textContent) || 'esta sección';
+    } else if (state.ambito !== 'resumen') {
+      const activeAmb = document.querySelector('.ambito-tabs .ambito-link.active');
+      section = (activeAmb && activeAmb.textContent) || 'esta sección';
+    } else {
+      section = 'esta sección';
+    }
+    el.textContent = `Estamos trabajando en crear una visión detallada sobre ${section}.`;
   }
 
   function serializeState(){
@@ -880,24 +1188,28 @@
   }
 
   function syncUIFromState(){
-    // Tabs
-    document.querySelectorAll('.tab-link').forEach(b=>{
+    // Tabs (top)
+    document.querySelectorAll('.tendencias-tabs .tab-link').forEach(b=>{
       b.classList.toggle('active', b.dataset.tab === state.tab);
     });
 
     // Ambito submenu
     document.querySelectorAll('.ambito-link').forEach(a=> a.classList.toggle('active', a.dataset.ambito === state.ambito));
-    const regSel = document.getElementById('regionalSelector'); if (regSel) regSel.style.display = state.ambito === 'regional' ? 'flex' : 'none';
+    const regSel = document.getElementById('regionalSelector'); if (regSel) regSel.style.display = (state.ambito === 'nacional' || state.ambito === 'regional') ? 'flex' : 'none';
+    setRegionalLabel();
 
-    // CCAA chips handled via bindChipSelect re-render
-
-    // Periodo
+    // Periodo - Safe access to customRange and ensure 90d is selected by default
     document.querySelectorAll('#periodoChips .chip').forEach(c=> c.classList.toggle('active', c.dataset.range === state.periodo.preset));
-    $('customRange').style.display = state.periodo.preset === 'custom' ? 'flex' : 'none';
-    if (state.periodo.start) $('inputStartDate').value = state.periodo.start;
-    if (state.periodo.end) $('inputEndDate').value = state.periodo.end;
+    const customRange = $('customRange');
+    if (customRange) customRange.style.display = state.periodo.preset === 'custom' ? 'flex' : 'none';
+    
+    const inputStartDate = $('inputStartDate');
+    const inputEndDate = $('inputEndDate');
+    if (state.periodo.start && inputStartDate) inputStartDate.value = state.periodo.start;
+    if (state.periodo.end && inputEndDate) inputEndDate.value = state.periodo.end;
 
-    $('chkOutliers').checked = state.excluirOutliers;
+    const chkOutliers = $('chkOutliers');
+    if (chkOutliers) chkOutliers.checked = state.excluirOutliers;
   }
 
   function ensureChartLibs(){
@@ -909,9 +1221,10 @@
     if (typeof Chart === 'undefined'){
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-      s.onload = init;
+      s.onload = ()=>{ try { Chart.register(ReversaHiDpiPlugin); Chart.defaults.devicePixelRatio = Math.max(2, (window.devicePixelRatio || 1)); } catch(_e){}; init(); };
       document.body.appendChild(s);
     } else {
+      try { Chart.register(ReversaHiDpiPlugin); Chart.defaults.devicePixelRatio = Math.max(2, (window.devicePixelRatio || 1)); } catch(_e){}
       init();
     }
   }
@@ -930,6 +1243,8 @@
       case 'ytd': start = new Date(now.getFullYear(), 0, 1); break;
       default: start = new Date(now); start.setDate(start.getDate()-90);
     }
+    const MIN = new Date('2025-08-11T00:00:00.000Z');
+    if (start < MIN) start = MIN;
     return `${String(start.getDate()).padStart(2,'0')}-${String(start.getMonth()+1).padStart(2,'0')}-${start.getFullYear()}`;
   }
 
@@ -939,7 +1254,17 @@
     bindEvents();
     restoreStateFromHash();
     syncUIFromState();
-    renderCharts();
+    // Warm facets and prepare dropdowns
+    Promise.all([
+      loadFacets(),
+      fetchStatsFacets()
+    ]).then(([_, statsFacets])=>{
+      updateRegionesDropdown();
+      updateStatsDropdown('rangosDropdown', statsFacets.rangos || []);
+      updateStatsDropdown('divisionesDropdown', statsFacets.divisiones || []);
+      updateStatsDropdown('ramasDropdown', statsFacets.ramas || []);
+      renderCharts();
+    }).catch(()=>{ updateRegionesDropdown(); renderCharts(); });
   }
 
   // Kickoff on DOM ready when this view is injected

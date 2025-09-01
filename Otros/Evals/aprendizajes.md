@@ -34,6 +34,7 @@ Aprendizajes
     Ej (en test con doc con idioma distinto, de 70% acierto a 90%):
     
     1. **Consistencia**: Debes razonar y etiquetar de manera consistente, de tal manera que si tuvieras que etiquetar un texto 100 veces, las 100 tendrían el mismo resultado
+
 - 3. Agrupar el contenido por bloques de XML/variables ayuda al modelo a identificar y no equivocarse a que nos referimos. Es muy importante referirse al texto a analizar como <DOCUMENTO> y no como texto, texto juridico u otros nombres
     
     Ej: En el idioma, cuando le decias que si el texto era distinto de español o ingles no etiquetara, mejora la consistencia al indicarlo que es el texto de <DOCUMENTO> y debajo meter el texto a analizar dentro de <DOCUMENTO> </DOCUMENTO>
@@ -41,6 +42,7 @@ Aprendizajes
     Ej: en razonamiento dentro de la etiqueta, sustituir “texto” por documento, mejora accuracy de (7/10) a (0/10). “Se debe incluir la etiqueta como identificada si el **<DOCUMENTO>** cumple alguno de los siguientes casos: a) obliga a empresas como MAZ a implementar cambios en su operativa b) presenta un precedente sancionador o judicial…”
     
 - 4. Definir el objetivo del agente con la finalidad/implicaciones requeridas, en vez de intentar redactar un listado de los tipos de textos a incluir. Escribir los textos concretos incluidos por el agente, genera inconsistencias y que faltan textos en producción, porque es imposible y poco eficiente redactar todos los tipos de textos posibles
+
 - 5. Numerar los objetos de un listado (usando 1,2,3.. o a,b,c…). Una lista larga  textos o contenidos a incluir separados por comas o puntos, hace que la IA se confunda.
     
     Ej: mejora precision de (6/10) a (10/10). Con listado de comas a veces solo comprobaba primeros dos elementos y dejaba fuera el texto (que tenia que cogerlo por ser modificacion de ley general relevante para sector)
@@ -98,11 +100,12 @@ Aprendizajes
     - **Exclusion de nomativa municipal/local:** Documentos cuyo ámbito de aplicación afecte únicamente a una región o municipio
     - **Criterio que se debe cumplir siempre + lista de supuestos: “**Se debe etiquetar el <DOCUMENTO> únicamente si procede del BOE (principalmente Secciones I y III), del BOCM (disposiciones generales) o del DOUE (serie L) y cumple al menos uno de los siguientes supuestos:…”
     - **Clausula sobre criterios/actualziaciones reguladores**: Establece criterios o actualizaciones de supervisores/reguladores que impacten en regulación financiera o PBC/FT.
+
 - 8. Dejar claro que excluir convenios particulares y resoluciones de particulares, no implica no recoger sanciones y decisiones judiciales
     
     Ej (mejora de 0/6 a 6/6) : 
     
-    <Razonamiento> b) Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos, **ya que sirven como indicativo de tendencias reguladoras y judiciales, aunque afecten a particulares concretos distintos de MAZ**
+    <Contenido> b) Establece sanciones económicas (de reguladores como la AEPD) o criterio jurisprudencial en materia de protección de datos, **ya que sirven como indicativo de tendencias reguladoras y judiciales, aunque afecten a particulares concretos distintos de MAZ**
     
     <DocumentosNoIncluidos>
     Lista exhaustiva (no ampliar):
@@ -116,7 +119,6 @@ Aprendizajes
 - 10. Importancia de las palabras clave/keywords. En residuos y economia circular, faltaba “industria limpia” y no pillaba una recomendación. También faltaba “incentivo fiscal” para pillar otra
       Materias
 Keywords: Acumuladores, Aparatos eléctricos, Aparatos electrónicos, Convivencia,Economía Circular, Envases, Espacios públicos, Estrategia, Filtros, Fumar, Gestión ambiental, Infraestructuras verdes, Medio ambiente, Neumáticos, Pilas, Plásticos, Playas, Productor, Productor de producto, Residuos, Responsabilidad ampliada, Subproducto, Tabaco, Vertederos
-
 
 - 11. Las menciones repetidas de obligaciones en el objetivo del system prompt hacia que a veces no identificara otras disposiciones (recomendaciones, sanciones etc…). Se ha redactado un objetivo más genérico y parece que funciona correctamente
     
@@ -199,6 +201,11 @@ Keywords: Acumuladores, Aparatos eléctricos, Aparatos electrónicos, Convivenci
        "Convenios que no estén incluidos en el apartado de <Contenido> sobre convenios de interés general." "Convenios o resoluciones no sancionadoras que afectan a particulares concretos, empresas concretas o interadministrativos sin efectos jurídicos generales" 
      - Exclusión de informes, proyectos o explotaciones particulares. Especialmente relevantes para residuos:
        "Textos normativos que afecten únicamente a un proyecto, explotación, planta , reserva natural o parque natural en particular."
+    - Exclusiones relevantes para Universidades:
+        I) No incluir modulos profesionales, ciclos formativos, curriculos profesionales, aprobacion de grados, convocatorias, prácticas, subvenciones. 
+        II) Documentos sobre centros academicos concretos o universidades concretas
+
+
      - Exclusión de normativa local/ámbito acotado:
        a)Municpal: "Documentos cuyo ámbito de aplicación afecte únicamente a un municipio (normativa local), salvo que el agente especifique lo contrario."
        b) autonómico:" Documentos cuyo ámbito de aplicación sea solo municipal o regional (que afecte únicamente a una Comunidad Autónoma) sin tener efecto general en España, salvo que imponga obligaciones relevantes en `<AMBITO>` que sean indicativas de tendencia regulatoria "

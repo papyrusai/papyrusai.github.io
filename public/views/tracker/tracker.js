@@ -54,20 +54,13 @@ function loadChart(months, counts) {
   }
   
   try {
-    // Usar el escalado interno de Chart.js para evitar blur
+    // Asegurar contenedor visible antes de medir y crear el gráfico (evita tamaños 0 y blur)
     const canvas = ctx;
+    const container = document.getElementById('chartContainer');
+    if (container) { container.style.display = 'block'; container.classList.add('loaded'); }
     canvas.style.imageRendering = 'auto';
-    const desiredDpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
-
-    // Ajustar tamaño del canvas al wrapper para evitar reescalados CSS
-    try {
-      const wrapper = canvas.parentElement;
-      if (wrapper) {
-        const rect = wrapper.getBoundingClientRect();
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
-      }
-    } catch(_) {}
+    const desiredDpr = Math.max(2, (window.devicePixelRatio || 1));
+    try { if (window.Chart) { Chart.defaults.devicePixelRatio = desiredDpr; } } catch(_) {}
 
     // Construir SIEMPRE una serie diaria continua del rango seleccionado
     const startDateStr = document.getElementById('startDate')?.value;
@@ -84,7 +77,8 @@ function loadChart(months, counts) {
 
     let labels = [];
     let series = [];
-    if (startDateStr && endDateStr) {
+    // Solo generar serie diaria por rango si EXISTE dailyMap. Si no, usar months/counts.
+    if (startDateStr && endDateStr && dailyMap) {
       const start = new Date(startDateStr);
       const end = new Date(endDateStr);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
@@ -94,7 +88,7 @@ function loadChart(months, counts) {
           const da = String(d.getDate()).padStart(2, '0');
           const key = `${y}-${m}-${da}`;
           labels.push(key);
-          series.push(dailyMap && key in dailyMap ? dailyMap[key] : 0);
+          series.push(key in dailyMap ? Number(dailyMap[key]) || 0 : 0);
         }
       }
     }
@@ -104,16 +98,19 @@ function loadChart(months, counts) {
       if (dailyMap) {
         const keys = Object.keys(dailyMap).sort();
         labels = keys;
-        series = keys.map(k => dailyMap[k]);
+        series = keys.map(k => Number(dailyMap[k]) || 0);
       } else {
         labels = Array.isArray(months) ? months : [];
-        series = Array.isArray(counts) ? counts : [];
+        series = Array.isArray(counts) ? counts.map(v => Number(v) || 0) : [];
       }
     }
 
     const numDays = labels.length;
 
-    trackerChart = new Chart(ctx, {
+    // Usar contexto 2D explícito para evitar inconsistencias con HiDPI
+    const ctx2d = canvas.getContext('2d');
+
+    trackerChart = new Chart(ctx2d, {
       type: 'line',
       data: {
         labels,
@@ -134,6 +131,7 @@ function loadChart(months, counts) {
         devicePixelRatio: desiredDpr,
         responsive: true,
         maintainAspectRatio: false,
+        animation: false,
         layout: { padding: { top: 8, right: 12, bottom: 8, left: 12 } },
         plugins: {
           legend: { display: false },
@@ -150,6 +148,7 @@ function loadChart(months, counts) {
         },
         scales: {
           x: {
+            type: 'category',
             grid: { display: false },
             ticks: {
               color: '#6c757d',
@@ -189,17 +188,10 @@ function loadChart(months, counts) {
     try {
       if (window.__chartResizeObserver) window.__chartResizeObserver.disconnect();
       const ro = new ResizeObserver(() => {
-        const newDpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        const newDpr = Math.max(2, (window.devicePixelRatio || 1));
         if (trackerChart && trackerChart.options) {
           trackerChart.options.devicePixelRatio = newDpr;
-          try {
-            const wrapper = canvas.parentElement;
-            if (wrapper) {
-              const rect = wrapper.getBoundingClientRect();
-              canvas.style.width = rect.width + 'px';
-              canvas.style.height = rect.height + 'px';
-            }
-          } catch(_) {}
+          try { if (window.Chart) { Chart.defaults.devicePixelRatio = newDpr; } } catch(_) {}
           trackerChart.resize();
         }
       });
@@ -284,10 +276,14 @@ async function loadAgentesContainer() {
       const selData = await selResp.json();
       const favCount = Array.isArray(selData?.seleccion) ? selData.seleccion.length : 0;
       if (favCount > 0) {
-        headerEl.textContent = 'Agentes Favoritos';
+        headerEl.textContent = 'Agentes Suscritos';
       } else {
         headerEl.textContent = 'Agentes Suscritos';
       }
+      // Flag global para que el resto del tracker sepa que es empresa (iconos/estilo)
+      window.__isEmpresaAccount = true;
+    } else {
+      window.__isEmpresaAccount = false;
     }
   } catch(_) {}
   
@@ -886,8 +882,8 @@ function setupAgentesInfoTooltip(metadata){
   tooltip.style.cssText = 'position:absolute; background:#0b2431; color:#fff; padding:12px 16px; border-radius:8px; width: 360px; z-index:10000; top: 28px; right: 0; display:none;';
   const hasFavs = (metadata?.etiquetas_seleccionadas_count || 0) > 0;
   const texto = hasFavs 
-    ? 'Añade o elimina agentes favoritos en configuración'
-    : 'Puedes personalizar para que salgan solo los agentes de tu interés seleccionando agentes favoritos en configuración';
+    ? 'Añade o elimina agentes suscritos en configuración'
+    : 'Puedes personalizar para que salgan solo los agentes de tu interés suscribiéndote a ellos en configuración';
   tooltip.innerHTML = `<span>${texto.replace('configuración', '<a id="go-config" href="#" style="color:#04db8d; text-decoration:underline;">configuración</a>')}</span>`;
   
   // Contenedor del dropdown
@@ -1018,11 +1014,11 @@ function updateSelectedBoletinesText() {
   const selectedBoletines = Array.from(boletinCheckboxes).filter(cb => cb.checked);
   
   if (selectedBoletines.length === 0) {
-    selectedBoletinesSpan.textContent = 'Ninguno';
+    selectedBoletinesSpan.textContent = 'Todos';
   } else if (selectedBoletines.length === boletinCheckboxes.length) {
     selectedBoletinesSpan.textContent = 'Todos';
-  } else if (selectedBoletines.length <= 2) {
-    selectedBoletinesSpan.textContent = selectedBoletines.map(cb => cb.value).join(', ');
+  } else if (selectedBoletines.length === 1) {
+    selectedBoletinesSpan.textContent = selectedBoletines[0].value;
   } else {
     selectedBoletinesSpan.textContent = `${selectedBoletines.length} seleccionados`;
   }
@@ -1098,11 +1094,11 @@ function updateSelectedRangoText() {
   const selectedRangos = Array.from(rangoCheckboxes).filter(cb => cb.checked);
   
   if (selectedRangos.length === 0) {
-    selectedRangoSpan.textContent = 'Ninguno';
+    selectedRangoSpan.textContent = 'Todos';
   } else if (selectedRangos.length === rangoCheckboxes.length) {
     selectedRangoSpan.textContent = 'Todos';
-  } else if (selectedRangos.length <= 2) {
-    selectedRangoSpan.textContent = selectedRangos.map(cb => cb.value).join(', ');
+  } else if (selectedRangos.length === 1) {
+    selectedRangoSpan.textContent = selectedRangos[0].value;
   } else {
     selectedRangoSpan.textContent = `${selectedRangos.length} seleccionados`;
   }
@@ -1275,6 +1271,14 @@ function handleBuscar() {
   const loadingIconChart = document.getElementById('loading-icon-chart');
   const collectionDocs = document.querySelector('.collectionDocs');
   
+  // Estado de loading en el botón Buscar (Reversa UI)
+  const buscarBtn = document.getElementById('buscarBtn');
+  const originalBuscarHtml = buscarBtn ? buscarBtn.innerHTML : null;
+  if (buscarBtn) {
+    buscarBtn.disabled = true;
+    buscarBtn.innerHTML = '<span class="loader" style="border: 3px solid rgba(11,36,49,.15); border-top-color:#0b2431; width:16px; height:16px; display:inline-block; vertical-align:-3px; border-radius:50%; animation: spin 1s linear infinite;"></span> Buscando...';
+  }
+  
   // Ocultar contenido anterior y mostrar loaders
   if (chartContainer) {
     chartContainer.style.display = 'none';
@@ -1323,6 +1327,12 @@ function handleBuscar() {
     // Ocultar overlay principal cuando no hay agentes seleccionados
     if (typeof window.hidePageLoaderOverlay === 'function') {
       window.hidePageLoaderOverlay();
+    }
+    
+    // Restaurar botón Buscar
+    if (buscarBtn && originalBuscarHtml !== null) {
+      buscarBtn.disabled = false;
+      buscarBtn.innerHTML = originalBuscarHtml;
     }
     
     // Ocultar los títulos y el contenedor del gráfico
@@ -1456,6 +1466,12 @@ function handleBuscar() {
         window.hidePageLoaderOverlay();
       }
       
+      // Restaurar botón Buscar
+      if (buscarBtn && originalBuscarHtml !== null) {
+        buscarBtn.disabled = false;
+        buscarBtn.innerHTML = originalBuscarHtml;
+      }
+      
       // Reiniciar filtro de nivel de impacto a "Todos"
       const nivelImpactoRadio = document.querySelector('input[name="nivelImpacto"][value="todos"]');
       const selectedNivelSpan = document.getElementById('selectedNivelImpacto');
@@ -1479,6 +1495,12 @@ function handleBuscar() {
       // Ocultar overlay principal incluso en caso de error
       if (typeof window.hidePageLoaderOverlay === 'function') {
         window.hidePageLoaderOverlay();
+      }
+      
+      // Restaurar botón Buscar
+      if (buscarBtn && originalBuscarHtml !== null) {
+        buscarBtn.disabled = false;
+        buscarBtn.innerHTML = originalBuscarHtml;
       }
       
       // Reiniciar el filtro de nivel de impacto a "Todos"
@@ -2851,8 +2873,8 @@ function setupAgentesHeaderTooltip(metadata){
   tooltip.style.cssText = 'position:absolute; background:#0b2431; color:#fff; padding:12px 16px; border-radius:8px; width: 360px; z-index:10000; display:none;';
   const hasFavs = (metadata?.etiquetas_seleccionadas_count || 0) > 0;
   const texto = hasFavs 
-    ? 'Añade o elimina agentes favoritos en configuración'
-    : 'Puedes personalizar para que salgan solo los agentes de tu interés seleccionando agentes favoritos en configuración';
+    ? 'Añade o elimina agentes suscritos en configuración'
+    : 'Puedes personalizar para que salgan solo los agentes de tu interés suscribiéndote a ellos en configuración';
   tooltip.innerHTML = `<span>${texto.replace('configuración', '<a id="go-config-hdr" href="#" style="color:#04db8d; text-decoration:underline;">configuración</a><span id="go-config-hdr-loader" style="display:none; margin-left:8px; width:12px; height:12px; border:2px solid rgba(4,219,141,0.3); border-top-color:#04db8d; border-radius:50%; display:inline-block; vertical-align:-2px; animation: spin 1s linear infinite;"></span>')}</span>`;
   
   const container = document.getElementById('etiquetasPersonalizadasContainer');
@@ -2934,7 +2956,7 @@ async function refreshFavoritesDependentUI(){
     const data = await resp.json();
     const favCount = Array.isArray(data?.seleccion) ? data.seleccion.length : 0;
     const headerEl = document.querySelector('.detalle-cuenta .etiquetas-label');
-    if (headerEl) headerEl.textContent = favCount > 0 ? 'Agentes Favoritos' : 'Agentes Suscritos';
+    if (headerEl) headerEl.textContent = favCount > 0 ? 'Agentes Suscritos' : 'Agentes Suscritos';
     // Re-load subscribed agents list
     await loadAgentesContainer();
     // Re-load dropdown

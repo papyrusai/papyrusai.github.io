@@ -215,22 +215,25 @@
 			transition: all 0.2s ease;
 		`;
 		
-		// Button events
-		cancelBtn.addEventListener('click', () => {
+		// Helper to close and restore scrolling
+		function closeAndRestore() {
 			overlay.classList.remove('show');
 			overlay.style.opacity = '0';
 			overlay.style.visibility = 'hidden';
 			setTimeout(() => overlay.remove(), 300);
+			document.body.style.overflow = '';
+		}
+		
+		// Button events
+		cancelBtn.addEventListener('click', () => {
+			closeAndRestore();
 		});
 		
 		confirmBtn.addEventListener('click', async () => {
 			const name = (input.value || '').trim();
 			if (!name) return;
 			await onConfirm(name, () => {
-				overlay.classList.remove('show');
-				overlay.style.opacity = '0';
-				overlay.style.visibility = 'hidden';
-				setTimeout(() => overlay.remove(), 300);
+				closeAndRestore();
 			});
 		});
 		
@@ -256,6 +259,15 @@
 		}, 10);
 		
 		document.body.style.overflow = 'hidden';
+		
+		// Close on ESC key
+		const escHandler = (e) => {
+			if (e.key === 'Escape') {
+				closeAndRestore();
+				document.removeEventListener('keydown', escHandler);
+			}
+		};
+		document.addEventListener('keydown', escHandler);
 	}
 
 	async function loadContext(){
@@ -496,7 +508,7 @@
 		function updateToggleLabel() {
 			if (input.checked) {
 				span.innerHTML = '';
-				span.appendChild(document.createTextNode('Favoritos'));
+				span.appendChild(document.createTextNode('Agentes Suscritos'));
 				// Recompute count from current favoritos set (exclude folders)
 				let currentCount = 0;
 				try {
@@ -509,7 +521,7 @@
 				} catch(_) { currentCount = 0; }
 				if (currentCount > 0) {
 					span.appendChild(counter);
-					counter.textContent = `${currentCount}/${totalAgents} seleccionados`;
+					counter.textContent = `${currentCount}/${totalAgents} suscritos`;
 				}
 			} else {
 				span.textContent = 'Vista completa';
@@ -527,7 +539,7 @@
 				}
 				const el = document.getElementById('favorites-counter');
 				if (el){
-					el.textContent = `${count}/${totalAgents} seleccionados`;
+					el.textContent = `${count}/${totalAgents} suscritos`;
 				}
 			} catch(_){ }
 		};
@@ -734,11 +746,11 @@
 				} 
 				favIcon.className = favoritos.has(key) ? 'fas fa-star' : 'far fa-star'; 
 				favIcon.style.color = favoritos.has(key) ? '#04db8d' : '#adb5bd'; 
-				showToast('No se pudo actualizar favoritos', 'error'); 
+				showToast('No se pudo actualizar suscripciones', 'error'); 
 			}
 		});
 		
-		if (favIcon){ attachBlackTooltip(favIcon, 'Selecciona para añadir a favoritos'); }
+		if (favIcon){ attachBlackTooltip(favIcon, 'Selecciona para suscribirte a todos los agentes de esta carpeta'); }
 		
 		const menuBtn = header.querySelector('.folder-menu-btn'); 
 		const menu = header.querySelector('.folder-menu'); 
