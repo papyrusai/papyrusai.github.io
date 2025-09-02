@@ -209,7 +209,7 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 		
 		const projection = { short_name: 1, divisiones: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, ramas_juridicas: 1, rango_titulo: 1, _id: 1, etiquetas_personalizadas: 1 };
 		let allDocuments = [];
-		const expandedBoletines = expandCollectionsWithTest(selectedBoletines);
+		const expandedBoletines = expandCollectionsWithTest(selectedBoletines).filter(n => !String(n).toLowerCase().endsWith('_test'));
 		
 		console.log(`[profile] Colecciones expandidas a consultar: ${expandedBoletines.join(', ')}`);
 		console.log(`[profile] === INICIANDO CONSULTAS MONGODB ===`);
@@ -619,7 +619,7 @@ router.get('/data', async (req, res) => {
 		}
 		const projection = { short_name: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, rango_titulo: 1, etiquetas_personalizadas: 1, num_paginas: 1, _id: 1 };
 		let allDocuments = [];
-		const expandedCollections = expandCollectionsWithTest(collections);
+		const expandedCollections = expandCollectionsWithTest(collections).filter(n => !String(n).toLowerCase().endsWith('_test'));
 		
 		// OPTIMIZACIÓN: Consultas paralelas con límite para /data
 		const dataQueryPromises = expandedCollections.map(async (cName) => {

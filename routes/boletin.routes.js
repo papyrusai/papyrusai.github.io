@@ -119,7 +119,7 @@ router.get('/api/boletin-diario', ensureAuthenticated, async (req, res) => {
 				};
 
 				let documentsOnDate = [];
-				const expandedBoletines = expandCollectionsWithTest(selectedBoletines);
+				const expandedBoletines = expandCollectionsWithTest(selectedBoletines).filter(n => !String(n).toLowerCase().endsWith('_test'));
 
 				for (const collectionName of expandedBoletines) {
 					try {

@@ -389,10 +389,12 @@
 
   function setDefaultDates(){
     const fmt = (d)=>{ const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const da=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${da}`; };
-    const y = new Date(); y.setDate(y.getDate()-1);
-    const yesterday = fmt(y);
-    q('fDesde').value = yesterday; q('fHasta').value = yesterday;
-    STATE.filtros.desde = yesterday; STATE.filtros.hasta = yesterday;
+    const today = new Date();
+    const start = new Date(today); start.setDate(start.getDate()-3);
+    const startStr = fmt(start);
+    const endStr = fmt(today);
+    q('fDesde').value = startStr; q('fHasta').value = endStr;
+    STATE.filtros.desde = startStr; STATE.filtros.hasta = endStr;
   }
 
   async function init(){

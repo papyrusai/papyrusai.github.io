@@ -5,15 +5,18 @@
   <title>Dashboard Interno</title>
   <style>
   .internal-header { display:flex; align-items:center; gap:10px; color:#0b2431; }
-  .internal-subnav { display:flex; gap:12px; margin:8px 0 16px 0; }
-  .internal-subnav .tab { padding:6px 12px; border:1px solid #e8ecf0; border-radius:12px; color:#0b2431; cursor:pointer; font-weight:600; }
-  .internal-subnav .tab.active { background:#0b2431; color:#fff; }
+  .internal-subnav { display:flex; align-items:center; gap:16px; margin: 8px 0 12px 0; border-bottom:1px solid #e9ecef; position: relative; z-index: 10; }
+  .internal-subnav .tab { padding:10px 4px; color:#0b2431; font-weight:600; cursor:pointer; position:relative; }
+  .internal-subnav .tab.active { color:#0b2431; }
+  .internal-subnav .tab.active::after { content:''; position:absolute; left:0; right:0; bottom:-1px; height:3px; background:#0b2431; border-radius:2px; }
+
+  .internal-header i { font-size: 22px; }
+  #tab-seguimiento .hot-accounts-title { font-size:24px; font-weight:700; color:#0b2431; margin: 2px 0 10px 0; }
 
   .seguimiento-section { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:16px; }
   .chips-container { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
   .chip { display:inline-flex; align-items:center; gap:8px; background:rgba(11,36,49,.06); color:#0b2431; padding:6px 10px; border-radius:9999px; font-size:12px; font-weight:600; }
   .chip .x { cursor:pointer; opacity:.7; }
-
   .btn-edit-seleccion { background:#0b2431; color:#fff; border:1px solid #0b2431; border-radius:20px; padding:6px 12px; font-weight:600; cursor:pointer; }
   .seleccion-panel { display:none; position:relative; background:#fff; border:1px solid #e8ecf0; border-radius:12px; box-shadow:0 8px 24px rgba(11,36,49,.12); padding:12px; margin-top:12px; }
   .seleccion-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
@@ -24,24 +27,11 @@
   .pagination-row { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:8px; }
   .pagination-btn { background:transparent; border:1px solid #0b2431; color:#0b2431; border-radius:20px; padding:4px 10px; font-weight:600; cursor:pointer; }
 
-  .filters-row { 
-    display:grid; 
-    grid-template-columns: 1fr 2fr 1fr 2fr; 
-    gap:16px; 
-    margin:16px 0; 
-    align-items:end;
-  }
+  .filters-row { display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:16px; margin:16px 0; align-items:end; }
   .filter { display:flex; flex-direction:column; gap:6px; min-width:0; }
   .filter label { font-size:12px; color:#455862; font-weight:600; }
-  .filter .dropdown, .filter select, .filter input[type=date] { 
-    border:1px solid #e8ecf0; 
-    border-radius:10px; 
-    padding:8px 12px; 
-    font-size:13px; 
-    color:#0b2431; 
-    width:100%;
-    box-sizing:border-box;
-  }
+  .filter .dropdown { border:none; padding:0; }
+  .filter select, .filter input[type=date] { border:1px solid #e8ecf0; border-radius:12px; padding:10px 12px; font-size:13px; color:#0b2431; width:100%; box-sizing:border-box; background:#fff; }
   .filter select[multiple] { min-height:40px; }
   .fecha-container { display:flex; gap:8px; align-items:center; }
   .fecha-container input[type=date] { flex:1; }
@@ -67,13 +57,18 @@
   .banner-error { background: rgba(211,47,47,.05); border-left: 4px solid #d32f2f; padding: 12px 16px; border-radius: 8px; color: #0b2431; box-shadow: 0 2px 8px rgba(11,36,49,.08); }
 
   /* Reversa dropdown styles */
-  .dropbtn { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:8px 12px; color:#0b2431; font-weight:600; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:space-between; }
-  .dropbtn:hover { box-shadow:0 2px 8px rgba(11,36,49,.08); }
+  .dropbtn { background:#fff; border:1px solid #e8ecf0; border-radius:12px; padding:10px 12px; color:#0b2431; font-weight:600; display:inline-flex; align-items:center; gap:8px; width:100%; justify-content:space-between; transition: background-color .15s ease, box-shadow .15s ease; }
+  .dropbtn:hover, .dropbtn.active { box-shadow:0 2px 8px rgba(11,36,49,.12); background:#f7f9fb;color:#0b2431; }
+  .dropbtn:active { background:#eef2f6; }
   .dropdown { position:relative; }
   .dropdown-content { display:none; position:absolute; left:0; top:calc(100% + 4px); background:white; border:1px solid #e8ecf0; border-radius:12px; box-shadow:0 8px 24px rgba(11,36,49,.12); padding:8px; max-height:240px; overflow:auto; min-width:100%; z-index:1000; }
   .dropdown-content.open { display:block; }
   .dropdown-content label { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; cursor:pointer; }
   .dropdown-content label:hover { background:#f8f9fa; }
+
+  /* Usuario select visual improvements */
+  .filter-usuario .usuario-label { font-size:13px; color:#0b2431; font-weight:700; display:flex; align-items:center; gap:6px; }
+  #fUsuario { font-weight:600; }
   </style>
 </head>
 <body>
@@ -89,6 +84,7 @@
 
     <div id="tab-seguimiento" class="tab-panel" style="display:block;">
       <div class="seguimiento-section">
+        <div class="hot-accounts-title" style="font-weight:600; color:#0b2431; font-size:24px; margin-bottom:8px;">Hot Accounts</div>
         <div class="chips-container" id="chipsSeleccion"></div>
         <button class="btn-edit-seleccion" id="btnEditarSeleccion">
           Editar selección <span id="btnEditarLoader" style="display:none; margin-left:6px; width:12px; height:12px; border:2px solid rgba(11,36,49,.25); border-top-color:#0b2431; border-radius:50%; vertical-align:-2px; animation: spin .9s linear infinite;"></span>
@@ -112,8 +108,8 @@
       </div>
 
       <div class="filters-row">
-        <div class="filter">
-          <label>Usuario</label>
+        <div class="filter filter-usuario">
+          <label class="usuario-label"><i class="fas fa-user"></i> Usuario</label>
           <select id="fUsuario"></select>
         </div>
         <div class="filter">

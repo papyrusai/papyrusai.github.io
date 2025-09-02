@@ -53,18 +53,16 @@ router.get('/api/internal/seguimiento-users', ensureAuthenticated, async (req, r
 		const ids = Array.isArray(owner?.usuarios_en_seguimiento) ? owner.usuarios_en_seguimiento : [];
 		// Fetch details for those ids
 		const objectIds = ids.map(id => (id instanceof ObjectId) ? id : new ObjectId(String(id)));
-		const details = objectIds.length ? await usersColl.find({ _id: { $in: objectIds } }, { projection: { email: 1, tipo_cuenta: 1, empresa_name: 1, empresa_domain: 1 } }).toArray() : [];
+		const details = objectIds.length ? await usersColl.find({ _id: { $in: objectIds } }, { projection: { email: 1, tipo_cuenta: 1, empresa_name: 1, empresa_domain: 1, empresa: 1 } }).toArray() : [];
 		const byId = new Map(details.map(d => [String(d._id), d]));
 		const items = ids.map(id => {
 			const s = String(id);
 			const d = byId.get(s) || null;
-			return {
-				userId: s,
-				email: d?.email || null,
-				tipo_cuenta: d?.tipo_cuenta || null,
-				isEmpresa: d?.tipo_cuenta === 'empresa',
-				displayName: d?.tipo_cuenta === 'empresa' ? (d?.empresa_name || d?.empresa_domain || 'Empresa') : (d?.email || s)
-			};
+			const hasEmail = !!d?.email;
+			const tipo = d?.tipo_cuenta || null;
+			const isEmpresa = (!hasEmail) && (tipo === 'empresa' || tipo === 'estructura_empresa');
+			const displayName = isEmpresa ? (d?.empresa || d?.empresa_name || d?.empresa_domain || 'Empresa') : (d?.email || s);
+			return { userId: s, email: d?.email || null, tipo_cuenta: tipo, isEmpresa, displayName };
 		});
 		return res.json({ success: true, items });
 	} catch (e) {
@@ -121,9 +119,9 @@ router.post('/api/internal/seguimiento-users', ensureAuthenticated, async (req, 
 // Ranking de usuarios/empresas por matches de etiquetas
 // ------------------------------
 router.get('/api/internal/ranking', ensureAuthenticated, async (req, res) => {
-    if (req.user?.email !== 'tomas@reversa.ai') {
-        return res.status(403).json({ success: false, error: 'No autorizado' });
-    }
+	if (req.user?.email !== 'tomas@reversa.ai') {
+		return res.status(403).json({ success: false, error: 'No autorizado' });
+	}
 	const collections = parseCollectionsParam(req.query.collections);
 	const page = Math.max(1, parseInt(req.query.page || '1', 10) || 1);
 	const pageSize = Math.max(1, Math.min(parseInt(req.query.pageSize || '15', 10) || 15, 100));
@@ -136,8 +134,11 @@ router.get('/api/internal/ranking', ensureAuthenticated, async (req, res) => {
 		await client.connect();
 		const db = client.db('papyrus');
 		const usersColl = db.collection('users');
-		const expanded = expandCollectionsWithTest(collections);
-		const countsMap = new Map(); // userId -> count
+		const expanded = expandCollectionsWithTest(collections).filter(n => !String(n).toLowerCase().endsWith('_test'));
+
+		// Aggregate per (id,label) to enable etiqueta-based filtered counts
+		const idToTotal = new Map(); // id -> total matches
+		const idToLabelCounts = new Map(); // id -> (label -> count)
 
 		for (const cName of expanded) {
 			try {
@@ -148,39 +149,152 @@ router.get('/api/internal/ranking', ensureAuthenticated, async (req, res) => {
 				pipeline.push(
 					{ $project: { ep: { $objectToArray: "$etiquetas_personalizadas" } } },
 					{ $unwind: "$ep" },
-					{ $group: { _id: "$ep.k", matches: { $sum: 1 } } }
+					{ $project: { id: "$ep.k", v: "$ep.v" } },
+					{ $addFields: {
+						labels: {
+							$cond: [
+								{ $isArray: "$v" },
+								"$v",
+								{
+									$cond: [
+										{ $eq: [ { $type: "$v" }, "object" ] },
+										{ $map: { input: { $objectToArray: "$v" }, as: "e", in: "$$e.k" } },
+										[]
+									]
+								}
+							]
+						}
+					} },
+					{ $unwind: "$labels" },
+					{ $group: { _id: { id: "$id", label: "$labels" }, matches: { $sum: 1 } } }
 				);
 				const rows = await db.collection(cName).aggregate(pipeline).toArray();
 				for (const r of rows) {
-					const k = String(r._id);
-					countsMap.set(k, (countsMap.get(k) || 0) + (r.matches || 0));
+					const id = String(r._id.id || '');
+					const label = String(r._id.label || '');
+					const count = Number(r.matches || 0);
+					if (!id) continue;
+					idToTotal.set(id, (idToTotal.get(id) || 0) + count);
+					if (!idToLabelCounts.has(id)) idToLabelCounts.set(id, new Map());
+					const lm = idToLabelCounts.get(id);
+					lm.set(label, (lm.get(label) || 0) + count);
 				}
 			} catch (e) {
 				console.error('[internal] ranking aggregation error', cName, e.message);
 			}
 		}
 
-		// Build result array with user details
-		const allIds = Array.from(countsMap.keys());
-		const objIds = allIds.map(id => (id.match(/^[a-fA-F0-9]{24}$/) ? new ObjectId(id) : null)).filter(Boolean);
-		const details = objIds.length ? await usersColl.find({ _id: { $in: objIds } }, { projection: { email: 1, tipo_cuenta: 1, empresa_name: 1, empresa_domain: 1 } }).toArray() : [];
+		// Build details for ids present in aggregation
+		const directIds = Array.from(idToTotal.keys());
+		const objIds = directIds.map(id => (id.match(/^[a-fA-F0-9]{24}$/) ? new ObjectId(id) : null)).filter(Boolean);
+		const details = objIds.length ? await usersColl.find(
+			{ _id: { $in: objIds } },
+			{ projection: { email: 1, tipo_cuenta: 1, empresa_name: 1, empresa_domain: 1, empresa: 1 } }
+		).toArray() : [];
 		const detailsById = new Map(details.map(d => [String(d._id), d]));
 
-		let items = allIds.map(id => {
-			const d = detailsById.get(String(id));
+		// Determine empresa structure ids among direct ids (no email + tipo empresa/estructura_empresa)
+		const empresaIds = new Set();
+		for (const id of directIds) {
+			const d = detailsById.get(id);
+			if (!d) continue; // skip orphan ids without users doc
+			const tipo = d.tipo_cuenta || '';
+			if (!d.email && (tipo === 'empresa' || tipo === 'estructura_empresa')) empresaIds.add(id);
+		}
+
+		// Fetch employees for those empresas (individuals with email)
+		let employeeDocs = [];
+		if (empresaIds.size > 0) {
+			const empObjIds = Array.from(empresaIds).map(s => new ObjectId(s));
+			employeeDocs = await usersColl.find(
+				{ estructura_empresa_id: { $in: empObjIds }, email: { $exists: true, $ne: null } },
+				{ projection: { email: 1, tipo_cuenta: 1, estructura_empresa_id: 1, etiquetas_personalizadas_seleccionadas: 1 } }
+			).toArray();
+		}
+
+		// Build direct items (ids that appeared in aggregation) — only for existing user docs
+		const itemsMap = new Map(); // userId -> item
+		for (const id of directIds) {
+			const d = detailsById.get(id);
+			if (!d) continue; // orphan: skip
 			const tipo = d?.tipo_cuenta || 'individual';
-			return {
+			const hasEmail = !!d?.email;
+			const isEmpresa = (!hasEmail) && (tipo === 'empresa' || tipo === 'estructura_empresa');
+			const empresaName = d?.empresa || d?.empresa_name || d?.empresa_domain || (isEmpresa ? 'Empresa' : null);
+			const matches = idToTotal.get(id) || 0;
+			const item = {
 				userId: String(id),
-				matches: countsMap.get(String(id)) || 0,
+				matches,
 				email: d?.email || null,
 				tipo_cuenta: tipo,
-				isEmpresa: tipo === 'empresa',
-				displayName: tipo === 'empresa' ? (d?.empresa_name || d?.empresa_domain || 'Empresa') : (d?.email || String(id)),
-				empresa: tipo === 'empresa' ? (d?.empresa_name || d?.empresa_domain || 'Empresa') : null
+				isEmpresa: !!isEmpresa,
+				displayName: isEmpresa ? (empresaName || 'Empresa') : (d?.email || String(id)),
+				empresa: isEmpresa ? (empresaName || 'Empresa') : null
 			};
-		});
+			itemsMap.set(item.userId, item);
+		}
 
-		items.sort((a, b) => b.matches - a.matches);
+		// Derived employee items: use empresa counts, optionally filter by etiquetas_personalizadas_seleccionadas
+		for (const emp of employeeDocs) {
+			const empId = String(emp._id);
+			const empresaId = emp.estructura_empresa_id ? String(emp.estructura_empresa_id) : null;
+			if (!empresaId) continue;
+			const labelCounts = idToLabelCounts.get(empresaId);
+			if (!labelCounts || labelCounts.size === 0) continue;
+			let matches = 0;
+			const selected = Array.isArray(emp.etiquetas_personalizadas_seleccionadas) ? emp.etiquetas_personalizadas_seleccionadas : [];
+			if (selected.length > 0) {
+				const selSet = new Set(selected.map(s => String(s).toLowerCase()));
+				for (const [label, count] of labelCounts.entries()) {
+					if (selSet.has(String(label).toLowerCase())) matches += Number(count || 0);
+				}
+			} else {
+				for (const [, count] of labelCounts.entries()) matches += Number(count || 0);
+			}
+			const item = {
+				userId: empId,
+				matches,
+				email: emp.email || null,
+				tipo_cuenta: emp.tipo_cuenta || 'empresa',
+				isEmpresa: false,
+				displayName: emp.email || empId,
+				empresa: null
+			};
+			// Keep max if duplicate
+			const existing = itemsMap.get(empId);
+			if (!existing || existing.matches < item.matches) itemsMap.set(empId, item);
+		}
+
+		// Append recent users (0 matches) to the selector: include individuals with email and empresa docs
+		try {
+			const recentUsers = await usersColl.find(
+				{ $or: [ { email: { $exists: true, $ne: null } }, { tipo_cuenta: { $in: ['empresa', 'estructura_empresa'] } } ] },
+				{ projection: { email: 1, tipo_cuenta: 1, empresa: 1, empresa_name: 1, empresa_domain: 1 } }
+			)
+			.sort({ registration_date_obj: -1, updated_at: -1, _id: -1 })
+			.limit(200)
+			.toArray();
+			for (const u of recentUsers) {
+				const uid = String(u._id);
+				if (itemsMap.has(uid)) continue;
+				const hasEmail = !!u.email;
+				const tipo = u?.tipo_cuenta || (hasEmail ? 'individual' : 'empresa');
+				const isEmpresa = (!hasEmail) && (tipo === 'empresa' || tipo === 'estructura_empresa');
+				const empresaName = u?.empresa || u?.empresa_name || u?.empresa_domain || (isEmpresa ? 'Empresa' : null);
+				itemsMap.set(uid, {
+					userId: uid,
+					matches: 0,
+					email: u.email || null,
+					tipo_cuenta: tipo,
+					isEmpresa: !!isEmpresa,
+					displayName: isEmpresa ? (empresaName || 'Empresa') : (u.email || uid),
+					empresa: isEmpresa ? (empresaName || 'Empresa') : null
+				});
+			}
+		} catch (e) { /* ignore recent users enrichment errors */ }
+
+		let items = Array.from(itemsMap.values());
+		items.sort((a, b) => (b.matches - a.matches));
 		const total = items.length;
 		const totalPages = Math.max(1, Math.ceil(total / pageSize));
 		const safePage = Math.min(page, totalPages);
@@ -219,40 +333,73 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 		// Determine target IDs (enterprise may include legacy ids)
 		let targetUserIds = [targetUserId];
 		let selectedEtiquetas = [];
+		let deletedBySelectedUser = [];
 		try {
 			const maybeObjId = targetUserId.match(/^[a-fA-F0-9]{24}$/) ? new ObjectId(targetUserId) : null;
 			if (maybeObjId) {
-				const userDoc = await usersCollection.findOne({ _id: maybeObjId }, { projection: { tipo_cuenta: 1, estructura_empresa_id: 1, legacy_user_ids: 1, etiquetas_personalizadas: 1 } });
+				const userDoc = await usersCollection.findOne(
+					{ _id: maybeObjId },
+					{ projection: { email: 1, tipo_cuenta: 1, estructura_empresa_id: 1, legacy_user_ids: 1, etiquetas_personalizadas: 1, etiquetas_personalizadas_seleccionadas: 1, documentos_eliminados: 1, empresa: 1, empresa_name: 1 } }
+				);
 				if (userDoc) {
-					if (userDoc.tipo_cuenta === 'empresa') {
-						const legacy = Array.isArray(userDoc.legacy_user_ids) ? userDoc.legacy_user_ids.map(String) : [];
-						targetUserIds = [targetUserId, ...legacy];
-					} else if (userDoc.estructura_empresa_id) {
-						// Para usuarios individuales dentro de empresa, usar el id de la empresa + legacy ids
+					deletedBySelectedUser = Array.isArray(userDoc.documentos_eliminados) ? userDoc.documentos_eliminados : [];
+					// CASO 1: Empleado enterprise (tiene estructura_empresa_id)
+					if (userDoc.estructura_empresa_id) {
 						const empresaId = userDoc.estructura_empresa_id instanceof ObjectId ? userDoc.estructura_empresa_id : new ObjectId(String(userDoc.estructura_empresa_id));
 						let legacy = [];
+						let empresaDoc = null;
 						try {
-							const empresaDoc = await usersCollection.findOne({ _id: empresaId }, { projection: { legacy_user_ids: 1 } });
+							empresaDoc = await usersCollection.findOne({ _id: empresaId }, { projection: { legacy_user_ids: 1, etiquetas_personalizadas: 1 } });
 							legacy = Array.isArray(empresaDoc?.legacy_user_ids) ? empresaDoc.legacy_user_ids.map(String) : [];
 						} catch(_) { legacy = []; }
 						targetUserIds = [String(empresaId), ...legacy];
+						// Preferir seleccionadas del empleado; si no, usar etiquetas de empresa
+						if (Array.isArray(userDoc.etiquetas_personalizadas_seleccionadas) && userDoc.etiquetas_personalizadas_seleccionadas.length > 0) {
+							selectedEtiquetas = userDoc.etiquetas_personalizadas_seleccionadas;
+						} else if (empresaDoc && empresaDoc.etiquetas_personalizadas) {
+							const e = empresaDoc.etiquetas_personalizadas;
+							selectedEtiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+						}
 					}
-					// Derivar etiquetas por defecto del propio doc si existen
-					let etiquetas = userDoc?.etiquetas_personalizadas || {};
-					if (Array.isArray(etiquetas)) selectedEtiquetas = etiquetas; else if (etiquetas && typeof etiquetas === 'object') selectedEtiquetas = Object.keys(etiquetas);
+					// CASO 2: Documento de empresa (sin email)
+					else if (!userDoc.email && userDoc.tipo_cuenta === 'empresa') {
+						const legacy = Array.isArray(userDoc.legacy_user_ids) ? userDoc.legacy_user_ids.map(String) : [];
+						targetUserIds = [targetUserId, ...legacy];
+						const e = userDoc?.etiquetas_personalizadas || {};
+						selectedEtiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+					}
+					// CASO 3: Empleado enterprise sin estructura_empresa_id pero con nombre de empresa → buscar doc empresa por nombre
+					else if (userDoc.tipo_cuenta === 'empresa' && (userDoc.empresa || userDoc.empresa_name)) {
+						const empName = userDoc.empresa || userDoc.empresa_name;
+						const empresaDoc = await usersCollection.findOne(
+							{ tipo_cuenta: 'empresa', $or: [ { empresa: empName }, { empresa_name: empName } ] },
+							{ projection: { _id: 1, legacy_user_ids: 1, etiquetas_personalizadas: 1 } }
+						);
+						if (empresaDoc?._id) {
+							const legacy = Array.isArray(empresaDoc.legacy_user_ids) ? empresaDoc.legacy_user_ids.map(String) : [];
+							targetUserIds = [String(empresaDoc._id), ...legacy];
+							const e = empresaDoc.etiquetas_personalizadas || {};
+							selectedEtiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+						}
+					}
+					// Fallback: si aún vacío, intentar usar etiquetas del propio doc
+					if (selectedEtiquetas.length === 0) {
+						const e = userDoc?.etiquetas_personalizadas || {};
+						selectedEtiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+					}
 				}
 			}
 		} catch(_) {}
 
 		const collections = parseCollectionsParam(req.query.collections, (JSON.parse(req.query.user_boletines || '[]') || []));
-		const expandedCollections = expandCollectionsWithTest(collections.length ? collections : ['BOE']);
+		const expandedCollections = Array.from(new Set(expandCollectionsWithTest(collections.length ? collections : ['BOE']).filter(n => !String(n).toLowerCase().endsWith('_test'))));
 		const startDate = parseDateISO(req.query.desde);
 		const endDate = parseDateISO(req.query.hasta);
 		const rangoStr = req.query.rango || '';
 		const etiquetasStr = req.query.etiquetas || '';
 		// Prioridad a etiquetas explícitas desde la query
 		if (etiquetasStr) selectedEtiquetas = etiquetasStr.split('||').map(s => s.trim()).filter(Boolean);
-		// Si aún vacío y el usuario pertenece a empresa, intentar derivarlas desde el doc de empresa
+		// Si aún vacío, intentar derivarlas desde el doc base (empresa) usando primer targetUserId
 		if (selectedEtiquetas.length === 0) {
 			try {
 				const baseId = targetUserIds[0];
@@ -263,6 +410,18 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 					if (Array.isArray(etiquetas)) selectedEtiquetas = etiquetas; else if (etiquetas && typeof etiquetas === 'object') selectedEtiquetas = Object.keys(etiquetas);
 				}
 			} catch(_) { selectedEtiquetas = []; }
+		}
+
+		// Si no hay etiquetas a usar, devolver respuesta coherente con /data
+		if (selectedEtiquetas.length === 0) {
+			const pageSize = Math.max(1, Math.min(parseInt(req.query.pageSize || '25', 10) || 25, 100));
+			return res.json({
+				success: true,
+				documentsHtml: `<div class="no-results" style="color: #04db8d; font-weight: bold; padding: 20px; text-align: center; font-size: 16px; background-color: #f8f9fa; border-radius: 8px; margin: 20px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Por favor, selecciona al menos un agente para realizar la búsqueda.</div>`,
+				hideAnalyticsLabels: true,
+				monthsForChart: [], countsForChart: [], dailyLabels: [], dailyCounts: [], impactCounts: { alto: 0, medio: 0, bajo: 0 }, totalAlerts: 0, avgAlertsPerDay: 0,
+				pagination: { page: 1, pageSize, total: 0, totalPages: 1 }
+			});
 		}
 
 		let selectedRangos = [];
@@ -279,7 +438,9 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 			}
 		}
 		if (selectedRangos.length > 0) query.$and.push({ rango_titulo: { $in: selectedRangos } });
-		if (Object.keys(etiquetasQuery).length > 0) query.$and.push(etiquetasQuery);
+		if (Object.keys(etiquetasQuery).length > 0) {
+			query.$and.push(etiquetasQuery);
+		}
 		if (query.$and.length === 0) delete query.$and;
 
 		console.log('[internal/data] params:', {
@@ -317,26 +478,34 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 		allResults.sort((a, b) => (new Date(a.anio, a.mes - 1, a.dia)) - (new Date(b.anio, b.mes - 1, b.dia)) < 0 ? 1 : -1);
 		console.log('[internal/data] results fetched:', allResults.length);
 
-		// Post-filter by etiquetas across any targetUserId (replica de profile)
+		// Post-filter by etiquetas across any targetUserId (replica de profile). Si no hay etiquetas, exigir que el doc tenga etiquetas no vacías para alguno de los targetUserIds.
 		const etiquetasForMatch = Array.isArray(selectedEtiquetas) ? selectedEtiquetas.map(e => String(e).toLowerCase()) : [];
 		const filteredResults = [];
 		for (const doc of allResults) {
+			// Excluir documentos eliminados por el usuario seleccionado
+			const isDeleted = Array.isArray(deletedBySelectedUser) && deletedBySelectedUser.some(d => d.coleccion === doc.collectionName && String(d.id) === String(doc._id));
+			if (isDeleted) continue;
 			let hasEtiquetasMatch = false; let matchedEtiquetas = [];
+			let hasAnyForTarget = false;
 			if (doc.etiquetas_personalizadas) {
 				for (const tid of targetUserIds) {
 					const userEtiquetas = doc.etiquetas_personalizadas[tid];
 					if (!userEtiquetas) continue;
 					if (Array.isArray(userEtiquetas)) {
-						const etiquetasCoincidentes = userEtiquetas.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
+						if (userEtiquetas.length > 0) hasAnyForTarget = true;
+						const etiquetasCoincidentes = etiquetasForMatch.length ? userEtiquetas.filter(et => etiquetasForMatch.includes(String(et).toLowerCase())) : [];
 						if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; break; }
 					} else if (typeof userEtiquetas === 'object' && userEtiquetas !== null) {
-						const docEtiquetasKeys = Object.keys(userEtiquetas);
-						const etiquetasCoincidentes = docEtiquetasKeys.filter(et => etiquetasForMatch.includes(String(et).toLowerCase()));
+						const keys = Object.keys(userEtiquetas);
+						if (keys.length > 0) hasAnyForTarget = true;
+						const etiquetasCoincidentes = etiquetasForMatch.length ? keys.filter(et => etiquetasForMatch.includes(String(et).toLowerCase())) : [];
 						if (etiquetasCoincidentes.length > 0) { hasEtiquetasMatch = true; matchedEtiquetas = etiquetasCoincidentes; break; }
 					}
 				}
 			}
-			if (hasEtiquetasMatch || etiquetasForMatch.length === 0) {
+			// Igual que /data: solo incluir si hay match real con etiquetas seleccionadas
+			const include = hasEtiquetasMatch;
+			if (include) {
 				if (matchedEtiquetas.length) doc.matched_etiquetas = [...new Set(matchedEtiquetas)];
 				filteredResults.push(doc);
 			}
@@ -422,9 +591,9 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 				const keys = Object.keys(userEtiquetas);
 				if (keys.length === 0) return '';
 				return `
-				  <div class=\"impacto-agentes\" style=\"margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #495057; background-color: #45586221;\">
-					<div style=\"font-weight: 600;font-size: large; margin-bottom: 10px; color: #0b2431; padding: 5px;\">Impacto en agentes</div>
-					<div style=\"padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;\">
+				  <div class="impacto-agentes" style="margin-top: 15px; margin-bottom: 15px; padding-left: 15px; border-left: 4px solid #495057; background-color: #45586221;">
+					<div style="font-weight: 600;font-size: large; margin-bottom: 10px; color: #0b2431; padding: 5px;">Impacto en agentes</div>
+					<div style="padding: 0 5px 10px 5px; font-size: 1.1em; line-height: 1.5;">
 					  ${keys.map(etiqueta => {
 						const data = userEtiquetas[etiqueta];
 						let explicacion = '';
@@ -435,28 +604,28 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 						if (nivelImpacto) {
 							let bgColor = '#f8f9fa'; let textColor = '#6c757d';
 							switch (String(nivelImpacto).toLowerCase()) { case 'alto': bgColor = '#ffe6e6'; textColor = '#d32f2f'; break; case 'medio': bgColor = '#fff3cd'; textColor = '#856404'; break; case 'bajo': bgColor = '#d4edda'; textColor = '#155724'; break; }
-							nivelTag = `<span style=\"background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;\">${nivelImpacto}</span>`;
+							nivelTag = `<span style="background-color: ${bgColor}; color: ${textColor}; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; margin-left: 8px;">${nivelImpacto}</span>`;
 						}
-						return `<div style=\"margin-bottom: 12px; display: flex; align-items: baseline;\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" style=\"color: #0b2431; margin-right: 10px; flex-shrink: 0;\"><path fill=\"currentColor\" d=\"M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z\"></path></svg><div style=\"flex: 1;\"><span style=\"font-weight: 600;\">${etiqueta}</span>${nivelTag}<div style=\"margin-top: 4px; color: #555;\">${explicacion}</div></div></div>`;
+						return `<div style="margin-bottom: 12px; display: flex; align-items: baseline;"><svg width="16" height="16" viewBox="0 0 24 24" style="color: #0b2431; margin-right: 10px; flex-shrink: 0;"><path fill="currentColor" d="M10.5 17.5l7.5-7.5-7.5-7.5-1.5 1.5L15 10l-6 6z"></path></svg><div style="flex: 1;"><span style="font-weight: 600;">${etiqueta}</span>${nivelTag}<div style="margin-top: 4px; color: #555;">${explicacion}</div></div></div>`;
 					}).join('')}
 					</div>
 				  </div>`;
 			})();
 
 			return `
-			  <div class=\"data-item\"> 
-				<div class=\"header-row\"> 
-				  <div class=\"id-values\">${doc.short_name} <i class=\"fas fa-clipboard-check\" style=\"margin-left:8px;color:#0b2431;opacity:.8;\"></i></div>
-				  <span class=\"date\"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+			  <div class="data-item"> 
+				<div class="header-row"> 
+				  <div class="id-values">${doc.short_name} <i class="fas fa-clipboard-check" style="margin-left:8px;color:#0b2431;opacity:.8;"></i></div>
+				  <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
 				</div>
-				<div style=\"color: gray; font-size: 1.1em; margin-bottom: 6px;\">${rangoToShow} | ${doc.collectionName}</div>
+				<div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">${rangoToShow} | ${doc.collectionName}</div>
 				${etiquetasHtml}
-				<div class=\"resumen-label\">Resumen</div>
-				<div class=\"resumen-content\" style=\"font-size: 1.1em; line-height: 1.4;\">${doc.resumen}</div>
+				<div class="resumen-label">Resumen</div>
+				<div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
 				${impactoAgentesHtml}
-				${doc.url_pdf || doc.url_html ? `<a class=\\"leer-mas\\" href=\\"${doc.url_pdf || doc.url_html}\\" target=\\"_blank\\" style=\\"margin-right: 15px;\\">Leer más: ${doc._id}</a>` : `<span class=\\"leer-mas\\" style=\\"margin-right: 15px; color: #ccc;\\">Leer más: ${doc._id} (No disponible)</span>`}
-				<span class=\"doc-seccion\" style=\"display:none;\">Disposiciones generales</span>
-				<span class=\"doc-rango\" style=\"display:none;\">${rangoToShow}</span>
+				${doc.url_pdf || doc.url_html ? `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">Leer más: ${doc._id}</a>` : `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">Leer más: ${doc._id} (No disponible)</span>`}
+				<span class="doc-seccion" style="display:none;">Disposiciones generales</span>
+				<span class="doc-rango" style="display:none;">${rangoToShow}</span>
 			  </div>`;
 		}).join('');
 
@@ -488,11 +657,23 @@ router.get('/api/internal/user-boletines', ensureAuthenticated, async (req, res)
 		const targetId = isObjId ? new ObjectId(userId) : null;
 		let boletines = [];
 		if (targetId) {
-			const userDoc = await usersCollection.findOne({ _id: targetId }, { projection: { tipo_cuenta: 1, estructura_empresa_id: 1, cobertura_legal: 1 } });
+			const userDoc = await usersCollection.findOne({ _id: targetId }, { projection: { tipo_cuenta: 1, estructura_empresa_id: 1, cobertura_legal: 1, empresa: 1, empresa_name: 1 } });
 			let coberturaSource = userDoc?.cobertura_legal || {};
-			if (userDoc && userDoc.tipo_cuenta !== 'empresa' && userDoc.estructura_empresa_id) {
-				const empresaDoc = await usersCollection.findOne({ _id: userDoc.estructura_empresa_id }, { projection: { cobertura_legal: 1 } });
-				if (empresaDoc?.cobertura_legal) coberturaSource = empresaDoc.cobertura_legal;
+			// Regla: si es usuario enterprise (tipo_cuenta == 'empresa' con estructura_empresa_id), cargar cobertura de la estructura_empresa
+			if (userDoc) {
+				if (userDoc.estructura_empresa_id) {
+					const empresaDoc = await usersCollection.findOne({ _id: userDoc.estructura_empresa_id }, { projection: { cobertura_legal: 1 } });
+					if (empresaDoc?.cobertura_legal) coberturaSource = empresaDoc.cobertura_legal;
+				} else if (userDoc.tipo_cuenta === 'empresa') {
+					// Podría ser el doc de empresa en sí; usar su propia cobertura si la tiene
+					coberturaSource = userDoc.cobertura_legal || {};
+				}
+				// Fallback adicional: intentar localizar empresa por campo 'empresa' si no se encontró estructura
+				if ((!coberturaSource || Object.keys(coberturaSource).length === 0) && (userDoc.empresa || userDoc.empresa_name)) {
+					const empName = userDoc.empresa || userDoc.empresa_name;
+					const empresaDocByName = await usersCollection.findOne({ tipo_cuenta: 'empresa', $or: [ { empresa: empName }, { empresa_name: empName } ] }, { projection: { cobertura_legal: 1 } });
+					if (empresaDocByName?.cobertura_legal) coberturaSource = empresaDocByName.cobertura_legal;
+				}
 			}
 			const fuentesGobierno = coberturaSource?.['fuentes-gobierno'] || coberturaSource?.fuentes_gobierno || coberturaSource?.fuentes || [];
 			if (Array.isArray(fuentesGobierno) && fuentesGobierno.length) boletines = boletines.concat(fuentesGobierno);

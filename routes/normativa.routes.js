@@ -21,6 +21,10 @@ const mongodbOptions = {};
 router.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 	const documentId = req.query.documentId;
 	const collectionName = req.query.collectionName || 'BOE';
+	// Excluir colecciones *_test
+	if (String(collectionName).toLowerCase().endsWith('_test')) {
+		return res.status(400).json({ error: 'Colección no permitida' });
+	}
 	const client = new MongoClient(uri, mongodbOptions);
 	try {
 		await client.connect();
@@ -101,6 +105,10 @@ router.post('/api/webscrape', ensureAuthenticated, async (req, res) => {
 // POST /api/analyze-norma
 router.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
 	const { documentId, userPrompt, collectionName, htmlContent } = req.body;
+	// Excluir colecciones *_test
+	if (String(collectionName || '').toLowerCase().endsWith('_test')) {
+		return res.status(400).json({ error: 'Colección no permitida' });
+	}
 	const pythonScriptPath = path.join(__dirname, '..', 'python', 'questionsMongo.py');
 	try {
 		const baseCommandLength =

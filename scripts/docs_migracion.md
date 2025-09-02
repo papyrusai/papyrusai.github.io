@@ -103,3 +103,4 @@ Sugerencia: realizar rollback con scripts controlados (Node/Mongo) para asegurar
 - Verificar con el script de comprobación y guardar un snapshot de los resultados.
 - Evitar cambios manuales sin respaldos; el sistema ya genera `*_old` para facilitar rollback.
 
+

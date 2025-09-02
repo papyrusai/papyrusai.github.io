@@ -37,8 +37,8 @@ function parseCliArgs(argv) {
     return fallback;
   };
   const sendForReal = args.has('--send');
-  const testMode = args.has('--test');
-  const allMode = args.has('--all');
+  const testMode = args.has('--test') || args.has('-test');
+  const allMode = args.has('--all') || args.has('-all');
   const includeUnsubscribed = args.has('--include-unsubscribed');
   const limitStr = getVal('--limit');
   const limit = limitStr ? parseInt(limitStr, 10) : undefined;
