@@ -455,6 +455,8 @@
     margin-left: auto;
     gap: 8px;
     line-height: 1;
+    white-space: nowrap;
+    width: 150px;
   }
   
   #buscarBtn::before {
@@ -485,6 +487,37 @@
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+    font-size: 0; /* Oculta texto como "Buscando..." sin afectar al spinner */
+    gap: 0; /* Elimina separación cuando solo se muestra el spinner */
+  }
+
+  /* Ocultar el icono de lupa mientras está en loading */
+  #buscarBtn:disabled::before { display: none; }
+
+  /* Spinner específico dentro del botón Buscar */
+  #buscarBtn .loader {
+    width: 16px !important;
+    height: 16px !important;
+    border: 2px solid rgba(255, 255, 255, 0.35) !important;
+    border-top-color: #ffffff !important;
+    border-radius: 50% !important;
+    animation: spin 1s linear infinite !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    margin: 0 !important;
+  }
+
+  /* Loading state: keep size and show a subtle spinner */
+  #buscarBtn.is-loading { position: relative; }
+  #buscarBtn.is-loading::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
   }
   
   /* Paginación (Reversa style) */
