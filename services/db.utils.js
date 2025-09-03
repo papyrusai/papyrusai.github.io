@@ -151,30 +151,44 @@ async function getLatestDateForCollection(collectionName, database) {
 function buildDateFilter(start, end) {
     const filters = [];
 
-    if (start) {
+    // Normalizar a límites de día en UTC para coherencia entre campos anio/mes/dia y fechas Date
+    let normStart = null;
+    let normEnd = null;
+    if (start instanceof Date && !isNaN(start.getTime())) {
+        normStart = new Date(start);
+        normStart.setUTCHours(0, 0, 0, 0);
+    }
+    if (end instanceof Date && !isNaN(end.getTime())) {
+        normEnd = new Date(end);
+        normEnd.setUTCHours(23, 59, 59, 999);
+    }
+
+    if (normStart) {
         filters.push({
             $or: [
-                { anio: { $gt: start.getFullYear() } },
-                { anio: start.getFullYear(), mes: { $gt: start.getMonth() + 1 } },
-                {
-                    anio: start.getFullYear(),
-                    mes: start.getMonth() + 1,
-                    dia: { $gte: start.getDate() }
-                }
+                // Modelos con anio/mes/dia
+                { anio: { $gt: normStart.getUTCFullYear() } },
+                { anio: normStart.getUTCFullYear(), mes: { $gt: normStart.getUTCMonth() + 1 } },
+                { anio: normStart.getUTCFullYear(), mes: normStart.getUTCMonth() + 1, dia: { $gte: normStart.getUTCDate() } },
+                // Modelos con fecha_publicacion o fecha o datetime_insert
+                { fecha_publicacion: { $gte: normStart } },
+                { fecha: { $gte: normStart } },
+                { datetime_insert: { $gte: normStart } }
             ]
         });
     }
 
-    if (end) {
+    if (normEnd) {
         filters.push({
             $or: [
-                { anio: { $lt: end.getFullYear() } },
-                { anio: end.getFullYear(), mes: { $lt: end.getMonth() + 1 } },
-                {
-                    anio: end.getFullYear(),
-                    mes: end.getMonth() + 1,
-                    dia: { $lte: end.getDate() }
-                }
+                // Modelos con anio/mes/dia
+                { anio: { $lt: normEnd.getUTCFullYear() } },
+                { anio: normEnd.getUTCFullYear(), mes: { $lt: normEnd.getUTCMonth() + 1 } },
+                { anio: normEnd.getUTCFullYear(), mes: normEnd.getUTCMonth() + 1, dia: { $lte: normEnd.getUTCDate() } },
+                // Modelos con fecha_publicacion o fecha o datetime_insert
+                { fecha_publicacion: { $lte: normEnd } },
+                { fecha: { $lte: normEnd } },
+                { datetime_insert: { $lte: normEnd } }
             ]
         });
     }

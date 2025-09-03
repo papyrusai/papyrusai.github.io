@@ -1413,6 +1413,8 @@ function handleBuscar() {
       const collectionDocs = document.querySelector('.collectionDocs');
       if (collectionDocs) {
         collectionDocs.innerHTML = data.documentsHtml;
+        // Corregir fechas faltantes tras render
+        fixMissingDatesInRenderedDocs(collectionDocs);
       }
       
       // Renderizar paginación (y reset filtro impacto -> 'Todos')
@@ -1836,6 +1838,8 @@ function loadInitialDocuments() {
         // Actualizar documentos
         if (collectionDocs) {
           collectionDocs.innerHTML = data.documentsHtml || '';
+          // Corregir fechas faltantes tras render
+          fixMissingDatesInRenderedDocs(collectionDocs);
         }
 
         // Paginación
@@ -2982,3 +2986,24 @@ async function refreshFavoritesDependentUI(){
     }catch(_){ /* ignore */ }
   }, 5000);
 })();
+
+function fixMissingDatesInRenderedDocs(root=document){
+  try{
+    const nodes = root.querySelectorAll('.data-item .header-row .date');
+    nodes.forEach(span => {
+      const hasDash = (span.textContent || '').trim() === '-' || (span.querySelector('em') && span.querySelector('em').textContent.trim() === '-');
+      const iso = span.getAttribute('data-datetime-insert');
+      if (hasDash && iso) {
+        const d = new Date(iso);
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getUTCDate()).padStart(2,'0');
+          const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+          const yy = d.getUTCFullYear();
+          const formatted = `${dd}/${mm}/${yy}`;
+          const em = span.querySelector('em');
+          if (em) em.textContent = formatted; else span.textContent = formatted;
+        }
+      }
+    });
+  } catch(e){ console.warn('fixMissingDatesInRenderedDocs error', e); }
+}

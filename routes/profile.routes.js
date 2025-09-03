@@ -234,7 +234,21 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 					.toArray();
 				
 				console.log(`[profile] Colección ${collectionName}: ${docs.length} documentos encontrados`);
-				docs.forEach(doc => { doc.collectionName = collectionName; });
+				docs.forEach(doc => {
+					doc.collectionName = collectionName;
+					// Rellenar anio/mes/dia si faltan con la fecha efectiva
+					if (!(typeof doc.anio === 'number' && typeof doc.mes === 'number' && typeof doc.dia === 'number')) {
+						const eff = doc.fecha_publicacion || doc.fecha || doc.datetime_insert;
+						if (eff) {
+							const dt = new Date(eff);
+							if (!isNaN(dt.getTime())) {
+								doc.anio = dt.getUTCFullYear();
+								doc.mes = dt.getUTCMonth() + 1;
+								doc.dia = dt.getUTCDate();
+							}
+						}
+					}
+				});
 				return docs;
 			} catch (error) {
 				console.error(`[profile] Error consultando colección ${collectionName}:`, error.message);
@@ -247,8 +261,13 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 		allDocuments = collectionResults.flat();
 		console.log(`[profile] Total documentos encontrados: ${allDocuments.length}`);
 		console.log(`[profile] === INICIANDO PROCESAMIENTO Y RENDERIZADO ===`);
-		// OPTIMIZACIÓN: Ordenar y filtrar con límite para renderizado más rápido
-		allDocuments.sort((a, b) => (new Date(a.anio, a.mes - 1, a.dia)) - (new Date(b.anio, b.mes - 1, b.dia)) < 0 ? 1 : -1);
+		// OPTIMIZACIÓN: Ordenar y filtrar con límite para renderizado más rápido (fallback a fecha_publicacion/fecha/datetime_insert)
+		const getEffectiveDateSsr = (doc) => {
+			if (typeof doc.anio === 'number' && typeof doc.mes === 'number' && typeof doc.dia === 'number') return new Date(doc.anio, doc.mes - 1, doc.dia);
+			const d = doc.fecha_publicacion || doc.fecha || doc.datetime_insert;
+			return d ? new Date(d) : new Date(0);
+		};
+		allDocuments.sort((a, b) => getEffectiveDateSsr(b) - getEffectiveDateSsr(a));
 		allDocuments = allDocuments.filter(doc => !(documentosEliminados && documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())));
 		
 		// PAGINACIÓN SSR: 25 docs por página, manteniendo estadísticas sobre todo el conjunto
@@ -355,11 +374,13 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 						</div>
 					  </div>`;
 				})();
+				const dateTextSsr = (() => { if (typeof doc.anio === 'number' && typeof doc.mes === 'number' && typeof doc.dia === 'number') return `${doc.dia}/${doc.mes}/${doc.anio}`; const d = doc.fecha_publicacion || doc.fecha || doc.datetime_insert; if (!d) return '-'; const dt = new Date(d); return `${String(dt.getUTCDate()).padStart(2,'0')}/${String(dt.getUTCMonth()+1).padStart(2,'0')}/${dt.getUTCFullYear()}`; })();
+				const datetimeAttrSsr = (() => { const d = doc.fecha_publicacion || doc.fecha || doc.datetime_insert; if (!d) return ''; try { return new Date(d).toISOString(); } catch(_){ return ''; } })();
 				return `
 				  <div class="data-item">
 					<div class="header-row">
 					  <div class="id-values">${doc.short_name}</div>
-					  <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
+					  <span class="date" data-datetime-insert="${datetimeAttrSsr}"><em>${dateTextSsr}</em></span>
 					</div>
 					<div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">${rangoToShow} | ${doc.collectionName}</div>
 					${etiquetasPersonalizadasHtml}
@@ -596,15 +617,13 @@ router.get('/data', async (req, res) => {
 			$and: []
 		};
 		
-		// Añadir filtro de fechas
+		// Añadir filtro de fechas (normalizado UTC) con fallback a fecha_publicacion/fecha/datetime_insert
 		if (startDate || endDate) {
-			if (startDate) {
-				const [anio, mes, dia] = startDate.split('-').map(Number);
-				query.$and.push({ $or: [ { anio: { $gt: anio } }, { anio: anio, mes: { $gt: mes } }, { anio: anio, mes: mes, dia: { $gte: dia } } ] });
-			}
-			if (endDate) {
-				const [anio, mes, dia] = endDate.split('-').map(Number);
-				query.$and.push({ $or: [ { anio: { $lt: anio } }, { anio: anio, mes: { $lt: mes } }, { anio: anio, mes: mes, dia: { $lte: dia } } ] });
+			const start = startDate ? new Date(startDate) : null;
+			const end = endDate ? new Date(endDate) : null;
+			const dateFilters = buildDateFilter(start, end);
+			if (dateFilters.length > 0) {
+				query.$and.push(...dateFilters);
 			}
 		}
 		
@@ -633,7 +652,21 @@ router.get('/data', async (req, res) => {
 					.sort({ anio: -1, mes: -1, dia: -1 })
 					.limit(300)
 					.toArray();
-				docs.forEach(d => { d.collectionName = cName; });
+				docs.forEach(d => {
+					d.collectionName = cName;
+					// Rellenar anio/mes/dia si faltan con la fecha efectiva
+					if (!(typeof d.anio === 'number' && typeof d.mes === 'number' && typeof d.dia === 'number')) {
+						const eff = d.fecha_publicacion || d.fecha || d.datetime_insert;
+						if (eff) {
+							const dt = new Date(eff);
+							if (!isNaN(dt.getTime())) {
+								d.anio = dt.getUTCFullYear();
+								d.mes = dt.getUTCMonth() + 1;
+								d.dia = dt.getUTCDate();
+							}
+						}
+					}
+				});
 				return docs;
 			} catch (error) {
 				console.error(`Error querying collection ${cName}:`, error.message);
@@ -642,24 +675,26 @@ router.get('/data', async (req, res) => {
 		});
 		
 		// NUEVO: agregación diaria completa sin límite de documentos
-		const dateMatchStages = [];
-		if (startDate) {
-			const [y, m, d] = startDate.split('-').map(Number);
-			dateMatchStages.push({ $or: [ { anio: { $gt: y } }, { anio: y, mes: { $gt: m } }, { anio: y, mes: m, dia: { $gte: d } } ] });
-		}
-		if (endDate) {
-			const [y2, m2, d2] = endDate.split('-').map(Number);
-			dateMatchStages.push({ $or: [ { anio: { $lt: y2 } }, { anio: y2, mes: { $lt: m2 } }, { anio: y2, mes: m2, dia: { $lte: d2 } } ] });
-		}
+		// Agregación diaria con fallback de fecha (anio/mes/dia o fecha_publicacion/fecha/datetime_insert)
 		const rangoMatchStage = selectedRangos.length > 0 ? { rango_titulo: { $in: selectedRangos } } : null;
 		const etiquetasStage = Object.keys(etiquetasQuery).length > 0 ? etiquetasQuery : null;
-		const fullMatch = { $and: [ ...(dateMatchStages.length ? dateMatchStages : []), ...(rangoMatchStage ? [rangoMatchStage] : []), ...(etiquetasStage ? [etiquetasStage] : []) ] };
+		const startAgg = startDate ? new Date(startDate) : null;
+		const endAgg = endDate ? new Date(endDate) : null;
+		const dateFiltersAgg = buildDateFilter(startAgg, endAgg);
+		const fullMatch = { $and: [ ...(dateFiltersAgg.length ? dateFiltersAgg : []), ...(rangoMatchStage ? [rangoMatchStage] : []), ...(etiquetasStage ? [etiquetasStage] : []) ] };
 		if (fullMatch.$and.length === 0) delete fullMatch.$and;
 		const dailyAggPromises = expandedCollections.map(async (cName) => {
 			try {
 				const exists = await collectionExists(database, cName);
 				if (!exists) return [];
 				return await database.collection(cName).aggregate([
+					// Fijar fecha efectiva y completar anio/mes/dia si faltan
+					{ $addFields: { __effectiveDate: { $ifNull: [ "$fecha_publicacion", { $ifNull: [ "$fecha", "$datetime_insert" ] } ] } } },
+					{ $addFields: {
+						anio: { $ifNull: [ "$anio", { $year: "$__effectiveDate" } ] },
+						mes: { $ifNull: [ "$mes", { $month: "$__effectiveDate" } ] },
+						dia: { $ifNull: [ "$dia", { $dayOfMonth: "$__effectiveDate" } ] }
+					}},
 					{ $match: fullMatch },
 					{ $group: { _id: { anio: "$anio", mes: "$mes", dia: "$dia" }, count: { $sum: 1 } } }
 				]).toArray();
@@ -669,10 +704,16 @@ router.get('/data', async (req, res) => {
 		const dataResults = await Promise.all(dataQueryPromises);
 		const dailyAggResults = await Promise.all(dailyAggPromises);
 		allDocuments = dataResults.flat();
-		allDocuments.sort((a, b) => (new Date(a.anio, a.mes - 1, a.dia)) - (new Date(b.anio, b.mes - 1, b.dia)) < 0 ? 1 : -1);
-		const start = startDate ? new Date(startDate) : null;
-		const end = endDate ? new Date(endDate) : null;
-		const dateFilter = buildDateFilter(start, end);
+		// Ordenar por fecha efectiva (anio/mes/dia o fecha_publicacion/fecha/datetime_insert)
+		const getEffectiveDate = (doc) => {
+			if (typeof doc.anio === 'number' && typeof doc.mes === 'number' && typeof doc.dia === 'number') return new Date(doc.anio, doc.mes - 1, doc.dia);
+			const d = doc.fecha_publicacion || doc.fecha || doc.datetime_insert;
+			return d ? new Date(d) : new Date(0);
+		};
+		allDocuments.sort((a, b) => getEffectiveDate(b) - getEffectiveDate(a));
+		const startMain = startDate ? new Date(startDate) : null;
+		const endMain = endDate ? new Date(endDate) : null;
+		const dateFilter = buildDateFilter(startMain, endMain);
 		const queryWithoutEtiquetas = { $and: [ ...dateFilter ] };
 		const documentosEliminados = user.documentos_eliminados || [];
 		const filteredDocuments = [];
@@ -824,9 +865,11 @@ router.get('/data', async (req, res) => {
 					  </div>`;
 				})();
 				
+				const dateText = (() => { if (typeof doc.anio === 'number' && typeof doc.mes === 'number' && typeof doc.dia === 'number') return `${doc.dia}/${doc.mes}/${doc.anio}`; const d = doc.fecha_publicacion || doc.fecha || doc.datetime_insert; if (!d) return '-'; const dt = new Date(d); return `${String(dt.getUTCDate()).padStart(2,'0')}/${String(dt.getUTCMonth()+1).padStart(2,'0')}/${dt.getUTCFullYear()}`; })();
+				const datetimeAttr = (() => { const d = doc.fecha_publicacion || doc.fecha || doc.datetime_insert; if (!d) return ''; try { return new Date(d).toISOString(); } catch(_){ return ''; } })();
 				return `
 					<div class="data-item">
-					  <div class="header-row"><div class="id-values">${doc.short_name}</div><span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span></div>
+					  <div class="header-row"><div class="id-values">${doc.short_name}</div><span class="date" data-datetime-insert="${datetimeAttr}"><em>${dateText}</em></span></div>
 					  <div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">${rangoToShow} | ${doc.collectionName}</div>
 					  ${matchedEtiquetasHtml}
 					  <div class="resumen-label">Resumen</div>
