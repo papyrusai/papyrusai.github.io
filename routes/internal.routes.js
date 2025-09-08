@@ -478,12 +478,31 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 		allResults.sort((a, b) => (new Date(a.anio, a.mes - 1, a.dia)) - (new Date(b.anio, b.mes - 1, b.dia)) < 0 ? 1 : -1);
 		console.log('[internal/data] results fetched:', allResults.length);
 
-		// Post-filter by etiquetas across any targetUserId (replica de profile). Si no hay etiquetas, exigir que el doc tenga etiquetas no vacías para alguno de los targetUserIds.
+		// Obtener eliminaciones desde Feedback para el usuario seleccionado y, si aplica, su estructura de empresa
+		let deletedKeysSet = new Set();
+		try {
+			const feedbackCol = database.collection('Feedback');
+			const deletionScope = Array.from(new Set([ String(targetUserId), ...targetUserIds.map(String) ]));
+			const delRows = await feedbackCol.find(
+				{ content_evaluated: 'doc_eliminado', deleted_from: { $in: deletionScope } },
+				{ projection: { doc_id: 1, coleccion: 1, collection_name: 1 } }
+			).toArray();
+			for (const r of delRows) {
+				const coll = r.coleccion || r.collection_name;
+				const did = r.doc_id != null ? String(r.doc_id) : '';
+				if (coll && did) deletedKeysSet.add(`${coll}|${did}`);
+			}
+		} catch (e) {
+			console.error('[internal/data] error fetching Feedback deletions:', e.message);
+		}
+
+		// Post-filter by etiquetas across any targetUserId (replica de profile) y excluir eliminados
 		const etiquetasForMatch = Array.isArray(selectedEtiquetas) ? selectedEtiquetas.map(e => String(e).toLowerCase()) : [];
 		const filteredResults = [];
 		for (const doc of allResults) {
-			// Excluir documentos eliminados por el usuario seleccionado
-			const isDeleted = Array.isArray(deletedBySelectedUser) && deletedBySelectedUser.some(d => d.coleccion === doc.collectionName && String(d.id) === String(doc._id));
+			// Excluir documentos eliminados por Feedback (alcance: user seleccionado y su empresa si aplica)
+			const delKey = `${doc.collectionName}|${String(doc._id)}`;
+			const isDeleted = deletedKeysSet.has(delKey);
 			if (isDeleted) continue;
 			let hasEtiquetasMatch = false; let matchedEtiquetas = [];
 			let hasAnyForTarget = false;
@@ -612,10 +631,14 @@ router.get('/api/internal/data', ensureAuthenticated, async (req, res) => {
 				  </div>`;
 			})();
 
+			const matchedAttr = Array.isArray(doc.matched_etiquetas) && doc.matched_etiquetas.length ? ` data-matched="${doc.matched_etiquetas.map(e=>String(e)).join('|')}"` : '';
 			return `
-			  <div class="data-item"> 
+			  <div class="data-item" data-doc-id="${doc._id}" data-collection="${doc.collectionName}"${matchedAttr}> 
 				<div class="header-row"> 
 				  <div class="id-values">${doc.short_name} <i class="fas fa-clipboard-check" style="margin-left:8px;color:#0b2431;opacity:.8;"></i></div>
+				  <button class="internal-trash" title="Eliminar para seguimiento" style="margin-left:auto; background:transparent; border:none; cursor:pointer; color:#d32f2f;">
+					<i class="fas fa-trash"></i>
+				  </button>
 				  <span class="date"><em>${doc.dia}/${doc.mes}/${doc.anio}</em></span>
 				</div>
 				<div style="color: gray; font-size: 1.1em; margin-bottom: 6px;">${rangoToShow} | ${doc.collectionName}</div>
@@ -708,12 +731,53 @@ router.get('/api/internal/user-rangos', ensureAuthenticated, async (req, res) =>
         const targetId = isObjId ? new ObjectId(userId) : null;
         let rangos = [];
         if (targetId) {
-            const userDoc = await usersCollection.findOne({ _id: targetId }, { projection: { tipo_cuenta: 1, estructura_empresa_id: 1, rangos: 1 } });
-            // Como en profile: usar rangos del usuario (si existen). Si no existen, devolver [] (no filtrar en frontend)
+            const userDoc = await usersCollection.findOne({ _id: targetId }, { projection: { tipo_cuenta: 1, estructura_empresa_id: 1, rangos: 1, cobertura_legal: 1, empresa: 1, empresa_name: 1 } });
+            // 1) Partir de los rangos definidos en el usuario si existen
             if (Array.isArray(userDoc?.rangos)) rangos = userDoc.rangos.filter(Boolean);
+
+            // 2) Ampliar con todos los valores posibles de rango_titulo en colecciones de cobertura del usuario
+            try {
+                // Derivar cobertura (igual que en /api/internal/user-boletines)
+                let coberturaSource = userDoc?.cobertura_legal || {};
+                if (userDoc?.estructura_empresa_id) {
+                    const empresaDoc = await usersCollection.findOne({ _id: userDoc.estructura_empresa_id }, { projection: { cobertura_legal: 1 } });
+                    if (empresaDoc?.cobertura_legal) coberturaSource = empresaDoc.cobertura_legal;
+                } else if (userDoc?.tipo_cuenta === 'empresa') {
+                    coberturaSource = userDoc.cobertura_legal || {};
+                } else if ((!coberturaSource || Object.keys(coberturaSource).length === 0) && (userDoc?.empresa || userDoc?.empresa_name)) {
+                    const empName = userDoc.empresa || userDoc.empresa_name;
+                    const empresaDocByName = await usersCollection.findOne({ tipo_cuenta: 'empresa', $or: [ { empresa: empName }, { empresa_name: empName } ] }, { projection: { cobertura_legal: 1 } });
+                    if (empresaDocByName?.cobertura_legal) coberturaSource = empresaDocByName.cobertura_legal;
+                }
+                let boletines = [];
+                const fuentesGobierno = coberturaSource?.['fuentes-gobierno'] || coberturaSource?.fuentes_gobierno || coberturaSource?.fuentes || [];
+                if (Array.isArray(fuentesGobierno) && fuentesGobierno.length) boletines = boletines.concat(fuentesGobierno);
+                const fuentesReguladores = coberturaSource?.['fuentes-reguladores'] || coberturaSource?.fuentes_reguladores || coberturaSource?.['fuentes-regulador'] || coberturaSource?.reguladores || [];
+                if (Array.isArray(fuentesReguladores) && fuentesReguladores.length) boletines = boletines.concat(fuentesReguladores);
+                if (!boletines.length) boletines = ['BOE'];
+
+                const expanded = expandCollectionsWithTest(boletines).filter(n => !String(n).toLowerCase().endsWith('_test'));
+                const set = new Set(rangos.map(String));
+                for (const cName of expanded) {
+                    try {
+                        const exists = await collectionExists(db, cName);
+                        if (!exists) continue;
+                        const values = await db.collection(cName).distinct('rango_titulo', {});
+                        (values || []).forEach(v => { if (v) set.add(String(v)); });
+                    } catch(_) { /* ignore per collection */ }
+                }
+                // Asegurar inclusión de 'Otras'
+                set.add('Otras');
+                rangos = Array.from(set);
+            } catch(_) { /* ignore */ }
         }
-        console.log('[internal/user-rangos] rangos count:', rangos.length);
-        return res.json({ success: true, rangos });
+        // Orden básico: 'Otras' al final
+        const cleaned = Array.from(new Set(rangos.filter(Boolean).map(String)));
+        const withoutOtras = cleaned.filter(r => r.toLowerCase() !== 'otras');
+        const finalRangos = withoutOtras.sort((a,b)=> a.localeCompare(b, 'es'));
+        if (!cleaned.some(r => r.toLowerCase() === 'otras')) finalRangos.push('Otras'); else finalRangos.push('Otras');
+        console.log('[internal/user-rangos] rangos count:', finalRangos.length);
+        return res.json({ success: true, rangos: finalRangos });
     } catch (e) {
         console.error('[internal] user-rangos error:', e);
         return res.status(500).json({ success: false, error: 'Error obteniendo rangos del usuario' });
@@ -722,4 +786,118 @@ router.get('/api/internal/user-rangos', ensureAuthenticated, async (req, res) =>
     }
 });
 
+// ------------------------------
+// User etiquetas (agentes) for internal filters
+// ------------------------------
+router.get('/api/internal/user-etiquetas', ensureAuthenticated, async (req, res) => {
+    if (req.user?.email !== 'tomas@reversa.ai') {
+        return res.status(403).json({ success: false, error: 'No autorizado' });
+    }
+    const userId = String(req.query.userId || '').trim();
+    if (!userId) return res.status(400).json({ success: false, error: 'Parámetro requerido: userId' });
+    const client = new MongoClient(uri, mongodbOptions);
+    try {
+        await client.connect();
+        const db = client.db('papyrus');
+        const usersCollection = db.collection('users');
+        const isObjId = /^[a-fA-F0-9]{24}$/.test(userId);
+        const targetId = isObjId ? new ObjectId(userId) : null;
+        let etiquetas = [];
+        if (targetId) {
+            const userDoc = await usersCollection.findOne(
+                { _id: targetId },
+                { projection: { email: 1, tipo_cuenta: 1, estructura_empresa_id: 1, empresa: 1, empresa_name: 1, etiquetas_personalizadas: 1, etiquetas_personalizadas_seleccionadas: 1 } }
+            );
+            if (userDoc) {
+                // 1) Empleado enterprise: preferir seleccionadas del empleado; fallback etiquetas de empresa
+                if (userDoc.estructura_empresa_id) {
+                    if (Array.isArray(userDoc.etiquetas_personalizadas_seleccionadas) && userDoc.etiquetas_personalizadas_seleccionadas.length > 0) {
+                        etiquetas = userDoc.etiquetas_personalizadas_seleccionadas;
+                    } else {
+                        try {
+                            const empId = userDoc.estructura_empresa_id instanceof ObjectId ? userDoc.estructura_empresa_id : new ObjectId(String(userDoc.estructura_empresa_id));
+                            const empDoc = await usersCollection.findOne({ _id: empId }, { projection: { etiquetas_personalizadas: 1 } });
+                            const e = empDoc?.etiquetas_personalizadas || {};
+                            etiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+                        } catch(_) {}
+                    }
+                }
+                // 2) Doc de empresa: usar sus etiquetas
+                else if (!userDoc.email && userDoc.tipo_cuenta === 'empresa') {
+                    const e = userDoc?.etiquetas_personalizadas || {};
+                    etiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+                }
+                // 3) Fallback por nombre de empresa
+                else if (userDoc.empresa || userDoc.empresa_name) {
+                    try {
+                        const empDoc = await usersCollection.findOne(
+                            { tipo_cuenta: 'empresa', $or: [ { empresa: userDoc.empresa }, { empresa_name: userDoc.empresa_name } ] },
+                            { projection: { etiquetas_personalizadas: 1 } }
+                        );
+                        const e = empDoc?.etiquetas_personalizadas || {};
+                        etiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+                    } catch(_) {}
+                }
+                // 4) Individual u otros: usar sus propias etiquetas si existen
+                if (!Array.isArray(etiquetas) || etiquetas.length === 0) {
+                    const e = userDoc?.etiquetas_personalizadas || {};
+                    etiquetas = Array.isArray(e) ? e : (typeof e === 'object' ? Object.keys(e) : []);
+                }
+            }
+        }
+        // Orden alfabético, único
+        etiquetas = Array.from(new Set((etiquetas || []).filter(Boolean).map(String))).sort((a,b)=> a.localeCompare(b, 'es'));
+        return res.json({ success: true, etiquetas });
+    } catch (e) {
+        console.error('[internal] user-etiquetas error:', e);
+        return res.status(500).json({ success: false, error: 'Error obteniendo agentes del usuario' });
+    } finally {
+        await client.close();
+    }
+});
+
 module.exports = router; 
+
+// ---------------------------------------------
+// Crear registro de eliminación en Feedback
+// ---------------------------------------------
+router.post('/api/internal/delete-document', ensureAuthenticated, async (req, res) => {
+    if (req.user?.email !== 'tomas@reversa.ai') {
+        return res.status(403).json({ success: false, error: 'No autorizado' });
+    }
+    const { coleccion, doc_id, reason_delete, etiquetas_personalizadas_match, deleted_from } = req.body || {};
+    if (!coleccion || !doc_id) {
+        return res.status(400).json({ success: false, error: 'Parámetros requeridos: coleccion, doc_id' });
+    }
+    const client = new MongoClient(uri, mongodbOptions);
+    try {
+        await client.connect();
+        const db = client.db('papyrus');
+        const feedbackCol = db.collection('Feedback');
+        const now = new Date();
+        const dia = String(now.getDate()).padStart(2, '0');
+        const mes = String(now.getMonth() + 1).padStart(2, '0');
+        const anio = now.getFullYear();
+        const fecha = `${dia}-${mes}-${anio}`;
+        const doc = {
+            content_evaluated: 'doc_eliminado',
+            created_at: now,
+            updated_at: now,
+            fecha,
+            user_id: req.user?._id || null,
+            user_email: req.user?.email || null,
+            deleted_from: String(deleted_from || req.user?._id || ''),
+            coleccion: String(coleccion),
+            doc_id: String(doc_id),
+            reason_delete: String(reason_delete || ''),
+            etiquetas_personalizadas_match: Array.isArray(etiquetas_personalizadas_match) ? etiquetas_personalizadas_match : []
+        };
+        await feedbackCol.insertOne(doc);
+        return res.json({ success: true });
+    } catch (e) {
+        console.error('[internal] delete-document error:', e);
+        return res.status(500).json({ success: false, error: 'Error guardando eliminación' });
+    } finally {
+        await client.close();
+    }
+});

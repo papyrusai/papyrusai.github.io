@@ -4,7 +4,7 @@
     seleccion: [], // array of userIds
     ranking: { page: 1, totalPages: 1, items: [] },
     usersMap: new Map(), // userId -> { userId, email, displayName, isEmpresa }
-    filtros: { userId: null, boletines: [], rangos: [], desde: null, hasta: null },
+    filtros: { userId: null, boletines: [], rangos: [], desde: null, hasta: null, etiquetas: [] },
     chart: null
   };
 
@@ -142,6 +142,69 @@
     }
   }
 
+  // ETIQUETAS (Agentes del usuario seleccionado)
+  async function populateEtiquetas(){
+    const uid = STATE.filtros.userId || (STATE.seleccion[0] || null);
+    let etiquetas = [];
+    if (uid){
+      try {
+        const res = await fetch('/api/internal/user-etiquetas?userId=' + encodeURIComponent(uid), { headers:{ 'Accept':'application/json' }, credentials:'same-origin' });
+        const data = await res.json().catch(()=>({success:false}));
+        if (data && data.success && Array.isArray(data.etiquetas)) etiquetas = data.etiquetas;
+      } catch(_){ }
+    }
+    renderEtiquetasDropdownInternal(etiquetas);
+  }
+  function renderEtiquetasDropdownInternal(etiquetas){
+    const dropdown = q('etiquetasDropdownInternal');
+    if (!dropdown) return;
+    if (!Array.isArray(etiquetas)) etiquetas = [];
+    let html = `<label><input type="checkbox" id="chkAllEtiquetasInternal" checked> Todos</label>`;
+    etiquetas.forEach(e => { html += `<label><input type="checkbox" value="${e}" checked> ${e}</label>`; });
+    dropdown.innerHTML = html;
+
+    const chkAll = q('chkAllEtiquetasInternal');
+    const boxes = dropdown.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetasInternal)');
+    if (chkAll){
+      chkAll.addEventListener('change', (e)=>{
+        boxes.forEach(cb => cb.checked = e.target.checked);
+        STATE.filtros.etiquetas = e.target.checked ? etiquetas.slice() : [];
+        updateSelectedEtiquetasInternalText();
+      });
+    }
+    boxes.forEach(cb => {
+      cb.addEventListener('change', ()=>{
+        const selected = Array.from(boxes).filter(x=>x.checked).map(x=>x.value);
+        STATE.filtros.etiquetas = selected;
+        if (chkAll){
+          const allChecked = selected.length === boxes.length;
+          const noneChecked = selected.length === 0;
+          chkAll.checked = allChecked;
+          chkAll.indeterminate = !allChecked && !noneChecked;
+        }
+        updateSelectedEtiquetasInternalText();
+      });
+    });
+    STATE.filtros.etiquetas = etiquetas.slice();
+    updateSelectedEtiquetasInternalText();
+  }
+  function updateSelectedEtiquetasInternalText(){
+    const boxes = q('etiquetasDropdownInternal')?.querySelectorAll('input[type="checkbox"]:not(#chkAllEtiquetasInternal)') || [];
+    const selected = Array.from(boxes).filter(x=>x.checked).map(x=>x.value);
+    const span = q('selectedEtiquetasInternal');
+    if (!span) return;
+    if (boxes.length === 0) { span.textContent = 'Todos'; return; }
+    if (selected.length === 0 || selected.length === boxes.length) { span.textContent = 'Todos'; return; }
+    if (selected.length === 1) { span.textContent = selected[0]; return; }
+    span.textContent = `${selected.length} seleccionados`;
+  }
+  window.toggleEtiquetasDropdownInternal = function(){
+    const dd = q('etiquetasDropdownInternal'); if (!dd) return;
+    dd.classList.toggle('open');
+    q('boletinDropdownInternal')?.classList.remove('open');
+    q('rangoDropdownInternal')?.classList.remove('open');
+  };
+
   // RANGOS (dropdown estilo Reversa)
   function renderRangoDropdownInternal(rangos){
     const dropdown = q('rangoDropdownInternal');
@@ -267,6 +330,9 @@
     const insideRango = e.target && e.target.closest && e.target.closest('#rangoDropdownInternal');
     const triggerRango = e.target && e.target.closest && e.target.closest('#btnRangoInternal');
     if (!insideRango && !triggerRango) q('rangoDropdownInternal')?.classList.remove('open');
+    const insideEtiq = e.target && e.target.closest && e.target.closest('#etiquetasDropdownInternal');
+    const triggerEtiq = e.target && e.target.closest && e.target.closest('#btnEtiquetasInternal');
+    if (!insideEtiq && !triggerEtiq) q('etiquetasDropdownInternal')?.classList.remove('open');
   });
 
   let currentFetchController = null;
@@ -290,6 +356,7 @@
 
     const params = new URLSearchParams();
     params.set('userId', STATE.filtros.userId);
+    if (STATE.filtros.etiquetas && STATE.filtros.etiquetas.length) params.set('etiquetas', STATE.filtros.etiquetas.join('||'));
     // Si no hay selección, usar todos los valores actuales
     const rngs = (STATE.filtros.rangos && STATE.filtros.rangos.length) ? STATE.filtros.rangos : (STATE.allRangosInternal || []);
     const bols = (STATE.filtros.boletines && STATE.filtros.boletines.length) ? STATE.filtros.boletines : (STATE.allBoletinesInternal || []);
@@ -327,15 +394,125 @@
 
   function renderChart(labels, counts){
     try {
-      if (window.Chart){
-        const ctx = q('documentsChart').getContext('2d');
-        if (STATE.chart) { STATE.chart.destroy(); }
-        STATE.chart = new Chart(ctx, {
-          type: 'line',
-          data: { labels, datasets: [{ label:'Documentos/día', data: counts, borderColor:'#0b2431', backgroundColor:'rgba(11,36,49,.1)', tension:.25, pointRadius:0 }] },
-          options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ ticks:{ color:'#455862' } }, y:{ ticks:{ color:'#455862' } } }, plugins:{ legend:{ display:false } } }
-        });
+      if (!window.Chart) return;
+      const canvas = q('documentsChart');
+      if (!canvas) return;
+      const chartContainer = q('chartContainer');
+      const loadingIconChart = q('loading-icon-chart');
+      // Ensure container visible before measuring/creating chart
+      if (chartContainer) {
+        chartContainer.style.display = 'block';
       }
+      if (loadingIconChart) {
+        loadingIconChart.style.display = 'none';
+      }
+      const ctx = canvas.getContext('2d');
+
+      // Destroy previous chart
+      if (STATE.chart) { try { STATE.chart.destroy(); } catch(_){} STATE.chart = null; }
+
+      // Build daily map from backend arrays
+      const dailyMap = {};
+      if (Array.isArray(labels) && Array.isArray(counts)) {
+        for (let i = 0; i < labels.length; i++) {
+          dailyMap[String(labels[i])] = Number(counts[i] || 0);
+        }
+      }
+
+      // Build continuous daily series between selected dates if possible
+      const startStr = q('fDesde')?.value || '';
+      const endStr = q('fHasta')?.value || '';
+      let finalLabels = [];
+      let finalSeries = [];
+      let numDays = 0;
+
+      if (startStr && endStr) {
+        const start = new Date(startStr);
+        const end = new Date(endStr);
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && start <= end) {
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            const key = `${y}-${m}-${da}`;
+            finalLabels.push(key);
+            finalSeries.push((key in dailyMap) ? Number(dailyMap[key]) || 0 : 0);
+          }
+        }
+      }
+
+      // Fallback: use provided labels if no valid range
+      if (finalLabels.length === 0) {
+        const keys = Object.keys(dailyMap).sort();
+        finalLabels = keys;
+        finalSeries = keys.map(k => Number(dailyMap[k]) || 0);
+      }
+      numDays = finalLabels.length;
+
+      // Create chart
+      STATE.chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: finalLabels,
+          datasets: [{
+            label: 'Documentos por día',
+            data: finalSeries,
+            borderColor: '#0b2431',
+            backgroundColor: 'rgba(11,36,49,.1)',
+            borderWidth: 2,
+            pointRadius: 2,
+            pointHoverRadius: 4,
+            tension: 0.25,
+            fill: false,
+            spanGaps: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          layout: { padding: { top: 8, right: 12, bottom: 8, left: 12 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0b2431',
+              titleColor: '#ffffff',
+              bodyColor: '#ffffff',
+              borderColor: '#04db8d',
+              borderWidth: 2,
+              cornerRadius: 8,
+              displayColors: false,
+              padding: 10
+            }
+          },
+          scales: {
+            x: {
+              type: 'category',
+              grid: { display: false },
+              ticks: {
+                color: '#6c757d',
+                font: { size: 12, weight: '500' },
+                autoSkip: false,
+                callback: function(value, index) {
+                  const label = this.getLabelForValue(value);
+                  if (numDays <= 35) return index % 3 === 0 ? (label?.slice(5)?.replace('-', '/') || '') : '';
+                  if (numDays <= 92) return index % 7 === 0 ? (label?.slice(5)?.replace('-', '/') || '') : '';
+                  return label && label.endsWith('-01') ? label.slice(0, 7) : '';
+                }
+              },
+              border: { display: false },
+              title: { display: true, text: 'Fecha', color: '#0b2431', font: { size: 13, weight: '600' } }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(108,117,125,0.1)', drawBorder: false },
+              ticks: { color: '#6c757d', font: { size: 12, weight: '500' }, stepSize: 1, padding: 8 },
+              title: { display: true, text: 'Alertas', color: '#0b2431', font: { size: 13, weight: '600' } }
+            }
+          },
+          interaction: { intersect: false, mode: 'index' }
+        }
+      });
     } catch(_){ }
   }
 
@@ -380,11 +557,89 @@
     // Filters
     q('fUsuario').addEventListener('change', async e => { 
       STATE.filtros.userId = e.target.value; 
+      await populateEtiquetas();
       await populateBoletines(); // reload coverage for selected user
     });
     q('fDesde').addEventListener('change', e => STATE.filtros.desde = e.target.value);
     q('fHasta').addEventListener('change', e => STATE.filtros.hasta = e.target.value);
     q('btnBuscar').addEventListener('click', () => fetchInternalData());
+
+    // Modal eliminar
+    const modal = document.getElementById('modalEliminarInterno');
+    const motivoInput = document.getElementById('motivoEliminarInput');
+    const btnCancel = document.getElementById('btnCancelarEliminar');
+    const btnConfirm = document.getElementById('btnConfirmarEliminar');
+    const hDoc = document.getElementById('eliminarDocId');
+    const hColl = document.getElementById('eliminarCollection');
+    const hMatched = document.getElementById('eliminarMatched');
+
+    function openDeleteModal(docId, collection, matched){
+      if (!modal) return;
+      hDoc.value = String(docId || '');
+      hColl.value = String(collection || '');
+      hMatched.value = Array.isArray(matched) ? matched.join('|') : String(matched || '');
+      motivoInput.value = '';
+      modal.style.display = 'block';
+    }
+    function closeDeleteModal(){ if (modal) modal.style.display = 'none'; }
+    if (btnCancel) btnCancel.addEventListener('click', closeDeleteModal);
+    if (modal) modal.addEventListener('click', (e)=>{ if (e.target === modal) closeDeleteModal(); });
+    if (btnConfirm) btnConfirm.addEventListener('click', async ()=>{
+      const reason = (motivoInput.value || '').trim();
+      const docId = hDoc.value; const coll = hColl.value;
+      const matched = (hMatched.value || '').split('|').filter(Boolean);
+      const deletedFrom = STATE.filtros.userId || (STATE.seleccion[0] || '');
+      if (!docId || !coll){ showErrorBanner('Faltan datos del documento'); return; }
+      try {
+        btnConfirm.disabled = true;
+        const body = {
+          coleccion: coll,
+          doc_id: docId,
+          reason_delete: reason,
+          etiquetas_personalizadas_match: matched,
+          deleted_from: deletedFrom
+        };
+        const res = await fetch('/api/internal/delete-document', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body)
+        });
+        const data = await res.json().catch(()=>({ success:false }));
+        if (data && data.success){
+          closeDeleteModal();
+          showSuccessBanner('Documento eliminado para seguimiento');
+          // quitar la tarjeta del DOM inmediatamente
+          try {
+            const sel = `.data-item[data-doc-id="${CSS.escape(docId)}"][data-collection="${CSS.escape(coll)}"]`;
+            const el = document.querySelector(sel);
+            if (el && el.parentNode) el.parentNode.removeChild(el);
+          } catch(_){ }
+        } else {
+          showErrorBanner('No se pudo eliminar el documento');
+        }
+      } catch (e){
+        showErrorBanner('Error al eliminar: ' + (e && e.message ? e.message : ''));
+      } finally {
+        btnConfirm.disabled = false;
+      }
+    });
+
+    // Delegation: click en icono papelera
+    const docsContainer = document.getElementById('internal-docs-container');
+    if (docsContainer){
+      docsContainer.addEventListener('click', (e)=>{
+        const btn = e.target && e.target.closest && e.target.closest('.internal-trash');
+        if (!btn) return;
+        const card = btn.closest('.data-item');
+        if (!card) return;
+        const docId = card.getAttribute('data-doc-id');
+        const coll = card.getAttribute('data-collection');
+        const matchedStr = card.getAttribute('data-matched') || '';
+        const matched = matchedStr ? matchedStr.split('|').filter(Boolean) : [];
+        openDeleteModal(docId, coll, matched);
+      });
+    }
   }
 
   function setDefaultDates(){
@@ -401,6 +656,7 @@
     await loadSeleccionFromBackend();
     renderChips();
     populateUsuarioFilter();
+    await populateEtiquetas();
     // Rangos del usuario (igual que profile). Si no hay, no filtrar por rango
     try {
       const uid = STATE.filtros.userId || (STATE.seleccion[0] || null);

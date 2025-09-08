@@ -122,6 +122,10 @@ app.use(statsRoutes);
 const internalRoutes = require('./routes/internal.routes');
 app.use(internalRoutes);
 
+// NEW: Internal Feedback Review routes (for dashboard Feedback tab)
+const internalReviewFeedbackRoutes = require('./routes/internal.review.feedback');
+app.use(internalReviewFeedbackRoutes);
+
 // Middleware to ensure user is authenticated
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {

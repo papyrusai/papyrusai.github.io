@@ -10,7 +10,8 @@ const { MongoClient, ObjectId } = require('mongodb');
 const ensureAuthenticated = require('../middleware/ensureAuthenticated');
 const path = require('path');
 const { spawn } = require('child_process');
-const { getEtiquetasPersonalizadasAdapter } = require('../services/enterprise.service');
+const { TextDecoder: NodeTextDecoder } = require('util');
+const { getEtiquetasPersonalizadasAdapter, getEtiquetasSeleccionadasAdapter } = require('../services/enterprise.service');
 
 const router = express.Router();
 
@@ -34,27 +35,78 @@ router.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 
 		let perfilRegulatorioUser = null;
 		let etiquetasDefiniciones = {};
+		let isEnterpriseUser = false;
+		let estructuraEmpresaIdStr = null;
+		let etiquetasSeleccionadasArray = [];
 		if (req.user && req.user._id) {
 			const userDoc = await usersCollection.findOne(
 				{ _id: new ObjectId(req.user._id) },
-				{ projection: { perfil_regulatorio: 1 } }
+				{ projection: { perfil_regulatorio: 1, tipo_cuenta: 1, estructura_empresa_id: 1 } }
 			);
 			perfilRegulatorioUser = userDoc?.perfil_regulatorio || null;
+			isEnterpriseUser = (userDoc?.tipo_cuenta === 'empresa') && !!userDoc?.estructura_empresa_id;
+			estructuraEmpresaIdStr = userDoc?.estructura_empresa_id ? String(userDoc.estructura_empresa_id) : null;
 			
 			// ENTERPRISE ADAPTER: Obtener etiquetas según tipo de cuenta
 			const etiquetasResult = await getEtiquetasPersonalizadasAdapter(req.user);
 			etiquetasDefiniciones = etiquetasResult.etiquetas_personalizadas || {};
+
+			// ENTERPRISE ADAPTER: Obtener selección de etiquetas del usuario (si existe)
+			try {
+				const seleccionResult = await getEtiquetasSeleccionadasAdapter(req.user);
+				etiquetasSeleccionadasArray = Array.isArray(seleccionResult?.etiquetas_seleccionadas)
+					? seleccionResult.etiquetas_seleccionadas
+					: [];
+			} catch (_) {}
 		}
 
 		const document = await collection.findOne({ _id: documentId });
 		if (!document) return res.status(404).json({ error: 'Document not found' });
 
 		let userEtiquetasPersonalizadas = null;
-		if (document.etiquetas_personalizadas && req.user && req.user._id) {
-			const userId = req.user._id.toString();
-			if (document.etiquetas_personalizadas[userId]) {
-				userEtiquetasPersonalizadas = document.etiquetas_personalizadas[userId];
+		// INDIVIDUAL: mantener comportamiento actual (etiquetas del documento por userId)
+		if (!isEnterpriseUser) {
+			if (document.etiquetas_personalizadas && req.user && req.user._id) {
+				const userId = req.user._id.toString();
+				if (document.etiquetas_personalizadas[userId]) {
+					userEtiquetasPersonalizadas = document.etiquetas_personalizadas[userId];
+				}
 			}
+		} else {
+			// EMPRESA: mostrar SOLO etiquetas que hagan match con este documento
+			// 1) Disponibles desde adapter (definiciones globales de empresa)
+			let disponibles = etiquetasDefiniciones || {};
+			// 2) Obtener conjunto de etiquetas que hacen match en el documento para estructura_empresa
+			const docRawForEmpresa = (document.etiquetas_personalizadas && estructuraEmpresaIdStr)
+				? (document.etiquetas_personalizadas[estructuraEmpresaIdStr] || {})
+				: {};
+			let docMatchedSet = new Set();
+			if (Array.isArray(docRawForEmpresa)) {
+				docRawForEmpresa.forEach(n => { if (typeof n === 'string') docMatchedSet.add(n); });
+			} else if (docRawForEmpresa && typeof docRawForEmpresa === 'object') {
+				Object.keys(docRawForEmpresa).forEach(n => docMatchedSet.add(n));
+			}
+			// 3) Filtrar disponibles por las que realmente hacen match con el documento
+			const soloMatched = {};
+			Object.keys(disponibles || {}).forEach((name) => {
+				if (docMatchedSet.has(name)) soloMatched[name] = disponibles[name];
+			});
+			// 4) Si hay selección personal, intersectar también por selección
+			let filtradas = soloMatched;
+			if (Array.isArray(etiquetasSeleccionadasArray) && etiquetasSeleccionadasArray.length > 0) {
+				const tmp = {};
+				etiquetasSeleccionadasArray.forEach((name) => {
+					if (Object.prototype.hasOwnProperty.call(filtradas, name)) tmp[name] = filtradas[name];
+				});
+				filtradas = tmp;
+			}
+			// 5) Enriquecer valores con la información específica del documento si existe (nivel_impacto, etc.)
+			const finalMap = {};
+			Object.keys(filtradas || {}).forEach((k) => {
+				const hasDocSpecific = (!Array.isArray(docRawForEmpresa)) && Object.prototype.hasOwnProperty.call(docRawForEmpresa || {}, k);
+				finalMap[k] = hasDocSpecific ? docRawForEmpresa[k] : filtradas[k];
+			});
+			userEtiquetasPersonalizadas = finalMap;
 		}
 
 		return res.json({
@@ -67,6 +119,8 @@ router.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 			user_etiquetas_personalizadas: userEtiquetasPersonalizadas,
 			perfil_regulatorio: perfilRegulatorioUser,
 			user_etiquetas_definiciones: etiquetasDefiniciones,
+			user_is_enterprise: isEnterpriseUser,
+			user_etiquetas_seleccionadas: etiquetasSeleccionadasArray,
 		});
 	} catch (err) {
 		console.error('Error fetching norma details:', err);
@@ -118,44 +172,87 @@ router.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
 		const totalLength = baseCommandLength + promptLength + htmlContentLength;
 		const useStdin = totalLength > 5000;
 
-		let pythonProcess;
+		// Helper to run Python with fallback and capture outputs in a Promise (avoid double sends)
+		const runPythonWithFallback = (args, stdinJsonString = null) => {
+			const bins = [process.env.PYTHON_BIN, 'python', 'python3'].filter(Boolean);
+			let lastError = null;
+			const trySpawn = (binIndex) => {
+				if (binIndex >= bins.length) {
+					const err = lastError || new Error('Python binary not found');
+					err.code = err.code || 'ENOENT';
+					return Promise.reject(err);
+				}
+				const bin = bins[binIndex];
+				return new Promise((resolve, reject) => {
+					try {
+						const proc = spawn(bin, args);
+						proc.stdout.setEncoding('utf8');
+						proc.stderr.setEncoding('utf8');
+						let out = '';
+						let errOut = '';
+						proc.stdout.on('data', (d) => { out += d; });
+						proc.stderr.on('data', (d) => { errOut += d; console.error(`Python stderr: ${d}`); });
+						proc.on('error', (e) => {
+							lastError = e;
+							if (e && (e.code === 'ENOENT' || e.errno === -2)) {
+								// Try next binary
+								return reject({ retry: true });
+							}
+							return reject(e);
+						});
+						proc.on('close', (code) => {
+							return resolve({ code, out, errOut });
+						});
+						if (stdinJsonString) {
+							try {
+								proc.stdin.write(stdinJsonString);
+							} catch (_) {}
+							try { proc.stdin.end(); } catch (_) {}
+						}
+					} catch (e) {
+						lastError = e;
+						if (e && (e.code === 'ENOENT' || e.errno === -2)) {
+							return reject({ retry: true });
+						}
+						return reject(e);
+					}
+				});
+			};
+			// Attempt sequentially across binaries
+			return trySpawn(0).catch((e1) => {
+				if (e1 && e1.retry) return trySpawn(1);
+				throw e1;
+			}).catch((e2) => {
+				if (e2 && e2.retry) return trySpawn(2);
+				throw e2;
+			});
+		};
+
+		// Build args and run
+		let args = [];
+		let stdinJsonString = null;
 		if (useStdin) {
-			const args = [pythonScriptPath, documentId, '--stdin'];
-			pythonProcess = spawn('python', args);
-			const stdinData = JSON.stringify({ user_prompt: userPrompt, collection_name: collectionName, html_content: htmlContent });
-			pythonProcess.stdin.write(stdinData);
-			pythonProcess.stdin.end();
+			args = [pythonScriptPath, documentId, '--stdin'];
+			stdinJsonString = JSON.stringify({ user_prompt: userPrompt, collection_name: collectionName, html_content: htmlContent });
 		} else {
-			const args = htmlContent
+			args = htmlContent
 				? [pythonScriptPath, documentId, userPrompt, collectionName, htmlContent]
 				: [pythonScriptPath, documentId, userPrompt, collectionName];
-			pythonProcess = spawn('python', args);
 		}
 
-		pythonProcess.stdout.setEncoding('utf8');
-		pythonProcess.stderr.setEncoding('utf8');
-
-		let result = '';
-		let errorOutput = '';
-
-		pythonProcess.on('error', (error) => {
-			console.error('Error executing Python script:', error);
+		let runResult;
+		try {
+			runResult = await runPythonWithFallback(args, stdinJsonString);
+		} catch (spawnErr) {
+			console.error('Error executing Python script:', spawnErr);
+			const isNotFound = spawnErr && (spawnErr.code === 'ENOENT' || spawnErr.errno === -2);
 			res.setHeader('Content-Type', 'application/json; charset=utf-8');
 			return res.status(500).json({
-				error: 'SCRIPT_EXECUTION_ERROR',
-				message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
-				details: error.message,
+				error: isNotFound ? 'PYTHON_NOT_FOUND' : 'SCRIPT_EXECUTION_ERROR',
+				message: isNotFound ? 'Error: Python no está disponible en el servidor. Instala python3 o define PYTHON_BIN.' : 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
+				details: spawnErr.message || String(spawnErr),
 			});
-		});
-
-		pythonProcess.stdout.on('data', (data) => {
-			result += data;
-		});
-
-		pythonProcess.stderr.on('data', (data) => {
-			errorOutput += data;
-			console.error(`Python stderr: ${data}`);
-		});
+		}
 
 		const fixUTF8Encoding = (text) => {
 			try {
@@ -167,9 +264,12 @@ router.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
 					try {
 						const bytes = new Uint8Array(fixedText.length);
 						for (let i = 0; i < fixedText.length; i++) bytes[i] = fixedText.charCodeAt(i) & 0xff;
-						const decoder = new TextDecoder('utf-8');
-						const decoded = decoder.decode(bytes);
-						if (/[áéíóúñÁÉÍÓÚÑ]/.test(decoded)) fixedText = decoded;
+						const DecoderClass = (typeof TextDecoder !== 'undefined' ? TextDecoder : NodeTextDecoder);
+						if (DecoderClass) {
+							const decoder = new DecoderClass('utf-8');
+							const decoded = decoder.decode(bytes);
+							if (/[áéíóúñÁÉÍÓÚÑ]/.test(decoded)) fixedText = decoded;
+						}
 					} catch (_) {}
 				}
 				// Remove BOM and replacement chars
@@ -190,44 +290,47 @@ router.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
 			}
 		};
 
-		pythonProcess.on('close', (code) => {
-			const sendCleanResult = (cleanStr) => {
-				try {
-					let jsonString = cleanStr.trim();
-					const jsonMatch = jsonString.match(/\{[^}]*"html_response"[^}]*\}/s);
-					if (jsonMatch) jsonString = jsonMatch[0];
-					const jsonResult = JSON.parse(jsonString);
-					if (jsonResult.html_response) {
-						let html = jsonResult.html_response;
-						html = html.replace(/\\n/g, '\n').replace(/\\\"/g, '"').replace(/\\\\/g, '\\');
-						html = fixUTF8Encoding(html);
-						res.setHeader('Content-Type', 'text/html; charset=utf-8');
-						return res.send(html);
-					} else if (jsonResult.error) {
-						res.setHeader('Content-Type', 'application/json; charset=utf-8');
-						return res.status(500).json(jsonResult);
-					}
-				} catch (_) {
-					if (cleanStr.includes('{"html_response"')) {
-						try {
-							const startIndex = cleanStr.indexOf('{"html_response"');
-							const endIndex = cleanStr.lastIndexOf('}') + 1;
-							if (startIndex !== -1 && endIndex > startIndex) {
-								const jsonStr = cleanStr.substring(startIndex, endIndex);
-								const jsonResult = JSON.parse(jsonStr);
-								if (jsonResult.html_response) {
-									let html = jsonResult.html_response;
-									html = html.replace(/\\n/g, '\n').replace(/\\\"/g, '"').replace(/\\\\/g, '\\');
-									html = fixUTF8Encoding(html);
-									res.setHeader('Content-Type', 'text/html; charset=utf-8');
-									return res.send(html);
-								}
-							}
-						} catch (_) {}
+		const { code, out: result, errOut: errorOutput } = runResult;
+		const sendCleanResult = (cleanStr) => {
+				// Normalize and strip common wrappers (```json, ```html, leading 'json ')
+				let raw = (cleanStr || '').trim();
+				raw = raw.replace(/^```(?:json|html)?\s*/i, '').replace(/\s*```$/i, '');
+				raw = raw.replace(/^json\s+/i, '');
+				// Try to extract a JSON object with html_response safely
+				let jsonCandidate = null;
+				if (raw.startsWith('{') && raw.includes('"html_response"')) {
+					jsonCandidate = raw;
+				} else if (raw.includes('{"html_response"')) {
+					const startIndex = raw.indexOf('{"html_response"');
+					const endIndex = raw.lastIndexOf('}');
+					if (startIndex !== -1 && endIndex > startIndex) {
+						jsonCandidate = raw.substring(startIndex, endIndex + 1);
 					}
 				}
 
-				const fixedContent = fixUTF8Encoding(result.trim());
+				if (jsonCandidate) {
+					try {
+						const jsonResult = JSON.parse(jsonCandidate);
+						if (jsonResult && jsonResult.html_response) {
+							let html = jsonResult.html_response;
+							// Unescape common sequences from model output
+							html = html.replace(/\\n/g, '\n').replace(/\\\"/g, '"').replace(/\\\\/g, '\\');
+							html = html.replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/i, '');
+							html = fixUTF8Encoding(html);
+							res.setHeader('Content-Type', 'text/html; charset=utf-8');
+							return res.send(html);
+						}
+						if (jsonResult && jsonResult.error) {
+							res.setHeader('Content-Type', 'application/json; charset=utf-8');
+							return res.status(500).json(jsonResult);
+						}
+					} catch (_) {}
+				}
+
+				// As a last resort, attempt to strip wrappers and send only HTML-like content
+				let fixedContent = fixUTF8Encoding(raw);
+				fixedContent = fixedContent.replace(/^```(?:html|json)?\s*/i, '').replace(/\s*```$/i, '');
+				fixedContent = fixedContent.replace(/^json\s+/i, '');
 				const isHtml =
 					fixedContent.includes('<h2>') ||
 					fixedContent.includes('<p>') ||
@@ -235,29 +338,50 @@ router.post('/api/analyze-norma', ensureAuthenticated, async (req, res) => {
 					fixedContent.includes('<html>');
 				res.setHeader('Content-Type', isHtml ? 'text/html; charset=utf-8' : 'text/plain; charset=utf-8');
 				return res.send(fixedContent);
-			};
+		};
 
-			if (code !== 0 && !(result && (result.includes('<h2>') || result.includes('<p>') || result.includes('<table>') || result.includes('<html>')))) {
+		if (code !== 0 && !(result && (result.includes('<h2>') || result.includes('<p>') || result.includes('<table>') || result.includes('<html>')))) {
+			// Detect missing Python modules to provide actionable error
+			const missingMatch = (errorOutput || '').match(/ModuleNotFoundError: No module named '([^']+)'/);
+			if (missingMatch && missingMatch[1]) {
+				const missingModule = missingMatch[1];
+				const pkgMap = {
+					'google': 'google-generativeai',
+					'google.generativeai': 'google-generativeai',
+					'pymongo': 'pymongo',
+					'pypdf': 'pypdf',
+					'dotenv': 'python-dotenv',
+					'requests': 'requests'
+				};
+				const pipPackage = pkgMap[missingModule] || missingModule;
 				res.setHeader('Content-Type', 'application/json; charset=utf-8');
 				return res.status(500).json({
-					error: 'PYTHON_SCRIPT_ERROR',
-					message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
-					details: errorOutput,
+					error: 'PYTHON_DEPENDENCY_MISSING',
+					missing_module: missingModule,
+					pip_package: pipPackage,
+					requirements_path: '/python/requirements.txt',
+					message: `Falta el módulo de Python "${missingModule}". Instala dependencias con: pip install -r python/requirements.txt`
 				});
 			}
+			res.setHeader('Content-Type', 'application/json; charset=utf-8');
+			return res.status(500).json({
+				error: 'PYTHON_SCRIPT_ERROR',
+				message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor',
+				details: errorOutput,
+			});
+		}
 
-			// Ensure we actually send the result in success or partial-success cases
-			sendCleanResult(result);
+		// Ensure we actually send the result in success or partial-success cases
+		sendCleanResult(result);
 
-			if (
-				errorOutput.includes('querySrv ETIMEOUT') ||
-				errorOutput.includes('grpc_wait_for_shutdown_with_timeout') ||
-				result.includes('ETIMEOUT') ||
-				result.includes('timeout')
-			) {
-				console.warn('Database timeout detected (ignored because script succeeded)');
-			}
-		});
+		if (
+			errorOutput.includes('querySrv ETIMEOUT') ||
+			errorOutput.includes('grpc_wait_for_shutdown_with_timeout') ||
+			result.includes('ETIMEOUT') ||
+			result.includes('timeout')
+		) {
+			console.warn('Database timeout detected (ignored because script succeeded)');
+		}
 	} catch (error) {
 		console.error('Error executing Python script:', error);
 		res.setHeader('Content-Type', 'application/json; charset=utf-8');

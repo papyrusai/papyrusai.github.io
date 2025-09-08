@@ -296,7 +296,7 @@
 
         .etiquetas-list {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
             gap: 8px;
             margin-bottom: 16px;
         }
@@ -320,6 +320,51 @@
             background: var(--primary-color);
             color: white;
             border-color: var(--primary-color);
+        }
+        /* Modern radio list for agentes */
+        .etiqueta-radio-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #ffffff;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .etiqueta-radio-item:hover {
+            background: #f9fafb;
+            border-color: #d6d6d6;
+        }
+        .radio-control {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #c7c7c7;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s ease, background 0.2s ease;
+            flex-shrink: 0;
+        }
+        .radio-control .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: transparent;
+            transition: background 0.2s ease;
+        }
+        .etiqueta-radio-item.selected .radio-control {
+            border-color: var(--primary-color);
+            background: #eafff4;
+        }
+        .etiqueta-radio-item.selected .radio-control .dot {
+            background: var(--primary-color);
+        }
+        .etiqueta-radio-label {
+            font-size: 14px;
+            color: var(--text-color);
         }
 
         .start-analysis-btn {
@@ -622,11 +667,11 @@
     
     <!-- Dropdown para selección de agentes -->
     <div id="analysisDropdown" class="analysis-dropdown">
-        <div class="dropdown-title">Selecciona agentes</div>
+        <div class="dropdown-title">Selecciona un agente</div>
         <div id="etiquetasList" class="etiquetas-list">
             <!-- Las etiquetas se llenarán dinámicamente -->
         </div>
-        <button id="startAnalysisBtn" class="start-analysis-btn">Empezar análisis</button>
+        <button id="startAnalysisBtn" class="start-analysis-btn" disabled>Empezar análisis</button>
     </div>
 </div>
 
@@ -1012,27 +1057,39 @@
 			analysisDropdown.style.left = `${leftOffset}px`;
 			const etiquetasData = window.getEtiquetasData ? window.getEtiquetasData() : {};
 			etiquetasList.innerHTML = '';
-			if (etiquetasData && Object.keys(etiquetasData).length > 0) {
-				Object.keys(etiquetasData).forEach(etiqueta => {
-					const btn = document.createElement('button');
-					btn.className = 'etiqueta-btn';
-					btn.textContent = etiqueta;
-					btn.addEventListener('click', () => {
-						const isAlreadySelected = btn.classList.contains('selected');
-						etiquetasList.querySelectorAll('.etiqueta-btn').forEach(b => b.classList.remove('selected'));
-						const startBtn = document.getElementById('startAnalysisBtn');
-						const analysisTypeText = { 'summary': 'resumen', 'checklist': 'cuadro de obligaciones', 'risks': 'riesgos y oportunidades' };
-						if (isAlreadySelected) {
-							if (window.setSelectedEtiqueta) { window.setSelectedEtiqueta(null, null); }
-							if (startBtn) { startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} genérico`; }
-						} else {
-							btn.classList.add('selected');
-							if (window.setSelectedEtiqueta) { window.setSelectedEtiqueta(etiqueta, etiquetasData[etiqueta]); }
-							if (startBtn) { startBtn.textContent = `Generar ${analysisTypeText[currentAnalysisType] || 'análisis'} personalizado`; }
-						}
+			const keys = Object.keys(etiquetasData || {});
+			if (keys.length === 1) {
+				// Autoselección: si solo hay un agente, lo seleccionamos y disparamos el análisis sin dropdown
+				const only = keys[0];
+				if (window.setSelectedEtiqueta) { window.setSelectedEtiqueta(only, etiquetasData[only]); }
+				analysisDropdown.style.display = 'none';
+				performAnalysis(analysisType, buttonElement);
+				return;
+			}
+			if (keys.length > 1) {
+				// Render como lista de radios (solo puede haber uno seleccionado)
+				keys.forEach(etiqueta => {
+					const item = document.createElement('div');
+					item.className = 'etiqueta-radio-item';
+					const radio = document.createElement('div');
+					radio.className = 'radio-control';
+					const dot = document.createElement('div');
+					dot.className = 'dot';
+					radio.appendChild(dot);
+					const label = document.createElement('div');
+					label.className = 'etiqueta-radio-label';
+					label.textContent = etiqueta;
+					item.appendChild(radio);
+					item.appendChild(label);
+					item.addEventListener('click', () => {
+						etiquetasList.querySelectorAll('.etiqueta-radio-item').forEach(el => el.classList.remove('selected'));
+						item.classList.add('selected');
+						if (window.setSelectedEtiqueta) { window.setSelectedEtiqueta(etiqueta, etiquetasData[etiqueta]); }
+						if (startAnalysisBtn) { startAnalysisBtn.disabled = false; }
 					});
-					etiquetasList.appendChild(btn);
+					etiquetasList.appendChild(item);
 				});
+				startAnalysisBtn.disabled = true;
 			} else {
 				const noEtiquetasMsg = document.createElement('div');
 				noEtiquetasMsg.style.color = '#999';
@@ -1040,8 +1097,7 @@
 				noEtiquetasMsg.textContent = 'No hay agentes disponibles para este documento';
 				etiquetasList.appendChild(noEtiquetasMsg);
 			}
-			const analysisTypeText = { 'summary': 'resumen', 'checklist': 'cuadro de obligaciones', 'risks': 'riesgos y oportunidades' };
-			startAnalysisBtn.textContent = `Generar ${analysisTypeText[analysisType] || 'análisis'} genérico`;
+			startAnalysisBtn.textContent = 'Empezar análisis';
 			analysisDropdown.style.display = 'block';
 		}
 
@@ -1220,9 +1276,28 @@
 					if (data.url_pdf) { detailsParts.push(`<a href="${data.url_pdf}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`); }
 					else if (data.url_html) { detailsParts.push(`<a href="${data.url_html}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`); }
 					extraDetailsDiv.innerHTML = detailsParts.filter(part => part !== null && part !== undefined && part !== '').join(' | ');
-					const etiquetasData = data.user_etiquetas_personalizadas;
 					const perfilRegulatorioUser = data.perfil_regulatorio || '';
 					const definicionesMap = data.user_etiquetas_definiciones || {};
+					const isEnterprise = !!data.user_is_enterprise;
+					const seleccionadas = Array.isArray(data.user_etiquetas_seleccionadas) ? data.user_etiquetas_seleccionadas : [];
+					let etiquetasData = data.user_etiquetas_personalizadas || {};
+					// Normalizar: si viene como array (legacy), convertir a objeto con definiciones
+					if (Array.isArray(etiquetasData)) {
+						const obj = {};
+						etiquetasData.forEach((nombre) => { obj[nombre] = definicionesMap[nombre] || ''; });
+						etiquetasData = obj;
+					}
+					// A partir de backend, etiquetasData ya viene filtrado a etiquetas que hacen match con el documento.
+					// Si quieres reforzar selección local (opcional): intersectar con seleccionadas cuando existan
+					if (isEnterprise && seleccionadas.length > 0) {
+						const filtered = {};
+						seleccionadas.forEach((nombre) => {
+							if (Object.prototype.hasOwnProperty.call(etiquetasData, nombre)) {
+								filtered[nombre] = etiquetasData[nombre];
+							}
+						});
+						etiquetasData = filtered;
+					}
 					window.getPerfilRegulatorio = () => perfilRegulatorioUser;
 					window.getDefinicionEtiqueta = (et) => definicionesMap[et] || '';
 					let selectedEtiquetaName = null;

@@ -63,7 +63,7 @@ const expanded = expandCollectionsWithTest(inputCollections)
 
 ## Construcción de la query de etiquetas (multi-ID)
 
-- Se usa `buildEtiquetasQueryForIds(selectedEtiquetas, targetUserIds)` que soporta ambas estructuras (objeto/array) y múltiples IDs.
+- Se usa `buildEtiquetasQueryForIds(selectedEtiquetas, userIds)` que soporta ambas estructuras (objeto/array) y múltiples IDs.
 ```1511:1529:services/enterprise.service.js
 function buildEtiquetasQueryForIds(selectedEtiquetas, userIds) {
     if (!selectedEtiquetas || selectedEtiquetas.length === 0 || !Array.isArray(userIds) || userIds.length === 0) {
@@ -86,6 +86,22 @@ function buildEtiquetasQueryForIds(selectedEtiquetas, userIds) {
     return { $or: orBlocks };
 }
 ```
+
+---
+
+## Exclusión de documentos eliminados (Feedback)
+
+- Cada eliminación se guarda como un documento en la colección `Feedback` con:
+  - `content_evaluated: 'doc_eliminado'`
+  - `created_at`, `updated_at`, `fecha` (DD-MM-YYYY)
+  - `user_id`, `user_email` (quién registra el evento)
+  - `deleted_from` (ID del usuario/empresa para quien se elimina el documento)
+  - `coleccion`, `doc_id`
+  - `reason_delete`, `etiquetas_personalizadas_match`
+- En `/profile` y `/data` se consulta `Feedback` para construir un set de claves `${coleccion}|${doc_id}` a excluir:
+  - Alcance individual: `[ user._id ]`
+  - Alcance empresa: incluye `estructura_empresa_id` (y legacy si corresponde)
+- La exclusión por Feedback convive con la histórica `users.documentos_eliminados` (si existe), aplicándose ambas.
 
 ---
 
@@ -112,23 +128,13 @@ function buildEtiquetasQueryForIds(selectedEtiquetas, userIds) {
 3. Construir `etiquetasQuery` con `buildEtiquetasQueryForIds`.
 4. Query final:
    - `$and: [ ...dateFilter, (rangos si hay), (etiquetasQuery si hay) ]`.
+   - `dateFilter` soporta campos desnormalizados `anio/mes/dia` y, si faltan, usa fechas Date: `fecha_publicacion`, `fecha` o `datetime_insert`.
 5. Por cada colección:
    - Verificar existencia.
    - `find(query).project(...).sort({ anio:-1, mes:-1, dia:-1 }).limit(500)`.
    - Anotar `collectionName` en cada doc.
-6. Unir y ordenar resultados; excluir “documentos eliminados” por el usuario (`users.documentos_eliminados`).
-7. Paginación SSR (por defecto 25).
-8. Render SSR:
-   - Sección “Etiquetas personalizadas”: renderiza lista de etiquetas del primer `targetUserId` con datos.
-   - Sección “Impacto en agentes”: usa el objeto por etiqueta para mostrar `explicacion` y `nivel_impacto`, con botones de feedback.
-
-### Salida
-- HTML renderizado con:
-  - Lista de documentos de la página.
-  - Etiquetas/impacto por documento.
-  - Paginación.
-  - Gráfico mensual (conteo de documentos por mes sobre el set completo).
-- Si no hay resultados, mensaje de tranquilidad y ocultación de labels de analytics.
+6. Unir y ordenar resultados; excluir “documentos eliminados” por `users.documentos_eliminados` y por registros en `Feedback` (`doc_eliminado` con `deleted_from` en el alcance del usuario).
+7. Paginación SSR y renderizado con impacto/agentes.
 
 ---
 
@@ -136,85 +142,47 @@ function buildEtiquetasQueryForIds(selectedEtiquetas, userIds) {
 
 ### Entrada
 - Query:
-  - `collections`: string separada por `||` (override de colecciones).
-  - `rango`: string separada por `||`.
+  - `collections`: `||`-joined
+  - `rango`: `||`-joined
   - `desde` / `hasta`: `YYYY-MM-DD`.
-  - `etiquetas`: string separada por `||` (override).
+  - `etiquetas`: `||`-joined
   - `page` / `pageSize`.
 - Usuario autenticado.
 
 ### Proceso
-1. Colecciones finales:
-   - Igual que en `/profile` (cobertura → mayúsculas) y excluir `_test`.
-2. `selectedEtiquetas`:
-   - Si viene por query → usar.
-   - Si no:
-     - Empresa: `getEtiquetasSeleccionadasAdapter` y si está vacío, todas las disponibles.
-     - Individual: todas las disponibles.
-3. Derivar `targetUserIds`:
-   - Individual: `[ user._id ]`.
-   - Empresa: `[ estructura_empresa_id, ...legacy_user_ids ]` (resuelto desde BD si hace falta).
-4. `etiquetasQuery = buildEtiquetasQueryForIds(selectedEtiquetas, targetUserIds)`.
-5. Construir `query`:
-   - Rango de fechas con `desde`/`hasta` usando comparaciones `anio/mes/dia`.
-   - `rango_titulo` si llega `rango`.
-   - Añadir `etiquetasQuery` si no está vacío.
-6. Por cada colección:
-   - Verificar existencia.
-   - `find(query).project(...).sort(...).limit(300)`.
-   - Anotar `collectionName`.
+1. Colecciones finales: como en `/profile`.
+2. Selección de etiquetas: como en `/profile`.
+3. `targetUserIds`: individual vs empresa (incluyendo `estructura_empresa_id` y legacy si aplica).
+4. `etiquetasQuery = buildEtiquetasQueryForIds(...)`.
+5. Filtros de fecha/rango.
+6. `find().project().sort().limit()` por colección existente.
 7. Ordenar por fecha.
-8. Excluir “documentos eliminados” del usuario.
-9. Post-filtro por etiquetas:
-   - Para cada doc, buscar match bajo cualquiera de los `targetUserIds`.
-   - Soportar estructura array u objeto.
-   - Guardar `doc.matched_etiquetas` si aplica.
-10. Paginación sobre los documentos filtrados (por defecto 25).
-11. Analítica:
-   - Agregación diaria por colección (sin límite) para construir `dailyLabels`/`dailyCounts`.
-   - Derivar serie mensual (`monthsForChart`/`countsForChart`).
-   - Calcular `impactCounts` (`alto/medio/bajo`) en base a `nivel_impacto` de las etiquetas (si no hay, se considera `bajo`).
-   - Calcular `totalAlerts` y `avgAlertsPerDay`.
-
-### Salida
-- JSON con:
-  - `documentsHtml`: HTML de los documentos paginados con `matched_etiquetas` destacados y sección “Impacto en agentes”.
-  - `hideAnalyticsLabels`: boolean para UI.
-  - Series de gráfico: `monthsForChart`, `countsForChart`, `dailyLabels`, `dailyCounts`.
-  - `impactCounts`, `totalAlerts`, `avgAlertsPerDay`.
-  - `pagination`: `{ page, pageSize, total, totalPages }`.
-- Si no hay `selectedEtiquetas`, respuesta corta pidiendo seleccionar al menos un agente.
+8. Excluir “documentos eliminados” (Feedback + users.documentos_eliminados).
+9. Post-filtrado por etiquetas y derivación de métricas.
 
 ---
 
 ## Guía de replicación (paso a paso)
 
-1. Determinar colecciones base (cobertura del usuario) y normalizarlas a mayúsculas.
-2. Expandir si procede y EXCLUIR `_test`:
-   - `expanded = expandCollectionsWithTest(base).filter(n => !String(n).toLowerCase().endsWith('_test'))`.
-3. Resolver `targetUserIds`:
-   - Individual: `[ user._id ]`.
-   - Empresa: `estructura_empresa_id` y `legacy_user_ids` (cuando existan).
-4. Seleccionar etiquetas:
-   - Si hay en la petición → usar.
-   - Si no:
-     - Empresa: seleccionadas; si vacío, todas las definidas.
-     - Individual: todas las definidas.
-5. Construir `etiquetasQuery` con `buildEtiquetasQueryForIds`.
-6. Construir filtros de fecha y filtros de `rango_titulo` (si aplica).
-7. Combinar en `query` (`$and`).
-8. Para cada colección existente:
-   - Ejecutar `find(query).project(...).sort(...).limit(N)`.
-   - Anotar `collectionName`.
-9. Unir resultados, ordenar por fecha y excluir “documentos eliminados”.
-10. Si necesitas destacar etiquetas coincidentes o estadísticos:
-   - Hacer post-filtro por etiquetas a nivel de documento (array/objeto).
-   - Construir métricas (diarias/mensuales) y agregados de impacto.
+1. Determinar colecciones base y excluir `_test`.
+2. Resolver `targetUserIds` (individual/empresa + legacy).
+3. Seleccionar etiquetas.
+4. Construir `etiquetasQuery`.
+5. Filtrar por fecha/rango.
+6. Consultar por colección existente.
+7. Ordenar por fecha.
+8. Excluir por Feedback (`doc_eliminado`) y por `users.documentos_eliminados`.
+9. Post-filtrado por etiquetas y métricas.
 
 ---
 
 ## Consideraciones adicionales
 
+- Comparación de etiquetas en minúsculas para robustez.
+- Límite por colección: `/profile` 500, `/data` 300.
+- Paginación máxima 100.
+- Verificación de colección existente previa.
+- Exclusión `_test` aplicada en múltiples rutas.
 - La comparación de etiquetas para “matched” se hace en minúsculas para robustez; respeta mayúsculas en render.
 - Límites: `/profile` usa límite por colección de 500; `/data` 300 (tunable).
 - Paginación máxima 100 por página.
@@ -226,6 +194,18 @@ function buildEtiquetasQueryForIds(selectedEtiquetas, userIds) {
   - No usa `etiquetas_personalizadas`; su listado de colecciones para filtros excluye `_test` y las consultas del endpoint diario también excluyen `_test`.
 - `normativa` (detalle/análisis):
   - Se rechaza explícitamente cualquier `collectionName` que termine en `_test` en `/api/norma-details` y en `/api/analyze-norma` (código 400), para evitar acceso frontal a colecciones de test aun si se manipulan los parámetros.
+  
+### Filtros temporales (detalle técnico)
+- Normalización UTC de rangos: el inicio se fija a 00:00:00.000Z y el fin a 23:59:59.999Z.
+- Campos admitidos por prioridad para filtrar y completar fecha efectiva:
+  1. `anio/mes/dia` (cuando existen)
+  2. `fecha_publicacion`
+  3. `fecha`
+  4. `datetime_insert`
+- Cuando el documento carece de `anio/mes/dia`, el backend calcula y adjunta `anio`, `mes`, `dia` a partir de la fecha efectiva para garantizar:
+  - Ordenación consistente
+  - Visualización dd/mm/yyyy sin “-”
+  - Agregaciones diarias correctas
 
 ---
 

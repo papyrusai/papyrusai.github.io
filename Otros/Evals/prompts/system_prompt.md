@@ -31,11 +31,12 @@ Razona y ejecuta paso por paso las siguientes instrucciones:
 1. **Impacto directo**: Etiqueta solo si el articulado impone deberes, prohibiciones, procedimientos, oportunidades o cambios de criterio que alteren o impacten la materia descrita en la etiqueta.
 2. **Taxatividad**: No uses analogías ni interpretaciones extensivas.
 3. **Consistencia**: Debes razonar y etiquetar de manera consistente, de tal manera que si tuvieras que etiquetar un texto 100 veces, las 100 tendrían el mismo resultado
-4. **Prevalencia de las exclusiones**: Si el documento cumple un criterio de inclusión pero también uno de exclusión, prevalece la exclusión. Es muy importante que apliques este criterio siempre.
-5. **Particulares concretos**: Si el texto afecta únicamente a particulares concretos no mencionados en la definición de la etiqueta, no menciones la etiqueta en el resultado, salvo que siente un precedente doctrinal, judicial o sancionador.
-6. **Aislamiento**: Valora únicamente cada etiqueta aislada, sin tener en cuenta el resto de etiquetas.
-7. **Correcciones de errores**: Por norma general no deben asignarse etiquetas a los textos que sean correcciones de errores, salvo que la corrección implique efectos jurídicos relevantes para la etiqueta.
-8. **Convenios y acuerdos**: Exclusión general. Cuando el <DOCUMENTO> sea un convenio o acuerdo particular no debes etiquetarlo,  aunque genere obligaciones, salvo que:
+4. **Prevalencia de las exclusiones**: Si el documento cumple un criterio de inclusión en <Contenido>  pero también uno de exclusión en <DocumentosNoIncluidos>, prevalece la exclusión. Es muy importante que apliques este criterio siempre. 
+5. **Ambitio de aplicación**: Si la <Etiqueta> define un <Ambito_de_aplicacion> concreto, para etiquetar el  <DOCUMENTO>, sus efectos deben de estar dentro del <Ambito_de_aplicacion> definidio y cumplir los criterios de inclusión de <Contenido>.Es muy importante que apliques este criterio siempre que la <Etiqueta> tenfa <Ambito_de_aplicacion> definido
+6. **Particulares concretos**: Si el texto afecta únicamente a particulares concretos no mencionados en la definición de la etiqueta, no menciones la etiqueta en el resultado, salvo que siente un precedente doctrinal, judicial o sancionador.
+7. **Aislamiento**: Valora únicamente cada etiqueta aislada, sin tener en cuenta el resto de etiquetas.
+8. **Correcciones de errores**: Por norma general no deben asignarse etiquetas a los textos que sean correcciones de errores, salvo que la corrección implique efectos jurídicos relevantes para la etiqueta.
+9. **Convenios y acuerdos**: Exclusión general. Cuando el <DOCUMENTO> sea un convenio o acuerdo particular no debes etiquetarlo,  aunque genere obligaciones, salvo que:
    a) **Excepción de Contenido expreso en la etiqueta**: El tipo de convenio esté expresamente incluido en el <Contenido> de la <Etiqueta>
    - **Regla de precaución**: Ante duda razonable sobre si se trata de un convenio etiquetable o no, no se etiqueta (criterio conservador).
 </CRITERIOS_DE_CLASIFICACIÓN>
@@ -75,4 +76,3 @@ Formato (cuando el <DOCUMENTO> está escrito en idioma distinto de español, cat
 {}
 ```
 </EJEMPLOS_FORMATO>
-"

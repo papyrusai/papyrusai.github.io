@@ -474,3 +474,41 @@ htmlBody = buildNewsletterHTMLNoMatches(
 - ✅ Detección automática de versión extra
 - ✅ Observabilidad completa
 - ✅ Compatibilidad enterprise (cobertura y etiquetas de empresa, y selección por usuario)
+
+## 11. Exclusión de documentos eliminados (Feedback)
+
+- Cada eliminación queda registrada en la colección `Feedback` con los campos:
+  - `content_evaluated: 'doc_eliminado'`
+  - `deleted_from`: ID objetivo (usuario o empresa) para quien se elimina el documento
+  - `coleccion`, `doc_id`, `reason_delete`, `etiquetas_personalizadas_match`, `created_at`, `fecha`
+- El newsletter construye un conjunto `deletedKeySet` antes de agrupar y enviar emails. Se excluyen de los matches aquellos documentos cuya clave `${coleccion}|${doc_id}` aparezca en ese conjunto.
+- Alcance de consulta aplicado en el newsletter:
+  - Si el usuario pertenece a empresa → incluir el `empresaId` (estructura) en el alcance.
+  - Siempre incluir además el propio `userId` para capturar eliminaciones hechas al nivel del usuario.
+- Ejemplo (extracto de código):
+```javascript
+const deletionScope = Array.from(new Set([
+  String(targetUserIdStr || ''),
+  String(user?._id || '')
+].filter(Boolean)));
+const delRows = await feedbackCol.find({
+  content_evaluated: 'doc_eliminado',
+  deleted_from: { $in: deletionScope }
+}, { projection: { coleccion: 1, collection_name: 1, doc_id: 1 } }).toArray();
+for (const r of delRows) {
+  const coll = r.coleccion || r.collection_name;
+  const did = r.doc_id != null ? String(r.doc_id) : '';
+  if (coll && did) deletedKeySet.add(`${coll}|${did}`);
+}
+```
+
+## 12. Reporte: Sección 2.2 “Documentos con match eliminados no enviados”
+
+- En el email de reporte diario (no el newsletter al usuario), se ha añadido la sección “2.2. Documentos con match eliminados no enviados”.
+- Contenido:
+  - Lista, por usuario y por etiqueta personalizada, de los documentos que tenían match pero fueron excluidos por estar marcados como eliminados en `Feedback`.
+  - Tabla con columnas: `Email` | `Etiqueta Personalizada` | `Docs` (links con formato `${coleccion}-${short_name}`).
+- Fuente de datos:
+  - `userStats.withDeleted`, construido a partir de `deletedMatchingDocs`, que son los matches filtrados por `deletedKeySet`.
+- Impacto en métricas:
+  - Los documentos excluidos no se contabilizan como matches del newsletter al usuario, pero sí quedan trazados en el reporte para auditoría interna.

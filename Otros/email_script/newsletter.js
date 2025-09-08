@@ -1795,7 +1795,44 @@ async function sendReportEmail(db, userStats) {
         </table>
         <p><strong>Total:</strong> ${totalEmailsWithMatches} emails, ${totalEtiquetasWithMatches} etiquetas personalizadas con match, ${totalDemoEtiquetas} etiquetas demo</p>
         
-        <h3>2.2. Usuarios sin match</h3>
+        <h3>2.2. Documentos con match eliminados no enviados</h3>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Etiqueta Personalizada</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Docs</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              const rows = [];
+              for (const entry of (userStats.withDeleted || [])) {
+                // Group by etiqueta
+                const etiqMap = new Map();
+                for (const d of entry.detailedDeletedMatches) {
+                  for (const et of (d.matchedEtiquetas || [])) {
+                    if (!etiqMap.has(et)) etiqMap.set(et, []);
+                    etiqMap.get(et).push({ collection: d.collectionName, shortName: d.shortName, url: d.urlPdf });
+                  }
+                }
+                for (const [et, docs] of etiqMap.entries()) {
+                  const docsHTML = docs.map(doc => `• <a href="${doc.url||'#'}" target="_blank" style="color: #0066cc; text-decoration: none;">${doc.collection}-${doc.shortName}</a>`).join('<br>');
+                  rows.push(`
+                    <tr>
+                      <td style=\"border: 1px solid #ddd; padding: 8px;\">${entry.email}</td>
+                      <td style=\"border: 1px solid #ddd; padding: 8px;\">${et}</td>
+                      <td style=\"border: 1px solid #ddd; padding: 8px; font-size: 12px; line-height: 1.6;\">${docsHTML}</td>
+                    </tr>
+                  `);
+                }
+              }
+              return rows.join('');
+            })()}
+          </tbody>
+        </table>
+        
+        <h3>2.3. Usuarios sin match</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
           <thead>
             <tr style="background-color: #f2f2f2;">
@@ -1810,7 +1847,7 @@ async function sendReportEmail(db, userStats) {
         </table>
         <p><strong>Total:</strong> ${totalEmailsWithoutMatches} usuarios, ${totalEtiquetasWithoutMatches} etiquetas, ${totalDemoEtiquetasWithoutMatches} etiquetas demo</p>
         
-        <h3>2.3. Detalle usuarios con match agentes</h3>
+        <h3>2.4. Detalle usuarios con match agentes</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
           <thead>
             <tr style="background-color: #f2f2f2;">
@@ -2606,7 +2643,8 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
     // Initialize user statistics for report
     const userStats = {
       withMatches: [],
-      withoutMatches: []
+      withoutMatches: [],
+      withDeleted: []
     };
 
     for (const user of filteredUsers) {
@@ -2667,7 +2705,27 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
        console.log(`👤 User ${user.email}: Processing ${userMatchingDocs.length} documents from ${[...new Set(userMatchingDocs.map(d => d.collectionName))].join(', ')}`);
        console.log(`[newsletter] Enterprise context: ${isEnterpriseContext ? 'YES' : 'NO'} | userRangos: ${(user.rangos||[]).join(', ')} | enterpriseRangos: ${enterpriseRangosContext.join(', ')} | selectedEnterpriseEtiquetas: ${(selectedEnterpriseEtiquetas||[]).join(', ')}`);
  
-       // 3) Filtrar documentos según etiquetas personalizadas del usuario
+       // 3) Preparar conjunto de documentos eliminados (Feedback) para este usuario/empresa
+       let deletedKeySet = new Set();
+       try {
+         const feedbackCol = db.collection('Feedback');
+         // Alcance: empresaId si existe + propio userId como fallback
+         const deletionScope = Array.from(new Set([
+           String(targetUserIdStr || ''),
+           String(user?._id || '')
+         ].filter(Boolean)));
+         const delRows = await feedbackCol.find(
+           { content_evaluated: 'doc_eliminado', deleted_from: { $in: deletionScope } },
+           { projection: { coleccion: 1, collection_name: 1, doc_id: 1 } }
+         ).toArray();
+         for (const r of delRows) {
+           const coll = r.coleccion || r.collection_name;
+           const did = r.doc_id != null ? String(r.doc_id) : '';
+           if (coll && did) deletedKeySet.add(`${coll}|${did}`);
+         }
+       } catch(_) {}
+
+       // 4) Filtrar documentos según etiquetas personalizadas del usuario
        // Para individuales: utilizar sus propias etiquetas; para empresa: usar etiquetas del documento bajo empresaId
        const userEtiquetasPersonalizadas = user.etiquetas_personalizadas || {};
        const userEtiquetasKeys = Object.keys(userEtiquetasPersonalizadas);
@@ -2677,6 +2735,7 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
        
        // Filtrar documentos que coincidan con etiquetas personalizadas
        const filteredMatchingDocs = [];
+       const deletedMatchingDocs = [];
        
        // Track matches for statistics
        const userMatchStats = new Map(); // etiqueta -> { collections: Set, totalMatches: number }
@@ -2802,6 +2861,18 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
          
          // Solo incluir documentos que coincidan con etiquetas personalizadas
          if (hasEtiquetasMatch) {
+           const delKey = `${collectionName}|${String(doc._id)}`;
+           if (deletedKeySet.has(delKey)) {
+             deletedMatchingDocs.push({
+               collectionName: collectionName,
+               doc: {
+                 ...doc,
+                 matched_etiquetas_personalizadas: matchedEtiquetas,
+                 matched_etiquetas_descriptions: matchedEtiquetasDescriptions
+               }
+             });
+             continue;
+           }
            // Crear versión mejorada del documento con valores coincidentes
            filteredMatchingDocs.push({
              collectionName: collectionName,
@@ -2816,6 +2887,7 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
        
        // Reemplazar la colección original con la filtrada
        const userMatchingDocsFiltered = filteredMatchingDocs;
+       const userDeletedDocsFiltered = deletedMatchingDocs;
        
        // 4) Build etiqueta & collection & rango grouping
        const etiquetaGroups = {};
@@ -3006,6 +3078,18 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
              matchedEtiquetas: docObj.doc.matched_etiquetas_personalizadas || []
            }))
          });
+         // Track deleted matches (excluded from emails)
+         if (typeof userDeletedDocsFiltered !== 'undefined' && Array.isArray(userDeletedDocsFiltered) && userDeletedDocsFiltered.length > 0) {
+           userStats.withDeleted.push({
+             email: user.email,
+             detailedDeletedMatches: userDeletedDocsFiltered.map(docObj => ({
+               collectionName: docObj.collectionName,
+               shortName: docObj.doc.short_name,
+               urlPdf: docObj.doc.url_pdf,
+               matchedEtiquetas: docObj.doc.matched_etiquetas_personalizadas || []
+             }))
+           });
+         }
        }
 
        // 6) Send email

@@ -1,1 +1,34 @@
- 
+{
+  "mcpServers": {
+    "Bright Data": {
+      "command": "npx",
+      "args": ["@brightdata/mcp"],
+      "env": {
+        "API_TOKEN": "3e7c8c28-f589-44fb-a797-8d64287ef97b",
+        "BROWSER_ZONE": "datacenter_proxy1_spain"
+      }
+    },
+    "spinach": {
+      "command": "npx", 
+      "args": ["-y", "@spinach.ai/spinach-mcp-stdio-server"], 
+      "env": { 
+        "API_KEY": "eyJpZGVudGlmaWVyIjoiNjc4NzNmN2UtYmYwZi00MjI3LTgwMDItZGNmNTU2NmQ3ZDJhIiwiYXBpS2V5IjoiNGJkYWI4NjgtNGU5Ny00OTExLWI3NTUtYzBmZTc0YjY2ZTBlIn0" 
+      } 
+    },
+    "MongoDB": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongo-mcp",
+        "mongodb+srv://santi:Jensen1620@papyrus.n1c6zst.mongodb.net/papyrus"
+      ]
+    },
+    "browsermcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@browsermcp/mcp@latest"
+      ]
+    }
+  }
+} 

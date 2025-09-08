@@ -160,6 +160,15 @@ Keywords: Acumuladores, Aparatos eléctricos, Aparatos electrónicos, Convivenci
 
 - IMPORTANTE. `Paquetizar todo en keywords a incluir, clausulas de inclusion (obligaciones/prohibiciones, sanciones/jrisprudencia...), docs a excluir... + personalizado (para frase personaliadas incluidas por usuario, se meten como tag XML extra. Explicar estructura agente en)
 
+REFLEXIONES:
+1. Subvenciones identificadas pero no aplicables a la empresa
+2. Mayor consistencia en output explicacion impacto (mas corta y estructurada) . Que siempre mete explicacion de pq impacto es alyo/medio/bajo o nunca. Lo mismo con la clausula por la que razona que es relevante
+3. ⁠Como hacer que solo salgan novedades relevantes para X empresa, sobretodo de ámbitos muy horizontales (ej rrhh y financiero weber), sin meter ruido
+4. ⁠Como definir cláusula que funcione siempre, para dejar fuera resoluciones, órdenes,etc que solo afecten a determinados particulares
+5. ⁠Crear cláusula sobre tramitación normativa/participación pública. Quieres que te salten notificaciones de textos en este proceso relacionados con (ej: rrhh y laboral). Weber a lo mejor si, Maz no se. Que puedan elegir
+6. ⁠Como hacer para que de manera sistemática (si usuario quiere) se metan textos relevantes a nivel nacional que pueden no tener un impacto directo en la empresa actualmente pero son relevantes (ej: Consejera de Valencia se opone públicamente a condoncaicon de deuda a ccaa, fuente Comunidad_valenciana_noticias)
+7. ⁠que hacer con temas relevantes pero más a nivel público (emisiones de bonos del estado para agente de área financiera de weber). Ruido? Preguntar a usuario?
+
 -  23. Clausulados estándar reutilizables (soft-law, sanciones/jurisprudencia y exclusión de particulares)
      
     Importante: Iniciar <Contenido> siempre con: "Teniendo en cuenta el <Objetivo> de la etiqueta,se debe etiquetar el <DOCUMENTO> si cumple al menos uno de los siguientes supuestos:". Iniciar <DocumentosnoIncluidos> siempre con: "Aunque cumpla los criterios de inclusión, EL <DOCUMENTO> no debe ser etiquetado por esta etiqueta si cumple alguno de los siguientes supuestos:" A cotnuacion de ambas frases completar con las clausulas correspondientes:

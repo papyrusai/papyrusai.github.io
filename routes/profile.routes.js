@@ -207,7 +207,7 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 		}
 		console.log(`[profile] Query MongoDB final limpia: ${JSON.stringify(query, null, 2)}`);
 		
-		const projection = { short_name: 1, divisiones: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, ramas_juridicas: 1, rango_titulo: 1, _id: 1, etiquetas_personalizadas: 1 };
+		const projection = { short_name: 1, divisiones: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, ramas_juridicas: 1, rango_titulo: 1, _id: 1, etiquetas_personalizadas: 1, fecha_publicacion: 1, fecha: 1, datetime_insert: 1 };
 		let allDocuments = [];
 		const expandedBoletines = expandCollectionsWithTest(selectedBoletines).filter(n => !String(n).toLowerCase().endsWith('_test'));
 		
@@ -268,7 +268,31 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 			return d ? new Date(d) : new Date(0);
 		};
 		allDocuments.sort((a, b) => getEffectiveDateSsr(b) - getEffectiveDateSsr(a));
-		allDocuments = allDocuments.filter(doc => !(documentosEliminados && documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())));
+		// Excluir documentos eliminados por Feedback para este usuario (y su empresa si aplica)
+		let feedbackDeletedSetSsr = new Set();
+		try {
+			const feedbackCol = database.collection('Feedback');
+			const deletionScope = (() => {
+				const ids = new Set([ String(user._id) ]);
+				if (req.user && req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) ids.add(String(req.user.estructura_empresa_id));
+				return Array.from(ids);
+			})();
+			const delRows = await feedbackCol.find(
+				{ content_evaluated: 'doc_eliminado', deleted_from: { $in: deletionScope } },
+				{ projection: { coleccion: 1, collection_name: 1, doc_id: 1 } }
+			).toArray();
+			for (const r of delRows) {
+				const coll = r.coleccion || r.collection_name;
+				const did = r.doc_id != null ? String(r.doc_id) : '';
+				if (coll && did) feedbackDeletedSetSsr.add(`${coll}|${did}`);
+			}
+		} catch(_){ /* ignore feedback deletions errors */ }
+		allDocuments = allDocuments.filter(doc => {
+			const key = `${doc.collectionName}|${String(doc._id)}`;
+			const isFbDel = feedbackDeletedSetSsr.has(key);
+			const isUserDel = (documentosEliminados && documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString()));
+			return !isFbDel && !isUserDel;
+		});
 		
 		// PAGINACIÓN SSR: 25 docs por página, manteniendo estadísticas sobre todo el conjunto
 		const totalDocsSsr = allDocuments.length;
@@ -636,7 +660,7 @@ router.get('/data', async (req, res) => {
 		if (query.$and.length === 0) {
 			delete query.$and;
 		}
-		const projection = { short_name: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, rango_titulo: 1, etiquetas_personalizadas: 1, num_paginas: 1, _id: 1 };
+		const projection = { short_name: 1, resumen: 1, dia: 1, mes: 1, anio: 1, url_pdf: 1, url_html: 1, rango_titulo: 1, etiquetas_personalizadas: 1, num_paginas: 1, _id: 1, fecha_publicacion: 1, fecha: 1, datetime_insert: 1 };
 		let allDocuments = [];
 		const expandedCollections = expandCollectionsWithTest(collections).filter(n => !String(n).toLowerCase().endsWith('_test'));
 		
@@ -716,8 +740,29 @@ router.get('/data', async (req, res) => {
 		const dateFilter = buildDateFilter(startMain, endMain);
 		const queryWithoutEtiquetas = { $and: [ ...dateFilter ] };
 		const documentosEliminados = user.documentos_eliminados || [];
+		// Cargar eliminaciones desde Feedback
+		let feedbackDeletedSet = new Set();
+		try {
+			const feedbackCol = database.collection('Feedback');
+			const deletionScope = (() => {
+				const ids = new Set([ String(user._id) ]);
+				if (req.user && req.user.tipo_cuenta === 'empresa' && req.user.estructura_empresa_id) ids.add(String(req.user.estructura_empresa_id));
+				return Array.from(ids);
+			})();
+			const delRows = await feedbackCol.find(
+				{ content_evaluated: 'doc_eliminado', deleted_from: { $in: deletionScope } },
+				{ projection: { coleccion: 1, collection_name: 1, doc_id: 1 } }
+			).toArray();
+			for (const r of delRows) {
+				const coll = r.coleccion || r.collection_name;
+				const did = r.doc_id != null ? String(r.doc_id) : '';
+				if (coll && did) feedbackDeletedSet.add(`${coll}|${did}`);
+			}
+		} catch(_){ /* ignore */ }
 		const filteredDocuments = [];
 		for (const doc of allDocuments) {
+			const delKey = `${doc.collectionName}|${String(doc._id)}`;
+			if (feedbackDeletedSet.has(delKey)) continue;
 			if (documentosEliminados.some(d => d.coleccion === doc.collectionName && d.id === doc._id.toString())) continue;
 			const docRango = doc.rango_titulo || 'Indefinido';
 			let passesRangoFilter = true;
