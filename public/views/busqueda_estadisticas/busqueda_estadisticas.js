@@ -51,7 +51,7 @@
 
   // --- Beta gate (easy toggle to remove later) ---
   const BETA_GUARD_ENABLED = true; // Set to false to show to everyone
-  const BETA_ALLOWED_EMAILS = ['tomas@reversa.ai'];
+  const BETA_ALLOWED_EMAILS = ['tomas@reversa.ai', 'mike@pearsonhardman.global'];
 
   function getCookie(name){
     const m = document.cookie.split('; ').find(row => row.startsWith(name + '='));
