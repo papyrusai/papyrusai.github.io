@@ -73,10 +73,318 @@
             margin-right: 8px; 
             vertical-align: middle;
         }
+
+        /* Estilos para tabs del menú (mismo estilo que busqueda_estadisticas) */
+        .ambito-tabs { 
+            display:flex; 
+            align-items:center; 
+            gap:16px; 
+            margin: 8px 0 20px 0; 
+            border-bottom:1px solid #e9ecef; 
+            position: relative; 
+            z-index: 10; 
+        }
+        .ambito-tabs .tab-link { 
+            padding:10px 4px; 
+            color: var(--text-color); 
+            font-weight:600; 
+            cursor:pointer; 
+            position:relative;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .ambito-tabs .tab-link:hover {
+            color: #0b2431;
+        }
+        .ambito-tabs .tab-link.active { 
+            color:#0b2431; 
+        }
+        .ambito-tabs .tab-link.active::after { 
+            content:''; 
+            position:absolute; 
+            left:0; 
+            right:0; 
+            bottom:-1px; 
+            height:3px; 
+            background:#04db8d; 
+            border-radius:2px; 
+        }
+
+        /* Estilos para vistas */
+        .vista-section {
+            padding: 10px 0;
+        }
+
+        /* Estilos para página de iniciativas */
+        .page-header { 
+            margin-bottom: 20px; 
+        }
+        .page-title { 
+            margin: 0; 
+            font-size: 22px; 
+            color: var(--text-color); 
+            display: inline-block;
+        }
+        .page-subtitle { 
+            margin-top: 4px; 
+            color:#6c757d; 
+            font-size: 13px; 
+        }
+        .beta-badge {
+            background: #fff8e1; 
+            color:#8a6d3b; 
+            border:1px solid #ffe0a3; 
+            padding:4px 12px; 
+            border-radius:20px; 
+            font-size:11px; 
+            font-weight:600;
+            display: inline-block;
+        }
+
+        /* Controles de tabla */
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-controls {
+            flex: 1;
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+        }
+        .filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+        }
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #04db8d;
+            box-shadow: 0 0 0 3px rgba(4,219,141,.15);
+        }
+        .date-filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .date-filter-group .filter-label {
+            margin-bottom: 0;
+        }
+        .date-input {
+            padding: 7px 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: border-color 0.2s;
+            cursor: pointer;
+        }
+        .date-input:focus {
+            outline: none;
+            border-color: #04db8d;
+            box-shadow: 0 0 0 3px rgba(4,219,141,.15);
+        }
+        .date-separator {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .clear-dates-btn {
+            padding: 6px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .clear-dates-btn:hover {
+            background: #f8f9fa;
+            border-color: #04db8d;
+        }
+        .btn-export {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid var(--text-color);
+            color: var(--text-color);
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-export:hover {
+            background: var(--text-color);
+            color: white;
+        }
+
+        /* Tabla estilo Reversa */
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(11,36,49,.06);
+        }
+        .reversa-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .reversa-table thead {
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .reversa-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+        .reversa-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        .reversa-table th.sortable:hover {
+            background: #e9ecef;
+        }
+        .sort-icon {
+            margin-left: 5px;
+            opacity: 0.4;
+            font-size: 12px;
+        }
+        .reversa-table th.sorted-asc .sort-icon {
+            opacity: 1;
+            content: '↑';
+        }
+        .reversa-table th.sorted-desc .sort-icon {
+            opacity: 1;
+            content: '↓';
+        }
+        .reversa-table tbody tr {
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.15s;
+        }
+        .reversa-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        .reversa-table td {
+            padding: 12px;
+            color: #455862;
+            position: relative;
+        }
+        .titulo-cell {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: help;
+            position: relative;
+        }
+        .sector-bubble {
+            display: inline-block;
+            padding: 3px 10px;
+            background: rgba(69, 88, 98, 0.1);
+            color: #455862;
+            border-radius: 14px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .link-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            background: rgba(4, 219, 141, 0.1);
+            color: #04db8d;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 12px;
+            transition: background-color 0.2s;
+        }
+        .link-btn:hover {
+            background: rgba(4, 219, 141, 0.2);
+        }
+
+        /* Paginación */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 12px 0;
+        }
+        .pagination-info {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .pagination-btn {
+            padding: 6px 10px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .pagination-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #04db8d;
+        }
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .page-info {
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
-    <h2>Boletín Diario</h2>
+    <!-- Submenú Tabs -->
+    <div class="ambito-tabs">
+        <a id="tabBoletinDiario" class="tab-link active" data-tab="boletin-diario">Boletines Diarios</a>
+        <a id="tabIniciativas" class="tab-link" data-tab="iniciativas">Iniciativas Parlamentarias</a>
+    </div>
+
+    <!-- Vista Boletín Diario (existente) -->
+    <div id="vista-boletin-diario" class="vista-section">
+        <h2>Boletín Diario</h2>
     
     <!-- Newsletter Subscription Banner (hidden by default) -->
     <div id="newsletter-banner" style="display: none; background-color: #f9f9f9; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -133,6 +441,100 @@
         <p id="boletin-initial-message" style="display: none;">Selecciona los filtros y pulsa "Aplicar Filtros" o espera a la carga inicial.</p>
     </div>
 
+    </div>
+
+    <!-- Vista Iniciativas Parlamentarias (nueva) -->
+    <div id="vista-iniciativas" class="vista-section" style="display: none;">
+        <div class="page-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <h2 class="page-title">Iniciativas Parlamentarias</h2>
+                <span class="beta-badge">Versión Beta</span>
+            </div>
+            <div class="page-subtitle">Análisis de las iniciativas parlamentarias detectadas</div>
+        </div>
+
+        <!-- Controles de filtrado y exportación -->
+        <div class="table-controls">
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <line x1="4" y1="6" x2="20" y2="6"></line>
+                            <line x1="7" y1="12" x2="17" y2="12"></line>
+                            <line x1="10" y1="18" x2="14" y2="18"></line>
+                        </svg>
+                        Filtros
+                    </label>
+                    <input type="text" id="search-iniciativas" class="search-input" placeholder="Filtrar por palabras clave">
+                </div>
+                <div class="date-filter-group">
+                    <label class="filter-label">Fecha</label>
+                    <input type="date" id="fecha-desde" class="date-input" placeholder="Desde">
+                    <span class="date-separator">—</span>
+                    <input type="date" id="fecha-hasta" class="date-input" placeholder="Hasta">
+                    <button id="clear-dates" class="clear-dates-btn" title="Limpiar fechas">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <button id="export-excel" class="btn-export">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Exportar Excel
+            </button>
+        </div>
+
+        <!-- Tabla de iniciativas -->
+        <div class="table-container">
+            <table id="tabla-iniciativas" class="reversa-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="id">ID <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="sector">Sector <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="tema">Tema <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="marco">Marco Geográfico <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="titulo">Título Iniciativa <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="fuente">Fuente <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="proponente">Proponente <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="tipo">Tipo Iniciativa <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="fecha">Fecha <span class="sort-icon">↕</span></th>
+                        <th>Link</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-iniciativas">
+                    <!-- Datos se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Mostrando <span id="showing-start">1</span>-<span id="showing-end">25</span> de <span id="total-records">0</span> registros
+            </div>
+            <div class="pagination-controls">
+                <button id="prev-page" class="pagination-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <span class="page-info">Página <span id="current-page">1</span> de <span id="total-pages">1</span></span>
+                <button id="next-page" class="pagination-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="boletindiario.js"></script>
+    <script src="iniciativas_parlamentarias.js"></script>
 </body>
 </html>
