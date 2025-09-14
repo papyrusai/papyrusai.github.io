@@ -6,53 +6,92 @@
     let filteredData = [];
     let currentPage = 1;
     const itemsPerPage = 25;
-    let currentSort = { column: null, direction: 'asc' };
+    let currentSort = { column: 'fecha', direction: 'desc' };
+    const columnFilters = {};
+    let isLoading = false;
 
-    // Generar datos dummy para demostración
-    function generateDummyData() {
-        const sectores = ['Energía', 'Sanidad', 'Tecnología', 'Transporte', 'Educación', 'Medio ambiente', 'Industria', 'Comercio'];
-        const temas = ['Sostenibilidad', 'Digitalización', 'Empleo', 'Inversión pública', 'Regulación', 'Innovación', 'Competitividad', 'Transparencia'];
-        const marcos = ['Nacional', 'Autonómico', 'Europeo', 'Provincial', 'Municipal'];
-        const fuentes = ['Congreso', 'Senado', 'Parlamento Europeo', 'Parlamento Autonómico'];
-        const proponentes = ['PSOE', 'PP', 'VOX', 'Sumar', 'ERC', 'PNV', 'Bildu', 'Ciudadanos', 'Compromís'];
-        const tipos = ['Proposición de Ley', 'Proposición no de Ley', 'Moción', 'Interpelación', 'Pregunta oral', 'Pregunta escrita', 'Comparecencia'];
-        
-        const data = [];
-        for (let i = 1; i <= 150; i++) {
-            data.push({
-                id: `INI-${String(i).padStart(4, '0')}`,
-                sector: sectores[Math.floor(Math.random() * sectores.length)],
-                tema: temas[Math.floor(Math.random() * temas.length)],
-                marco: marcos[Math.floor(Math.random() * marcos.length)],
-                titulo: `Iniciativa sobre ${temas[Math.floor(Math.random() * temas.length)].toLowerCase()} en el sector ${sectores[Math.floor(Math.random() * sectores.length)].toLowerCase()}`,
-                fuente: fuentes[Math.floor(Math.random() * fuentes.length)],
-                proponente: proponentes[Math.floor(Math.random() * proponentes.length)],
-                tipo: tipos[Math.floor(Math.random() * tipos.length)],
-                fecha: generateRandomDate(),
-                link: `https://ejemplo.congreso.es/iniciativa/${i}`
-            });
+    // Cargar datos reales desde backend
+    async function fetchIniciativasData() {
+        try {
+            const response = await fetch('/api/iniciativas-parlamentarias', { credentials: 'include' });
+            if (!response.ok) throw new Error('Error al cargar iniciativas');
+            const data = await response.json();
+            // data.iniciativas ya viene en formato consumible por la tabla
+            return Array.isArray(data?.iniciativas) ? data.iniciativas.map(mapForDisplay) : [];
+        } catch (err) {
+            console.error(err);
+            showToast('No se pudieron cargar las iniciativas', 'error');
+            return [];
         }
-        return data;
     }
 
-    function generateRandomDate() {
-        const start = new Date(2024, 0, 1);
-        const end = new Date();
-        const date = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-        return date.toISOString().split('T')[0];
+    function mapForDisplay(item) {
+        const formatTipo = (v) => {
+            if (!v || typeof v !== 'string') return 'No especificado';
+            const normalized = v.replace(/_/g, ' ').toLowerCase();
+            return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+        };
+        return {
+            id: item.id || '',
+            sector: item.sector || 'No especificado',
+            tema: item.tema || 'No especificado',
+            marco: item.marco || 'No especificado',
+            titulo: item.titulo || 'Sin título',
+            fuente: String(item.fuente || '').replace(/_test$/i, ''),
+            proponente: item.proponente || 'No especificado',
+            tipo: formatTipo(item.tipo || ''),
+            fecha: item.fecha || '',
+            link: item.link || '#'
+        };
     }
 
     // Inicializar la vista
-    function initIniciativas() {
-        // Cargar datos dummy
-        iniciativasData = generateDummyData();
+    async function initIniciativas() {
+        // Mostrar skeleton mientras carga
+        showSkeletonRows();
+        isLoading = true;
+        iniciativasData = await fetchIniciativasData();
+        isLoading = false;
+
         filteredData = [...iniciativasData];
-        
+
         // Configurar event listeners
         setupEventListeners();
-        
+        setupHeaderFilters();
+
+        // Orden por defecto
+        sortData();
+
         // Renderizar tabla inicial
         renderTable();
+    }
+
+    function sortData() {
+        if (!currentSort.column) return;
+        filteredData.sort((a, b) => {
+            let aVal = a[currentSort.column];
+            let bVal = b[currentSort.column];
+            if (currentSort.column === 'fecha') {
+                const parseDisplayDate = (str) => {
+                    if (!str || typeof str !== 'string') return new Date(0);
+                    // dd-mm-yyyy
+                    const m = str.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+                    if (m) {
+                        const d = parseInt(m[1], 10);
+                        const mo = parseInt(m[2], 10) - 1;
+                        const y = parseInt(m[3], 10);
+                        return new Date(y, mo, d);
+                    }
+                    const dt = new Date(str);
+                    return isNaN(dt.getTime()) ? new Date(0) : dt;
+                };
+                aVal = parseDisplayDate(aVal);
+                bVal = parseDisplayDate(bVal);
+            }
+            if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
     }
 
     // Configurar event listeners
@@ -79,9 +118,13 @@
             });
         }
 
-        // Ordenamiento de columnas
-        document.querySelectorAll('.sortable').forEach(th => {
-            th.addEventListener('click', handleSort);
+        // Apertura de filtros por columna al clicar el th (no ordenar aquí)
+        document.querySelectorAll('#tabla-iniciativas thead th.sortable').forEach(th => {
+            th.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                const col = th.getAttribute('data-column');
+                openFilterDropdown(col, th);
+            });
         });
 
         // Paginación
@@ -90,10 +133,10 @@
         if (prevBtn) prevBtn.addEventListener('click', () => changePage(-1));
         if (nextBtn) nextBtn.addEventListener('click', () => changePage(1));
 
-        // Exportar a Excel
+        // Exportar a Excel con modal de filtros
         const exportBtn = document.getElementById('export-excel');
         if (exportBtn) {
-            exportBtn.addEventListener('click', exportToExcel);
+            exportBtn.addEventListener('click', openExportModal);
         }
 
         // Tabs navigation
@@ -157,19 +200,35 @@
             // Filtro de fecha desde
             let matchesDateFrom = true;
             if (fechaDesde) {
-                matchesDateFrom = item.fecha >= fechaDesde;
+                const [d, m, y] = item.fecha.split('-');
+                const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                matchesDateFrom = itemDate >= new Date(fechaDesde);
             }
             
             // Filtro de fecha hasta
             let matchesDateTo = true;
             if (fechaHasta) {
-                matchesDateTo = item.fecha <= fechaHasta;
+                const [d, m, y] = item.fecha.split('-');
+                const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                matchesDateTo = itemDate <= new Date(fechaHasta);
+            }
+
+            // Filtros por columna
+            let matchesColumnFilters = true;
+            for (const [col, values] of Object.entries(columnFilters)) {
+                if (Array.isArray(values) && values.length > 0) {
+                    if (!values.includes(String(item[col] ?? ''))) {
+                        matchesColumnFilters = false;
+                        break;
+                    }
+                }
             }
             
-            return matchesSearch && matchesDateFrom && matchesDateTo;
+            return matchesSearch && matchesDateFrom && matchesDateTo && matchesColumnFilters;
         });
         
         currentPage = 1;
+        sortData();
         renderTable();
     }
 
@@ -192,20 +251,7 @@
         e.currentTarget.classList.add(currentSort.direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
         
         // Ordenar datos
-        filteredData.sort((a, b) => {
-            let aVal = a[column];
-            let bVal = b[column];
-            
-            // Manejar fechas
-            if (column === 'fecha') {
-                aVal = new Date(aVal);
-                bVal = new Date(bVal);
-            }
-            
-            if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
-            if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
+        sortData();
         
         renderTable();
     }
@@ -225,6 +271,7 @@
     function renderTable() {
         const tbody = document.getElementById('tbody-iniciativas');
         if (!tbody) return;
+        if (isLoading) return;
         
         const totalPages = Math.ceil(filteredData.length / itemsPerPage);
         const start = (currentPage - 1) * itemsPerPage;
@@ -261,12 +308,165 @@
             tbody.appendChild(row);
         });
         
-        // Configurar tooltips después de añadir todas las filas
+        // Configurar tooltips después de añadir todas las filas (no-op ahora)
         setupTooltips();
         
         // Actualizar información de paginación
         updatePaginationInfo(start + 1, end, filteredData.length, currentPage, totalPages);
     }
+
+    // Skeleton de 25 filas
+    function showSkeletonRows() {
+        const tbody = document.getElementById('tbody-iniciativas');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        for (let i = 0; i < 25; i++) {
+            const tr = document.createElement('tr');
+            tr.className = 'skeleton-row';
+            tr.innerHTML = `
+                <td><span class="skeleton w-30 small"></span></td>
+                <td><span class="skeleton w-40 small"></span></td>
+                <td><span class="skeleton w-60 small"></span></td>
+                <td><span class="skeleton w-40 small"></span></td>
+                <td><span class="skeleton w-80"></span></td>
+                <td><span class="skeleton w-30 small"></span></td>
+                <td><span class="skeleton w-50 small"></span></td>
+                <td><span class="skeleton w-40 small"></span></td>
+                <td><span class="skeleton w-30 small"></span></td>
+                <td><span class="skeleton w-20 small"></span></td>
+            `;
+            tbody.appendChild(tr);
+        }
+    }
+
+    // Filtros por columna (dropdown)
+    function setupHeaderFilters() {
+        const theadCells = document.querySelectorAll('#tabla-iniciativas thead th.sortable');
+        theadCells.forEach(th => {
+            // Evitar duplicados
+            if (th.querySelector('.filter-trigger')) return;
+            const col = th.getAttribute('data-column');
+            const trigger = document.createElement('span');
+            trigger.className = 'filter-trigger';
+            trigger.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="6" x2="20" y2="6"></line>
+                    <line x1="7" y1="12" x2="17" y2="12"></line>
+                    <line x1="10" y1="18" x2="14" y2="18"></line>
+                </svg>
+            `;
+            trigger.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                openFilterDropdown(col, th);
+            });
+            th.appendChild(trigger);
+        });
+
+        // Cerrar dropdown al hacer click fuera
+        document.addEventListener('click', () => closeFilterDropdown());
+    }
+
+    let currentDropdown = null;
+    function closeFilterDropdown() {
+        if (currentDropdown && currentDropdown.parentNode) {
+            currentDropdown.parentNode.removeChild(currentDropdown);
+        }
+        currentDropdown = null;
+    }
+
+    function openFilterDropdown(column, thEl) {
+        closeFilterDropdown();
+        const dropdown = document.createElement('div');
+        dropdown.className = 'column-filter-dropdown';
+        // Evitar que clics internos cierren el dropdown
+        dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+        // Obtener valores únicos de la columna
+        const uniqueValues = Array.from(new Set(iniciativasData.map(i => String(i[column] ?? ''))))
+            .filter(v => v !== '')
+            .sort((a, b) => a.localeCompare(b));
+
+        const titleMap = {
+            id: 'ID', sector: 'Sector', tema: 'Tema', marco: 'Marco Geográfico', titulo: 'Título Iniciativa', fuente: 'Fuente', proponente: 'Proponente', tipo: 'Tipo Iniciativa', fecha: 'Fecha'
+        };
+
+        const selected = columnFilters[column] ? new Set(columnFilters[column]) : new Set();
+
+        dropdown.innerHTML = `
+            <div class="header">
+                <div class="title">${titleMap[column] || column}</div>
+                <div class="actions">
+                    <button class="btn" data-sort="asc">
+                        <span style="font-size:11px; margin-right:6px; color:#6c757d;">A-Z</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 15 12 9 18 15"></polyline></svg>
+                    </button>
+                    <button class="btn" data-sort="desc">
+                        <span style="font-size:11px; margin-right:6px; color:#6c757d;">A-Z</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <button class="btn" data-clear>Limpiar</button>
+                </div>
+            </div>
+            <input class="search" type="text" placeholder="Buscar valor" />
+            <div class="list"></div>
+        `;
+
+        const list = dropdown.querySelector('.list');
+        const renderList = (filterText = '') => {
+            list.innerHTML = '';
+            const lower = filterText.toLowerCase();
+            uniqueValues
+                .filter(v => !lower || v.toLowerCase().includes(lower))
+                .forEach(v => {
+                    const item = document.createElement('label');
+                    item.className = 'item';
+                    const id = `flt_${column}_${v.replace(/[^a-z0-9]/gi, '')}`;
+                    item.innerHTML = `<input type="checkbox" id="${id}" ${selected.has(v) ? 'checked' : ''}/> <span class="val">${v}</span>`;
+                    const span = item.querySelector('.val');
+                    span.style.display = 'inline-block';
+                    span.style.maxWidth = '180px';
+                    span.style.whiteSpace = 'nowrap';
+                    span.style.overflow = 'hidden';
+                    span.style.textOverflow = 'ellipsis';
+                    item.querySelector('input').addEventListener('change', (ev) => {
+                        if (ev.target.checked) selected.add(v); else selected.delete(v);
+                        if (selected.size > 0) columnFilters[column] = Array.from(selected); else delete columnFilters[column];
+                        applyAllFilters();
+                    });
+                    list.appendChild(item);
+                });
+        };
+        renderList();
+
+        dropdown.querySelector('.search').addEventListener('input', (e) => {
+            renderList(e.target.value || '');
+        });
+
+        dropdown.querySelector('[data-sort="asc"]').addEventListener('click', () => {
+            currentSort = { column, direction: 'asc' };
+            sortData();
+            renderTable();
+        });
+        dropdown.querySelector('[data-sort="desc"]').addEventListener('click', () => {
+            currentSort = { column, direction: 'desc' };
+            sortData();
+            renderTable();
+        });
+        dropdown.querySelector('[data-clear]').addEventListener('click', () => {
+            delete columnFilters[column];
+            applyAllFilters();
+        });
+
+        // Posicionar bajo el th
+        const rect = thEl.getBoundingClientRect();
+        dropdown.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+        dropdown.style.left = (rect.left + window.scrollX) + 'px';
+
+        document.body.appendChild(dropdown);
+        currentDropdown = dropdown;
+    }
+
+    // Renderizar tabla y actualizar paginación ya implementados más abajo
 
     // Actualizar información de paginación
     function updatePaginationInfo(start, end, total, page, totalPages) {
@@ -281,18 +481,17 @@
         document.getElementById('next-page').disabled = page === totalPages || totalPages === 0;
     }
 
-    // Exportar a Excel
-    function exportToExcel() {
-        // Preparar datos para CSV
+    // Exportar a Excel (datos proporcionados)
+    function exportToExcelWithData(data) {
         const headers = ['ID', 'Sector', 'Tema', 'Marco Geográfico', 'Título Iniciativa', 'Fuente', 'Proponente', 'Tipo Iniciativa', 'Fecha', 'Link'];
         const csvContent = [
             headers.join(','),
-            ...filteredData.map(item => [
+            ...data.map(item => [
                 item.id,
                 `"${item.sector}"`,
                 `"${item.tema}"`,
                 `"${item.marco}"`,
-                `"${item.titulo.replace(/"/g, '""')}"`,
+                `"${item.titulo.replace(/""/g, '""')}"`,
                 `"${item.fuente}"`,
                 `"${item.proponente}"`,
                 `"${item.tipo}"`,
@@ -300,22 +499,153 @@
                 item.link
             ].join(','))
         ].join('\n');
-        
-        // Crear blob y descargar
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
         link.setAttribute('href', url);
         link.setAttribute('download', `iniciativas_parlamentarias_${new Date().toISOString().split('T')[0]}.csv`);
         link.style.visibility = 'hidden';
-        
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        // Mostrar mensaje de éxito
         showToast('Archivo exportado correctamente', 'success');
+    }
+
+    // Modal de exportación con filtros
+    function ensureExportModalStyles() {
+        if (document.getElementById('export-modal-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'export-modal-styles';
+        style.textContent = `
+            .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,.45); display:flex; justify-content:center; align-items:center; z-index:10000; opacity:0; visibility:hidden; transition: all .3s ease; }
+            .modal-overlay.show { opacity:1; visibility:visible; }
+            .modal-content { background:white; padding:24px; border-radius:12px; box-shadow:0 8px 32px rgba(11,36,49,.16); width:90%; max-width:560px; text-align:left; }
+            .modal-title { margin:0 0 8px 0; font-size:18px; font-weight:600; color:#0b2431; text-align:left; }
+            .modal-text { color:#455862; font-size:14px; margin-bottom:12px; text-align:left; }
+            .modal-buttons { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+            .btn { padding:8px 12px; border-radius:8px; border:1px solid #e9ecef; background:white; cursor:pointer; }
+            .btn-primary { background:#0b2431; border-color:#0b2431; color:#fff; }
+            .filters-grid { display:grid; gap:10px; }
+            .filter-row { display:grid; grid-template-columns: 1fr 1fr auto; gap:8px; align-items:center; }
+            .input, .select { border:1px solid #e9ecef; border-radius:8px; padding:8px 10px; font-size:13px; }
+            .small-note { font-size:12px; color:#6c757d; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function openExportModal() {
+        ensureExportModalStyles();
+        let modal = document.getElementById('exportModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'exportModal';
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3 class="modal-title">Exportar Excel</h3>
+                    <div class="modal-text">Aplica filtros antes de exportar. Por defecto, puedes acotar por fecha.</div>
+                    <div class="filters-grid">
+                        <div>
+                            <label class="small">Fecha desde</label>
+                            <input id="exportStartDate" type="date" class="input" />
+                        </div>
+                        <div>
+                            <label class="small">Fecha hasta</label>
+                            <input id="exportEndDate" type="date" class="input" />
+                        </div>
+                    </div>
+                    <div style="margin-top:12px; font-weight:600; color:#0b2431;">Filtros adicionales</div>
+                    <div id="exportFilters" class="filters-grid" style="margin-top:8px;"></div>
+                    <div><button id="addExportFilter" class="btn" style="margin-top:8px;">Añadir filtro</button></div>
+                    <div class="modal-buttons">
+                        <button class="btn" id="cancelExport">Cancelar</button>
+                        <button class="btn btn-primary" id="confirmExport">Exportar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        const filtersContainer = modal.querySelector('#exportFilters');
+        const addBtn = modal.querySelector('#addExportFilter');
+        filtersContainer.innerHTML = '';
+
+        const addFilterRow = () => {
+            const row = document.createElement('div');
+            row.className = 'filter-row';
+            row.innerHTML = `
+                <select class="select export-col">
+                    <option value="id">ID</option>
+                    <option value="sector">Sector</option>
+                    <option value="tema">Tema</option>
+                    <option value="marco">Marco Geográfico</option>
+                    <option value="titulo">Título Iniciativa</option>
+                    <option value="fuente">Fuente</option>
+                    <option value="proponente">Proponente</option>
+                    <option value="tipo">Tipo Iniciativa</option>
+                </select>
+                <input type="text" class="input export-val" placeholder="Valor contiene..." />
+                <button class="btn remove">Eliminar</button>
+            `;
+            row.querySelector('.remove').addEventListener('click', () => {
+                filtersContainer.removeChild(row);
+            });
+            filtersContainer.appendChild(row);
+        };
+
+        addBtn.onclick = addFilterRow;
+        // Una fila por defecto
+        addFilterRow();
+
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeExportModal();
+        });
+
+        modal.querySelector('#cancelExport').onclick = () => closeExportModal();
+        modal.querySelector('#confirmExport').onclick = () => {
+            // Construir dataset filtrado
+            const startVal = modal.querySelector('#exportStartDate').value;
+            const endVal = modal.querySelector('#exportEndDate').value;
+            const rows = Array.from(filtersContainer.querySelectorAll('.filter-row'));
+            let data = [...iniciativasData];
+
+            // Filtrar por fecha si procede
+            if (startVal) {
+                data = data.filter(item => {
+                    const [d, m, y] = (item.fecha || '').split('-');
+                    const dt = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                    return dt >= new Date(startVal);
+                });
+            }
+            if (endVal) {
+                data = data.filter(item => {
+                    const [d, m, y] = (item.fecha || '').split('-');
+                    const dt = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                    return dt <= new Date(endVal);
+                });
+            }
+
+            // Filtros adicionales (contains, case-insensitive)
+            rows.forEach(r => {
+                const col = r.querySelector('.export-col').value;
+                const val = (r.querySelector('.export-val').value || '').toLowerCase();
+                if (!val) return;
+                data = data.filter(item => String(item[col] ?? '').toLowerCase().includes(val));
+            });
+
+            exportToExcelWithData(data);
+            closeExportModal();
+        };
+    }
+
+    function closeExportModal() {
+        const modal = document.getElementById('exportModal');
+        if (!modal) return;
+        modal.classList.remove('show');
+        document.body.style.overflow = '';
     }
 
     // Mostrar mensaje toast
@@ -348,112 +678,9 @@
         }, 3000);
     }
     
-    // Variables para el tooltip
-    let currentTooltip = null;
-    
-    // Mostrar tooltip
-    function showTooltip(element, text) {
-        // Remover tooltip anterior si existe
-        hideTooltip();
-        
-        // Crear nuevo tooltip
-        const tooltip = document.createElement('div');
-        tooltip.className = 'titulo-tooltip';
-        tooltip.textContent = text;
-        
-        // Estilos inline para asegurar que funcione
-        tooltip.style.cssText = `
-            position: fixed;
-            z-index: 1000;
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            padding: 12px 16px;
-            box-shadow: 0 8px 24px rgba(11,36,49,.15);
-            font-size: 14px;
-            line-height: 1.5;
-            color: #455862;
-            max-width: 400px;
-            white-space: normal;
-            word-wrap: break-word;
-            pointer-events: none;
-            opacity: 0;
-            transform: translateY(-5px);
-            transition: all 0.2s ease;
-        `;
-        
-        // Posicionar tooltip
-        const rect = element.getBoundingClientRect();
-        tooltip.style.left = rect.left + 'px';
-        tooltip.style.top = (rect.top - 60) + 'px';
-        
-        document.body.appendChild(tooltip);
-        
-        // Ajustar posición si se sale de la pantalla
-        setTimeout(() => {
-            const tooltipRect = tooltip.getBoundingClientRect();
-            
-            // Ajustar si se sale por la derecha
-            if (tooltipRect.right > window.innerWidth - 20) {
-                tooltip.style.left = (window.innerWidth - tooltipRect.width - 20) + 'px';
-            }
-            
-            // Ajustar si se sale por la izquierda
-            if (tooltipRect.left < 20) {
-                tooltip.style.left = '20px';
-            }
-            
-            // Ajustar si se sale por arriba
-            if (tooltipRect.top < 10) {
-                tooltip.style.top = (rect.bottom + 10) + 'px';
-            }
-            
-            // Mostrar con animación
-            tooltip.style.opacity = '1';
-            tooltip.style.transform = 'translateY(0)';
-            
-        }, 10);
-        
-        currentTooltip = tooltip;
-    }
-    
-    // Ocultar tooltip
-    function hideTooltip() {
-        if (currentTooltip) {
-            currentTooltip.classList.remove('show');
-            setTimeout(() => {
-                if (currentTooltip && currentTooltip.parentNode) {
-                    currentTooltip.parentNode.removeChild(currentTooltip);
-                }
-                currentTooltip = null;
-            }, 200);
-        }
-    }
-    
-    // Configurar tooltips para las celdas de título
+    // Eliminamos la lógica de tooltip; ya expandimos con CSS en hover
     function setupTooltips() {
-        const tituloCells = document.querySelectorAll('.titulo-cell');
-        
-        tituloCells.forEach(cell => {
-            // Remover listeners anteriores si existen
-            cell.onmouseenter = null;
-            cell.onmouseleave = null;
-            
-            cell.addEventListener('mouseenter', function(e) {
-                // Esperar un frame para que el elemento esté completamente renderizado
-                setTimeout(() => {
-                    // Verificar si el texto está truncado
-                    if (e.target.scrollWidth > e.target.clientWidth) {
-                        const titulo = e.target.getAttribute('data-titulo') || e.target.textContent;
-                        showTooltip(e.target, titulo);
-                    }
-                }, 10);
-            });
-            
-            cell.addEventListener('mouseleave', function() {
-                hideTooltip();
-            });
-        });
+        // Sin-op para mantener llamadas existentes sin romper
     }
 
     // Añadir animaciones CSS si no existen

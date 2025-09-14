@@ -16,7 +16,8 @@ const { getEtiquetasPersonalizadasAdapter, getEtiquetasSeleccionadasAdapter } = 
 const router = express.Router();
 
 const uri = process.env.DB_URI;
-const mongodbOptions = {};
+// Add a conservative server selection timeout to avoid long hangs on transient DB issues
+const mongodbOptions = { serverSelectionTimeoutMS: 8000 };
 
 // GET /api/norma-details
 router.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
@@ -60,7 +61,21 @@ router.get('/api/norma-details', ensureAuthenticated, async (req, res) => {
 			} catch (_) {}
 		}
 
-		const document = await collection.findOne({ _id: documentId });
+		// Be robust to _id type (string vs ObjectId)
+		let document = null;
+		try {
+			// First try exact string match (many collections use string ids)
+			document = await collection.findOne({ _id: documentId });
+			if (!document && ObjectId.isValid(String(documentId))) {
+				// Fallback to ObjectId match
+				document = await collection.findOne({ _id: new ObjectId(String(documentId)) });
+			}
+		} catch (_) {
+			// As a last resort, try ObjectId if valid
+			if (!document && ObjectId.isValid(String(documentId))) {
+				try { document = await collection.findOne({ _id: new ObjectId(String(documentId)) }); } catch(_) {}
+			}
+		}
 		if (!document) return res.status(404).json({ error: 'Document not found' });
 
 		let userEtiquetasPersonalizadas = null;

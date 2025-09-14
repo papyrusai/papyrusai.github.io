@@ -411,7 +411,7 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 					<div class="resumen-label">Resumen</div>
 					<div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
 					${impactoAgentesHtml}
-					<div class="margin-impacto"><a class="button-impacto" href="/views/analisis/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Analizar documento</a></div>
+					<div class="margin-impacto"><a class="button-impacto" href="/profile?view=analisis&documentId=${doc._id}&collectionName=${doc.collectionName}">Analizar documento</a></div>
 					${doc.url_pdf || doc.url_html ? `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">Leer más: ${doc._id}</a>` : `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">Leer más: ${doc._id} (No disponible)</span>`}
 					
 					<!-- Botón de Guardar -->
@@ -920,7 +920,7 @@ router.get('/data', async (req, res) => {
 					  <div class="resumen-label">Resumen</div>
 					  <div class="resumen-content" style="font-size: 1.1em; line-height: 1.4;">${doc.resumen}</div>
 					  ${impactoAgentesHtml}
-					  <div class="margin-impacto"><a class="button-impacto" href="/views/analisis/norma.html?documentId=${doc._id}&collectionName=${doc.collectionName}">Analizar documento</a></div>
+					  <div class="margin-impacto"><a class="button-impacto" href="/profile?view=analisis&documentId=${doc._id}&collectionName=${doc.collectionName}">Analizar documento</a></div>
 					  ${doc.url_pdf || doc.url_html ? `<a class="leer-mas" href="${doc.url_pdf || doc.url_html}" target="_blank" style="margin-right: 15px;">Leer más: ${doc._id}</a>` : `<span class="leer-mas" style="margin-right: 15px; color: #ccc;">Leer más: ${doc._id} (No disponible)</span>`}
 					  
 					  <!-- Botón de Guardar -->

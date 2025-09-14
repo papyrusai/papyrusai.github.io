@@ -296,7 +296,7 @@
   }
   
   .save-ok-btn {
-    background: #04db8d;
+    background: #0b2431;
     color: white;
     border: none;
     padding: 4px 12px;
@@ -373,7 +373,7 @@
     padding: 12px 16px;
     border-top: 1px solid #e9ecef;
     cursor: pointer;
-    color: #04db8d;
+    color: #0b2431;
     font-size: 14px;
     font-weight: 500;
     display: flex;
@@ -424,7 +424,7 @@
   }
   
   .new-list-btn.save {
-    background: #04db8d;
+    background: #0b2431;
     color: white;
   }
   
@@ -552,9 +552,19 @@
     font-weight: 600;
   }
   .pagination-subtle { color:#6c757d; font-size:12px; margin-left:8px; }
+
+  /* Font Awesome CDN for icons */
+  @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+
+  /* Breadcrumb animations */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
   </style>
 </head>
 <body>
+
 
 <!-- Sección Agentes (Contenido original de profile.html movido aquí) -->
 <div class="tracker-container">
@@ -795,6 +805,7 @@
     }
   });
 </script>
+
 
 </body>
 </html>

@@ -1413,6 +1413,7 @@ function handleBuscar() {
       const collectionDocs = document.querySelector('.collectionDocs');
       if (collectionDocs) {
         collectionDocs.innerHTML = data.documentsHtml;
+        try { bindHoverToListDropdowns(); } catch(_) {}
         // Corregir fechas faltantes tras render
         fixMissingDatesInRenderedDocs(collectionDocs);
       }
@@ -1772,6 +1773,38 @@ function showFeedbackSuccess(element, type) {
   }, 2000);
 }
 
+ 
+
+// Toast global (esquina superior derecha) para éxito/error
+function showToast(message, type = 'success') {
+  try {
+    let container = document.getElementById('global-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'global-toast-container';
+      container.style.cssText = 'position:fixed; top:16px; right:16px; z-index:10002; display:flex; flex-direction:column; gap:8px; align-items:flex-end; max-width: calc(100vw - 32px);';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    const isError = type === 'error';
+    const baseCss = 'color:#0b2431; padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; box-shadow:0 4px 12px rgba(11,36,49,0.12); max-width: 420px; word-break: break-word; border:1px solid #e8ecf0; background:#ffffff;';
+    const successCss = 'background: rgba(4,219,141,.05); border-left:4px solid #04db8d;';
+    const errorCss = 'background: rgba(211,47,47,.05); border-left:4px solid #d32f2f;';
+    toast.style.cssText = baseCss + (isError ? errorCss : successCss);
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      try { toast.remove(); } catch(_) {}
+      // Si el contenedor queda vacío, removerlo
+      if (container && container.children && container.children.length === 0) {
+        try { container.remove(); } catch(_) {}
+      }
+    }, 3000);
+  } catch(_) {}
+}
+
 // Función para cargar documentos iniciales
 function loadInitialDocuments() {
   try {
@@ -1960,18 +1993,18 @@ function getSafeGlobalData(elementId, defaultValue = null) {
   return defaultValue;
 }
 
-// Variable para evitar inicialización múltiple
-let trackerInitialized = false;
+// Variable para evitar inicialización múltiple (expuesta globalmente)
+window.trackerInitialized = false;
 
 // Función para inicializar el tracker cuando se carga
 window.initializeTracker = function() {
-  if (trackerInitialized) {
+  if (window.trackerInitialized) {
     console.log('[initializeTracker] Ya está inicializado, evitando doble inicialización');
     return;
   }
   
   console.log('[initializeTracker] Inicializando funcionalidad del tracker');
-  trackerInitialized = true;
+  window.trackerInitialized = true;
   
   // Asegurar estado inicial limpio
   const chartContainer = document.getElementById('chartContainer');
@@ -2066,6 +2099,10 @@ window.initializeTracker = function() {
   // Ahora cargar agentes reales
   loadAgentesContainer();
   // NO ocultamos el overlay aquí, se hará después de cargar los datos
+  // Precargar listas de usuario en cache para dropdowns rápidos
+  try { loadUserListsFromBackend(false); } catch(_) {}
+  // Enlazar hover para todos los botones Guardar
+  try { bindHoverToListDropdowns(); } catch(_) {}
   loadEtiquetasDropdown();
   loadBoletinDropdown();
   loadRangoDropdown();
@@ -2170,7 +2207,7 @@ function navigateTrackerPage(targetPage) {
     fetch(`/data?${params.toString()}`)
       .then(r => r.json())
       .then(data => {
-        if (collectionDocs) collectionDocs.innerHTML = data.documentsHtml;
+        if (collectionDocs) { collectionDocs.innerHTML = data.documentsHtml; try { bindHoverToListDropdowns(); } catch(_) {} }
         renderTrackerPagination(data.pagination);
         // Reaplicar filtro de impacto actual
         const selectedRadio = document.querySelector('input[name="nivelImpacto"]:checked');
@@ -2388,6 +2425,23 @@ async function loadUserListsFromBackend(forceRefresh = false) {
     console.log('[loadUserListsFromBackend] Usando datos en memoria');
     return;
   }
+  // Intentar cache de sessionStorage si no se fuerza refresh y no hay memoria
+  if (!forceRefresh && userLists.length === 0) {
+    try {
+      const cachedLists = sessionStorage.getItem('userLists');
+      const cachedData = sessionStorage.getItem('userListsData');
+      if (cachedLists) {
+        userLists = JSON.parse(cachedLists) || [];
+      }
+      if (cachedData) {
+        userListsData = JSON.parse(cachedData) || {};
+      }
+      if (userLists.length > 0) {
+        console.log('[loadUserListsFromBackend] Usando cache de sessionStorage');
+        return;
+      }
+    } catch(_) {}
+  }
   
   try {
     console.log('[loadUserListsFromBackend] Cargando desde backend...');
@@ -2429,15 +2483,12 @@ async function toggleListsDropdown(buttonElement, documentId, collectionName) {
   const isShowing = dropdown.classList.contains('show');
   
   if (!isShowing) {
-    // Mostrar loader en el botón mientras carga
-    const originalButtonContent = buttonElement.innerHTML;
-    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cargando...';
-    buttonElement.disabled = true;
+    // Si aún no hay contenido, cargar desde cache/backend sin bloquear botón
     
     try {
       // CRÍTICO: Forzar refresh de datos para asegurar estado actual
       console.log(`[toggleListsDropdown] Abriendo dropdown para documento ${documentId}`);
-      await loadUserListsFromBackend(true);
+      await loadUserListsFromBackend(false);
       
       // Cargar las listas del usuario antes de mostrar
       loadUserLists(dropdown);
@@ -2447,10 +2498,18 @@ async function toggleListsDropdown(buttonElement, documentId, collectionName) {
       if (saveButton) saveButton.style.display = 'none';
       
       dropdown.classList.add('show');
+      // Auto-ocultar cuando el ratón salga del área del dropdown
+      if (!dropdown.dataset.autohideBound) {
+        let hoverInside = false;
+        dropdown.addEventListener('mouseenter', () => { hoverInside = true; });
+        dropdown.addEventListener('mouseleave', () => {
+          hoverInside = false;
+          setTimeout(() => { if (!hoverInside) dropdown.classList.remove('show'); }, 120);
+        });
+        dropdown.dataset.autohideBound = '1';
+      }
     } finally {
-      // Restaurar botón original
-      buttonElement.innerHTML = originalButtonContent;
-      buttonElement.disabled = false;
+      // nada
     }
   } else {
     dropdown.classList.remove('show');
@@ -2463,10 +2522,21 @@ async function toggleListsDropdown(buttonElement, documentId, collectionName) {
 // Función para cargar las listas del usuario en el desplegable
 function loadUserLists(dropdown) {
   const listsContainer = dropdown.querySelector('.lists-container');
+  const addNewListEl = dropdown.querySelector('.add-new-list');
   
   if (userLists.length === 0) {
     listsContainer.innerHTML = '<div class="no-lists-message">No tienes listas creadas</div>';
+    if (addNewListEl) {
+      const icon = addNewListEl.querySelector('i') ? addNewListEl.querySelector('i').outerHTML + ' ' : '';
+      addNewListEl.innerHTML = icon + 'Crear lista';
+      addNewListEl.style.color = '#0b2431';
+    }
   } else {
+    if (addNewListEl) {
+      const icon = addNewListEl.querySelector('i') ? addNewListEl.querySelector('i').outerHTML + ' ' : '';
+      addNewListEl.innerHTML = icon + 'Nueva lista';
+      addNewListEl.style.color = '#0b2431';
+    }
     // Obtener información del documento actual
     const saveButton = dropdown.closest('.guardar-button');
     const mainButton = saveButton.querySelector('.save-btn');
@@ -2496,6 +2566,48 @@ function loadUserLists(dropdown) {
       </div>`;
     }).join('');
   }
+
+  // Enlazar hover para apertura de dropdown si aún no está aplicado
+  try {
+    const saveBtn = dropdown.closest('.guardar-button')?.querySelector('.save-btn');
+    const parentGuardar = dropdown.closest('.guardar-button');
+    if (parentGuardar && !parentGuardar.dataset.hoverBound) {
+      parentGuardar.addEventListener('mouseenter', async function(){
+        try {
+          await loadUserListsFromBackend(false);
+          loadUserLists(dropdown);
+          dropdown.classList.add('show');
+        } catch(_) {}
+      });
+      parentGuardar.addEventListener('mouseleave', function(){
+        setTimeout(()=>{ dropdown.classList.remove('show'); }, 120);
+      });
+      parentGuardar.dataset.hoverBound = '1';
+    }
+  } catch(_) {}
+}
+
+// Vincular hover para todos los botones Guardar presentes en la página
+function bindHoverToListDropdowns() {
+  try {
+    const guardarButtons = document.querySelectorAll('.guardar-button');
+    guardarButtons.forEach(guard => {
+      if (guard.dataset.hoverBound) return;
+      const dropdown = guard.querySelector('.lists-dropdown');
+      if (!dropdown) return;
+      guard.addEventListener('mouseenter', async function(){
+        try {
+          await loadUserListsFromBackend(false);
+          loadUserLists(dropdown);
+          dropdown.classList.add('show');
+        } catch(_) {}
+      });
+      guard.addEventListener('mouseleave', function(){
+        setTimeout(()=>{ dropdown.classList.remove('show'); }, 120);
+      });
+      guard.dataset.hoverBound = '1';
+    });
+  } catch(_) {}
 }
 
 // Función para verificar si un documento está guardado en una lista específica
@@ -2584,20 +2696,23 @@ async function saveDocumentToList(documentId, collectionName, listId, dataItem, 
           userListsData.guardados[listName] = {};
         }
         userListsData.guardados[listName][documentId] = documentData;
+        try { sessionStorage.setItem('userListsData', JSON.stringify(userListsData)); } catch(_) {}
       }
       
       // Mostrar feedback de éxito
-      showSaveSuccess(checkbox, true);
+      showSaveSuccess(checkbox, true, listName);
     } else {
       const errorData = await response.json();
       console.error('Error al guardar:', errorData);
       alert('Error al guardar el documento: ' + (errorData.error || 'Error desconocido'));
       checkbox.checked = false; // Revertir estado
+      try { showToast('Error al guardar el documento', 'error'); } catch(_) {}
     }
   } catch (error) {
     console.error('Error saving document:', error);
     alert('Error al guardar el documento. Por favor, inténtalo de nuevo.');
     checkbox.checked = false; // Revertir estado
+    try { showToast('Error al guardar el documento', 'error'); } catch(_) {}
   } finally {
     // Restaurar checkbox y ocultar loader
     checkbox.style.display = 'inline-block';
@@ -2625,20 +2740,23 @@ async function removeDocumentFromList(documentId, listName, checkbox, loader) {
       // Actualizar datos locales
       if (userListsData.guardados && userListsData.guardados[listName]) {
         delete userListsData.guardados[listName][documentId];
+        try { sessionStorage.setItem('userListsData', JSON.stringify(userListsData)); } catch(_) {}
       }
       
       // Mostrar feedback de éxito
-      showSaveSuccess(checkbox, false);
+      showSaveSuccess(checkbox, false, listName);
     } else {
       const errorData = await response.json();
       console.error('Error al quitar:', errorData);
       alert('Error al quitar el documento: ' + (errorData.error || 'Error desconocido'));
       checkbox.checked = true; // Revertir estado
+      try { showToast('Error al quitar el documento', 'error'); } catch(_) {}
     }
   } catch (error) {
     console.error('Error removing document:', error);
     alert('Error al quitar el documento. Por favor, inténtalo de nuevo.');
     checkbox.checked = true; // Revertir estado
+    try { showToast('Error al quitar el documento', 'error'); } catch(_) {}
   } finally {
     // Restaurar checkbox y ocultar loader
     checkbox.style.display = 'inline-block';
@@ -2703,40 +2821,11 @@ function extractDocumentDataFromItem(dataItem) {
 }
 
 // Función para mostrar feedback de guardado
-function showSaveSuccess(element, isSaved) {
-  const message = document.createElement('div');
-  message.className = 'save-success-message';
-  message.style.cssText = `
-    position: fixed;
-    background: white;
-    color: #1a365d;
-    border: 2px solid #04db8d;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 10001;
-    display: flex;
-    align-items: center;
-  `;
-  
-  const text = isSaved ? 'Guardado en lista' : 'Quitado de lista';
-  message.innerHTML = `
-    <span>${text}</span>
-    <svg width="16" height="16" viewBox="0 0 24 24" style="margin-left: 8px; color: #04db8d;">
-      <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
-    </svg>
-  `;
-  
-  const rect = element.getBoundingClientRect();
-  message.style.top = (rect.bottom + 10) + 'px';
-  message.style.left = (rect.left - 50) + 'px';
-  
-  document.body.appendChild(message);
-  
-  setTimeout(() => {
-    message.remove();
-  }, 2000);
+function showSaveSuccess(element, isSaved, listName) {
+  const text = listName
+    ? (isSaved ? `Documento añadido a ${listName}` : `Documento quitado de ${listName}`)
+    : (isSaved ? 'Guardado en lista' : 'Quitado de lista');
+  try { showToast(text, 'success'); } catch(_) {}
 }
 
 // Función para mostrar formulario de nueva lista
@@ -2810,15 +2899,37 @@ async function createNewList(element, documentId, collectionName) {
         name: listName
       };
       userLists.push(newList);
+      try { sessionStorage.setItem('userLists', JSON.stringify(userLists)); } catch(_) {}
+      try {
+        if (!userListsData.guardados) userListsData.guardados = {};
+        if (!userListsData.guardados[listName]) userListsData.guardados[listName] = {};
+        sessionStorage.setItem('userListsData', JSON.stringify(userListsData));
+      } catch(_) {}
       
       // Recargar las listas en el desplegable
       const dropdown = element.closest('.lists-dropdown');
       loadUserLists(dropdown);
+      // Asegurar render inmediato y guardar automáticamente el documento en la nueva lista
+      setTimeout(() => {
+        try {
+          const newCheckbox = dropdown.querySelector(`#list_${result.listId}`);
+          if (newCheckbox) {
+            newCheckbox.checked = true;
+            const saveButton = dropdown.closest('.guardar-button');
+            const dataItem = saveButton?.closest('.data-item');
+            const container = newCheckbox.closest('.checkbox-container');
+            const loader = container?.querySelector('.checkbox-loader');
+            if (loader) { newCheckbox.style.display = 'none'; loader.style.display = 'inline-block'; }
+            saveDocumentToList(documentId, collectionName, result.listId, dataItem, newCheckbox, loader || { style: { display: 'none' } });
+          }
+        } catch(_) {}
+      }, 30);
       
       // Mostrar éxito temporalmente antes de ocultar el formulario
       element.innerHTML = '<i class="fas fa-check"></i> ¡Creada!';
       element.style.backgroundColor = '#04db8d';
       element.style.color = 'white';
+      try { showToast(`Lista "${listName}" creada`, 'success'); } catch(_) {}
       
       setTimeout(() => {
         // Ocultar el formulario con animación suave
@@ -2827,10 +2938,12 @@ async function createNewList(element, documentId, collectionName) {
     } else {
       const errorData = await response.json();
       alert('Error al crear la lista: ' + (errorData.error || 'Error desconocido'));
+      try { showToast('Error al crear la lista', 'error'); } catch(_) {}
     }
   } catch (error) {
     console.error('Error creating list:', error);
     alert('Error al crear la lista. Por favor, inténtalo de nuevo.');
+    try { showToast('Error al crear la lista', 'error'); } catch(_) {}
   } finally {
     // Restaurar estado original del botón y input
     element.innerHTML = originalButtonContent;

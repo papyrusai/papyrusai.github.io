@@ -581,6 +581,61 @@
       box-shadow: 0 0 0 2px rgba(4, 219, 141, 0.2);
     }
 
+    /* Estilos estándar Reversa para selects */
+    .reversa-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--neutral-300, #e9ecef);
+      border-radius: 12px;
+      font-size: 14px;
+      background-color: white;
+      color: var(--reversa-blue, #0b2431);
+      font-family: 'Satoshi', sans-serif;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(11,36,49,.04);
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23455862' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+
+    .reversa-select:hover {
+      border-color: var(--reversa-green, #04db8d);
+      cursor: pointer;
+    }
+
+    .reversa-select:focus {
+      outline: none;
+      border-color: var(--reversa-green, #04db8d);
+      box-shadow: 0 0 0 3px rgba(4,219,141,.15);
+    }
+
+    /* Estilos para las opciones del select */
+    .reversa-select option {
+      padding: 12px 16px;
+      background-color: white;
+      color: var(--reversa-blue, #0b2431);
+      font-family: 'Satoshi', sans-serif;
+      font-weight: 500;
+      font-size: 14px;
+      border-radius: 8px;
+      margin: 2px 0;
+    }
+
+    .reversa-select option:hover {
+      background-color: rgba(4, 219, 141, 0.08);
+      color: var(--reversa-blue, #0b2431);
+    }
+
+    .reversa-select option:checked {
+      background-color: var(--reversa-green, #04db8d);
+      color: white;
+    }
+
     .file-input-container {
       margin-bottom: 15px;
       position: relative;
@@ -940,42 +995,59 @@
       box-shadow: 0 0 0 2px rgba(4, 219, 141, 0.2);
     }
 
-    /* Modal styles */
+    /* Modal styles - Estándar Reversa */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
+      background: rgba(0,0,0,.45);
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 10000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay[style*="flex"] {
+      opacity: 1;
+      visibility: visible;
     }
 
     .modal-content {
       background: white;
-      padding: 20px 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(11,36,49,.16);
       text-align: center;
-      width: 420px;
-      max-width: 90vw;
+      width: 90%;
+      max-width: 480px;
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+      font-family: 'Satoshi', sans-serif;
     }
 
-    .modal-content h3 {
-      margin: 0 0 8px 0;
-      color: #0b2431;
-      font-size: 16px;
+    .modal-overlay[style*="flex"] .modal-content {
+      transform: scale(1);
+    }
+
+    .reversa-modal h3 {
+      margin: 0 0 16px 0;
+      color: var(--reversa-blue, #0b2431);
+      font-size: 20px;
       font-weight: 600;
+      font-family: 'Satoshi', sans-serif;
     }
 
-    .modal-content p {
-      margin: 0 0 15px 0;
-      color: #455862;
-      font-size: 13px;
-      line-height: 1.3;
+    .reversa-modal p {
+      margin: 0 0 24px 0;
+      color: var(--reversa-slate, #455862);
+      font-size: 16px;
+      line-height: 1.4;
+      font-family: 'Satoshi', sans-serif;
     }
 
     .modal-ok-btn {
@@ -994,39 +1066,68 @@
       background-color: #03c57f;
     }
 
-    .modal-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-    }
-
-    .modal-btn {
-      padding: 8px 20px;
+    /* Estilos para botones estándar Reversa */
+    .btn {
+      padding: 8px 16px;
       border-radius: 20px;
       font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
-      font-weight: 500;
-    }
-
-    .modal-btn-si {
-      background-color: #0b2431;
-      color: white;
+      font-family: 'Satoshi', sans-serif;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
       border: none;
     }
 
-    .modal-btn-si:hover {
-      background-color: #0a1f2a;
+    .btn:hover {
+      cursor: pointer;
     }
 
-    .modal-btn-no {
-      background-color: transparent;
-      color: #0b2431;
-      border: 1px solid #0b2431;
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--reversa-blue, #0b2431);
+      color: var(--reversa-blue, #0b2431);
     }
 
-    .modal-btn-no:hover {
+    .btn-outline:hover {
       background-color: rgba(11, 36, 49, 0.1);
+    }
+
+    .btn-filled {
+      background: var(--reversa-blue, #0b2431);
+      border: 1px solid var(--reversa-blue, #0b2431);
+      color: white;
+    }
+
+    .btn-filled:hover {
+      background: var(--reversa-slate, #455862);
+      border-color: var(--reversa-slate, #455862);
+    }
+
+    .btn-danger {
+      background: var(--error, #d32f2f);
+      border: 1px solid var(--error, #d32f2f);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b71c1c;
+      border-color: #b71c1c;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
     }
 
     .modal-btn:disabled {
@@ -1280,72 +1381,122 @@
       background-color: white;
     }
 
-    /* Export dropdown styles */
+    /* Export dropdown styles - Estándar Reversa */
     .export-dropdown {
       position: relative;
-      display: inline-block;
+      display: inline-block !important;
+      visibility: visible !important;
     }
 
     .export-btn {
-      background: #04db8d;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
+      background: var(--reversa-blue, #0b2431) !important;
+      color: white !important;
+      border: none !important;
+      padding: 8px 15px !important;
+      border-radius: 20px !important;
+      cursor: pointer !important;
+      font-size: 14px !important;
+      font-weight: 600 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      transition: all 0.2s ease !important;
+      font-family: 'Satoshi', sans-serif !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
 
     .export-btn:hover {
-      background: #03c57f;
+      background: var(--reversa-slate, #455862);
+      cursor: pointer;
     }
 
     .export-dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      background-color: white;
-      min-width: 160px;
-      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-      border-radius: 4px;
-      z-index: 1000;
-      border: 1px solid #dee2e6;
+      display: none !important;
+      position: absolute !important;
+      right: 0 !important;
+      top: calc(100% + 5px) !important;
+      background-color: white !important;
+      min-width: 180px !important;
+      box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2) !important;
+      border-radius: 8px !important;
+      z-index: 10000 !important;
+      border: 1px solid #dee2e6 !important;
+      padding: 6px !important;
     }
 
     .export-dropdown-content.show {
-      display: block;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
 
     .export-option {
-      color: #495057;
-      padding: 12px 16px;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: background-color 0.2s ease;
-      border: none;
-      background: none;
-      width: 100%;
-      text-align: left;
-      font-size: 14px;
+      color: #0b2431 !important;
+      padding: 12px 16px !important;
+      text-decoration: none !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 10px !important;
+      cursor: pointer !important;
+      transition: background-color 0.2s ease !important;
+      border: none !important;
+      background: none !important;
+      width: 100% !important;
+      text-align: left !important;
+      font-size: 14px !important;
+      border-radius: 6px !important;
+      margin: 2px 0 !important;
+      font-family: 'Satoshi', sans-serif !important;
     }
 
     .export-option:hover {
-      background-color: #f8f9fa;
+      background-color: #f8f9fa !important;
     }
 
     .export-option:first-child {
-      border-radius: 4px 4px 0 0;
+      border-radius: 6px 6px 0 0;
     }
 
     .export-option:last-child {
-      border-radius: 0 0 4px 4px;
+      border-radius: 0 0 6px 6px;
+    }
+
+    /* Botones del header de contenido generado */
+    .back-to-documents-btn {
+      background: none !important;
+      border: none !important;
+      color: #0b2431 !important;
+      font-size: 16px !important;
+      cursor: pointer !important;
+      padding: 8px !important;
+      border-radius: 4px !important;
+      transition: all 0.2s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    .back-to-documents-btn:hover {
+      background-color: #f8f9fa !important;
+    }
+
+    .edit-content-btn {
+      background: none !important;
+      border: none !important;
+      color: #0b2431 !important;
+      font-size: 16px !important;
+      cursor: pointer !important;
+      padding: 5px !important;
+      border-radius: 4px !important;
+      transition: all 0.2s ease !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 5px !important;
+    }
+
+    .edit-content-btn:hover {
+      background-color: #f8f9fa !important;
     }
 
     /* Contenido editable */
@@ -1374,3 +1525,108 @@
       position: relative;
       z-index: 5;
     }
+
+    /* Variables CSS para el estándar Reversa */
+    :root {
+      --reversa-green: #04db8d;
+      --reversa-blue: #0b2431;
+      --reversa-slate: #455862;
+      --neutral-300: #e9ecef;
+      --neutral-400: #dee2e6;
+      --error: #d32f2f;
+    }
+
+    /* Mejoras en la transición de modales */
+    .modal-overlay {
+      backdrop-filter: blur(2px);
+    }
+
+    .modal-overlay[style*="flex"] {
+      animation: modalFadeIn 0.3s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+      }
+      to {
+        opacity: 1;
+        backdrop-filter: blur(2px);
+      }
+    }
+
+    .modal-overlay[style*="flex"] .modal-content {
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: scale(0.9) translateY(-20px);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* Mejoras en el dropdown de exportación */
+    .export-dropdown-content {
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(11,36,49,.12);
+      border: 1.5px solid var(--neutral-300);
+      overflow: hidden;
+    }
+
+    .export-option {
+      font-family: 'Satoshi', sans-serif;
+      font-weight: 500;
+      border-radius: 0;
+    }
+
+    .export-option:first-child {
+      border-radius: 12px 12px 0 0;
+    }
+
+    .export-option:last-child {
+      border-radius: 0 0 12px 12px;
+    }
+
+    .export-option:hover {
+      background-color: rgba(4, 219, 141, 0.08);
+      color: var(--reversa-blue);
+    }
+
+    /* Mejoras en la tipografía */
+    .reversa-modal,
+    .reversa-select,
+    .btn {
+      font-family: 'Satoshi', sans-serif;
+    }
+
+    /* Focus states mejorados */
+    .btn:focus,
+    .reversa-select:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(4,219,141,.15);
+    }
+
+    .btn-danger:focus {
+      box-shadow: 0 0 0 3px rgba(211,47,47,.15);
+    }
+
+/* Custom Reversa Select (dropdown list) */
+.custom-select { position: relative; width: 100%; }
+.custom-select-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 0.5px solid var(--neutral-300); border-radius: 8px; padding: 10px 12px; background: #fff; color: var(--reversa-blue); font-weight: 500; cursor: pointer; box-shadow: 0 1px 3px rgba(11,36,49,.06); transition: all 0.2s ease; }
+.custom-select-toggle:hover { border-color: var(--reversa-green); box-shadow: 0 2px 6px rgba(11,36,49,.08); }
+.custom-select-caret { color: var(--reversa-slate); font-size: 12px; transition: transform 0.2s ease; }
+.custom-select-toggle[aria-expanded="true"] .custom-select-caret { transform: rotate(180deg); }
+.custom-select-menu { position: absolute; left: 0; top: calc(100% + 4px); background: #fff; border: 0.5px solid var(--neutral-300); border-radius: 8px; box-shadow: 0 4px 16px rgba(11,36,49,.1); padding: 4px; min-width: 100%; z-index: 1000; display: none; max-height: 200px; overflow-y: auto; }
+.custom-select-menu.open { display: block; }
+.custom-select-option { position: relative; padding: 8px 12px 8px 32px; border-radius: 6px; font-size: 14px; color: var(--reversa-blue); cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; font-weight: 400; }
+.custom-select-option:hover { background: #f8f9fa; color: var(--reversa-blue); }
+.custom-select-option.selected { background: rgba(11,36,49,.06); color: var(--reversa-blue); font-weight: 500; }
+.custom-select-option::before { content: ''; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; border: 1.5px solid var(--neutral-400); border-radius: 3px; background: #fff; transition: all 0.2s ease; }
+.custom-select-option.selected::before { background: var(--reversa-blue); border-color: var(--reversa-blue); }
+.custom-select-option.selected::after { content: '✓'; position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #fff; font-size: 10px; font-weight: bold; }

@@ -752,7 +752,7 @@ function buildNewsletterHTML(userName, userId, dateString, etiquetaGroups, isExt
   <body>
     <div class="container">
       <div class="online-link">
-        <a href="https://reversa.ai/profile" target="_blank">Ver online</a>
+        <a href="https://app.reversa.ai/?link=login" target="_blank">Ver online</a>
       </div>
       <div class="logo-container">
         <img src="cid:reversaLogo" alt="Reversa Logo" style="max-width:250px; height:auto;" />

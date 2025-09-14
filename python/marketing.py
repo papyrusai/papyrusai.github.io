@@ -8,8 +8,17 @@ import json
 import time
 import requests
 import io
-import pypdf
-from bs4 import BeautifulSoup
+try:
+    import pypdf
+except Exception:
+    pypdf = None
+    logging.warning("pypdf not available; PDF text extraction will be skipped if needed.")
+
+try:
+    from bs4 import BeautifulSoup
+except Exception:
+    BeautifulSoup = None
+    logging.warning("BeautifulSoup (bs4) not available; HTML scraping will use a regex fallback.")
 from bson import ObjectId
 import re
 
@@ -86,6 +95,9 @@ def ask_gemini_marketing(prompt):
 def download_and_extract_text_from_pdf(pdf_url):
     """Downloads a PDF from a URL and extracts the text content."""
     try:
+        if pypdf is None:
+            logging.warning("      +-- pypdf module not available; skipping PDF extraction.")
+            return None
         logging.info(f"   -> Descargando y extrayendo texto del PDF: {pdf_url}")
         response = requests.get(pdf_url, stream=True, timeout=20)
         response.raise_for_status()
@@ -112,18 +124,32 @@ def scrape_text_from_html(html_url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
         response = requests.get(html_url, timeout=20, headers=headers)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        
-        # Eliminar elementos no deseados
-        for script in soup(["script", "style", "nav", "footer", "header"]):
-            script.decompose()
-        
-        text = soup.get_text(separator=' ', strip=True)
-        if text:
-            logging.info("      +-- Éxito en web scraping.")
-            return text
+        if BeautifulSoup is not None:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            # Eliminar elementos no deseados
+            for script in soup(["script", "style", "nav", "footer", "header"]):
+                script.decompose()
+            text = soup.get_text(separator=' ', strip=True)
+            if text:
+                logging.info("      +-- Éxito en web scraping (bs4).")
+                return text
+            else:
+                logging.warning("      +-- HTML leído pero no se pudo extraer texto (bs4).")
+                return None
         else:
-            logging.warning("      +-- HTML leído pero no se pudo extraer texto.")
+            # Fallback sin bs4: limpiar HTML con regex simples
+            logging.warning("      +-- BeautifulSoup no disponible; usando fallback por regex.")
+            html = response.text
+            # Eliminar bloques de script y style
+            html = re.sub(r'<script[\s\S]*?</script>', ' ', html, flags=re.IGNORECASE)
+            html = re.sub(r'<style[\s\S]*?</style>', ' ', html, flags=re.IGNORECASE)
+            # Eliminar tags HTML restantes
+            text = re.sub(r'<[^>]+>', ' ', html)
+            text = re.sub(r'\s+', ' ', text).strip()
+            if text:
+                logging.info("      +-- Éxito en web scraping (fallback).")
+                return text
+            logging.warning("      +-- HTML leído pero no se pudo extraer texto (fallback).")
             return None
     except requests.exceptions.RequestException as e:
         logging.error(f"      +-- Error en la solicitud HTML: {e}")
@@ -249,6 +275,21 @@ El contenido debe estructurarse como un post de LinkedIn viral e informativo con
 - Máximo 300 palabras.
 - Enfoque en insights valiosos y aplicabilidad práctica.
 """
+    elif document_type == "email":
+        document_structure = """
+El contenido debe estructurarse como un email profesional con:
+- Un título principal profesional usando <h2> que sirva como asunto del email.
+- Saludo profesional al inicio (ej: <p>Estimado/a [Nombre],</p> o <p>Buenos días,</p>).
+- A continuación, para cada documento analizado, DEBES crear una sección separada.
+- Cada sección de documento DEBE empezar con un subtítulo propio en negrita (usando <b>) que resuma el tema de ese documento.
+- Después del análisis del documento, y antes de la siguiente sección, DEBES incluir la fuente en un párrafo separado.
+- Párrafos estructurados y profesionales con información clara y concisa.
+- Uso de listas con viñetas para destacar puntos importantes.
+- Cierre profesional (ej: <p>Atentamente,</p> o <p>Saludos cordiales,</p>).
+- Tono formal pero accesible, apropiado para comunicación corporativa.
+- Máximo 400 palabras.
+- Enfoque en información relevante y actionable para el destinatario.
+"""
     else:  # fallback to whatsapp
         document_structure = """
 El contenido debe estructurarse como un mensaje corto de WhatsApp con:
@@ -274,6 +315,14 @@ El contenido debe estructurarse como un mensaje corto de WhatsApp con:
    - Uso estratégico de emojis en el contenido
    - Lista de puntos clave si es necesario
    - Enfoque en insights valiosos"""
+    elif document_type == "email":
+        word_limit = "400 palabras total"
+        structure_rec = """   - Título principal profesional con <h2> (asunto del email)
+   - Saludo profesional al inicio
+   - Cuerpo estructurado con análisis de cada documento
+   - Listas con viñetas para puntos importantes
+   - Cierre profesional y cordial
+   - Enfoque en información actionable"""
     else:  # newsletter
         word_limit = "500 palabras total"
         structure_rec = """   - Título principal con <h2>
@@ -283,7 +332,8 @@ El contenido debe estructurarse como un mensaje corto de WhatsApp con:
 
     # Build the complete prompt
     try:
-        prompts_path = os.path.join(os.path.dirname(__file__), 'prompts', 'generacion_contenido.md')
+        # Resolve path to ../prompts/generacion_contenido.md relative to this file
+        prompts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'prompts', 'generacion_contenido.md'))
         with open(prompts_path, 'r', encoding='utf-8') as f:
             md_text = f.read()
         md_trim = md_text.lstrip()
@@ -493,9 +543,12 @@ def main(documents_data, instructions, language, document_type, idioma='español
         logging.error("ERROR: No se proporcionaron documentos.")
         return {"success": False, "error": "No se proporcionaron documentos"}
     
-    if not instructions.strip():
-        logging.error("ERROR: No se proporcionaron instrucciones.")
-        return {"success": False, "error": "No se proporcionaron instrucciones"}
+    if not instructions or not str(instructions).strip():
+        logging.warning("No se proporcionaron instrucciones; usando fallback genérico.")
+        instructions = (
+            "Genera un resumen profesional y claro basado en los documentos, "
+            "siguiendo el tono indicado y respetando el tipo de contenido solicitado."
+        )
 
     # Build the marketing prompt with enriched documents
     logging.info("="*50)

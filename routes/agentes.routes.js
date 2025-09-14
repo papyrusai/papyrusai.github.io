@@ -531,4 +531,43 @@ router.post('/api/generate-custom-agent', ensureAuthenticated, async (req, res) 
 	}
 });
 
+// === Feedback endpoint ===
+router.post('/api/sugerencia_edicion', ensureAuthenticated, async (req, res) => {
+	try {
+		const client = new MongoClient(uri, mongodbOptions);
+		await client.connect();
+		const db = client.db('papyrus');
+		const feedbackCol = db.collection('Feedback');
+
+		const now = new Date();
+		const dd = String(now.getDate()).padStart(2, '0');
+		const mm = String(now.getMonth() + 1).padStart(2, '0');
+		const yyyy = now.getFullYear();
+		const fecha = `${dd}-${mm}-${yyyy}`;
+
+		const body = req.body || {};
+		const agente = body.agente || '';
+
+		const doc = {
+			user_id: String(req.user?._id || ''),
+			user_email: req.user?.email || req.user?.username || '',
+			created_at: now,
+			updated_at: now,
+			content_evaluated: 'agente',
+			agente: agente,
+			fecha,
+			feedback: 'Sugerencia cambios',
+			doc_url: body.doc_url || '',
+			feedback_detalle: body.feedback_detalle || ''
+		};
+
+		await feedbackCol.insertOne({ ...doc });
+		await client.close();
+		return res.json({ success: true, data: doc });
+	} catch (error) {
+		console.error('Error guardando feedback:', error);
+		return res.status(500).json({ success: false, error: 'Error interno al guardar feedback' });
+	}
+});
+
 module.exports = router; 

@@ -1063,12 +1063,16 @@ async function saveAgent(button, originalName) {
   button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
   
   try {
-    // Get current user data
-    const response = await fetch('/api/get-user-data');
-    const userData = await response.json();
-    
-    // Update etiquetas_personalizadas
-    const etiquetas = userData.etiquetas_personalizadas || {};
+    // Get current etiquetas from the resolver (enterprise-aware)
+    let etiquetas = {};
+    if (typeof window.EtiquetasResolver !== 'undefined' && typeof window.EtiquetasResolver.getEtiquetasPersonalizadas === 'function') {
+      const current = await window.EtiquetasResolver.getEtiquetasPersonalizadas();
+      etiquetas = current.etiquetas_personalizadas || {};
+    } else {
+      const response = await fetch('/api/get-user-data');
+      const userData = await response.json();
+      etiquetas = userData.etiquetas_personalizadas || {};
+    }
     
     // Remove old key if name changed
     if (originalName !== newName) {
@@ -1159,12 +1163,18 @@ async function deleteAgent(button, agentName) {
   }
   
   try {
-    // Get current user data
-    const response = await fetch('/api/get-user-data');
-    const userData = await response.json();
+    // Get current etiquetas using enterprise-aware resolver
+    let etiquetas = {};
+    if (typeof window.EtiquetasResolver !== 'undefined' && typeof window.EtiquetasResolver.getEtiquetasPersonalizadas === 'function') {
+      const current = await window.EtiquetasResolver.getEtiquetasPersonalizadas();
+      etiquetas = current.etiquetas_personalizadas || {};
+    } else {
+      const response = await fetch('/api/get-user-data');
+      const userData = await response.json();
+      etiquetas = userData.etiquetas_personalizadas || {};
+    }
     
     // Remove from etiquetas_personalizadas
-    const etiquetas = userData.etiquetas_personalizadas || {};
     delete etiquetas[agentName];
     
     // Save to database using resolver
@@ -1907,20 +1917,7 @@ function hideLoader(){
 
 // ========== Agent detail and editing functions (moved from inline IIFE) ==========
 async function openAgentDetail(agentKey, xml){
-  // Try to lock for editing first
-  if (typeof window.EtiquetasResolver !== 'undefined') {
-    const lockResult = await window.EtiquetasResolver.lockForEdit(agentKey);
-    
-    if (!lockResult.success && lockResult.locked) {
-      // Another user is editing - show modal instead of alert
-      showInfoModal({
-        title: 'Agente en Edición',
-        message: `Otro usuario está editando este agente actualmente. Por favor, inténtalo en unos minutos.`,
-        confirmText: 'Entendido'
-      });
-      return;
-    }
-  }
+  // Read-only mode: no locking needed
   
   const overlay = document.getElementById('agentDetailOverlay');
   const title = document.getElementById('agentModalTitle');
@@ -1940,14 +1937,16 @@ async function openAgentDetail(agentKey, xml){
   contInput.value = vars.Contenido || '';
   noInclInput.value = vars.DocumentosNoIncluidos || '';
 
-  // Inputs editables por defecto
-  const setDisabled = (disabled)=>{
-    [ctxInput, objInput, contInput, noInclInput].forEach(el=>{
-      el.disabled = disabled;
-      if(el.tagName === 'TEXTAREA') el.readOnly = disabled;
-    });
-  };
-  setDisabled(false);
+  // Force read-only: disable all inputs and prevent interaction
+  [ctxInput, objInput, contInput, noInclInput].forEach(el=>{
+    try{
+      el.disabled = false; // keep styles
+      if (el.tagName === 'TEXTAREA') el.readOnly = true;
+      el.style.pointerEvents = 'none';
+      el.style.backgroundColor = '#fff';
+      el.style.outline = 'none';
+    }catch(_){ }
+  });
   
   // Solo deshabilitar saveBtn si existe (puede haber sido convertido a readonly)
   if (saveBtn) {
@@ -1958,13 +1957,9 @@ async function openAgentDetail(agentKey, xml){
   AGENTS_STATE.originalXml = xml;
   AGENTS_STATE.originalVars = vars;
   AGENTS_STATE.isDirty = false;
-  AGENTS_STATE.isEditing = true; // siempre en modo edición
-
-  const markDirty = ()=>{
-    AGENTS_STATE.isDirty = true;
-    if (saveBtn) saveBtn.disabled = false;
-  };
-  [ctxInput, objInput, contInput, noInclInput].forEach(el=>{ el.oninput = markDirty; });
+  AGENTS_STATE.isEditing = false; // lectura únicamente
+  // Remove any previous input handlers
+  [ctxInput, objInput, contInput, noInclInput].forEach(el=>{ try{ el.oninput = null; }catch(_){ } });
 
   // Edición de nombre en el título
   if (editNameBtn){
@@ -1977,16 +1972,119 @@ async function openAgentDetail(agentKey, xml){
   }
 
   if (saveBtn) {
+    // Repurpose button to "Sugerir cambios"
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fas fa-comment-alt"></i> Sugerir cambios';
     saveBtn.onclick = ()=> {
-      // Cambio inmediato del botón ANTES de cualquier await
-      saveBtn.disabled = true;
-      saveBtn.innerHTML = '<div class="button-spinner"></div> Guardando...';
-      saveAgentChanges(false, saveBtn);
+      showSuggestChangesModal({
+        agente: titleText.textContent || agentKey
+      });
     };
   }
   closeBtn.onclick = ()=> attemptCloseAgentModal();
 
   overlay.style.display = 'flex';
+}
+
+// Modal para sugerir cambios y envío a backend
+function showSuggestChangesModal({ agente }){
+  const overlay = createModalOverlay();
+  const content = document.createElement('div');
+  content.style.cssText = `
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(11,36,49,.16);
+    width: 90%;
+    max-width: 560px;
+    text-align: left;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;`;
+
+  const title = document.createElement('h3');
+  title.textContent = 'Sugerir cambios para el agente';
+  title.style.cssText = 'font-size:20px;margin:0 0 12px 0;color:#0b2431;font-weight:700;';
+
+  const subtitle = document.createElement('div');
+  subtitle.textContent = agente || '';
+  subtitle.style.cssText = 'font-size:14px;color:#7a8a93;margin-bottom:12px;font-weight:600;';
+
+  const textarea = document.createElement('textarea');
+  textarea.className = 'product-input';
+  textarea.rows = 6;
+  textarea.placeholder = 'Ejemplo: Quiero que el agente incluya normativa de IA a parte de protección de datos.\nAdemás, me gusstaría que dejara de detectar como relevante novedades sobre convenios interadminsitrativos';
+  textarea.style.width = '100%';
+  textarea.style.padding = '12px 16px';
+  textarea.style.border = '1px solid #dee2e6';
+  textarea.style.borderRadius = '8px';
+  textarea.style.boxSizing = 'border-box';
+
+  const actions = document.createElement('div');
+  actions.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;margin-top:16px;';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'cancel-edit-btn';
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.style.cursor = 'pointer';
+  cancelBtn.style.background = 'transparent';
+  cancelBtn.style.border = '1px solid #0b2431';
+  cancelBtn.style.color = '#0b2431';
+  cancelBtn.style.borderRadius = '16px';
+  cancelBtn.style.padding = '8px 16px';
+  cancelBtn.style.fontSize = '14px';
+  cancelBtn.style.fontWeight = '500';
+  cancelBtn.onclick = ()=> hideModal(overlay);
+
+  const sendBtn = document.createElement('button');
+  sendBtn.className = 'generate-agent-btn';
+  sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar sugerencia';
+  sendBtn.style.cursor = 'pointer';
+  sendBtn.style.background = '#0b2431';
+  sendBtn.style.border = '1px solid #0b2431';
+  sendBtn.style.color = 'white';
+  sendBtn.style.borderRadius = '16px';
+  sendBtn.style.padding = '8px 16px';
+  sendBtn.style.fontSize = '14px';
+  sendBtn.style.fontWeight = '600';
+  sendBtn.onclick = async ()=>{
+    const text = (textarea.value||'').trim();
+    if (!text){
+      showErrorModal({ title:'Sugerencia vacía', message:'Introduce una sugerencia antes de enviar.', confirmText:'Entendido' });
+      return;
+    }
+    sendBtn.disabled = true;
+    sendBtn.innerHTML = '<div class="button-spinner"></div> Enviando...';
+    try{
+      const res = await fetch('/api/sugerencia_edicion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          doc_url: '',
+          feedback_detalle: text,
+          agente: agente
+        })
+      });
+      if (!res.ok) throw new Error(await res.text());
+      hideModal(overlay);
+      showAgentsToast('Gracias por tu sugerencia', 'success');
+    }catch(e){
+      console.error('Error enviando feedback:', e);
+      showAgentsToast('No se pudo enviar la sugerencia', 'error');
+      sendBtn.disabled = false;
+      sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar sugerencia';
+    }
+  };
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(sendBtn);
+  content.appendChild(title);
+  content.appendChild(subtitle);
+  content.appendChild(textarea);
+  content.appendChild(actions);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+  setTimeout(()=> overlay.classList.add('show'), 10);
 }
 
 function attemptCloseAgentModal(){
@@ -2090,9 +2188,16 @@ async function saveAgentChanges(closeAfterSave, triggerBtn){
     }
 
     const newXml = buildEtiquetaXml(newVars);
-    const response = await fetch('/api/get-user-data');
-    const userData = await response.json();
-    const etiquetas = userData.etiquetas_personalizadas || {};
+    // Fetch current etiquetas using enterprise-aware resolver
+    let etiquetas = {};
+    if (typeof window.EtiquetasResolver !== 'undefined' && typeof window.EtiquetasResolver.getEtiquetasPersonalizadas === 'function') {
+      const current = await window.EtiquetasResolver.getEtiquetasPersonalizadas();
+      etiquetas = current.etiquetas_personalizadas || {};
+    } else {
+      const response = await fetch('/api/get-user-data');
+      const userData = await response.json();
+      etiquetas = userData.etiquetas_personalizadas || {};
+    }
 
     const oldKey = AGENTS_STATE.currentAgentKey;
     const newKey = newVars.NombreEtiqueta;
@@ -2550,9 +2655,16 @@ async function saveNewAgent(triggerBtn){
     }
 
     const newXml = buildEtiquetaXml(newVars);
-    const response = await fetch('/api/get-user-data');
-    const userData = await response.json();
-    const etiquetas = userData.etiquetas_personalizadas || {};
+    // Fetch current etiquetas using enterprise-aware resolver
+    let etiquetas = {};
+    if (typeof window.EtiquetasResolver !== 'undefined' && typeof window.EtiquetasResolver.getEtiquetasPersonalizadas === 'function') {
+      const current = await window.EtiquetasResolver.getEtiquetasPersonalizadas();
+      etiquetas = current.etiquetas_personalizadas || {};
+    } else {
+      const response = await fetch('/api/get-user-data');
+      const userData = await response.json();
+      etiquetas = userData.etiquetas_personalizadas || {};
+    }
 
     const newKey = newVars.NombreEtiqueta;
     etiquetas[newKey] = newXml;

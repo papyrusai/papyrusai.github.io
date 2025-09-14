@@ -43,6 +43,13 @@
      
      // Cargar configuraciones guardadas
      loadSavedSettings(listName);
+
+     // Inicializar dropdowns personalizados después de que se cargue la vista
+     setTimeout(() => {
+       if (typeof window.initializeCustomDropdowns === 'function') {
+         window.initializeCustomDropdowns();
+       }
+     }, 100);
    }
    
    // Función para volver a la vista de listas
@@ -484,11 +491,10 @@
      
      console.log('Generation settings:', settings);
      
-     // Validar que hay instrucciones
+     // Si no hay instrucciones, generar una genérica basada en los ajustes
      if (!settings.instructions) {
-       alert('Por favor, introduce algunas instrucciones antes de generar el contenido.');
-       document.getElementById('instrucciones-input')?.focus();
-       return;
+       settings.instructions = generateGenericInstructions(settings.language, settings.documentType, settings.idioma);
+       console.log('Using generic instructions:', settings.instructions);
      }
      
      // Validar que los documentos tienen información mínima
@@ -540,17 +546,33 @@
        });
    }
 
-   // Función para mostrar el modal de validación
+   // Función para mostrar el modal de validación de documentos
    function showNoDocumentosModal() {
-     const modal = document.getElementById('modal-no-documentos');
+     const modal = document.getElementById('modal-seleccionar-documentos');
      if (modal) {
        modal.style.display = 'flex';
      }
    }
 
-   // Función para cerrar el modal de validación
-   function closeNoDocumentosModal() {
-     const modal = document.getElementById('modal-no-documentos');
+   // Función para cerrar el modal de validación de documentos
+   function closeSeleccionarDocumentosModal() {
+     const modal = document.getElementById('modal-seleccionar-documentos');
+     if (modal) {
+       modal.style.display = 'none';
+     }
+   }
+
+   // Función para mostrar el modal de instrucciones requeridas
+   function showInstruccionesRequeridasModal() {
+     const modal = document.getElementById('modal-instrucciones-requeridas');
+     if (modal) {
+       modal.style.display = 'flex';
+     }
+   }
+
+   // Función para cerrar el modal de instrucciones requeridas
+   function closeInstruccionesRequeridasModal() {
+     const modal = document.getElementById('modal-instrucciones-requeridas');
      if (modal) {
        modal.style.display = 'none';
      }
@@ -645,8 +667,6 @@
    // Función para llamar al backend y generar contenido con IA
    async function generateContentWithAI(settings) {
      try {
-       console.log('Sending data to backend:', settings);
-       
        const response = await fetch('/api/generate-marketing-content', {
          method: 'POST',
          headers: {
@@ -654,8 +674,6 @@
          },
          body: JSON.stringify(settings)
        });
-
-       console.log('Response status:', response.status);
        
        if (!response.ok) {
          const errorText = await response.text();
@@ -664,7 +682,22 @@
        }
 
        const result = await response.json();
-       console.log('Backend response:', result);
+       
+       // Clean up any debug output that might be in the content
+       if (result.success && result.content) {
+         // Remove any JSON artifacts that might have leaked into the content
+         let cleanContent = result.content;
+         if (typeof cleanContent === 'string') {
+           // Remove any stray JSON patterns like {"success":true,"content":"
+           cleanContent = cleanContent.replace(/^\s*\{"success":\s*true,\s*"content":\s*"/i, '');
+           cleanContent = cleanContent.replace(/"\s*\}\s*$/i, '');
+           // Remove any other JSON wrapper patterns
+           cleanContent = cleanContent.replace(/^\s*\{[^}]*"html_content":\s*"/i, '');
+           cleanContent = cleanContent.replace(/"\s*\}\s*$/i, '');
+           result.content = cleanContent;
+         }
+       }
+       
        return result;
      } catch (error) {
        console.error('Error calling AI generation API:', error);
@@ -674,6 +707,8 @@
 
    // Función para mostrar el contenido generado
    function displayGeneratedContent(htmlContent, colorPalette) {
+     console.log('displayGeneratedContent called with:', { htmlContent: htmlContent ? 'content exists' : 'no content', colorPalette });
+     
      const documentosSection = document.querySelector('.documentos-section');
      const documentosTitle = document.querySelector('.documentos-title');
      const documentosControls = document.querySelector('.documentos-controls');
@@ -681,7 +716,19 @@
      const contenidoContainer = document.getElementById('contenido-generado');
      const contenidoHtml = document.getElementById('contenido-html');
      
-     if (!documentosSection || !documentosTitle || !contenidoContainer || !contenidoHtml) return;
+     console.log('Elements found:', {
+       documentosSection: !!documentosSection,
+       documentosTitle: !!documentosTitle,
+       documentosControls: !!documentosControls,
+       documentosList: !!documentosList,
+       contenidoContainer: !!contenidoContainer,
+       contenidoHtml: !!contenidoHtml
+     });
+     
+     if (!documentosSection || !documentosTitle || !contenidoContainer || !contenidoHtml) {
+       console.error('Missing required elements for displayGeneratedContent');
+       return;
+     }
      
      // Cambiar el título de la sección con botón de copiar
      documentosTitle.innerHTML = `
@@ -703,13 +750,30 @@
                  <i class="fas fa-copy"></i> Copiar
                </button>
                <button class="export-option" onclick="downloadAsPDF(); hideExportDropdown()">
-                 <i class="fas fa-file-pdf"></i> PDF
+                 <i class="fas fa-file-pdf"></i> Descargar PDF
+               </button>
+               <button class="export-option" onclick="downloadAsWord(); hideExportDropdown()">
+                 <i class="fas fa-file-word"></i> Descargar Word
                </button>
              </div>
            </div>
          </div>
        </div>
      `;
+     
+     console.log('Export button HTML set in documentosTitle');
+     
+     // Verificar que el botón de exportar se creó correctamente
+     setTimeout(() => {
+       const exportBtn = document.querySelector('.export-btn');
+       const exportDropdown = document.querySelector('.export-dropdown');
+       console.log('Export elements after HTML set:', {
+         exportBtn: !!exportBtn,
+         exportDropdown: !!exportDropdown,
+         exportBtnVisible: exportBtn ? getComputedStyle(exportBtn).display : 'not found',
+         exportDropdownVisible: exportDropdown ? getComputedStyle(exportDropdown).display : 'not found'
+       });
+     }, 100);
      
      // Ocultar controles de documentos y lista de documentos
      if (documentosControls) documentosControls.style.display = 'none';
@@ -1001,6 +1065,32 @@
      }
    }
    
+   // Función para generar instrucciones genéricas
+   function generateGenericInstructions(language, documentType, idioma) {
+     const languageText = language === 'juridico' ? 'lenguaje técnico jurídico' : 'lenguaje claro y accesible';
+     const idiomaText = idioma === 'español' ? 'español' : 'inglés';
+     
+     let typeInstructions = '';
+     switch (documentType) {
+       case 'whatsapp':
+         typeInstructions = 'un mensaje conciso y directo para WhatsApp, destacando los puntos más relevantes';
+         break;
+       case 'linkedin':
+         typeInstructions = 'un post profesional para LinkedIn que sea informativo y engaging, con emojis estratégicos';
+         break;
+       case 'newsletter':
+         typeInstructions = 'un contenido estructurado para newsletter con análisis detallado de cada documento';
+         break;
+       case 'email':
+         typeInstructions = 'un email profesional corporativo con saludo, análisis estructurado y cierre cordial';
+         break;
+       default:
+         typeInstructions = 'un resumen profesional destacando los aspectos más importantes';
+     }
+     
+     return `Genera ${typeInstructions}, utilizando ${languageText} y redactado en ${idiomaText}. Analiza la relevancia y las implicaciones de cada documento, proporcionando un resumen claro y útil para el lector.`;
+   }
+
    // Función para obtener los documentos seleccionados (versión simple para compatibilidad)
    function getSelectedDocuments() {
      const selectedCheckboxes = document.querySelectorAll('.documento-checkbox:checked');
@@ -1302,8 +1392,228 @@
      }
    });
 
+   // Función para mostrar/ocultar el dropdown de exportación
+   function toggleExportDropdown() {
+     const dropdown = document.getElementById('export-dropdown-content');
+     if (dropdown) {
+       dropdown.classList.toggle('show');
+     }
+   }
+
+   // Función para ocultar el dropdown de exportación
+   function hideExportDropdown() {
+     const dropdown = document.getElementById('export-dropdown-content');
+     if (dropdown) {
+       dropdown.classList.remove('show');
+     }
+   }
+
+   // Función para descargar como PDF
+   async function downloadAsPDF() {
+     const contenidoHtml = document.getElementById('contenido-html');
+     if (!contenidoHtml) {
+       alert('No hay contenido para descargar');
+       return;
+     }
+
+     try {
+       // Crear un elemento temporal para el contenido
+       const tempDiv = document.createElement('div');
+       tempDiv.innerHTML = contenidoHtml.innerHTML;
+       
+       // Aplicar estilos inline para el PDF
+       tempDiv.style.fontFamily = 'Arial, sans-serif';
+       tempDiv.style.lineHeight = '1.6';
+       tempDiv.style.color = '#333';
+       tempDiv.style.padding = '20px';
+       
+       // Crear ventana para imprimir
+       const printWindow = window.open('', '_blank');
+       printWindow.document.write(`
+         <!DOCTYPE html>
+         <html>
+         <head>
+           <title>Contenido Generado</title>
+           <style>
+             body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }
+             h1, h2, h3, h4, h5, h6 { color: #0b2431; margin-top: 20px; margin-bottom: 10px; }
+             p { margin: 10px 0; }
+             ul, ol { padding-left: 20px; }
+             li { margin: 5px 0; }
+             table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+             th, td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
+             th { background-color: #f5f5f5; font-weight: bold; }
+             a { color: #04db8d; text-decoration: none; }
+             a:hover { text-decoration: underline; }
+             .logo-container { text-align: center; margin-bottom: 20px; }
+             .logo-container img { max-width: 200px; max-height: 80px; }
+             @media print {
+               body { margin: 0; }
+               .logo-container { page-break-after: avoid; }
+             }
+           </style>
+         </head>
+         <body>
+           ${tempDiv.innerHTML}
+         </body>
+         </html>
+       `);
+       
+       printWindow.document.close();
+       
+       // Esperar a que se cargue y luego imprimir
+       printWindow.onload = function() {
+         setTimeout(() => {
+           printWindow.print();
+         }, 500);
+       };
+       
+     } catch (error) {
+       console.error('Error generating PDF:', error);
+       alert('Error al generar el PDF. Por favor, inténtalo de nuevo.');
+     }
+   }
+
+   // Función para descargar como Word
+   async function downloadAsWord() {
+     const contenidoHtml = document.getElementById('contenido-html');
+     if (!contenidoHtml) {
+       alert('No hay contenido para descargar');
+       return;
+     }
+
+     try {
+       // Crear el contenido HTML con estilos inline para Word
+       const styledContent = createWordDocument(contenidoHtml);
+       
+       // Crear un blob con el contenido HTML que Word puede interpretar
+       const blob = new Blob([styledContent], {
+         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+       });
+       
+       // Crear un enlace de descarga
+       const url = window.URL.createObjectURL(blob);
+       const a = document.createElement('a');
+       a.href = url;
+       a.download = 'contenido_generado.doc';
+       document.body.appendChild(a);
+       a.click();
+       document.body.removeChild(a);
+       window.URL.revokeObjectURL(url);
+       
+     } catch (error) {
+       console.error('Error generating Word document:', error);
+       alert('Error al generar el documento Word. Por favor, inténtalo de nuevo.');
+     }
+   }
+
+   // Función para crear el documento Word con formato HTML
+   function createWordDocument(container) {
+     const clone = container.cloneNode(true);
+     
+     // Aplicar estilos inline compatibles con Word
+     const headings = clone.querySelectorAll('h1, h2, h3, h4, h5, h6');
+     headings.forEach(heading => {
+       const currentColor = heading.style.color || '#0b2431';
+       heading.style.cssText = `color: ${currentColor}; font-weight: bold; margin: 16px 0 8px 0; font-family: 'Calibri', sans-serif;`;
+     });
+     
+     const paragraphs = clone.querySelectorAll('p');
+     paragraphs.forEach(p => {
+       const currentColor = p.style.color || '#333333';
+       p.style.cssText = `color: ${currentColor}; line-height: 1.5; margin: 8px 0; font-family: 'Calibri', sans-serif; font-size: 11pt;`;
+     });
+     
+     const lists = clone.querySelectorAll('ul, ol');
+     lists.forEach(list => {
+       list.style.cssText = `margin: 8px 0; padding-left: 18px; font-family: 'Calibri', sans-serif; font-size: 11pt;`;
+     });
+     
+     const listItems = clone.querySelectorAll('li');
+     listItems.forEach(li => {
+       const currentColor = li.style.color || '#333333';
+       li.style.cssText = `color: ${currentColor}; line-height: 1.5; margin: 4px 0;`;
+     });
+     
+     const boldElements = clone.querySelectorAll('b, strong');
+     boldElements.forEach(bold => {
+       const currentColor = bold.style.color || '#0b2431';
+       bold.style.cssText = `color: ${currentColor}; font-weight: bold;`;
+     });
+     
+     const tables = clone.querySelectorAll('table');
+     tables.forEach(table => {
+       table.style.cssText = `width: 100%; border-collapse: collapse; margin: 12px 0; font-family: 'Calibri', sans-serif; font-size: 11pt;`;
+     });
+     
+     const tableCells = clone.querySelectorAll('th, td');
+     tableCells.forEach(cell => {
+       cell.style.cssText = `border: 1px solid #cccccc; padding: 6px 8px; text-align: left;`;
+     });
+     
+     const tableHeaders = clone.querySelectorAll('th');
+     tableHeaders.forEach(th => {
+       th.style.cssText += `background-color: #f0f0f0; font-weight: bold;`;
+     });
+     
+     // Crear el documento HTML compatible con Word
+     const wordDocument = `
+       <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+             xmlns:w='urn:schemas-microsoft-com:office:word' 
+             xmlns='http://www.w3.org/TR/REC-html40'>
+       <head>
+         <meta charset='utf-8'>
+         <title>Contenido Generado</title>
+         <!--[if gte mso 9]>
+         <xml>
+           <w:WordDocument>
+             <w:View>Print</w:View>
+             <w:Zoom>90</w:Zoom>
+             <w:DoNotPromptForConvert/>
+             <w:DoNotShowRevisions/>
+             <w:DoNotPrintRevisions/>
+             <w:DoNotShowMarkup/>
+             <w:DoNotShowComments/>
+             <w:DoNotShowInsertionsAndDeletions/>
+             <w:DoNotShowPropertyChanges/>
+           </w:WordDocument>
+         </xml>
+         <![endif]-->
+         <style>
+           @page { margin: 1in; }
+           body { font-family: 'Calibri', sans-serif; font-size: 11pt; line-height: 1.5; color: #333333; }
+           h1, h2, h3, h4, h5, h6 { color: #0b2431; font-weight: bold; }
+           table { border-collapse: collapse; width: 100%; }
+           th, td { border: 1px solid #cccccc; padding: 6px 8px; }
+           th { background-color: #f0f0f0; font-weight: bold; }
+           a { color: #0563c1; text-decoration: underline; }
+         </style>
+       </head>
+       <body>
+         ${clone.innerHTML}
+       </body>
+       </html>
+     `;
+     
+     return wordDocument;
+   }
+
+   // Cerrar dropdown al hacer clic fuera
+   document.addEventListener('click', function(event) {
+     const exportDropdown = document.querySelector('.export-dropdown');
+     if (exportDropdown && !exportDropdown.contains(event.target)) {
+       hideExportDropdown();
+     }
+   });
+
    // Hacer las funciones globales para que puedan ser llamadas desde el HTML
    window.showDeleteConfirmation = showDeleteConfirmation;
    window.closeDeleteConfirmation = closeDeleteConfirmation;
    window.confirmDeleteDocument = confirmDeleteDocument;
+   window.closeSeleccionarDocumentosModal = closeSeleccionarDocumentosModal;
+   window.closeInstruccionesRequeridasModal = closeInstruccionesRequeridasModal;
+   window.toggleExportDropdown = toggleExportDropdown;
+   window.hideExportDropdown = hideExportDropdown;
+   window.downloadAsPDF = downloadAsPDF;
+   window.downloadAsWord = downloadAsWord;
 

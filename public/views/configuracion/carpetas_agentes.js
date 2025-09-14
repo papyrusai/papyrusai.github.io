@@ -640,6 +640,23 @@
 
 		const bc = document.createElement('div'); 
 		bc.style.cssText='display:flex;align-items:center;gap:12px;margin:8px 0;color:#7a8a93;font-size:16px;';
+
+		// Back arrow to go to parent folder (or General)
+		if (currentFolderId) {
+			const back = document.createElement('i');
+			back.className = 'fas fa-arrow-left';
+			back.title = 'Volver';
+			back.style.cssText = 'cursor:pointer;color:#0b2431;';
+			back.onclick = async () => {
+				showNavigationLoader();
+				const parentId = estructura.folders[currentFolderId]?.parentId || null;
+				currentFolderId = parentId ? String(parentId) : null;
+				renderTree(rootEl);
+				await refreshAgentsGrid();
+			};
+			bc.appendChild(back);
+		}
+
 		const home = document.createElement('span'); 
 		home.textContent='General'; 
 		home.style.cssText='cursor:pointer;color:#0b2431;font-weight:700;font-size:16px;'; 
@@ -650,12 +667,36 @@
 			await refreshAgentsGrid();
 		};
 		bc.appendChild(home);
-		
-		if (currentFolderId && estructura.folders[currentFolderId]){ 
-			const sep = document.createElement('span'); sep.textContent='/'; sep.style.cssText='font-size:16px;'; bc.appendChild(sep); 
-			const cur = document.createElement('span'); 
-			cur.textContent = estructura.folders[currentFolderId].nombre || ''; 
-			cur.style.cssText='color:#0b2431;font-size:16px;font-weight:600;'; bc.appendChild(cur); 
+
+		// Build full breadcrumb path clickable
+		if (currentFolderId && estructura.folders[currentFolderId]){
+			// Collect ancestors from root to current
+			const path = [];
+			let fId = String(currentFolderId);
+			while (fId && estructura.folders[fId]) {
+				path.unshift(fId);
+				const p = estructura.folders[fId].parentId;
+				fId = p ? String(p) : null;
+			}
+			path.forEach((fid, idx) => {
+				const sep = document.createElement('span'); sep.textContent='/'; sep.style.cssText='font-size:16px;'; bc.appendChild(sep);
+				const seg = document.createElement('span');
+				seg.textContent = estructura.folders[fid].nombre || '';
+				if (idx < path.length - 1) {
+					// ancestor segment clickable
+					seg.style.cssText = 'cursor:pointer;color:#0b2431;font-size:16px;font-weight:600;';
+					seg.onclick = async () => {
+						showNavigationLoader();
+						currentFolderId = String(fid);
+						renderTree(rootEl);
+						await refreshAgentsGrid();
+					};
+				} else {
+					// current segment not clickable
+					seg.style.cssText = 'color:#0b2431;font-size:16px;font-weight:600;';
+				}
+				bc.appendChild(seg);
+			});
 		}
 		rootEl.appendChild(bc);
 

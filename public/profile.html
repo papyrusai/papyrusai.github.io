@@ -26,6 +26,14 @@
   <link rel="stylesheet" type="text/css" href="styles/sidebar_styles.css" />
   <link rel="stylesheet" type="text/css" href="styles/tuslistas.css" />
   <link rel="stylesheet" type="text/css" href="styles/profile.css" />
+  
+  <style>
+    /* Ensure all vision sections have white background by default */
+    .vision-section {
+      background-color: white;
+      min-height: 100vh;
+    }
+  </style>
 
   <!-- Text Editor JavaScript -->
   <script src="/views/tuslistas/textEditor.js"></script>
@@ -73,20 +81,10 @@
         </a>
       </div>
       <div class="border-menu"></div>
-      <!-- Dropdown para cambiar entre Novedades Regulatorias y Consultas Públicas -->
-      <div class="content-type-dropdown">
-        <button class="content-type-dropbtn" id="contentTypeDropdown">
-          <span id="selectedContentType">Novedades Normativas</span> 
-          <i class="fa fa-caret-down"></i>
-        </button>
-        <div id="contentTypeDropdownContent" class="content-type-dropdown-content">
-          <a href="#" data-content="novedades">Novedades Normativas</a>
-          <a href="#" data-content="consultas">Consultas Públicas</a>
-        </div>
-      </div>
+    
       
       <!-- Sidebar items para Novedades Normativas -->
-      <div id="sidebar-novedades" class="sidebar-content">
+      <div id="sidebar-novedades" class="sidebar-content" style="margin-top:30px">
         <a href="#" class="sidebar-item active" data-target="content-agentes">
           <i class="fas fa-users"></i> Agentes
         </a>
@@ -253,6 +251,192 @@
 
       // Get user plan early to use throughout the code - make it global
       window.userPlan = JSON.parse(document.getElementById("userPlan").textContent || '"plan1"');
+
+      // ==================== VARIABLES Y FUNCION GLOBALES PARA ANALISIS ====================
+      window.analisisContentLoaded = false;
+      window.analisisContentLoading = false;
+      
+      window.loadAnalisisContent = function(callback) {
+          console.log('[loadAnalisisContent] Function called.');
+          const container = document.getElementById('content-agentes');
+          
+          if (!container) {
+              console.error('[loadAnalisisContent] Error: Container with ID "content-agentes" not found.');
+              return;
+          }
+
+          if (window.analisisContentLoaded) {
+              console.log('[loadAnalisisContent] Content already loaded. Running callback if it exists.');
+              if (typeof window.initializeNormaAnalysis === 'function') {
+                  console.log('[loadAnalisisContent] Calling existing initializeNormaAnalysis function.');
+                  window.initializeNormaAnalysis();
+              } else {
+                  console.warn('[loadAnalisisContent] initializeNormaAnalysis function not available, but content was loaded.');
+                  if (typeof window.hidePageLoaderOverlay === 'function') {
+                      window.hidePageLoaderOverlay();
+                  }
+              }
+              if (callback) callback();
+              return;
+          }
+
+          if (window.analisisContentLoading) {
+              console.log('[loadAnalisisContent] Content is already loading, skipping duplicate call.');
+              return;
+          }
+
+          window.analisisContentLoading = true;
+
+          // Mostrar loader inmediatamente al comenzar la carga
+          container.innerHTML = `
+              <div style="display: flex; justify-content: center; align-items: center; height: 60vh; flex-direction: column;">
+                  <div class="analysis-loader" style="width: 60px; height: 60px; border: 4px solid rgba(4, 219, 141, 0.3); border-top-color: #04db8d; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+                  <div style="color: #455862; font-size: 16px; text-align: center;">
+                      <div style="font-weight: 600; margin-bottom: 8px;">Cargando análisis de documento</div>
+                      <div style="font-size: 14px; opacity: 0.8;">Preparando herramientas de análisis...</div>
+                  </div>
+              </div>
+              <style>
+                  @keyframes spin {
+                      0% { transform: rotate(0deg); }
+                      100% { transform: rotate(360deg); }
+                  }
+              </style>
+          `;
+
+          console.log('[loadAnalisisContent] Starting fetch for norma.html');
+          fetch('views/analisis/norma.html')
+              .then(response => {
+                  if (!response.ok) {
+                      throw new Error(`[loadAnalisisContent] Network response was not ok: ${response.statusText}`);
+                  }
+                  console.log('[loadAnalisisContent] Successfully fetched norma.html.');
+                  return response.text();
+              })
+              .then(html => {
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+
+                  // Append styles from head
+                  doc.querySelectorAll('style, link[rel="stylesheet"]').forEach(styleEl => {
+                      const existing = document.head.querySelector(`style[data-source="norma"], link[data-source="norma"][href="${styleEl.href}"]`);
+                      if (!existing) {
+                          const clone = styleEl.cloneNode(true);
+                          clone.setAttribute('data-source', 'norma');
+                          document.head.appendChild(clone);
+                          console.log('[loadAnalisisContent] Appended style/link to head.');
+                      }
+                  });
+
+                  // Extract and inject body content (container-norma and related elements)
+                  const containerNorma = doc.body.querySelector('.container-norma');
+                  const analysisStatus = doc.body.querySelector('#analysisStatus');
+                  const analysisResult = doc.body.querySelector('#analysisResult');
+                  const feedbackSection = doc.body.querySelector('#feedbackSection');
+                  
+                  // Clear container and inject content
+                  container.innerHTML = '';
+                  
+                  // Apply gradient background to main-content for analysis view
+                  const mainContent = document.getElementById('main-content');
+                  if (mainContent) {
+                      mainContent.style.background = 'radial-gradient(circle at 50% 0, rgba(4, 219, 141, 0.25) 0%, #ffffff 70%)';
+                      mainContent.style.minHeight = '100vh';
+                  }
+                  
+                  // Remove any background color from container (gradient is now on main-content)
+                  container.style.backgroundColor = 'transparent';
+                  
+                  if (containerNorma) {
+                      container.appendChild(containerNorma.cloneNode(true));
+                      console.log('[loadAnalisisContent] Injected container-norma into content-agentes.');
+                  }
+                  if (analysisStatus) {
+                      container.appendChild(analysisStatus.cloneNode(true));
+                      console.log('[loadAnalisisContent] Injected analysisStatus.');
+                  }
+                  if (analysisResult) {
+                      container.appendChild(analysisResult.cloneNode(true));
+                      console.log('[loadAnalisisContent] Injected analysisResult.');
+                  }
+                  if (feedbackSection) {
+                      container.appendChild(feedbackSection.cloneNode(true));
+                      console.log('[loadAnalisisContent] Injected feedbackSection.');
+                  }
+                  
+                  // Execute scripts
+                  const scripts = Array.from(doc.querySelectorAll('script'));
+                  console.log(`[loadAnalisisContent] Found ${scripts.length} script(s) to execute.`);
+                  const loadScript = (index) => {
+                      if (index >= scripts.length) {
+                          window.analisisContentLoaded = true;
+                          window.analisisContentLoading = false;
+                          console.log('[loadAnalisisContent] All scripts loaded. analisisContentLoaded set to true.');
+                          
+                          // Initialize analysis after loading scripts
+                          setTimeout(() => {
+                              if (typeof window.initializeNormaAnalysis === 'function') {
+                                  console.log('[loadAnalisisContent] Calling initializeNormaAnalysis() to initialize the view.');
+                                  window.initializeNormaAnalysis();
+                              } else {
+                                  console.warn('[loadAnalisisContent] initializeNormaAnalysis function not found after loading scripts.');
+                                  if (typeof window.hidePageLoaderOverlay === 'function') {
+                                      window.hidePageLoaderOverlay();
+                                  }
+                              }
+                              
+                              // Safety timeout: ensure overlay is hidden after 3 seconds max
+                              setTimeout(() => {
+                                  if (typeof window.hidePageLoaderOverlay === 'function') {
+                                      console.log('[loadAnalisisContent] Safety timeout: hiding page loader overlay');
+                                      window.hidePageLoaderOverlay();
+                                  }
+                              }, 3000);
+                          }, 100);
+                          
+                          if (callback) callback();
+                          return;
+                      }
+                      const script = scripts[index];
+                      const newScript = document.createElement('script');
+                      console.log(`[loadAnalisisContent] Loading script ${index + 1}/${scripts.length}...`);
+                      if (script.src) {
+                          // Use the raw src attribute to decide how to resolve the path
+                          const rawSrc = script.getAttribute('src');
+                          let resolvedSrc = rawSrc;
+                          // If the path is relative (does not start with http or /), prefix it with the analisis folder path
+                          if (rawSrc && !rawSrc.startsWith('http') && !rawSrc.startsWith('/')) {
+                              resolvedSrc = '/views/analisis/' + rawSrc;
+                          }
+                          newScript.src = resolvedSrc;
+                          newScript.onload = () => loadScript(index + 1);
+                          newScript.onerror = () => {
+                              console.error(`[loadAnalisisContent] Failed to load script: ${newScript.src}`);
+                              loadScript(index + 1); // Continue to next script even if one fails
+                          };
+                          document.body.appendChild(newScript);
+                      } else {
+                          newScript.textContent = script.textContent;
+                          document.body.appendChild(newScript);
+                          loadScript(index + 1);
+                      }
+                      script.remove();
+                  };
+                  loadScript(0);
+              })
+              .catch(error => {
+                  console.error('[loadAnalisisContent] Fetch error:', error);
+                  if (container) container.innerHTML = `<p style="color:red;">Error al cargar la sección de Análisis.</p>`;
+                  
+                  // Reset loading state on error
+                  window.analisisContentLoading = false;
+                  
+                  // Hide overlay on error
+                  if (typeof window.hidePageLoaderOverlay === 'function') {
+                      window.hidePageLoaderOverlay();
+                  }
+              });
+      };
 
       // Email para gating del Dashboard Interno
       window.__currentUserEmail = null;
@@ -443,6 +627,18 @@
        } else if (viewParam === 'configuracion') {
          // Show configuration section by default
          showConfiguracionSection();
+       } else if (viewParam === 'analisis') {
+         // Integrar análisis como una vista dentro de profile
+         document.querySelectorAll('.vision-section').forEach(section => {
+           section.style.display = 'none';
+           section.classList.remove('active');
+         });
+         const agentesSection = document.getElementById('content-agentes');
+         if (agentesSection) {
+           agentesSection.style.display = 'block';
+           agentesSection.classList.add('active');
+         }
+         loadAnalisisContent();
        } else {
          // *** EXISTENTE: Lógica para mostrar la sección por defecto (Agentes) ***
          // Asegurarse de que solo la sección activa sea visible al cargar
@@ -524,7 +720,7 @@
     // ==================== FUNCION PARA LOAD TRACKER (AGENTES) ====================
     let trackerContentLoaded = false;
     let trackerContentLoading = false;
-    function loadTrackerContent(callback) {
+    function loadTrackerContent(callback, forceReload = false) {
         console.log('[loadTrackerContent] Function called.');
         const container = document.getElementById('content-agentes');
         
@@ -533,7 +729,7 @@
             return;
         }
 
-        if (trackerContentLoaded) {
+        if (trackerContentLoaded && !forceReload) {
             console.log('[loadTrackerContent] Content already loaded. Running callback if it exists.');
             if (typeof window.initializeTracker === 'function') {
                 console.log('[loadTrackerContent] Calling existing initializeTracker function.');
@@ -547,6 +743,15 @@
             }
             if (callback) callback();
             return;
+        }
+        
+        if (forceReload) {
+            console.log('[loadTrackerContent] Force reload requested, resetting state.');
+            trackerContentLoaded = false;
+            trackerContentLoading = false;
+            if (typeof window.trackerInitialized !== 'undefined') {
+                window.trackerInitialized = false;
+            }
         }
 
         if (trackerContentLoading) {
@@ -578,6 +783,16 @@
                 // Append HTML content to the container
                 container.innerHTML = doc.body.innerHTML;
                 console.log('[loadTrackerContent] Injected HTML content into #content-agentes.');
+                
+                // Remove gradient background from main-content and ensure white background
+                const mainContent = document.getElementById('main-content');
+                if (mainContent) {
+                    mainContent.style.background = 'white';
+                    mainContent.style.minHeight = '100vh';
+                }
+                
+                // Ensure white background for tracker content
+                container.style.backgroundColor = 'white';
                 
                 // Execute scripts
                 const scripts = Array.from(doc.querySelectorAll('script'));
@@ -1112,6 +1327,13 @@ function loadBoletinDiarioContent(callback) {
             container.innerHTML = doc.body.innerHTML;
             console.log('[loadBoletinDiarioContent] Injected HTML content into #content-boletin.');
             
+            // Ensure white background for boletín content
+            const mainContent = document.getElementById('main-content');
+            if (mainContent) {
+                mainContent.style.background = 'white';
+                mainContent.style.minHeight = '100vh';
+            }
+            
             // Execute scripts
             const scripts = Array.from(doc.querySelectorAll('script'));
             console.log(`[loadBoletinDiarioContent] Found ${scripts.length} script(s) to execute.`);
@@ -1260,9 +1482,16 @@ function loadBoletinDiarioContent(callback) {
                 loadTusListasContent();
             }
             
-            // *** NUEVO: Cargar contenido del tracker si es la sección Agentes ***
+            // *** NUEVO: Cargar contenido del tracker/análisis si es la sección Agentes ***
             if (targetId === 'content-agentes') {
-                loadTrackerContent();
+                // Verificar si estamos en modo análisis
+                const urlParams = new URLSearchParams(window.location.search);
+                const viewParam = urlParams.get('view');
+                if (viewParam === 'analisis') {
+                    loadAnalisisContent();
+                } else {
+                    loadTrackerContent();
+                }
             }
             
             // NEW: Cargar contenido del Dashboard Interno
@@ -1300,11 +1529,15 @@ function loadBoletinDiarioContent(callback) {
                     window.history.pushState({path: newUrl.href}, '', newUrl.href);
                 }
             } else if (targetId === 'content-agentes') {
-                // If this is the agentes view, remove view parameter from URL
+                // If this is the agentes view, remove view parameter from URL (except for analisis)
                 if (history.pushState) {
                     const newUrl = new URL(window.location.href);
-                    newUrl.searchParams.delete('view');
-                    window.history.pushState({path: newUrl.href}, '', newUrl.href);
+                    const viewParam = newUrl.searchParams.get('view');
+                    // Solo eliminar view si no es 'analisis'
+                    if (viewParam && viewParam !== 'analisis') {
+                        newUrl.searchParams.delete('view');
+                        window.history.pushState({path: newUrl.href}, '', newUrl.href);
+                    }
                 }
             }
         }
@@ -1505,7 +1738,8 @@ function loadBoletinDiarioContent(callback) {
       });
     });
 
-    /* === Intercept "Analizar documento" para usuarios plan1 === */
+
+    /* === Intercept "Analizar documento" para todos los usuarios === */
     document.body.addEventListener('click', function(e) {
       const impactoLink = e.target && e.target.closest && e.target.closest('.button-impacto');
       if (!impactoLink) return; // Click no proveniente del enlace
@@ -1513,6 +1747,47 @@ function loadBoletinDiarioContent(callback) {
       if (window.userPlan === 'plan1') {
         e.preventDefault();
         showUpgradePlanBanner();
+      } else {
+        // Para usuarios con plan2/plan3, interceptar navegación para evitar reload
+        const href = impactoLink.getAttribute('href');
+        if (href && href.includes('/profile?view=analisis')) {
+          e.preventDefault();
+          
+          // Extraer parámetros de la URL
+          const url = new URL(href, window.location.origin);
+          const documentId = url.searchParams.get('documentId');
+          const collectionName = url.searchParams.get('collectionName');
+          
+          if (documentId && collectionName) {
+            // Actualizar URL sin reload
+            const newUrl = new URL(window.location.href);
+            newUrl.searchParams.set('view', 'analisis');
+            newUrl.searchParams.set('documentId', documentId);
+            newUrl.searchParams.set('collectionName', collectionName);
+            window.history.pushState({path: newUrl.href}, '', newUrl.href);
+            
+            // Cambiar a vista de análisis
+            document.querySelectorAll('.vision-section').forEach(section => {
+              section.style.display = 'none';
+              section.classList.remove('active');
+            });
+            
+            const agentesSection = document.getElementById('content-agentes');
+            if (agentesSection) {
+              agentesSection.style.display = 'block';
+              agentesSection.classList.add('active');
+            }
+            
+            // Resetear estado de análisis para cargar contenido fresco
+            window.analisisContentLoaded = false;
+            window.analisisContentLoading = false;
+            
+            // Cargar contenido de análisis
+            if (typeof window.loadAnalisisContent === 'function') {
+              window.loadAnalisisContent();
+            }
+          }
+        }
       }
     });
 

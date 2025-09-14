@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"/>
     <title>Profile</title>
     <link rel="icon" href="/assets/reversa_logo.png" type="image/png">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"/>
     <link href="https://fonts.googleapis.com/css?family=Heebo&display=swap" rel="stylesheet"/>
     <link rel="stylesheet" type="text/css" href="/styles/styles.css" />
@@ -15,6 +15,8 @@
     <link rel="stylesheet" type="text/css" href="/styles/dropdown.css" />
     <link rel="stylesheet" type="text/css" href="/styles/radio_menu.css" />
     <link rel="stylesheet" type="text/css" href="/styles/mobile.css" />
+    <link rel="stylesheet" type="text/css" href="/styles/sidebar_styles.css" />
+    <link rel="stylesheet" type="text/css" href="/styles/profile.css" />
     <style>
 
       :root {
@@ -39,6 +41,7 @@
             background-color: #ffffff;
             opacity: 0;
             transition: opacity 0.4s ease-in-out;
+            position: relative; /* To anchor export menu inside the box */
         }
         
         #analysisResult.show {
@@ -53,7 +56,6 @@
 
         body {
           font-family: 'Satoshi', sans-serif;
-          background: radial-gradient(circle at 50% 0, rgba(4, 219, 141, 0.25) 0%, #ffffff 70%);
           margin: 0;
           padding: 0;
           min-height: 100vh;
@@ -118,6 +120,29 @@
         .analisis-impacto.active .icon {
             color: white;
         }
+
+        /* Skeleton Loader Styles */
+        .skeleton-loader {
+            background: linear-gradient(90deg, 
+                rgba(11, 36, 49, 0.1) 25%, 
+                rgba(4, 219, 141, 0.2) 50%, 
+                rgba(11, 36, 49, 0.1) 75%
+            );
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            display: inline-block;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Hide skeleton when content is loaded */
+        .skeleton-hidden {
+            display: none !important;
+        }
+
           .container-norma {
             max-width: 1100px; 
             margin: 40px auto; 
@@ -499,6 +524,90 @@
             margin-top: 16px;
         }
 
+        /* ---------- Export Menu ---------- */
+        .export-menu-container {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 50;
+        }
+
+        .export-menu-btn {
+            background: #0b2431; /* Reversa dark blue */
+            border: none;
+            border-radius: 20px;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(4, 219, 141, 0.2);
+        }
+
+        .export-menu-btn:hover {
+            background: #1a3a4a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(11, 36, 49, 0.25);
+        }
+
+        .export-menu-btn i {
+            font-size: 16px;
+        }
+
+        .export-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 8px 0;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            min-width: 200px;
+            animation: dropdownSlide 0.3s ease-out;
+            z-index: 1000;
+        }
+
+        .export-dropdown.show {
+            display: block;
+        }
+
+        .export-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+
+        .export-option:hover {
+            background: #f8f9fa;
+            color: var(--primary-color);
+        }
+
+        .export-option i {
+            width: 18px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .export-option:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .export-option:last-child {
+            border-radius: 0 0 12px 12px;
+        }
+
         /* ---------- Analysis Settings Dropdown ---------- */
         .analysis-settings-container {
             position: relative;
@@ -590,6 +699,55 @@
             box-shadow: 0 0 3px rgba(4, 219, 141, 0.3);
         }
 
+        /* ---------- Breadcrumb inside main content ---------- */
+        .breadcrumb-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0 10px 0;
+            color: #0b2431;
+        }
+        .breadcrumb-back {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border: 1px solid #e0e0e0;
+            border-radius: 50%;
+            color: #0b2431;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all .2s ease;
+        }
+        .breadcrumb-back:hover { box-shadow: 0 2px 8px rgba(11,36,49,.12); transform: translateY(-1px); }
+        .breadcrumb-text { font-weight: 600; }
+
+        /* ---------- Loader overlay (ensure no white flash) ---------- */
+        #pageLoaderOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        /* Fallback spinner for page overlay */
+        .page-loader {
+            border: 5px solid rgba(11,36,49,.12);
+            border-top: 5px solid #0b2431;
+            border-radius: 50%;
+            width: 44px; height: 44px;
+            animation: spin 1s linear infinite;
+        }
+
+        /* ---------- Skeleton loaders ---------- */
+        @keyframes skeleton-pulse { 0%{opacity:.5} 50%{opacity:1} 100%{opacity:.5} }
+        .skeleton { background: rgba(11,36,49,0.18); border-radius: 6px; animation: skeleton-pulse 1.5s ease-in-out infinite; }
+        .skeleton-line { height: 14px; width: 100%; }
+        .skeleton-text { height: 20px; }
+
     </style>
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
@@ -605,24 +763,42 @@
 <div id="pageLoaderOverlay">
     <div class="page-loader"></div>
   </div>
-
-    <nav class="navbar">
-      <div class="logo">
-          <a href="https://reversa.ai/" target="_blank">
-            <img src="/assets/reversa_blue.png" alt="Reversa Logo">
-          </a>
-        </div>
-      <button class="hamburger" onclick="toggleMenu()">☰</button> 
-      
-        <ul class="menu">
-          <li><a href="https://reversa.ai/">WEB</a></li>
-          <li><a href="/profile.html">PANEL DE CONTROL</a></li>
-        </ul>
-    </nav>
+  <script>
+    // Fallback para ocultar el overlay aunque otros scripts fallen
+    (function(){
+      function hideOverlay(){
+        var ov = document.getElementById('pageLoaderOverlay');
+        if (ov) ov.style.display = 'none';
+      }
+      // Timeout duro: 12s
+      setTimeout(function(){ if (window.__normaLoaded__ !== true) hideOverlay(); }, 12000);
+      // Al estar el DOM interactivo, asegurar ocultado si no se ha marcado cargado
+      if (document.readyState === 'interactive' || document.readyState === 'complete') {
+        setTimeout(function(){ if (window.__normaLoaded__ !== true) hideOverlay(); }, 2000);
+      } else {
+        document.addEventListener('readystatechange', function(){
+          if (document.readyState === 'interactive') {
+            setTimeout(function(){ if (window.__normaLoaded__ !== true) hideOverlay(); }, 2000);
+          }
+        });
+      }
+    })();
+  </script>
 
     <div class="container-norma">
-      <h2 > <span id="normaShortName"></span></h2>
-      <div id="normaExtraDetails" style="font-size: large; color: #757575; margin-top: 4px; margin-bottom: 15px; line-height: 1.4;"></div>
+      <div class="breadcrumb-row">
+        <a id="backToAgentes" class="breadcrumb-back" title="Volver a Agentes" href="/profile#agentes">
+          <i class="fa fa-chevron-left"></i>
+        </a>
+        <div class="breadcrumb-text">Agentes / Análisis</div>
+      </div>
+
+      <h2>
+        <span id="normaShortName" style="display: none;"></span>
+        <div id="normaShortNameSkeleton" class="skeleton-loader" style="height: 32px; width: 60%; margin: 0 auto; border-radius: 8px;"></div>
+      </h2>
+      <div id="normaExtraDetails" style="font-size: large; color: #757575; margin-top: 4px; margin-bottom: 15px; line-height: 1.4; display: none;"></div>
+      <div id="normaExtraDetailsSkeleton" class="skeleton-loader" style="height: 20px; width: 40%; margin: 4px auto 15px auto; border-radius: 6px;"></div>
 
     <div id="normaDetails">
         <!-- This will be populated with data from MongoDB -->
@@ -636,7 +812,7 @@
 </div>
 <div class="buttons-container" style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: center; position: relative;">
     <button id="analyzeButton" class="analisis-impacto">
-        <i class="fa fa-file-text-o icon"></i>
+        <i class="fas fa-file-alt icon"></i>
         <span>Realizar resumen</span>
     </button>
     <button id="checklistButton" class="analisis-impacto">
@@ -693,11 +869,282 @@
   </div>
 </div>
 
-</div>
-
+        </div> <!-- .container-norma -->
+      </div> <!-- #main-content -->
+    </div> <!-- .profile-container -->
 
 <script>
-    document.addEventListener('DOMContentLoaded', async () => {
+    // Helper function to clean analysis output
+	function cleanAnalysisOutput(htmlContent) {
+		if (!htmlContent) return '';
+		
+		// Remove JSON wrapper artifacts
+		let cleaned = htmlContent;
+		
+		// Remove leading/trailing JSON structure
+		cleaned = cleaned.replace(/^\s*\{\s*"html_response"\s*:\s*"/i, '');
+		cleaned = cleaned.replace(/"\s*\}\s*$/i, '');
+		
+		// Remove escaped quotes
+		cleaned = cleaned.replace(/\\"/g, '"');
+		
+		// Remove escaped newlines
+		cleaned = cleaned.replace(/\\n/g, '\n');
+		
+		// Remove excessive whitespace and newlines
+		cleaned = cleaned.replace(/(\n\s*){3,}/g, '\n\n');
+		cleaned = cleaned.replace(/\n\s*\n\s*\n/g, '\n\n');
+		
+		// Remove standalone whitespace lines
+		cleaned = cleaned.replace(/\n\s+\n/g, '\n');
+		
+		// Trim leading and trailing whitespace
+		cleaned = cleaned.trim();
+		
+		return cleaned;
+	}
+
+	// Export functionality
+	function addExportMenu() {
+		const analysisResultDiv = document.getElementById('analysisResult');
+		if (!analysisResultDiv || !analysisResultDiv.innerHTML) return;
+		
+		// Check if export menu already exists
+		if (document.querySelector('.export-menu-container')) return;
+		
+		const exportMenu = document.createElement('div');
+		exportMenu.className = 'export-menu-container';
+		exportMenu.innerHTML = `
+			<button class="export-menu-btn" id="exportMenuBtn" title="Opciones de exportación">
+				<span>Exportar</span>
+				<i class="fa fa-download"></i>
+			</button>
+			<div class="export-dropdown" id="exportDropdown">
+				<div class="export-option" data-action="copy">
+					<i class="fa fa-copy"></i>
+					<span>Copiar</span>
+				</div>
+				<div class="export-option" data-action="pdf">
+					<i class="fa fa-file-pdf-o"></i>
+					<span>Exportar a PDF</span>
+				</div>
+				<div class="export-option" data-action="word">
+					<i class="fa fa-file-word-o"></i>
+					<span>Exportar a Word</span>
+				</div>
+			</div>
+		`;
+		
+		analysisResultDiv.appendChild(exportMenu);
+		
+		// Add event listeners
+		const exportMenuBtn = document.getElementById('exportMenuBtn');
+		const exportDropdown = document.getElementById('exportDropdown');
+		
+		exportMenuBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			exportDropdown.classList.toggle('show');
+		});
+		
+		// Handle export options
+		document.querySelectorAll('.export-option').forEach(option => {
+			option.addEventListener('click', (e) => {
+				e.stopPropagation();
+				const action = option.dataset.action;
+				exportDropdown.classList.remove('show');
+				handleExport(action);
+			});
+		});
+		
+		// Close dropdown when clicking outside
+		document.addEventListener('click', (e) => {
+			if (!exportMenu.contains(e.target)) {
+				exportDropdown.classList.remove('show');
+			}
+		});
+	}
+	
+	function handleExport(action) {
+		const analysisContent = document.getElementById('analysisResult');
+		const documentTitle = document.getElementById('normaShortName').textContent || 'Análisis';
+		
+		// Get document source link
+		const extraDetailsDiv = document.getElementById('normaExtraDetails');
+		let sourceLink = '';
+		if (extraDetailsDiv) {
+			const linkElement = extraDetailsDiv.querySelector('a');
+			if (linkElement) {
+				sourceLink = linkElement.href;
+			}
+		}
+		
+		switch(action) {
+			case 'copy':
+				copyToClipboard(analysisContent);
+				break;
+			case 'word':
+				exportToWord(analysisContent, documentTitle, sourceLink);
+				break;
+			case 'pdf':
+				exportToPDF(analysisContent, documentTitle, sourceLink);
+				break;
+		}
+	}
+	
+	function copyToClipboard(element) {
+		// Get text content without export menu
+		const clone = element.cloneNode(true);
+		const exportMenu = clone.querySelector('.export-menu-container');
+		if (exportMenu) exportMenu.remove();
+		
+		const text = clone.innerText;
+		
+		if (navigator.clipboard) {
+			navigator.clipboard.writeText(text).then(() => {
+				showNotification('Contenido copiado al portapapeles');
+			}).catch(err => {
+				console.error('Error al copiar:', err);
+				showNotification('Error al copiar el contenido', 'error');
+			});
+		} else {
+			// Fallback for older browsers
+			const textarea = document.createElement('textarea');
+			textarea.value = text;
+			textarea.style.position = 'fixed';
+			textarea.style.opacity = '0';
+			document.body.appendChild(textarea);
+			textarea.select();
+			document.execCommand('copy');
+			document.body.removeChild(textarea);
+			showNotification('Contenido copiado al portapapeles');
+		}
+	}
+	
+	function exportToWord(element, title, sourceLink = '') {
+		// Clone and remove export menu
+		const clone = element.cloneNode(true);
+		const exportMenu = clone.querySelector('.export-menu-container');
+		if (exportMenu) exportMenu.remove();
+		
+		const htmlContent = clone.innerHTML;
+		const sourceSection = sourceLink ? `
+			<div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+				<h3 style="color: #34495e; margin-bottom: 10px;">Fuente:</h3>
+				<p style="margin: 0;"><a href="${sourceLink}" style="color: #04db8d; text-decoration: none;">${sourceLink}</a></p>
+			</div>
+		` : '';
+		
+		const html = `
+			<!DOCTYPE html>
+			<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
+			<head>
+				<meta charset="utf-8">
+				<title>${title}</title>
+				<style>
+					body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+					h1 { color: #2c3e50; border-bottom: 2px solid #04db8d; padding-bottom: 10px; }
+					h2 { color: #2c3e50; margin-top: 20px; }
+					h3 { color: #34495e; margin-top: 15px; }
+					table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+					th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+					th { background-color: #f2f2f2; }
+					tr:nth-child(even) { background-color: #f9f9f9; }
+				</style>
+			</head>
+			<body>
+				<h1>${title}</h1>
+				<p style="color: #7f8c8d; font-size: 12px; margin-bottom: 20px;">Generado el ${new Date().toLocaleDateString('es-ES')}</p>
+				${htmlContent}
+				${sourceSection}
+			</body>
+			</html>
+		`;
+		
+		const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.href = url;
+		link.download = `${title}_${new Date().toISOString().slice(0,10)}.doc`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+		
+		showNotification('Documento Word generado correctamente');
+	}
+	
+	async function ensureHtml2PdfLoaded() {
+		if (window.html2pdf) return true;
+		return new Promise((resolve, reject) => {
+			const s = document.createElement('script');
+			s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+			s.onload = () => resolve(true);
+			s.onerror = () => reject(new Error('No se pudo cargar html2pdf'));
+			document.head.appendChild(s);
+		});
+	}
+
+	async function exportToPDF(element, title, sourceLink = '') {
+		try {
+			await ensureHtml2PdfLoaded();
+		} catch (e) { console.error(e); return; }
+
+		// Clone and clean
+		const clone = element.cloneNode(true);
+		const exportMenu = clone.querySelector('.export-menu-container');
+		if (exportMenu) exportMenu.remove();
+		if (sourceLink) {
+			const src = document.createElement('div');
+			src.style.marginTop = '30px';
+			src.style.paddingTop = '20px';
+			src.style.borderTop = '1px solid #ddd';
+			src.innerHTML = `<h3 style="color:#34495e;margin-bottom:10px;">Fuente:</h3><p style="margin:0; word-break:break-all;">${sourceLink}</p>`;
+			clone.appendChild(src);
+		}
+
+		const opt = {
+			margin: 10,
+			filename: `${title || 'Analisis'}_${new Date().toISOString().slice(0,10)}.pdf`,
+			image: { type: 'jpeg', quality: 0.95 },
+			html2canvas: { scale: 2, useCORS: true },
+			jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+		};
+		// Use html2pdf to directly download
+		window.html2pdf().set(opt).from(clone).save();
+	}
+	
+	function showNotification(message, type = 'success') {
+		const notification = document.createElement('div');
+		notification.style.cssText = `
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			background: ${type === 'success' ? '#04db8d' : '#ff4444'};
+			color: white;
+			padding: 12px 20px;
+			border-radius: 8px;
+			box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			z-index: 10000;
+			animation: slideIn 0.3s ease-out;
+		`;
+		notification.textContent = message;
+		document.body.appendChild(notification);
+		
+		setTimeout(() => {
+			notification.style.animation = 'slideOut 0.3s ease-out';
+			setTimeout(() => {
+				document.body.removeChild(notification);
+			}, 300);
+		}, 3000);
+	}
+
+    // Función global para inicializar desde profile.html
+    window.initializeNormaAnalysis = async function() {
+        console.log('[initializeNormaAnalysis] Starting initialization from profile.html');
+        await initializeNormaAnalysisInternal();
+    };
+
+    async function initializeNormaAnalysisInternal() {
 		const shortNameSpan = document.getElementById('normaShortName');
 		const analyzeButton = document.getElementById('analyzeButton');
 		const checklistButton = document.getElementById('checklistButton');
@@ -806,13 +1253,31 @@
 			return tpl;
 		}
 
-		await loadPromptsFromServer();
+		// Cargar prompts en paralelo para no bloquear la carga de detalles
+		const promptsPromise = loadPromptsFromServer();
+		async function ensurePromptsLoaded(){
+			try { await promptsPromise; } catch(e){ console.error('No se pudieron cargar los prompts', e); }
+		}
 		// ===== End prompts loader =====
 
 		// Get the document ID from the URL (you can change this if you pass it differently)
 		const urlParams = new URLSearchParams(window.location.search);
 		const documentId = urlParams.get('documentId');
 		const collectionName = urlParams.get('collectionName'); // Get the collection from URL
+
+		// Early validation of required params to avoid hanging loader
+		if (!documentId || !collectionName) {
+			console.error('Missing required parameters for norma.html', { documentId, collectionName });
+			try { window.__normaLoaded__ = true; } catch(_) {}
+			if (pageLoaderOverlay) pageLoaderOverlay.style.display = 'none';
+			analysisResultDiv.innerHTML = `
+				<div style="background: #ffebee; color: #c62828; padding: 20px; border-radius: 8px; border-left: 4px solid #c62828; margin: 20px 0;">
+					<h4 style="margin: 0 0 10px 0; color: #c62828;">Error: Parámetros faltantes</h4>
+					<p>No se han encontrado los parámetros necesarios para cargar el documento. Vuelve al panel e inténtalo de nuevo.</p>
+				</div>
+			`;
+			return;
+		}
 
 		// Global variables to store document data
 		let documentUrlPdf = null;
@@ -854,25 +1319,26 @@
 		}
 
 		// Add event listener for custom prompt button
-		sendCustomPromptButton.addEventListener('click', () => {
-			handleCustomPrompt();
+		sendCustomPromptButton.addEventListener('click', async () => {
+			await handleCustomPrompt();
 		});
 
 		// Also allow pressing Enter in the textarea to submit
-		userPromptInput.addEventListener('keydown', (e) => {
+		userPromptInput.addEventListener('keydown', async (e) => {
 			if (e.key === 'Enter' && !e.shiftKey) {
 				e.preventDefault();
-				handleCustomPrompt();
+				await handleCustomPrompt();
 			}
 		});
 
 		// Function to handle custom prompt submissions
-		function handleCustomPrompt() {
+		async function handleCustomPrompt() {
 			const userInput = userPromptInput.value.trim();
 			if (!userInput) {
 				alert('Por favor, escribe una consulta antes de enviar.');
 				return;
 			}
+			await ensurePromptsLoaded();
 			// Obtener idioma seleccionado
 			const idiomaSeleccionado = getSelectedAnalysisLanguage();
 			const bloqueIdioma = `\n**IDIOMA DE RESPUESTA:**\n<idioma>Aunque las instrucciones del prompt son en español, es muy importante que formules toda tu respuesta en ${idiomaSeleccionado}</idioma>\n`;
@@ -967,6 +1433,8 @@
 						if (!htmlContent.includes('<') && htmlContent.trim().length > 0) { htmlContent = `<p>${htmlContent}</p>`; }
 					}
 				} else if (typeof data === 'object' && data.html_response) { htmlContent = data.html_response; }
+				// Clean the HTML content
+				htmlContent = cleanAnalysisOutput(htmlContent);
 				if (typeof completeStatusWorkflow === 'function') {
 					completeStatusWorkflow(() => {
 						buttonElement.innerHTML = originalButtonText;
@@ -977,6 +1445,7 @@
 						analysisResultDiv.classList.remove('error-state');
 						setTimeout(() => {
 							analysisResultDiv.classList.add('show');
+							addExportMenu();
 							if (typeof showFeedbackSection === 'function') showFeedbackSection();
 						}, 100);
 					});
@@ -989,6 +1458,7 @@
 					analysisResultDiv.classList.remove('error-state');
 					setTimeout(() => {
 						analysisResultDiv.classList.add('show');
+						addExportMenu();
 						if (typeof showFeedbackSection === 'function') showFeedbackSection();
 					}, 100);
 				}
@@ -1120,7 +1590,7 @@
 		}
 
 		function performAnalysisWithContent(promptType, buttonElement, directContent = null, sourceUrl = null) {
-			return new Promise((resolve, reject) => {
+			return ensurePromptsLoaded().then(() => new Promise((resolve, reject) => {
 				const requestBody = { documentId: documentId, userPrompt: buildUserPrompt(promptType), collectionName: collectionName };
 				if (directContent) { requestBody.htmlContent = directContent; }
 				fetch('/api/analyze-norma', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'text/html; charset=utf-8' }, body: JSON.stringify(requestBody) })
@@ -1144,6 +1614,8 @@
 							if (!htmlResult.includes('<') && htmlResult.trim().length > 0) { htmlResult = `<p>${htmlResult}</p>`; }
 						}
 					} else if (typeof data === 'object' && data.html_response) { htmlResult = data.html_response; }
+					// Clean the HTML result
+					htmlResult = cleanAnalysisOutput(htmlResult);
 					let finalHtml = htmlResult;
 					if (directContent && sourceUrl) { const banner = `<div class=\"html-source-banner\">Documento PDF no identificado para este documento, análisis basado en el texto publicado en la <a href=\"${sourceUrl}\" target=\"_blank\">fuente</a></div>`; finalHtml = banner + htmlResult; }
 					resolve(finalHtml);
@@ -1153,9 +1625,9 @@
 					let errorMessage = 'Error analizando la norma. Por favor, inténtalo de nuevo.';
 					try { const errorData = JSON.parse(error.message); errorType = errorData.error; errorMessage = errorData.message; if (errorData.details) { console.log('Error details:', errorData.details); } }
 					catch (e) { console.error('Error parsing error response:', e); const errorText = error.message || error.toString(); if (errorText.includes('PDF_ACCESS_ERROR') || errorText.includes('PDF access')) { errorType = 'PDF_ACCESS_ERROR'; errorMessage = 'Error al acceder al documento, análisis no disponible.'; } else if (errorText.includes('timeout') || errorText.includes('TIMEOUT') || errorText.includes('ETIMEOUT')) { errorType = 'TIMEOUT_ERROR'; errorMessage = 'La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.'; } else if (errorText.includes('DATABASE_TIMEOUT')) { errorType = 'DATABASE_TIMEOUT'; errorMessage = 'Error: La consulta tardó demasiado tiempo. Por favor, inténtalo de nuevo.'; } else if (errorText.includes('network') || errorText.includes('connection')) { errorType = 'NETWORK_ERROR'; errorMessage = 'Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.'; } else if (errorText.includes('Internal Server Error') || errorText.includes('500')) { errorType = 'SERVER_ERROR'; errorMessage = 'Error interno del servidor. Por favor, inténtalo de nuevo.'; } else if (errorText.length > 0 && errorText.length < 200) { errorMessage = errorText; } }
-					const errorObj = new Error(errorMessage); errorObj.errorType = errorType; reject(errorObj);
-				});
-			});
+						const errorObj = new Error(errorMessage); errorObj.errorType = errorType; reject(errorObj);
+					});
+				}));
 		}
 
 		function performAnalysis(promptType, buttonElement) {
@@ -1196,7 +1668,11 @@
 						analysisResultDiv.style.display = 'block';
 						analysisResultDiv.classList.remove('show');
 						analysisResultDiv.classList.remove('error-state');
-						setTimeout(() => { analysisResultDiv.classList.add('show'); if (typeof showFeedbackSection === 'function') showFeedbackSection(); }, 100);
+						setTimeout(() => { 
+						analysisResultDiv.classList.add('show'); 
+						addExportMenu();
+						if (typeof showFeedbackSection === 'function') showFeedbackSection(); 
+					}, 100);
 					});
 				} else {
 					buttonElement.innerHTML = originalButtonText;
@@ -1206,7 +1682,11 @@
 					analysisResultDiv.style.display = 'block';
 					analysisResultDiv.classList.remove('show');
 					analysisResultDiv.classList.remove('error-state');
-					setTimeout(() => { analysisResultDiv.classList.add('show'); if (typeof showFeedbackSection === 'function') showFeedbackSection(); }, 100);
+					setTimeout(() => { 
+						analysisResultDiv.classList.add('show'); 
+						addExportMenu();
+						if (typeof showFeedbackSection === 'function') showFeedbackSection(); 
+					}, 100);
 				}
 			}).catch(error => {
 				console.error('Error analyzing norma:', error);
@@ -1252,10 +1732,34 @@
 		}
 
 		// ===== Event listeners =====
+		// Mostrar skeleton loaders inicialmente
+		const shortNameSkeleton = document.getElementById('normaShortNameSkeleton');
+		const extraDetailsSkeleton = document.getElementById('normaExtraDetailsSkeleton');
+		
 		fetch(`/api/norma-details?documentId=${documentId}&collectionName=${collectionName}`)
 			.then(response => response.json())
 			.then(data => {
+				// Ocultar skeleton y mostrar contenido real
+				if (shortNameSkeleton) {
+					shortNameSkeleton.classList.add('skeleton-hidden');
+				}
+				if (extraDetailsSkeleton) {
+					extraDetailsSkeleton.classList.add('skeleton-hidden');
+				}
+				
 				shortNameSpan.textContent = data.short_name;
+				shortNameSpan.style.display = 'inline';
+				
+				// Ocultar loader de profile.html una vez que se cargan los datos básicos
+				if (typeof window.hidePageLoaderOverlay === 'function') {
+					console.log('[norma.html] Datos básicos cargados, ocultando loader de profile.html');
+					window.hidePageLoaderOverlay();
+				}
+			// Update breadcrumb
+			const breadcrumbDocName = document.getElementById('breadcrumbDocName');
+			if (breadcrumbDocName) {
+				breadcrumbDocName.textContent = data.short_name || 'Documento';
+			}
 				documentUrlPdf = data.url_pdf;
 				documentUrlHtml = data.url_html;
 				documentContenido = data.contenido;
@@ -1276,6 +1780,7 @@
 					if (data.url_pdf) { detailsParts.push(`<a href="${data.url_pdf}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`); }
 					else if (data.url_html) { detailsParts.push(`<a href="${data.url_html}" target="_blank" style="color: #757575; text-decoration: underline;">Leer documento</a>`); }
 					extraDetailsDiv.innerHTML = detailsParts.filter(part => part !== null && part !== undefined && part !== '').join(' | ');
+					extraDetailsDiv.style.display = 'block';
 					const perfilRegulatorioUser = data.perfil_regulatorio || '';
 					const definicionesMap = data.user_etiquetas_definiciones || {};
 					const isEnterprise = !!data.user_is_enterprise;
@@ -1306,11 +1811,123 @@
 					window.setSelectedEtiqueta = (name, data) => { selectedEtiquetaName = name; selectedEtiquetaData = data; };
 					window.getSelectedEtiquetaContext = () => { if (!selectedEtiquetaName) return null; return { name: selectedEtiquetaName, data: selectedEtiquetaData }; };
 				}
+				try { window.__normaLoaded__ = true; } catch(_) {}
 				pageLoaderOverlay.style.display = 'none';
 			})
-			.catch(error => { console.error('Error fetching norma details:', error); analysisResultDiv.textContent = 'Error fetching norma details.'; pageLoaderOverlay.style.display = 'none'; });
+			.catch(error => { console.error('Error fetching norma details:', error); analysisResultDiv.textContent = 'Error fetching norma details.'; try { window.__normaLoaded__ = true; } catch(_) {} pageLoaderOverlay.style.display = 'none'; });
 
-		analyzeButton.addEventListener('click', () => { showAnalysisDropdown('summary', analyzeButton); });
+		// Breadcrumb navigation
+	const backToAgentesBtn = document.getElementById('backToAgentes');
+	if (backToAgentesBtn) {
+		backToAgentesBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			
+			// Show loading state
+			const originalContent = backToAgentesBtn.innerHTML;
+			backToAgentesBtn.disabled = true;
+			backToAgentesBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+			
+			// Check if we're in profile.html context (SPA navigation)
+			if (window.location.href.includes('/profile') && typeof window.loadTrackerContent === 'function') {
+				console.log('[backToAgentes] Using SPA navigation to tracker');
+				
+				try {
+					// Update URL without reload
+					const newUrl = new URL(window.location.href);
+					newUrl.searchParams.delete('view');
+					newUrl.searchParams.delete('documentId');
+					newUrl.searchParams.delete('collectionName');
+					newUrl.hash = '';
+					window.history.pushState({path: newUrl.href}, '', newUrl.href);
+					
+					// Hide all sections and show agentes
+					document.querySelectorAll('.vision-section').forEach(section => {
+						section.style.display = 'none';
+						section.classList.remove('active');
+					});
+					
+					const agentesSection = document.getElementById('content-agentes');
+					if (agentesSection) {
+						agentesSection.style.display = 'block';
+						agentesSection.classList.add('active');
+					}
+					
+					// Reset sidebar active states
+					document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+					const agentesMenuItem = document.querySelector('.sidebar-item[data-target="content-agentes"]');
+					if (agentesMenuItem) {
+						agentesMenuItem.classList.add('active');
+					}
+					
+					// Reset analysis state and force tracker reload
+					window.analisisContentLoaded = false;
+					window.analisisContentLoading = false;
+					
+					// Reset tracker state to force fresh load
+					if (typeof window.trackerInitialized !== 'undefined') {
+						window.trackerInitialized = false;
+					}
+					
+					// Remove gradient background from main-content when leaving analysis
+					const mainContent = document.getElementById('main-content');
+					if (mainContent) {
+						mainContent.style.background = 'white';
+						mainContent.style.minHeight = '100vh';
+					}
+					
+					// Clear the container and show loading state
+					if (agentesSection) {
+						agentesSection.innerHTML = `
+							<div style="display: flex; justify-content: center; align-items: center; height: 60vh; flex-direction: column;">
+								<div class="tracker-loader" style="width: 60px; height: 60px; border: 4px solid rgba(4, 219, 141, 0.3); border-top-color: #04db8d; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+								<div style="color: #455862; font-size: 16px; text-align: center;">
+									<div style="font-weight: 600; margin-bottom: 8px;">Regresando a Agentes</div>
+									<div style="font-size: 14px; opacity: 0.8;">Cargando tracker de documentos...</div>
+								</div>
+							</div>
+							<style>
+								@keyframes spin {
+									0% { transform: rotate(0deg); }
+									100% { transform: rotate(360deg); }
+								}
+							</style>
+						`;
+					}
+					
+					// Force reload tracker content
+					const trackerContentLoaded = window.trackerContentLoaded || false;
+					window.trackerContentLoaded = false;
+					window.trackerContentLoading = false;
+					
+					// Load tracker content with force reload and callback to restore button
+					window.loadTrackerContent(() => {
+						// Restore button state after successful load
+						backToAgentesBtn.disabled = false;
+						backToAgentesBtn.innerHTML = originalContent;
+					}, true); // forceReload = true
+					
+					// Safety timeout to restore button if something fails
+					setTimeout(() => {
+						if (backToAgentesBtn.disabled) {
+							backToAgentesBtn.disabled = false;
+							backToAgentesBtn.innerHTML = originalContent;
+						}
+					}, 5000);
+					
+				} catch (error) {
+					console.error('[backToAgentes] Error in SPA navigation:', error);
+					// Fallback to traditional navigation
+					window.location.href = '/profile';
+				}
+			} else {
+				// Fallback: traditional navigation
+				console.log('[backToAgentes] Using traditional navigation');
+				window.location.href = '/profile';
+			}
+		});
+	}
+
+	analyzeButton.addEventListener('click', () => { showAnalysisDropdown('summary', analyzeButton); });
 		checklistButton.addEventListener('click', () => { showAnalysisDropdown('checklist', checklistButton); });
 		risksButton.addEventListener('click', () => { showAnalysisDropdown('risks', risksButton); });
 		startAnalysisBtn.addEventListener('click', () => { if (currentAnalysisType && activeAnalysisButton && activeAnalysisButton.innerHTML) { const analysisType = currentAnalysisType; const buttonElement = activeAnalysisButton; hideAnalysisDropdown(); performAnalysis(analysisType, buttonElement); } else { console.error('Error: activeAnalysisButton is null or invalid'); alert('Error: No se pudo identificar el botón de análisis. Por favor, inténtalo de nuevo.'); } });
@@ -1503,22 +2120,39 @@
 				}, 800);
 			}, 600);
 		}
-	});
-</script>
-<script>
-        function toggleMenu() {
-            const menu = document.querySelector('.menu');
-            menu.classList.toggle('active');
-             }
-             // Close the menu if clicking outside of it
-    document.addEventListener('click', function(event) {
-        const menu = document.querySelector('.menu');
-        const hamburger = document.querySelector('.hamburger');
-        
-        if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
-            menu.classList.remove('active');
+    }
+
+    // Initialize when loaded directly (not from profile.html)
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!window.location.href.includes('/profile')) {
+            await initializeNormaAnalysisInternal();
         }
     });
+</script>
+<style>
+	@keyframes slideIn {
+		0% { transform: translateX(100%); opacity: 0; }
+		100% { transform: translateX(0); opacity: 1; }
+	}
+	@keyframes slideOut {
+		0% { transform: translateX(0); opacity: 1; }
+		100% { transform: translateX(100%); opacity: 0; }
+	}
+</style>
+<script>
+        function toggleMenu() {
+            const menu = document.querySelector('.menu'); if (!menu) return;
+            menu.classList.toggle('active');
+        }
+        // Close the menu if clicking outside of it (guard if elements don't exist)
+        document.addEventListener('click', function(event) {
+            const menu = document.querySelector('.menu');
+            const hamburger = document.querySelector('.hamburger');
+            if (!menu || !hamburger) return;
+            if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+                menu.classList.remove('active');
+            }
+        });
 </script>
 
 </body>

@@ -132,7 +132,7 @@
             <div class="subsection-grid">
             <div class="subsection-item">
                 <label for="lenguaje-select" style="display: block; margin-bottom: 5px; font-size: 13px; color: #6c757d;">Lenguaje:</label>
-                <select id="lenguaje-select" class="ajuste-select" onchange="showSaveButton()">
+                <select id="lenguaje-select" class="ajuste-select reversa-select" onchange="showSaveButton()">
                 <option value="juridico">Jurídico</option>
                 <option value="lego">Lego</option>
                 </select>
@@ -140,16 +140,17 @@
 
             <div class="subsection-item">
                 <label for="tipo-documento-select" style="display: block; margin-bottom: 5px; font-size: 13px; color: #6c757d;">Tipo de documento:</label>
-                <select id="tipo-documento-select" class="ajuste-select" onchange="showSaveButton()">
+                <select id="tipo-documento-select" class="ajuste-select reversa-select" onchange="showSaveButton()">
                 <option value="whatsapp">WhatsApp</option>
                 <option value="linkedin">LinkedIn</option>
                 <option value="newsletter">Newsletter</option>
+                <option value="email">Email</option>
                 </select>
             </div>
 
             <div class="subsection-item">
                 <label for="idioma-select" style="display: block; margin-bottom: 5px; font-size: 13px; color: #6c757d;">Idioma:</label>
-                <select id="idioma-select" class="ajuste-select" onchange="showSaveButton()">
+                <select id="idioma-select" class="ajuste-select reversa-select" onchange="showSaveButton()">
                 <option value="español">Español</option>
                 <option value="inglés">Inglés</option>
                 </select>
@@ -193,26 +194,44 @@
     </div>
 </div>
 
-<div id="modal-no-documentos" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-      <h3>Selecciona documentos</h3>
-      <p>Selecciona al menos un documento para generar contenido</p>
-      <button class="modal-ok-btn" onclick="closeNoDocumentosModal()">OK</button>
-    </div>
-</div>
 
+<!-- Modal estándar de confirmación para eliminar documento -->
 <div id="modal-delete-documento" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
+    <div class="modal-content reversa-modal">
       <h3>¿Eliminar documento?</h3>
       <p id="delete-documento-message">¿Estás seguro de que quieres eliminar este documento de la lista?</p>
       <div class="modal-buttons">
-        <button class="modal-btn modal-btn-si" onclick="confirmDeleteDocument()">Sí</button>
-        <button class="modal-btn modal-btn-no" onclick="closeDeleteConfirmation()">No</button>
+        <button class="btn btn-outline" onclick="closeDeleteConfirmation()">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmDeleteDocument()">Eliminar</button>
+      </div>
+    </div>
+</div>
+
+<!-- Modal estándar para seleccionar documentos -->
+<div id="modal-seleccionar-documentos" class="modal-overlay" style="display: none;">
+    <div class="modal-content reversa-modal">
+      <h3>Selecciona documentos</h3>
+      <p>Selecciona al menos un documento para generar contenido</p>
+      <div class="modal-buttons">
+        <button class="btn btn-filled" onclick="closeSeleccionarDocumentosModal()">Entendido</button>
+      </div>
+    </div>
+</div>
+
+<!-- Modal estándar para instrucciones requeridas -->
+<div id="modal-instrucciones-requeridas" class="modal-overlay" style="display: none;">
+    <div class="modal-content reversa-modal">
+      <h3>Instrucciones requeridas</h3>
+      <p>Por favor, introduce algunas instrucciones antes de generar el contenido.</p>
+      <div class="modal-buttons">
+        <button class="btn btn-filled" onclick="closeInstruccionesRequeridasModal()">Entendido</button>
       </div>
     </div>
 </div>
 
  <!-- JavaScript -->
+ <script src="modalsHelpers.js"></script>
  <script src="textEditor.js"></script>
  <script src="tuslistas.js"></script>
+ <script src="customDropdowns.js"></script>
  <script src="generarContenido.js"></script>

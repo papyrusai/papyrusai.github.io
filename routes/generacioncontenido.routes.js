@@ -146,9 +146,8 @@ router.post('/api/generate-marketing-content', ensureAuthenticated, async (req, 
 		if (!selectedDocuments || !Array.isArray(selectedDocuments) || selectedDocuments.length === 0) {
 			return res.status(400).json({ success: false, error: 'No se proporcionaron documentos válidos' });
 		}
-		if (!instructions || typeof instructions !== 'string' || instructions.trim().length === 0) {
-			return res.status(400).json({ success: false, error: 'Las instrucciones son requeridas' });
-		}
+		// Instrucciones son opcionales; si faltan, Python usará un fallback genérico
+		const safeInstructions = (typeof instructions === 'string' ? instructions : '').trim();
 		console.log(`Generating marketing content for user: ${userEmail}`);
 		console.log(`Instructions: ${instructions.substring(0, 100)}...`);
 		console.log(`User ID: ${req.user._id}`);
@@ -194,8 +193,25 @@ router.post('/api/generate-marketing-content', ensureAuthenticated, async (req, 
 		} finally {
 			await client.close();
 		}
-		const pythonInput = { documents: enrichedDocuments, instructions: instructions.trim(), language: language || 'juridico', documentType: documentType || 'whatsapp', idioma: idioma || 'español' };
-		const pythonProcess = spawn('python', [path.join(__dirname, '..', 'python', 'marketing.py')], { encoding: 'utf8', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
+		const pythonInput = { documents: enrichedDocuments, instructions: safeInstructions, language: language || 'juridico', documentType: documentType || 'whatsapp', idioma: idioma || 'español' };
+		// Intentar diferentes comandos de Python según el sistema
+		let pythonCommand = 'python3';
+		try {
+			// Verificar si python3 está disponible
+			require('child_process').execSync('python3 --version', { stdio: 'ignore' });
+		} catch (error) {
+			try {
+				// Si no, intentar con python
+				require('child_process').execSync('python --version', { stdio: 'ignore' });
+				pythonCommand = 'python';
+			} catch (error2) {
+				console.error('Neither python3 nor python found in PATH');
+				return res.status(500).json({ success: false, error: 'Python no está instalado o no está en el PATH del sistema' });
+			}
+		}
+		
+		console.log(`Using Python command: ${pythonCommand}`);
+		const pythonProcess = spawn(pythonCommand, [path.join(__dirname, '..', 'python', 'marketing.py')], { encoding: 'utf8', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } });
 		pythonProcess.stdin.write(JSON.stringify(pythonInput));
 		pythonProcess.stdin.end();
 		let pythonOutput = '';
@@ -205,61 +221,87 @@ router.post('/api/generate-marketing-content', ensureAuthenticated, async (req, 
 		pythonProcess.stdout.on('data', (data) => { pythonOutput += data.toString('utf8'); });
 		pythonProcess.stderr.on('data', (data) => { const logData = data.toString('utf8'); console.log(logData); pythonError += logData; });
 		pythonProcess.on('close', (code) => {
+			// Verificar si ya se envió la respuesta
+			if (res.headersSent) {
+				console.warn('Headers already sent, skipping response');
+				return;
+			}
+			
 			const sendCleanResult = (cleanStr) => {
+				if (res.headersSent) return;
+				
 				try {
-					let jsonString = cleanStr.trim();
-					const jsonMatch = jsonString.match(/\{[^}]*"html_response"[^}]*\}/s);
-					if (jsonMatch) { jsonString = jsonMatch[0]; }
-					const jsonResult = JSON.parse(jsonString);
-					if (jsonResult.html_response) {
-						let htmlContent = jsonResult.html_response;
-						htmlContent = htmlContent.replace(/\\n/g, '\n');
-						htmlContent = htmlContent.replace(/\\\"/g, '"');
-						htmlContent = htmlContent.replace(/\\\\/g, '\\');
-						res.setHeader('Content-Type', 'text/html; charset=utf-8');
-						res.send(htmlContent);
-						return;
+					// Intentar parsear como JSON primero
+					let jsonResult;
+					try {
+						jsonResult = JSON.parse(cleanStr.trim());
+					} catch (e) {
+						// Si no es JSON válido, buscar JSON embebido
+						const jsonMatch = cleanStr.match(/\{[^{}]*"html_content"[^{}]*\}/s);
+						if (jsonMatch) {
+							jsonResult = JSON.parse(jsonMatch[0]);
+						} else {
+							throw new Error('No valid JSON found');
+						}
+					}
+					
+					if (jsonResult.html_content) {
+						// Nuevo formato esperado
+						return res.json({ success: true, content: jsonResult.html_content });
+					} else if (jsonResult.html_response) {
+						// Formato legacy
+						return res.json({ success: true, content: jsonResult.html_response });
 					} else if (jsonResult.error) {
-						res.setHeader('Content-Type', 'application/json; charset=utf-8');
-						return res.status(500).json(jsonResult);
+						return res.status(500).json({ success: false, error: jsonResult.error });
 					}
 				} catch (e) {
-					if (cleanStr.includes('{"html_response"')) {
-						try {
-							const startIndex = cleanStr.indexOf('{"html_response"');
-							const endIndex = cleanStr.lastIndexOf('}') + 1;
-							if (startIndex !== -1 && endIndex > startIndex) {
-								const jsonStr = cleanStr.substring(startIndex, endIndex);
-								const jsonResult = JSON.parse(jsonStr);
-								if (jsonResult.html_response) {
-									let htmlContent = jsonResult.html_response;
-									htmlContent = htmlContent.replace(/\\n/g, '\n');
-									htmlContent = htmlContent.replace(/\\\"/g, '"');
-									htmlContent = htmlContent.replace(/\\\\/g, '\\');
-									res.setHeader('Content-Type', 'text/html; charset=utf-8');
-									res.send(htmlContent);
-									return;
-								}
-							}
-						} catch (e2) { }
-					}
+					console.log('Failed to parse as JSON, treating as raw content');
 				}
+				
+				// Si no es JSON, verificar si es HTML válido
 				const isHtml = cleanStr.includes('<h2>') || cleanStr.includes('<p>') || cleanStr.includes('<table>') || cleanStr.includes('<html>');
-				if (isHtml) { res.setHeader('Content-Type', 'text/html; charset=utf-8'); } else { res.setHeader('Content-Type', 'text/plain; charset=utf-8'); }
-				res.send(cleanStr);
+				if (isHtml) {
+					return res.json({ success: true, content: cleanStr });
+				} else {
+					return res.json({ success: false, error: 'Invalid response format', details: cleanStr.substring(0, 500) });
+				}
 			};
+			
 			let cleanResult = pythonOutput.trim();
-			const hasValidContent = cleanResult.length > 0 && (cleanResult.includes('<h2>') || cleanResult.includes('<p>') || cleanResult.includes('<table>') || cleanResult.includes('<html>'));
-			if (code !== 0 && hasValidContent) { console.warn(`Python script exited with code ${code} but generated valid content. Proceeding with content.`); console.warn(`Error output (ignored): ${pythonError}`); return sendCleanResult(cleanResult); }
-			if (code !== 0) { console.error(`Python script exited with code ${code} and no valid content`, pythonError); res.setHeader('Content-Type', 'application/json; charset=utf-8'); return res.status(500).json({ error: 'PYTHON_SCRIPT_ERROR', message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor', details: pythonError }); }
-			if (cleanResult.includes('PDF_ACCESS_ERROR')) { console.log('PDF access error detected'); res.setHeader('Content-Type', 'application/json; charset=utf-8'); return res.status(400).json({ error: 'PDF_ACCESS_ERROR', message: 'Error al acceder al documento, análisis no disponible.' }); }
-			if (pythonError.includes('querySrv ETIMEOUT') || pythonError.includes('grpc_wait_for_shutdown_with_timeout') || cleanResult.includes('ETIMEOUT') || cleanResult.includes('timeout')) { console.warn('Database timeout detected (ignored because script succeeded)'); }
-			if (!cleanResult) { console.log('Empty result detected'); res.setHeader('Content-Type', 'application/json; charset=utf-8'); return res.status(500).json({ error: 'EMPTY_RESPONSE', message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor' }); }
+			const hasValidContent = cleanResult.length > 0 && (cleanResult.includes('<h2>') || cleanResult.includes('<p>') || cleanResult.includes('<table>') || cleanResult.includes('<html>') || cleanResult.includes('html_content'));
+			
+			if (code !== 0 && hasValidContent) { 
+				console.warn(`Python script exited with code ${code} but generated valid content. Proceeding with content.`); 
+				console.warn(`Error output (ignored): ${pythonError}`); 
+				return sendCleanResult(cleanResult); 
+			}
+			
+			if (code !== 0) { 
+				console.error(`Python script exited with code ${code} and no valid content`, pythonError); 
+				return res.status(500).json({ success: false, error: 'PYTHON_SCRIPT_ERROR', message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor', details: pythonError }); 
+			}
+			
+			if (cleanResult.includes('PDF_ACCESS_ERROR')) { 
+				console.log('PDF access error detected'); 
+				return res.status(400).json({ success: false, error: 'PDF_ACCESS_ERROR', message: 'Error al acceder al documento, análisis no disponible.' }); 
+			}
+			
+			if (pythonError.includes('querySrv ETIMEOUT') || pythonError.includes('grpc_wait_for_shutdown_with_timeout') || cleanResult.includes('ETIMEOUT') || cleanResult.includes('timeout')) { 
+				console.warn('Database timeout detected (ignored because script succeeded)'); 
+			}
+			
+			if (!cleanResult) { 
+				console.log('Empty result detected'); 
+				return res.status(500).json({ success: false, error: 'EMPTY_RESPONSE', message: 'Error: Ocurrió un error inesperado al procesar la respuesta del análisis. Prueba de nuevo por favor' }); 
+			}
+			
 			sendCleanResult(cleanResult);
 		});
 		pythonProcess.on('error', (error) => {
 			console.error('Error spawning Python process:', error);
-			res.status(500).json({ success: false, error: 'Error al iniciar el generador de contenido' });
+			if (!res.headersSent) {
+				res.status(500).json({ success: false, error: 'Error al iniciar el generador de contenido', details: error.message });
+			}
 		});
 	} catch (error) {
 		console.error('Error in generate-marketing-content endpoint:', error);
