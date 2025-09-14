@@ -274,6 +274,7 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 									tipo: ini?.tipo_iniciativa || 'No especificado',
 									fecha: displayDate,
 									link: link,
+									doc_id: String(doc._id),
 								});
 							});
 						}

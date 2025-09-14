@@ -254,6 +254,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
+            table-layout: fixed;
         }
         .reversa-table thead {
             background: #f8f9fa;
@@ -361,7 +362,7 @@
         .column-filter-dropdown .title { font-weight: 600; font-size: 13px; color: #0b2431; }
         .column-filter-dropdown .actions { display: flex; gap: 6px; }
         .column-filter-dropdown .btn {
-            padding: 6px 10px;
+            padding: 4px 8px;
             border-radius: 6px;
             border: 1px solid #e9ecef;
             background: #fff;
@@ -373,6 +374,8 @@
         .column-filter-dropdown .list { display: grid; gap: 6px; }
         .column-filter-dropdown .item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
         .column-filter-dropdown .search { width: 100%; padding: 6px 8px; border: 1px solid #e9ecef; border-radius: 6px; font-size: 12px; margin-bottom: 8px; }
+        .column-filter-dropdown .select-all-row { margin: 6px 0 8px; padding: 6px 8px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
+        .column-filter-dropdown .select-all-row .val { font-weight: 600; color: #0b2431; }
         .titulo-cell {
             max-width: 300px;
             white-space: nowrap;
@@ -575,7 +578,7 @@
             <table id="tabla-iniciativas" class="reversa-table">
                 <thead>
                     <tr>
-                        <th class="sortable" data-column="id">ID <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="id">ID_iniciativa <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="sector">Sector <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="tema">Tema <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="marco">Marco Geográfico <span class="sort-icon">↕</span></th>

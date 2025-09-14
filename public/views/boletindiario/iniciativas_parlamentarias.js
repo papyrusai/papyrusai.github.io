@@ -41,7 +41,8 @@
             proponente: item.proponente || 'No especificado',
             tipo: formatTipo(item.tipo || ''),
             fecha: item.fecha || '',
-            link: item.link || '#'
+            link: item.link || '#',
+            doc_id: item.doc_id || ''
         };
     }
 
@@ -53,14 +54,24 @@
         iniciativasData = await fetchIniciativasData();
         isLoading = false;
 
+        // Filtro por defecto: incluir todos los tipos excepto "No especificado"
+        try {
+            const allTipos = Array.from(new Set(iniciativasData.map(i => String(i.tipo || '').trim()).filter(v => v)));
+            const defaultTipos = allTipos.filter(v => v.toLowerCase() !== 'no especificado');
+            if (defaultTipos.length > 0) {
+                columnFilters['tipo'] = defaultTipos;
+            }
+        } catch (_) {}
+
         filteredData = [...iniciativasData];
 
         // Configurar event listeners
         setupEventListeners();
         setupHeaderFilters();
 
-        // Orden por defecto
-        sortData();
+        // Aplicar filtros iniciales y ordenar por defecto
+        applyAllFilters();
+        updateFilterIconStates();
 
         // Renderizar tabla inicial
         renderTable();
@@ -289,7 +300,7 @@
                 <td><span class="sector-bubble">${item.sector}</span></td>
                 <td>${item.tema}</td>
                 <td>${item.marco}</td>
-                <td class="titulo-cell" data-titulo="${item.titulo.replace(/"/g, '&quot;')}">${item.titulo}</td>
+                <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
                 <td>${item.fuente}</td>
                 <td>${item.proponente}</td>
                 <td>${item.tipo}</td>
@@ -301,6 +312,7 @@
                             <polyline points="15 3 21 3 21 9"></polyline>
                             <line x1="10" y1="14" x2="21" y2="3"></line>
                         </svg>
+                        <span style="margin-left:6px; font-weight:600; color:#04db8d;">${item.doc_id || ''}</span>
                     </a>
                 </td>
             `;
@@ -361,33 +373,61 @@
             });
             th.appendChild(trigger);
         });
+        
+        // Pintar estado activo (verde) en columnas con filtro/sort
+        updateFilterIconStates();
 
         // Cerrar dropdown al hacer click fuera
         document.addEventListener('click', () => closeFilterDropdown());
     }
 
+    function updateFilterIconStates() {
+        document.querySelectorAll('#tabla-iniciativas thead th.sortable').forEach(th => {
+            const col = th.getAttribute('data-column');
+            const icon = th.querySelector('.filter-trigger');
+            if (!icon) return;
+            const hasFilter = Array.isArray(columnFilters[col]) && columnFilters[col].length > 0;
+            const isSorted = currentSort.column === col;
+            icon.style.color = (hasFilter || isSorted) ? '#04db8d' : '#6c757d';
+        });
+    }
+
     let currentDropdown = null;
+    let currentDropdownColumn = null;
     function closeFilterDropdown() {
         if (currentDropdown && currentDropdown.parentNode) {
             currentDropdown.parentNode.removeChild(currentDropdown);
         }
         currentDropdown = null;
+        currentDropdownColumn = null;
     }
 
     function openFilterDropdown(column, thEl) {
+        // Si ya está abierto para esta columna, cerrar y salir (toggle)
+        if (currentDropdown && currentDropdownColumn === column) {
+            closeFilterDropdown();
+            return;
+        }
+        // Cerrar cualquier otro dropdown
         closeFilterDropdown();
         const dropdown = document.createElement('div');
+        currentDropdownColumn = column;
         dropdown.className = 'column-filter-dropdown';
         // Evitar que clics internos cierren el dropdown
         dropdown.addEventListener('click', (e) => e.stopPropagation());
 
         // Obtener valores únicos de la columna
-        const uniqueValues = Array.from(new Set(iniciativasData.map(i => String(i[column] ?? ''))))
+        const uniqueValues = Array.from(new Set(iniciativasData.map(i => {
+            if (column === 'link') {
+                return String(i.doc_id || '').trim();
+            }
+            return String(i[column] ?? '');
+        })))
             .filter(v => v !== '')
             .sort((a, b) => a.localeCompare(b));
 
         const titleMap = {
-            id: 'ID', sector: 'Sector', tema: 'Tema', marco: 'Marco Geográfico', titulo: 'Título Iniciativa', fuente: 'Fuente', proponente: 'Proponente', tipo: 'Tipo Iniciativa', fecha: 'Fecha'
+            id: 'ID_iniciativa', sector: 'Sector', tema: 'Tema', marco: 'Marco Geográfico', titulo: 'Título Iniciativa', fuente: 'Fuente', proponente: 'Proponente', tipo: 'Tipo Iniciativa', fecha: 'Fecha', link: 'Link (ID documento)'
         };
 
         const selected = columnFilters[column] ? new Set(columnFilters[column]) : new Set();
@@ -396,65 +436,129 @@
             <div class="header">
                 <div class="title">${titleMap[column] || column}</div>
                 <div class="actions">
-                    <button class="btn" data-sort="asc">
-                        <span style="font-size:11px; margin-right:6px; color:#6c757d;">A-Z</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 15 12 9 18 15"></polyline></svg>
-                    </button>
-                    <button class="btn" data-sort="desc">
-                        <span style="font-size:11px; margin-right:6px; color:#6c757d;">A-Z</span>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    <button class="btn" data-sort-toggle="${currentSort.column === column ? currentSort.direction : 'asc'}" title="Ordenar A-Z/Z-A">
+                        <svg class="sort-az-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform .15s ease; vertical-align: middle;">
+                            <polyline points="10 16 10 8"></polyline>
+                            <polyline points="8 10 10 8 12 10"></polyline>
+                            <line x1="14" y1="9" x2="20" y2="9"></line>
+                            <line x1="14" y1="12" x2="20" y2="12"></line>
+                            <line x1="14" y1="15" x2="20" y2="15"></line>
+                        </svg>
                     </button>
                     <button class="btn" data-clear>Limpiar</button>
                 </div>
             </div>
             <input class="search" type="text" placeholder="Buscar valor" />
+            <div class="select-all-row"><label class="item"><input type="checkbox" class="select-all-cb"/> <span class="val">Seleccionar todo</span></label></div>
             <div class="list"></div>
         `;
 
         const list = dropdown.querySelector('.list');
+        const searchEl = dropdown.querySelector('.search');
+        const clearBtn = dropdown.querySelector('[data-clear]');
+        const sortToggleBtn = dropdown.querySelector('[data-sort-toggle]');
+        const selectAllCb = dropdown.querySelector('.select-all-cb');
+        let lastVisibleValues = [];
+
+        const updateSortToggleVisual = () => {
+            const dir = sortToggleBtn.getAttribute('data-sort-toggle');
+            const icon = sortToggleBtn.querySelector('.sort-az-icon');
+            icon.style.transform = (dir === 'desc') ? 'rotate(180deg)' : 'rotate(0deg)';
+        };
+        updateSortToggleVisual();
+
+        const updateSelectAllChecked = () => {
+            if (!selectAllCb) return;
+            if (lastVisibleValues.length === 0) {
+                selectAllCb.checked = false;
+                return;
+            }
+            selectAllCb.checked = lastVisibleValues.every(v => selected.has(v));
+        };
+
         const renderList = (filterText = '') => {
             list.innerHTML = '';
             const lower = filterText.toLowerCase();
-            uniqueValues
-                .filter(v => !lower || v.toLowerCase().includes(lower))
-                .forEach(v => {
-                    const item = document.createElement('label');
-                    item.className = 'item';
-                    const id = `flt_${column}_${v.replace(/[^a-z0-9]/gi, '')}`;
-                    item.innerHTML = `<input type="checkbox" id="${id}" ${selected.has(v) ? 'checked' : ''}/> <span class="val">${v}</span>`;
-                    const span = item.querySelector('.val');
-                    span.style.display = 'inline-block';
-                    span.style.maxWidth = '180px';
-                    span.style.whiteSpace = 'nowrap';
-                    span.style.overflow = 'hidden';
-                    span.style.textOverflow = 'ellipsis';
-                    item.querySelector('input').addEventListener('change', (ev) => {
-                        if (ev.target.checked) selected.add(v); else selected.delete(v);
-                        if (selected.size > 0) columnFilters[column] = Array.from(selected); else delete columnFilters[column];
-                        applyAllFilters();
-                    });
-                    list.appendChild(item);
+            lastVisibleValues = uniqueValues.filter(v => !lower || v.toLowerCase().includes(lower));
+            lastVisibleValues.forEach(v => {
+                const item = document.createElement('label');
+                item.className = 'item';
+                const id = `flt_${column}_${v.replace(/[^a-z0-9]/gi, '')}`;
+                item.innerHTML = `<input type=\"checkbox\" id=\"${id}\" ${selected.has(v) ? 'checked' : ''}/> <span class=\"val\">${v}</span>`;
+                const span = item.querySelector('.val');
+                span.style.display = 'inline-block';
+                span.style.maxWidth = '180px';
+                span.style.whiteSpace = 'nowrap';
+                span.style.overflow = 'hidden';
+                span.style.textOverflow = 'ellipsis';
+                const cb = item.querySelector('input');
+                cb.style.accentColor = '#0b2431';
+                cb.addEventListener('change', (ev) => {
+                    if (ev.target.checked) selected.add(v); else selected.delete(v);
+                    if (selected.size > 0) columnFilters[column] = Array.from(selected); else delete columnFilters[column];
+                    applyAllFilters();
+                    updateFilterIconStates();
+                    setClearState();
+                    updateSelectAllChecked();
                 });
+                list.appendChild(item);
+            });
+            updateSelectAllChecked();
         };
         renderList();
 
-        dropdown.querySelector('.search').addEventListener('input', (e) => {
+        searchEl.addEventListener('input', (e) => {
             renderList(e.target.value || '');
         });
 
-        dropdown.querySelector('[data-sort="asc"]').addEventListener('click', () => {
-            currentSort = { column, direction: 'asc' };
+        function setClearState() {
+            const hasFilter = Array.isArray(columnFilters[column]) && columnFilters[column].length > 0;
+            const isSorted = currentSort.column === column;
+            const enabled = hasFilter || isSorted;
+            clearBtn.style.opacity = enabled ? '1' : '.5';
+            clearBtn.style.pointerEvents = enabled ? 'auto' : 'none';
+        }
+        setClearState();
+
+        sortToggleBtn.addEventListener('click', () => {
+            const currentDir = sortToggleBtn.getAttribute('data-sort-toggle');
+            const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+            sortToggleBtn.setAttribute('data-sort-toggle', nextDir);
+            currentSort = { column, direction: nextDir };
+            updateSortToggleVisual();
             sortData();
             renderTable();
+            updateFilterIconStates();
+            setClearState();
         });
-        dropdown.querySelector('[data-sort="desc"]').addEventListener('click', () => {
-            currentSort = { column, direction: 'desc' };
-            sortData();
-            renderTable();
-        });
-        dropdown.querySelector('[data-clear]').addEventListener('click', () => {
+
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', (e) => {
+                const filterText = searchEl.value || '';
+                if (e.target.checked) {
+                    lastVisibleValues.forEach(v => selected.add(v));
+                } else {
+                    lastVisibleValues.forEach(v => selected.delete(v));
+                }
+                if (selected.size > 0) columnFilters[column] = Array.from(selected); else delete columnFilters[column];
+                renderList(filterText);
+                applyAllFilters();
+                updateFilterIconStates();
+                setClearState();
+            });
+        }
+
+        clearBtn.addEventListener('click', () => {
+            // Reset filtros y sort de esta columna
             delete columnFilters[column];
+            if (currentSort.column === column) currentSort = { column: 'fecha', direction: 'desc' };
+            selected.clear();
             applyAllFilters();
+            sortData();
+            renderTable();
+            updateFilterIconStates();
+            setClearState();
+            updateSelectAllChecked();
         });
 
         // Posicionar bajo el th

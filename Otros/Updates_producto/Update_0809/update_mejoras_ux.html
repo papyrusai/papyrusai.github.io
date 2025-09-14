@@ -25,7 +25,10 @@
     .list li { margin:6px 0; font-size:14px; color:#455862; }
 
     .feature { display:flex; gap:14px; align-items:flex-start; padding:10px 0; }
-    .badge { flex:0 0 28px; height:28px; border-radius:8px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#0b2431; border:1px solid #e9ecef; }
+    .feature .h3 { margin-top:0; }
+    .feature .badge { margin-top:2px; }
+    .badge { flex:0 0 20px; height:20px; border-radius:0; background:transparent; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#0b2431; border:none; }
+    .brand-img { width:72px; height:auto; display:block; image-rendering:auto; }
     .feature-content { flex:1; }
 
     .screenshot { margin:14px 0; padding:0; border:1px solid #e8ecf0; border-radius:12px; overflow:hidden; background:#ffffff; display:inline-block; }
@@ -50,35 +53,34 @@
     <div class="container">
       <div class="header">
         <div class="brand">
-          <div class="brand-logo">R</div>
-          <div class="brand-name">Reversa • Actualización de producto</div>
+          <img src="./reversa_white.png" alt="Reversa" class="brand-img">
         </div>
-        <div class="title">Mejoras en análisis personalizados: más fluido e intuitivo</div>
-        <div class="preheader">Hemos pulido la experiencia de uso para que crear análisis personalizados sea más directo, claro y completo.</div>
+        <div class="title">Mejoras de producto: más fluido, claro y completo</div>
+        <div class="preheader">Hemos pulido la experiencia de uso para que el flujo general sea más directo, claro y consistente.</div>
       </div>
 
       <div class="section">
-        <div class="p">Estos cambios están enfocados en <strong>reducir clics</strong>, <strong>aclarar el flujo</strong> y <strong>evitar distracciones visuales</strong> durante el proceso de generación de análisis. Además, hemos añadido nuevas funcionalidades para una experiencia más completa.</div>
+        <div class="p">Estas mejoras están orientadas a <strong>reducir clics</strong>, <strong>aclarar el flujo</strong> y <strong>evitar distracciones</strong> en las principales acciones de la plataforma. También incorporan <strong>nuevas funcionalidades</strong> y <strong>feedback visual</strong> más consistente para una experiencia completa.</div>
       </div>
 
       <div class="section">
-        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>1) Selección inteligente de agentes</div>
+        <div class="h2">1) Selección inteligente de agentes</div>
         <div class="feature">
-          <div class="badge">1</div>
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
           <div class="feature-content">
             <div class="h3">Selección automática si hay un único agente</div>
             <p class="p">Al hacer clic en <strong>"Realizar resumen"</strong>, <strong>"Cuadro de obligaciones"</strong> o <strong>"Riesgos y oportunidades"</strong>, el análisis comienza directamente sin pasos extra. Sin fricción innecesaria.</p>
           </div>
         </div>
         <div class="feature">
-          <div class="badge">2</div>
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
           <div class="feature-content">
             <div class="h3">Nuevo selector cuando hay varios agentes</div>
             <p class="p">Verás un <strong>listado minimalista</strong> (elegir uno) para personalizar el análisis en función del agente seleccionado. Interfaz limpia y enfocada.</p>
           </div>
         </div>
         <div class="feature">
-          <div class="badge">3</div>
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l-1.41 1.41L15.17 10H4v2h11.17l-4.58 4.59L12 18l6-6z"/></svg></div>
           <div class="feature-content">
             <div class="h3">Mensajes y CTA más claros</div>
             <p class="p">El título ahora indica claramente <strong>"Selecciona un agente"</strong> y el botón aparece desactivado hasta que marques una opción. Guía visual clara del proceso.</p>
@@ -90,24 +92,59 @@
       </div>
 
       <div class="section">
-        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>2) Navegación mejorada</div>
+        <div class="h2">2) Navegación mejorada</div>
         <div class="feature">
-          <div class="badge">4</div>
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 19l-7-7 1.41-1.41L10 16.17 19.59 6.59 21 8l-11 11z"/></svg></div>
           <div class="feature-content">
             <div class="h3">Botón para volver atrás</div>
             <p class="p">Nuevo botón <strong>"Volver a Agentes"</strong> que permite regresar al listado principal sin perder el contexto. Navegación más intuitiva y sin recargas de página.</p>
           </div>
         </div>
+        <div class="screenshot">
+          <img src="./captura_2.png" alt="Navegación mejorada con volver a Agentes" style="max-width:100%; height:auto; display:block;" />
+        </div>
       </div>
 
       <div class="section">
-        <div class="h2"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>3) Exportación a Word</div>
+        <div class="h2">3) Exportación a Word</div>
         <div class="feature">
-          <div class="badge">5</div>
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2H6a2 2 0 0 0-2 2v16l7-3 7 3V4a2 2 0 0 0-2-2h-6z"/></svg></div>
           <div class="feature-content">
             <div class="h3">Exportar resúmenes generados</div>
             <p class="p">Los análisis generados ahora se pueden <strong>exportar directamente a Word</strong> con formato profesional. Ideal para compartir con equipos o incluir en informes.</p>
           </div>
+        </div>
+        <div class="screenshot">
+          <img src="./captura_3.png" alt="Exportación de análisis a Word" style="max-width:100%; height:auto; display:block;" />
+        </div>
+      </div>
+
+      <!-- NUEVO: Guardar en listas - UX -->
+      <div class="section">
+        <div class="h2">4) Guardar en listas – UX más fluida</div>
+        <div class="feature">
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h12v2H3v-2z"/></svg></div>
+          <div class="feature-content">
+            <div class="h3">Apertura por hover</div>
+            <p class="p">El desplegable de <strong>Guardar</strong> aparece al pasar el ratón, reduciendo clics y acelerando la acción.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 13H5v-2h14v2zm-7 8l-5-5h10l-5 5zM12 3l5 5H7l5-5z"/></svg></div>
+          <div class="feature-content">
+            <div class="h3">Crear lista y añadir en un paso</div>
+            <p class="p">Al crear una nueva lista, el documento actual se <strong>guarda automáticamente</strong> en ella y la lista queda disponible al momento.</p>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="badge"><svg class="ico-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12 3.41 13.41 9 19 21 7l-1.41-1.41L9 16.17z"/></svg></div>
+          <div class="feature-content">
+            <div class="h3">Confirmación de operación exitosa</div>
+            <p class="p">Cada vez que creas una lista, guardas o quitas un documento, se muestra un <strong>banner de éxito</strong> en la esquina superior derecha (estándar Reversa), y un aviso de error cuando aplique.</p>
+          </div>
+        </div>
+        <div class="screenshot">
+          <img src="./captura_guardar_listas.png" alt="UX Guardar en listas: hover y confirmación de operación exitosa" style="max-width:100%; height:auto; display:block;" />
         </div>
       </div>
 

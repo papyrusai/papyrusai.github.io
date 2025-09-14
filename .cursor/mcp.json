@@ -19,9 +19,11 @@
       "command": "npx",
       "args": [
         "-y",
-        "mongo-mcp",
-        "mongodb+srv://santi:Jensen1620@papyrus.n1c6zst.mongodb.net/papyrus"
-      ]
+        "mongo-mcp"
+      ],
+      "env": {
+        "MONGODB_URI": "mongodb+srv://<user>:<password>@<cluster>/<db>"
+      }
     },
     "browsermcp": {
       "command": "npx",
