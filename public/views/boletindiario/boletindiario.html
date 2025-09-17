@@ -399,6 +399,9 @@
             font-size: 12px;
             font-weight: 500;
         }
+        /* Ajustes específicos para Iniciativas Legales */
+        #vista-iniciativas-legales .sector-bubble { margin-right: 6px; margin-bottom: 4px; }
+        #vista-iniciativas-legales .sector-bubble--primary { background: rgba(11, 36, 49, 0.12); color: #0b2431; }
         .link-btn {
             display: inline-flex;
             align-items: center;
@@ -456,6 +459,24 @@
             font-size: 14px;
             font-weight: 500;
         }
+        /* Fuente dropdown (Reversa style) */
+        .fuente-filter-box { display:inline-flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 10px; border:1px solid #e9ecef; border-radius:8px; min-width:220px; background:#fff; cursor:pointer; position: relative; }
+        .fuente-filter-box:hover { box-shadow: 0 0 0 3px rgba(11,36,49,.08); border-color: #04db8d; }
+        .fuente-filter-label { font-size:13px; color:#0b2431; font-weight:600; }
+        .fuente-dropdown { position:absolute; z-index:10000; min-width:260px; max-height:320px; overflow:auto; background:#fff; border:1px solid #e9ecef; border-radius:10px; box-shadow:0 8px 24px rgba(11,36,49,.15); padding:10px; display:none; }
+        .fuente-dropdown.show { display:block !important; }
+        .fuente-dropdown .header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; padding-bottom: 8px; border-bottom: 1px solid #e9ecef; }
+        .fuente-dropdown .list { display:grid; gap:4px; max-height: 200px; overflow-y: auto; padding: 4px 0; }
+        .fuente-dropdown .item { display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 8px; border-radius:6px; cursor: pointer; transition: all 0.15s ease; }
+        .fuente-dropdown .item:hover { background: #f8f9fa; }
+        .fuente-dropdown .item.selected { background: rgba(11, 36, 49, 0.08); color:#0b2431; font-weight: 500; }
+        .fuente-dropdown .item input[type="checkbox"] { accent-color: #0b2431; cursor: pointer; }
+        .fuente-dropdown .btn { padding:6px 10px; border-radius:6px; border:1px solid #e9ecef; background:#fff; color:#455862; cursor:pointer; font-size:12px; transition: all 0.15s ease; }
+        .fuente-dropdown .btn:hover { background:#f8f9fa; border-color: #04db8d; }
+        /* Ajustes específicos vista Iniciativas Legales */
+        #vista-iniciativas-legales .filter-controls .filter-group { flex: 0; min-width: auto; }
+        #fuente-select-legales option:checked { background-color: #0b2431; color: #fff; }
+        #fuente-select-legales { min-width: 200px; }
     </style>
 </head>
 <body>
@@ -463,6 +484,7 @@
     <div class="ambito-tabs">
         <a id="tabBoletinDiario" class="tab-link active" data-tab="boletin-diario">Boletines Diarios</a>
         <a id="tabIniciativas" class="tab-link" data-tab="iniciativas">Iniciativas Parlamentarias</a>
+        <a id="tabIniciativasLegales" class="tab-link" data-tab="iniciativas-legales">Iniciativas Legales</a>
     </div>
 
     <!-- Vista Boletín Diario (existente) -->
@@ -562,6 +584,7 @@
                         </svg>
                     </button>
                 </div>
+                
             </div>
             <button id="export-excel" class="btn-export">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -587,7 +610,7 @@
                         <th class="sortable" data-column="proponente">Proponente <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="tipo">Tipo Iniciativa <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="fecha">Fecha <span class="sort-icon">↕</span></th>
-                        <th>Link</th>
+                        <th class="sortable" data-column="link">Link <span class="sort-icon">↕</span></th>
                     </tr>
                 </thead>
                 <tbody id="tbody-iniciativas">
@@ -617,7 +640,276 @@
         </div>
     </div>
 
+    <!-- Vista Iniciativas Legales (nueva) -->
+    <div id="vista-iniciativas-legales" class="vista-section" style="display: none;">
+        <div class="page-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <h2 class="page-title">Iniciativas Legales</h2>
+                <span class="beta-badge">Versión Beta</span>
+            </div>
+            <div class="page-subtitle">Análisis de las iniciativas legales detectadas</div>
+        </div>
+
+        <!-- Controles de filtrado y exportación -->
+        <div class="table-controls">
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <line x1="4" y1="6" x2="20" y2="6"></line>
+                            <line x1="7" y1="12" x2="17" y2="12"></line>
+                            <line x1="10" y1="18" x2="14" y2="18"></line>
+                        </svg>
+                        Filtros
+                    </label>
+                </div>
+                <div class="date-filter-group" style="gap:20px;">
+                    <label class="filter-label">Fecha</label>
+                    <input type="date" id="fecha-desde-legales" class="date-input" placeholder="Desde">
+                    <span class="date-separator">—</span>
+                    <input type="date" id="fecha-hasta-legales" class="date-input" placeholder="Hasta">
+                    <button id="clear-dates-legales" class="clear-dates-btn" title="Limpiar fechas">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <label class="filter-label">Boletín</label>
+                    <div id="fuente-filter" class="fuente-filter-box" tabindex="0">
+                        <span id="fuente-selected-label">BOE</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div id="fuente-dropdown" class="fuente-dropdown" style="display: none;">
+                        <div class="header">
+                            <span class="fuente-filter-label">Selecciona boletines</span>
+                            <div style="display:flex; gap:6px;">
+                                <button type="button" class="btn" id="fuente-select-all">Todos</button>
+                                <button type="button" class="btn" id="fuente-clear-all">Limpiar</button>
+                            </div>
+                        </div>
+                        <div class="list" id="fuente-list">
+                            <!-- Los items se cargarán dinámicamente -->
+                        </div>
+                    </div>
+                    <button id="buscar-legales" class="btn-export" style="margin-left:20px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Buscar
+                    </button>
+                </div>
+            </div>
+            <button id="export-excel-legales" class="btn-export">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Exportar Excel
+            </button>
+        </div>
+
+        <!-- Tabla de iniciativas legales -->
+        <div class="table-container">
+            <table id="tabla-iniciativas-legales" class="reversa-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="id">ID_iniciativa <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="sector">Sector <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="subsector">Subsector <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="tema">Tema <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="marco">Marco Geográfico <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="titulo">Título Iniciativa <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="fuente">Fuente <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="proponente">Proponente <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="rango">Rango <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="subgrupo">Subgrupo <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="fecha">Fecha <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="link">Link</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-iniciativas-legales">
+                    <!-- Datos se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Mostrando <span id="showing-start-legales">1</span>-<span id="showing-end-legales">25</span> de <span id="total-records-legales">0</span> registros
+            </div>
+            <div class="pagination-controls">
+                <button id="prev-page-legales" class="pagination-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <span class="page-info">Página <span id="current-page-legales">1</span> de <span id="total-pages-legales">1</span></span>
+                <button id="next-page-legales" class="pagination-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="boletindiario.js"></script>
     <script src="iniciativas_parlamentarias.js"></script>
+    <script src="iniciativas_legales.js"></script>
+    
+    <script>
+        // Función para verificar si el usuario tiene acceso a las vistas avanzadas
+        function checkAdvancedViewsAccess() {
+            let userEmail = null;
+            
+            try {
+                // Intentar obtener el email desde el elemento DOM global
+                const userEmailElement = document.getElementById('userEmail');
+                if (userEmailElement && userEmailElement.textContent) {
+                    const emailContent = userEmailElement.textContent.trim();
+                    // Verificar si el contenido es un template sin procesar
+                    if (emailContent.startsWith('"') && emailContent.endsWith('"') && !emailContent.includes('{{')) {
+                        userEmail = JSON.parse(emailContent);
+                    } else if (emailContent && !emailContent.includes('{{')) {
+                        userEmail = emailContent;
+                    }
+                }
+            } catch (e) {
+                console.log('Error al obtener email del template:', e);
+            }
+            
+            // Si no se encuentra en el template, intentar desde sessionStorage
+            if (!userEmail) {
+                userEmail = sessionStorage.getItem('userEmail');
+            }
+            
+            // Si aún no tenemos email, intentar desde window.__currentUserEmail
+            if (!userEmail && window.__currentUserEmail) {
+                userEmail = window.__currentUserEmail;
+            }
+            
+            console.log('🔐 Verificando acceso para email:', userEmail);
+            
+            if (!userEmail || typeof userEmail !== 'string') {
+                console.log('❌ No se pudo obtener email del usuario - ocultando vistas avanzadas');
+                return false;
+            }
+            
+            // Lista de emails autorizados
+            const authorizedEmails = [
+                'llycesp@pruebareversa.ai',
+                'llyc@pruebareversa.ai'
+            ];
+            
+            // Verificar si es un email específico autorizado
+            if (authorizedEmails.includes(userEmail.toLowerCase())) {
+                console.log('✅ Email autorizado específico:', userEmail);
+                return true;
+            }
+            
+            // Verificar si termina en dominios autorizados
+            const authorizedDomains = ['@llyc.global', '@reversa.ai'];
+            const hasAuthorizedDomain = authorizedDomains.some(domain => 
+                userEmail.toLowerCase().endsWith(domain.toLowerCase())
+            );
+            
+            if (hasAuthorizedDomain) {
+                console.log('✅ Dominio autorizado:', userEmail);
+                return true;
+            }
+            
+            console.log('❌ Email no autorizado:', userEmail);
+            return false;
+        }
+        
+        // Función para aplicar la visibilidad de los tabs
+        function applyTabVisibility() {
+            const hasAccess = checkAdvancedViewsAccess();
+            
+            // Obtener los tabs
+            const tabIniciativas = document.getElementById('tabIniciativas');
+            const tabIniciativasLegales = document.getElementById('tabIniciativasLegales');
+            const tabBoletinDiario = document.getElementById('tabBoletinDiario');
+            
+            if (!hasAccess) {
+                // Ocultar tabs avanzados
+                if (tabIniciativas) {
+                    tabIniciativas.style.display = 'none';
+                    console.log('🚫 Tab Iniciativas Parlamentarias ocultado');
+                }
+                if (tabIniciativasLegales) {
+                    tabIniciativasLegales.style.display = 'none';
+                    console.log('🚫 Tab Iniciativas Legales ocultado');
+                }
+                
+                // Cambiar el texto del tab principal
+                if (tabBoletinDiario) {
+                    tabBoletinDiario.textContent = 'Boletines Oficiales';
+                    console.log('📝 Tab principal renombrado a "Boletines Oficiales"');
+                }
+            } else {
+                // Mostrar todos los tabs (comportamiento por defecto)
+                if (tabIniciativas) {
+                    tabIniciativas.style.display = '';
+                    console.log('✅ Tab Iniciativas Parlamentarias visible');
+                }
+                if (tabIniciativasLegales) {
+                    tabIniciativasLegales.style.display = '';
+                    console.log('✅ Tab Iniciativas Legales visible');
+                }
+                
+                // Mantener el texto original
+                if (tabBoletinDiario) {
+                    tabBoletinDiario.textContent = 'Boletines Diarios';
+                    console.log('📝 Tab principal mantiene "Boletines Diarios"');
+                }
+            }
+        }
+        
+        // Aplicar la visibilidad cuando el DOM esté listo
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', applyTabVisibility);
+        } else {
+            applyTabVisibility();
+        }
+        
+        // También aplicar después de un pequeño delay para asegurar que todos los scripts se han cargado
+        setTimeout(applyTabVisibility, 100);
+        
+        // Función para interceptar clicks en tabs no autorizados
+        function interceptUnauthorizedTabClicks() {
+            const hasAccess = checkAdvancedViewsAccess();
+            
+            if (!hasAccess) {
+                // Interceptar clicks en tabs de iniciativas si no están autorizados
+                const tabIniciativas = document.getElementById('tabIniciativas');
+                const tabIniciativasLegales = document.getElementById('tabIniciativasLegales');
+                
+                [tabIniciativas, tabIniciativasLegales].forEach(tab => {
+                    if (tab) {
+                        tab.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('🚫 Acceso denegado a tab:', this.textContent);
+                            
+                            // Opcional: mostrar mensaje al usuario
+                            if (typeof showToast === 'function') {
+                                showToast('Acceso restringido a esta funcionalidad', 'info');
+                            } else {
+                                alert('Esta funcionalidad requiere permisos especiales');
+                            }
+                            return false;
+                        });
+                    }
+                });
+            }
+        }
+        
+        // Aplicar interceptores después de que los tabs estén configurados
+        setTimeout(interceptUnauthorizedTabClicks, 200);
+    </script>
 </body>
 </html>

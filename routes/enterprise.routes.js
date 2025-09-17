@@ -36,6 +36,7 @@ router.get('/api/etiquetas-context', ensureAuthenticated, async (req, res) => {
         res.json({
             success: true,
             data: result.etiquetas_personalizadas,
+            data_limpio: result.etiquetas_personalizadas_limpio || null,
             source: result.source,
             version: result.version,
             estructura_id: result.estructura_id,

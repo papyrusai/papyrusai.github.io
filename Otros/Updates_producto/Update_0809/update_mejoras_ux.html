@@ -46,6 +46,13 @@
     .tag { display:inline-block; padding:2px 8px; font-size:11px; border-radius:999px; background:rgba(4,219,141,.12); color:#04db8d; border:1px solid rgba(4,219,141,.35); font-weight:700; letter-spacing:.2px; }
     .ico { color:#0b2431; font-weight:700; margin-right:8px; }
     .ico-svg { width:18px; height:18px; fill:#0b2431; margin-right:8px; vertical-align:-3px; }
+
+    /* Fijar colores en impresión y evitar pérdida del fondo en el header */
+    @media print {
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .header { background:#0b2431 !important; color:#fff !important; }
+      .container { box-shadow:none !important; }
+    }
   </style>
 </head>
 <body>
@@ -144,7 +151,7 @@
           </div>
         </div>
         <div class="screenshot">
-          <img src="./captura_guardar_listas.png" alt="UX Guardar en listas: hover y confirmación de operación exitosa" style="max-width:100%; height:auto; display:block;" />
+          <img src="./captura_4.png" alt="UX Guardar en listas: hover y confirmación de operación exitosa" style="max-width:100%; height:auto; display:block;" />
         </div>
       </div>
 

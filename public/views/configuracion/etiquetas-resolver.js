@@ -114,6 +114,7 @@ window.EtiquetasResolver = (function() {
             
             const result = {
                 etiquetas_personalizadas: data.data || {},
+                etiquetas_personalizadas_limpio: data.data_limpio || null,
                 source: data.source,
                 version: data.version || 1,
                 can_edit: data.source === 'individual' || data.permissions?.can_edit_empresa || false,
@@ -714,6 +715,10 @@ window.EtiquetasResolver = (function() {
         buttonSelectors.forEach(selector => {
             const buttons = document.querySelectorAll(selector);
             buttons.forEach(btn => {
+                // Skip interception for buttons explicitly allowed (e.g., "Sugerir cambios")
+                if (btn && btn.hasAttribute('data-allow-suggest')) {
+                    return;
+                }
                 if (!btn.hasAttribute('data-readonly-intercepted')) {
                     btn.setAttribute('data-readonly-intercepted', 'true');
                     
@@ -787,6 +792,8 @@ window.EtiquetasResolver = (function() {
         const button = wrapper.querySelector('button');
         
         if (!button) return;
+        // Do not show tooltip for suggestion actions
+        if (button.hasAttribute('data-allow-suggest')) return;
         
         // Determinar mensaje según el botón
         let message = 'Solicita permiso de edición para poder editar agentes';

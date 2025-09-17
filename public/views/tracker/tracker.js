@@ -1788,9 +1788,9 @@ function showToast(message, type = 'success') {
 
     const toast = document.createElement('div');
     const isError = type === 'error';
-    const baseCss = 'color:#0b2431; padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; box-shadow:0 4px 12px rgba(11,36,49,0.12); max-width: 420px; word-break: break-word; border:1px solid #e8ecf0; background:#ffffff;';
-    const successCss = 'background: rgba(4,219,141,.05); border-left:4px solid #04db8d;';
-    const errorCss = 'background: rgba(211,47,47,.05); border-left:4px solid #d32f2f;';
+    const baseCss = 'background:#ffffff; color:#0b2431; padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; box-shadow:0 10px 30px rgba(11,36,49,.22); max-width:420px; word-break:break-word; border:1.5px solid #dbe4ea;';
+    const successCss = 'border-left:6px solid #04db8d;';
+    const errorCss = 'border-left:6px solid #d32f2f;';
     toast.style.cssText = baseCss + (isError ? errorCss : successCss);
     toast.textContent = message;
     container.appendChild(toast);

@@ -289,11 +289,13 @@ async function initializeAgentsAndFolders() {
         return false;
       })(),
       
-      // Load agents data without rendering
+      // Load agents data without rendering (prefer clean display when available)
       (async () => {
         if (typeof window.EtiquetasResolver !== 'undefined' && 
             typeof window.EtiquetasResolver.getEtiquetasPersonalizadas === 'function') {
           const result = await window.EtiquetasResolver.getEtiquetasPersonalizadas();
+          const limpio = result.etiquetas_personalizadas_limpio || null;
+          if (limpio && Object.keys(limpio).length > 0) return limpio;
           return result.etiquetas_personalizadas || {};
         } else {
           const response = await fetch('/api/get-user-data');
@@ -470,6 +472,28 @@ function parseEtiquetaDefinition(xmlString){
   };
 }
 
+// Safely render bold markers: escape HTML, then allow <b>...</b> as <strong>...</strong>
+function escapeHtmlForDisplay(text){
+  try{
+    return (text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }catch(_){ return (text||''); }
+}
+function renderWithBoldMarkers(text){
+  const esc = escapeHtmlForDisplay(text);
+  return esc
+    .replace(/&lt;b&gt;/g, '<strong>')
+    .replace(/&lt;\/b&gt;/g, '</strong>');
+}
+
+function renderMultilineWithBold(text){
+  try{
+    return renderWithBoldMarkers(text || '').replace(/\n/g, '<br>');
+  }catch(_){ return renderWithBoldMarkers(text||''); }
+}
+
 function buildEtiquetaXml(vars){
   const s = v => (v ?? '').toString().trim();
   return `<Etiqueta>\n<NombreEtiqueta>${s(vars.NombreEtiqueta)}</NombreEtiqueta>\n<tipo>${s(vars.tipo)}</tipo>\n<Contexto>${s(vars.Contexto)}</Contexto>\n<Objetivo>${s(vars.Objetivo)}</Objetivo>\n<Contenido>\n${s(vars.Contenido)}\n</Contenido>\n<DocumentosNoIncluidos>\n${s(vars.DocumentosNoIncluidos)}\n</DocumentosNoIncluidos>\n</Etiqueta>`;
@@ -584,7 +608,7 @@ function renderAgentsGrid(etiquetas){
         <div class="agent-header">
           <h3>${name}</h3>
         </div>
-        <p class="agent-objective">${obj}</p>
+        <p class="agent-objective">${renderWithBoldMarkers(obj)}</p>
         <i class="far fa-star agent-fav" data-fav="${encodeURIComponent(key)}" title="" style="position:absolute;top:8px;right:36px;color:#adb5bd;cursor:pointer"></i>
         <i class="fas fa-ellipsis-h agent-menu-btn" title="Más opciones" style="position:absolute;top:8px;right:10px;color:#455862;cursor:pointer"></i>
         <div class="agent-menu" style="position:absolute;top:32px;right:10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 8px 24px rgba(11,36,49,.12);display:none;min-width:190px;z-index:20">
@@ -852,7 +876,13 @@ async function loadExistingAgents(){
         }
       }
       
-      renderAgentsGrid(result.etiquetas_personalizadas || {});
+      {
+        const limpio = result.etiquetas_personalizadas_limpio || null;
+        const uiEtiquetas = (limpio && Object.keys(limpio).length > 0)
+          ? limpio
+          : (result.etiquetas_personalizadas || {});
+        renderAgentsGrid(uiEtiquetas);
+      }
     } else {
       // Fallback to legacy method
       const response = await fetch('/api/get-user-data');
@@ -1932,21 +1962,28 @@ async function openAgentDetail(agentKey, xml){
 
   const vars = parseEtiquetaDefinition(xml);
   titleText.textContent = vars.NombreEtiqueta || agentKey;
-  ctxInput.value = vars.Contexto || '';
-  objInput.value = vars.Objetivo || '';
-  contInput.value = vars.Contenido || '';
-  noInclInput.value = vars.DocumentosNoIncluidos || '';
+  ctxInput.value = (vars.Contexto || '').replace(/<\/?b>/gi, '');
+  objInput.value = (vars.Objetivo || '').replace(/<\/?b>/gi, '');
+  contInput.value = (vars.Contenido || '').replace(/<\/?b>/gi, '');
+  noInclInput.value = (vars.DocumentosNoIncluidos || '').replace(/<\/?b>/gi, '');
 
-  // Force read-only: disable all inputs and prevent interaction
-  [ctxInput, objInput, contInput, noInclInput].forEach(el=>{
-    try{
-      el.disabled = false; // keep styles
-      if (el.tagName === 'TEXTAREA') el.readOnly = true;
-      el.style.pointerEvents = 'none';
-      el.style.backgroundColor = '#fff';
-      el.style.outline = 'none';
-    }catch(_){ }
-  });
+  // Force read-only: replace inputs with HTML-rendered view supporting <b> → <strong>
+  try {
+    const replaceWithHtml = (container, html) => {
+      if (!container) return;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'agent-field-html';
+      wrapper.style.cssText = 'border:1px solid #e9ecef; border-radius:8px; padding:12px; background:#fff; color:#0b2431; line-height:1.5; font-size:14px; white-space:normal;';
+      wrapper.innerHTML = html;
+      const parent = container.parentNode;
+      if (parent) parent.replaceChild(wrapper, container);
+      return wrapper;
+    };
+    replaceWithHtml(ctxInput, renderMultilineWithBold(vars.Contexto||''));
+    replaceWithHtml(objInput, renderMultilineWithBold(vars.Objetivo||''));
+    replaceWithHtml(contInput, renderMultilineWithBold(vars.Contenido||''));
+    replaceWithHtml(noInclInput, renderMultilineWithBold(vars.DocumentosNoIncluidos||''));
+  } catch(_){}
   
   // Solo deshabilitar saveBtn si existe (puede haber sido convertido a readonly)
   if (saveBtn) {
@@ -1975,6 +2012,26 @@ async function openAgentDetail(agentKey, xml){
     // Repurpose button to "Sugerir cambios"
     saveBtn.disabled = false;
     saveBtn.innerHTML = '<i class="fas fa-comment-alt"></i> Sugerir cambios';
+    // Mark as suggestion action so resolver won't intercept it for read-only users
+    try { saveBtn.setAttribute('data-allow-suggest', 'true'); } catch(_){}
+    // If any readonly wrapper/styles were applied, remove/restore them to ensure clickability
+    try {
+      const wrapper = saveBtn.parentElement;
+      if (wrapper && wrapper.classList && wrapper.classList.contains('readonly-button-wrapper')) {
+        const parent = wrapper.parentNode;
+        if (parent) {
+          parent.insertBefore(saveBtn, wrapper);
+          wrapper.remove();
+        }
+      }
+      saveBtn.style.opacity = '';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.style.pointerEvents = 'auto';
+      saveBtn.style.filter = '';
+      saveBtn.style.background = '';
+      saveBtn.style.border = '';
+      saveBtn.style.color = '';
+    } catch(_){}
     saveBtn.onclick = ()=> {
       showSuggestChangesModal({
         agente: titleText.textContent || agentKey
@@ -2012,7 +2069,7 @@ function showSuggestChangesModal({ agente }){
   const textarea = document.createElement('textarea');
   textarea.className = 'product-input';
   textarea.rows = 6;
-  textarea.placeholder = 'Ejemplo: Quiero que el agente incluya normativa de IA a parte de protección de datos.\nAdemás, me gusstaría que dejara de detectar como relevante novedades sobre convenios interadminsitrativos';
+  textarea.placeholder = 'Ejemplo: Quiero que el agente incluya normativa de IA a parte de protección de datos.\nAdemás, me gustaría que dejara de detectar como relevante novedades sobre convenios interadminsitrativos';
   textarea.style.width = '100%';
   textarea.style.padding = '12px 16px';
   textarea.style.border = '1px solid #dee2e6';
@@ -2804,7 +2861,7 @@ function renderAgentsGridCoordinated(etiquetas) {
         <div class="agent-header">
           <h3>${name}</h3>
         </div>
-        <p class="agent-objective">${obj}</p>
+        <p class="agent-objective">${renderWithBoldMarkers(obj)}</p>
         <i class="far fa-star agent-fav" data-fav="${encodeURIComponent(key)}" title="" style="position:absolute;top:8px;right:36px;color:#adb5bd;cursor:pointer"></i>
         <i class="fas fa-ellipsis-h agent-menu-btn" title="Más opciones" style="position:absolute;top:8px;right:10px;color:#455862;cursor:pointer"></i>
         <div class="agent-menu" style="position:absolute;top:32px;right:10px;background:#fff;border:1px solid #e0e0e0;border-radius:8px;box-shadow:0 8px 24px rgba(11,36,49,.12);display:none;min-width:190px;z-index:20">

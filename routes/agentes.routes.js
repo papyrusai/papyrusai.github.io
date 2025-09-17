@@ -533,8 +533,9 @@ router.post('/api/generate-custom-agent', ensureAuthenticated, async (req, res) 
 
 // === Feedback endpoint ===
 router.post('/api/sugerencia_edicion', ensureAuthenticated, async (req, res) => {
+	let client;
 	try {
-		const client = new MongoClient(uri, mongodbOptions);
+		client = new MongoClient(uri, mongodbOptions);
 		await client.connect();
 		const db = client.db('papyrus');
 		const feedbackCol = db.collection('Feedback');
@@ -546,27 +547,33 @@ router.post('/api/sugerencia_edicion', ensureAuthenticated, async (req, res) => 
 		const fecha = `${dd}-${mm}-${yyyy}`;
 
 		const body = req.body || {};
-		const agente = body.agente || '';
+		const agente = (body.agente || '').toString();
+		const userId = (req.user?._id instanceof ObjectId) ? req.user._id : new ObjectId(String(req.user?._id || ''));
+		const userEmail = req.user?.email || req.user?.username || '';
 
-		const doc = {
-			user_id: String(req.user?._id || ''),
-			user_email: req.user?.email || req.user?.username || '',
+		// Documento de evento individual
+		const feedbackEventDoc = {
+			user_id: userId,
+			user_email: userEmail,
 			created_at: now,
 			updated_at: now,
 			content_evaluated: 'agente',
-			agente: agente,
+			agente,
 			fecha,
 			feedback: 'Sugerencia cambios',
 			doc_url: body.doc_url || '',
 			feedback_detalle: body.feedback_detalle || ''
 		};
+		await feedbackCol.insertOne(feedbackEventDoc);
 
-		await feedbackCol.insertOne({ ...doc });
-		await client.close();
-		return res.json({ success: true, data: doc });
+		res.setHeader('Content-Type', 'application/json; charset=utf-8');
+		return res.json({ success: true, data: feedbackEventDoc });
 	} catch (error) {
-		console.error('Error guardando feedback:', error);
+		console.error('Error guardando feedback sugerencia_edicion:', error);
+		res.setHeader('Content-Type', 'application/json; charset=utf-8');
 		return res.status(500).json({ success: false, error: 'Error interno al guardar feedback' });
+	} finally {
+		try { if (client) await client.close(); } catch(_) {}
 	}
 });
 

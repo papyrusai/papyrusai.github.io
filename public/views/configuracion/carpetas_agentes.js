@@ -376,11 +376,11 @@
 		const c = {};
 		Object.keys(folders).forEach(fid => c[fid] = 0);
 		c.root = 0;
-		Object.entries(asign).forEach(([ag, fid])=>{ const key = fid || 'root'; c[key] = (c[key]||0) + 1; });
-		const children = (function(){ const m={}; Object.values(folders).forEach(f=>{ const pid = f.parentId || 'root'; (m[pid]||(m[pid]=[])).push(f); }); return m; })();
-		function dfs(fid){ let sum = (c[fid]||0); (children[fid]||[]).forEach(k=> sum += dfs(String(k.id))); c[fid]=sum; return sum; }
-		(children.root||[]).forEach(rootF => dfs(String(rootF.id)));
-		c.root_total = (c.root||0) + (children.root||[]).reduce((acc,f)=> acc + (c[String(f.id)]||0), 0);
+		// Conteo simple: solo agentes asignados directamente a la carpeta (sin sumar subcarpetas)
+		Object.entries(asign).forEach(([ag, fid])=>{ 
+			const key = fid ? String(fid) : 'root'; 
+			c[key] = (c[key]||0) + 1; 
+		});
 		counts = c;
 	}
 
@@ -701,6 +701,7 @@
 		rootEl.appendChild(bc);
 
 		if (!currentFolderId){
+			// Mostrar únicamente carpetas de primer nivel (no expandir su interior)
 			(Object.values(children.root||[])).forEach(f => { 
 				if (vistaFavoritos && !folderHasFavorite(String(f.id))) return; 
 				rootEl.appendChild(renderFolderNode(f, children, agentes, vistaFavoritos)); 
@@ -819,7 +820,7 @@
 			await refreshAgentsGrid();
 		});
 		
-		(children[String(folder.id)] || []).forEach(k => wrap.appendChild(renderFolderNode(k, children, agentes, vistaFavoritos)));
+		// No renderizar subcarpetas aquí: mostrar solo el nivel actual
 		return wrap;
 	}
 

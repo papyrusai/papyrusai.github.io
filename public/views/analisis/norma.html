@@ -941,9 +941,20 @@
 		const exportMenuBtn = document.getElementById('exportMenuBtn');
 		const exportDropdown = document.getElementById('exportDropdown');
 		
+		// Click to toggle dropdown
 		exportMenuBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			exportDropdown.classList.toggle('show');
+		});
+		
+		// Show dropdown on hover
+		exportMenu.addEventListener('mouseenter', () => {
+			exportDropdown.classList.add('show');
+		});
+		
+		// Hide dropdown when mouse leaves the container
+		exportMenu.addEventListener('mouseleave', () => {
+			exportDropdown.classList.remove('show');
 		});
 		
 		// Handle export options

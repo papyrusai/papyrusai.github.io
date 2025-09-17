@@ -161,6 +161,7 @@ async function getEtiquetasPersonalizadas(user) {
             if (estructuraDoc) {
                 return {
                     etiquetas_personalizadas: estructuraDoc.etiquetas_personalizadas || {},
+                    etiquetas_personalizadas_limpio: estructuraDoc.etiquetas_personalizadas_limpio || null,
                     source: 'empresa',
                     estructura_id: estructuraDoc._id,
                     version: estructuraDoc.estructura_carpetas?.version || 1
@@ -175,12 +176,17 @@ async function getEtiquetasPersonalizadas(user) {
         
         // Normalizar: si el usuario tiene etiquetas_personalizadas como array (legacy), convertir a objeto
         const etiquetasRaw = userDoc?.etiquetas_personalizadas || {};
+        const etiquetasLimpioRaw = userDoc?.etiquetas_personalizadas_limpio || null;
         const etiquetasNormalized = Array.isArray(etiquetasRaw)
             ? etiquetasRaw.reduce((acc, k) => { acc[k] = ''; return acc; }, {})
             : etiquetasRaw;
+        const etiquetasLimpioNormalized = Array.isArray(etiquetasLimpioRaw)
+            ? etiquetasLimpioRaw.reduce((acc, k) => { acc[k] = ''; return acc; }, {})
+            : etiquetasLimpioRaw;
         
         return {
             etiquetas_personalizadas: etiquetasNormalized,
+            etiquetas_personalizadas_limpio: etiquetasLimpioNormalized || null,
             source: 'individual',
             user_id: userDoc?._id
         };
@@ -1340,6 +1346,7 @@ async function getEtiquetasPersonalizadasAdapter(user) {
             
             return {
                 etiquetas_personalizadas: result.etiquetas_personalizadas,
+                etiquetas_personalizadas_limpio: result.etiquetas_personalizadas_limpio || null,
                 source: 'empresa',
                 estructura_id: result.estructura_id,
                 version: result.version,
@@ -1351,6 +1358,7 @@ async function getEtiquetasPersonalizadasAdapter(user) {
             
             return {
                 etiquetas_personalizadas: result.etiquetas_personalizadas,
+                etiquetas_personalizadas_limpio: result.etiquetas_personalizadas_limpio || null,
                 source: 'individual', 
                 user_id: result.user_id,
                 isEnterprise: false

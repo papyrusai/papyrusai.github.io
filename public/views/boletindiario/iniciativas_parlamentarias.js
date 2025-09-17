@@ -228,7 +228,14 @@
             let matchesColumnFilters = true;
             for (const [col, values] of Object.entries(columnFilters)) {
                 if (Array.isArray(values) && values.length > 0) {
-                    if (!values.includes(String(item[col] ?? ''))) {
+                    let itemValue;
+                    if (col === 'link') {
+                        itemValue = String(item.doc_id || '').trim();
+                    } else {
+                        itemValue = String(item[col] ?? '');
+                    }
+                    
+                    if (!values.includes(itemValue)) {
                         matchesColumnFilters = false;
                         break;
                     }
