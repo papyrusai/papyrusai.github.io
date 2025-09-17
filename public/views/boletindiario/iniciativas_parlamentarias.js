@@ -403,16 +403,26 @@
         // Limpiar tabla
         tbody.innerHTML = '';
         
+        // Función helper para truncar texto con tooltip
+        const truncateText = (text, maxLength = 15) => {
+            if (!text || text.length <= maxLength) return text;
+            const truncated = text.substring(0, maxLength) + '...';
+            console.log(`✂️ Fuente truncada: "${text}" → "${truncated}"`);
+            return truncated;
+        };
+
         // Renderizar filas
         pageData.forEach(item => {
             const row = document.createElement('tr');
+            const truncatedFuente = truncateText(item.fuente, 15);
+            
             row.innerHTML = `
                 <td>${item.id}</td>
                 <td><span class="sector-bubble">${item.sector}</span></td>
                 <td>${item.tema}</td>
                 <td>${item.marco}</td>
                 <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
-                <td>${item.fuente}</td>
+                <td class="fuente-cell" title="${item.fuente}">${truncatedFuente}</td>
                 <td>${item.proponente}</td>
                 <td>${item.tipo}</td>
                 <td>${item.fecha}</td>

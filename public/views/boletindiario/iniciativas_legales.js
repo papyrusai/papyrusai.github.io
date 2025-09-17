@@ -83,7 +83,7 @@
             item.className = 'item' + (isSelected ? ' selected' : '');
             item.dataset.value = f;
             item.innerHTML = `<input type="checkbox" ${isSelected ? 'checked' : ''}/> <span>${f}</span>`;
-            const cb = item.querySelector('input');
+                const cb = item.querySelector('input');
             cb.addEventListener('change', () => {
                 item.classList.toggle('selected', cb.checked);
                 updateFuenteLabel();
@@ -164,10 +164,10 @@
                     dd.style.visibility = 'visible';
                     
                     // Posicionar el dropdown
-                    const rect = box.getBoundingClientRect();
+            const rect = box.getBoundingClientRect();
                     dd.style.position = 'absolute';
-                    dd.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-                    dd.style.left = (rect.left + window.scrollX) + 'px';
+            dd.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+            dd.style.left = (rect.left + window.scrollX) + 'px';
                     dd.style.minWidth = Math.max(rect.width, 260) + 'px';
                     dd.style.zIndex = '10000';
                     dd.style.backgroundColor = '#fff';
@@ -526,7 +526,7 @@
 
         console.log('📊 Datos después del filtro:', filteredLegales.length);
         console.log('📋 Filtros activos:', columnFiltersLegales);
-        
+
         currentPageLegales = 1;
         sortDataLegales();
         renderTableLegales();
@@ -568,11 +568,21 @@
         });
 
         tbody.innerHTML = '';
+        // Función helper para truncar texto con tooltip
+        const truncateText = (text, maxLength = 15) => {
+            if (!text || text.length <= maxLength) return text;
+            const truncated = text.substring(0, maxLength) + '...';
+            console.log(`✂️ Fuente legales truncada: "${text}" → "${truncated}"`);
+            return truncated;
+        };
+
         console.log('🧹 Tabla limpiada, añadiendo filas...');
         pageData.forEach(item => {
             const row = document.createElement('tr');
             const sectorBubbles = (item.sector || []).map(v => `<span class="sector-bubble sector-bubble--primary">${v}</span>`).join(' ');
             const subsectorBubbles = (item.subsector || []).map(v => `<span class="sector-bubble sector-bubble--subtle">${v}</span>`).join(' ');
+            const truncatedFuente = truncateText(item.fuente, 15);
+            
             row.innerHTML = `
                 <td>${item.id}</td>
                 <td>${sectorBubbles}</td>
@@ -580,7 +590,7 @@
                 <td>${item.tema}</td>
                 <td>${item.marco}</td>
                 <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
-                <td>${item.fuente}</td>
+                <td class="fuente-cell" title="${item.fuente}">${truncatedFuente}</td>
                 <td>${item.proponente}</td>
                 <td>${item.rango}</td>
                 <td>${item.subgrupo}</td>
@@ -1133,7 +1143,7 @@
         activeToastLegalesTimer = setTimeout(() => {
             if (activeToastLegales) {
                 activeToastLegales.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => {
+        setTimeout(() => {
                     if (activeToastLegales && activeToastLegales.parentNode) {
                         activeToastLegales.parentNode.removeChild(activeToastLegales);
                     }
