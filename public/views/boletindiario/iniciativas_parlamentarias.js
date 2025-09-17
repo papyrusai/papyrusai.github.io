@@ -13,13 +13,24 @@
     // Cargar datos reales desde backend
     async function fetchIniciativasData() {
         try {
+            console.log('🔄 Cargando iniciativas parlamentarias...');
             const response = await fetch('/api/iniciativas-parlamentarias', { credentials: 'include' });
             if (!response.ok) throw new Error('Error al cargar iniciativas');
             const data = await response.json();
+            
+            console.log('📊 Datos recibidos del backend:', {
+                iniciativas: data?.iniciativas?.length || 0,
+                fuentes: data?.fuentes || [],
+                sample: data?.iniciativas?.slice(0, 3)
+            });
+            
             // data.iniciativas ya viene en formato consumible por la tabla
-            return Array.isArray(data?.iniciativas) ? data.iniciativas.map(mapForDisplay) : [];
+            const mapped = Array.isArray(data?.iniciativas) ? data.iniciativas.map(mapForDisplay) : [];
+            console.log('✅ Iniciativas mapeadas:', mapped.length);
+            
+            return mapped;
         } catch (err) {
-            console.error(err);
+            console.error('❌ Error cargando iniciativas parlamentarias:', err);
             showToast('No se pudieron cargar las iniciativas', 'error');
             return [];
         }
@@ -199,6 +210,23 @@
         const fechaDesde = document.getElementById('fecha-desde')?.value || '';
         const fechaHasta = document.getElementById('fecha-hasta')?.value || '';
         
+        console.log('🔍 Aplicando filtros:', {
+            searchTerm,
+            fechaDesde,
+            fechaHasta,
+            totalItems: iniciativasData.length
+        });
+        
+        // Log específico para debugging del filtro de fecha
+        if (fechaDesde) {
+            console.log('📅 Filtro fecha desde activo:', fechaDesde);
+            const sampleDates = iniciativasData.slice(0, 5).map(item => ({
+                fecha: item.fecha,
+                titulo: item.titulo?.substring(0, 50) + '...'
+            }));
+            console.log('📋 Muestra de fechas en datos:', sampleDates);
+        }
+        
         filteredData = iniciativasData.filter(item => {
             // Filtro de texto
             let matchesSearch = true;
@@ -210,18 +238,83 @@
             
             // Filtro de fecha desde
             let matchesDateFrom = true;
-            if (fechaDesde) {
-                const [d, m, y] = item.fecha.split('-');
-                const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
-                matchesDateFrom = itemDate >= new Date(fechaDesde);
+            if (fechaDesde && item.fecha) {
+                try {
+                    // Parsear fecha del item (formato dd-mm-yyyy)
+                    const dateParts = item.fecha.split('-');
+                    if (dateParts.length === 3) {
+                        const [d, m, y] = dateParts;
+                        const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                        
+                        // Parsear fecha del filtro (formato yyyy-mm-dd del input date)
+                        const filterDate = new Date(fechaDesde);
+                        
+                        // Validar que las fechas son válidas
+                        if (!isNaN(itemDate.getTime()) && !isNaN(filterDate.getTime())) {
+                            // Normalizar ambas fechas a medianoche para comparación exacta
+                            const itemDateNormalized = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                            const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                            
+                            console.log('🔍 Comparando fechas (normalizado):', {
+                                itemFecha: item.fecha,
+                                itemDate: itemDateNormalized.toDateString(),
+                                filterFecha: fechaDesde,
+                                filterDate: filterDateNormalized.toDateString(),
+                                itemTime: itemDateNormalized.getTime(),
+                                filterTime: filterDateNormalized.getTime(),
+                                comparison: itemDateNormalized >= filterDateNormalized
+                            });
+                            
+                            matchesDateFrom = itemDateNormalized >= filterDateNormalized;
+                        } else {
+                            console.warn('⚠️ Fecha inválida detectada:', {
+                                itemFecha: item.fecha,
+                                filterFecha: fechaDesde
+                            });
+                            // Si hay fechas inválidas, incluir el item por defecto
+                            matchesDateFrom = true;
+                        }
+                    } else {
+                        console.warn('⚠️ Formato de fecha incorrecto:', item.fecha);
+                        matchesDateFrom = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Error procesando fecha:', error, item.fecha);
+                    matchesDateFrom = true;
+                }
             }
             
             // Filtro de fecha hasta
             let matchesDateTo = true;
-            if (fechaHasta) {
-                const [d, m, y] = item.fecha.split('-');
-                const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
-                matchesDateTo = itemDate <= new Date(fechaHasta);
+            if (fechaHasta && item.fecha) {
+                try {
+                    // Parsear fecha del item (formato dd-mm-yyyy)
+                    const dateParts = item.fecha.split('-');
+                    if (dateParts.length === 3) {
+                        const [d, m, y] = dateParts;
+                        const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                        
+                        // Parsear fecha del filtro (formato yyyy-mm-dd del input date)
+                        const filterDate = new Date(fechaHasta);
+                        
+                        // Validar que las fechas son válidas
+                        if (!isNaN(itemDate.getTime()) && !isNaN(filterDate.getTime())) {
+                            // Normalizar ambas fechas a medianoche para comparación exacta
+                            const itemDateNormalized = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                            const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                            
+                            matchesDateTo = itemDateNormalized <= filterDateNormalized;
+                        } else {
+                            // Si hay fechas inválidas, incluir el item por defecto
+                            matchesDateTo = true;
+                        }
+                    } else {
+                        matchesDateTo = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Error procesando fecha hasta:', error, item.fecha);
+                    matchesDateTo = true;
+                }
             }
 
             // Filtros por columna
@@ -244,6 +337,17 @@
             
             return matchesSearch && matchesDateFrom && matchesDateTo && matchesColumnFilters;
         });
+        
+        console.log('📊 Resultado del filtro:', {
+            filteredItems: filteredData.length,
+            originalItems: iniciativasData.length
+        });
+        
+        // Log adicional para debugging de fechas
+        if (fechaDesde && filteredData.length > 0) {
+            const fechasEncontradas = filteredData.map(item => item.fecha).slice(0, 10);
+            console.log('📅 Fechas en resultados filtrados (primeras 10):', fechasEncontradas);
+        }
         
         currentPage = 1;
         sortData();
@@ -594,20 +698,32 @@
 
     // Exportar a Excel (datos proporcionados)
     function exportToExcelWithData(data) {
+        // Función helper para escapar correctamente los campos CSV
+        const escapeCsvField = (value) => {
+            if (value == null) return '""';
+            const str = String(value);
+            // Si contiene comas, comillas dobles, saltos de línea o espacios al inicio/final, necesita ser escapado
+            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r') || str.trim() !== str) {
+                // Escapar comillas dobles duplicándolas y envolver en comillas
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
         const headers = ['ID', 'Sector', 'Tema', 'Marco Geográfico', 'Título Iniciativa', 'Fuente', 'Proponente', 'Tipo Iniciativa', 'Fecha', 'Link'];
         const csvContent = [
             headers.join(','),
             ...data.map(item => [
-                item.id,
-                `"${item.sector}"`,
-                `"${item.tema}"`,
-                `"${item.marco}"`,
-                `"${item.titulo.replace(/""/g, '""')}"`,
-                `"${item.fuente}"`,
-                `"${item.proponente}"`,
-                `"${item.tipo}"`,
-                item.fecha,
-                item.link
+                escapeCsvField(item.id),
+                escapeCsvField(item.sector),
+                escapeCsvField(item.tema),
+                escapeCsvField(item.marco),
+                escapeCsvField(item.titulo),
+                escapeCsvField(item.fuente),
+                escapeCsvField(item.proponente),
+                escapeCsvField(item.tipo),
+                escapeCsvField(item.fecha),
+                escapeCsvField(item.link)
             ].join(','))
         ].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -723,20 +839,56 @@
             const rows = Array.from(filtersContainer.querySelectorAll('.filter-row'));
             let data = [...iniciativasData];
 
-            // Filtrar por fecha si procede
+            // Filtrar por fecha si procede (usando lógica normalizada)
             if (startVal) {
+                console.log('📅 Exportación: Filtrando por fecha desde:', startVal);
                 data = data.filter(item => {
-                    const [d, m, y] = (item.fecha || '').split('-');
-                    const dt = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
-                    return dt >= new Date(startVal);
+                    if (!item.fecha) return false;
+                    try {
+                        const dateParts = item.fecha.split('-');
+                        if (dateParts.length === 3) {
+                            const [d, m, y] = dateParts;
+                            const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                            const filterDate = new Date(startVal);
+                            
+                            // Normalizar ambas fechas a medianoche
+                            const itemDateNormalized = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                            const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                            
+                            return itemDateNormalized >= filterDateNormalized;
+                        }
+                        return false;
+                    } catch (error) {
+                        console.error('❌ Error procesando fecha en exportación:', error, item.fecha);
+                        return false;
+                    }
                 });
+                console.log('📊 Datos después de filtro fecha desde:', data.length);
             }
             if (endVal) {
+                console.log('📅 Exportación: Filtrando por fecha hasta:', endVal);
                 data = data.filter(item => {
-                    const [d, m, y] = (item.fecha || '').split('-');
-                    const dt = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
-                    return dt <= new Date(endVal);
+                    if (!item.fecha) return false;
+                    try {
+                        const dateParts = item.fecha.split('-');
+                        if (dateParts.length === 3) {
+                            const [d, m, y] = dateParts;
+                            const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                            const filterDate = new Date(endVal);
+                            
+                            // Normalizar ambas fechas a medianoche
+                            const itemDateNormalized = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                            const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                            
+                            return itemDateNormalized <= filterDateNormalized;
+                        }
+                        return false;
+                    } catch (error) {
+                        console.error('❌ Error procesando fecha hasta en exportación:', error, item.fecha);
+                        return false;
+                    }
                 });
+                console.log('📊 Datos después de filtro fecha hasta:', data.length);
             }
 
             // Filtros adicionales (contains, case-insensitive)
@@ -747,7 +899,17 @@
                 data = data.filter(item => String(item[col] ?? '').toLowerCase().includes(val));
             });
 
-            exportToExcelWithData(data);
+        console.log('📊 Exportando', data.length, 'registros de iniciativas parlamentarias');
+        
+        // Log de muestra para verificar escape de comas
+        if (data.length > 0) {
+            const sampleTitles = data.slice(0, 3).map(item => item.titulo).filter(t => t && t.includes(','));
+            if (sampleTitles.length > 0) {
+                console.log('📝 Títulos con comas encontrados (muestra):', sampleTitles);
+            }
+        }
+        
+        exportToExcelWithData(data);
             closeExportModal();
         };
     }

@@ -865,22 +865,42 @@
     }
 
     function exportToExcelWithDataLegales(data) {
+        // Función helper para escapar correctamente los campos CSV
+        const escapeCsvField = (value) => {
+            if (value == null) return '""';
+            const str = String(value);
+            // Si contiene comas, comillas dobles, saltos de línea o espacios al inicio/final, necesita ser escapado
+            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r') || str.trim() !== str) {
+                // Escapar comillas dobles duplicándolas y envolver en comillas
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
+        // Función helper para procesar arrays (sector, subsector)
+        const processArrayField = (value) => {
+            if (Array.isArray(value)) {
+                return value.join(' | ');
+            }
+            return value || '';
+        };
+
         const headers = ['ID', 'Sector', 'Subsector', 'Tema', 'Marco Geográfico', 'Título Iniciativa', 'Fuente', 'Proponente', 'Rango', 'Subgrupo', 'Fecha', 'Link'];
         const csvContent = [
             headers.join(','),
             ...data.map(item => [
-                item.id,
-                `"${(Array.isArray(item.sector)? item.sector.join(' | ') : item.sector || '').replace(/"/g, '""')}"`,
-                `"${(Array.isArray(item.subsector)? item.subsector.join(' | ') : item.subsector || '').replace(/"/g, '""')}"`,
-                `"${String(item.tema || '').replace(/"/g, '""')}"`,
-                `"${String(item.marco || '').replace(/"/g, '""')}"`,
-                `"${String(item.titulo || '').replace(/"/g, '""')}"`,
-                `"${String(item.fuente || '').replace(/"/g, '""')}"`,
-                `"${String(item.proponente || '').replace(/"/g, '""')}"`,
-                `"${String(item.rango || '').replace(/"/g, '""')}"`,
-                `"${String(item.subgrupo || '').replace(/"/g, '""')}"`,
-                item.fecha,
-                item.link
+                escapeCsvField(item.id),
+                escapeCsvField(processArrayField(item.sector)),
+                escapeCsvField(processArrayField(item.subsector)),
+                escapeCsvField(item.tema),
+                escapeCsvField(item.marco),
+                escapeCsvField(item.titulo),
+                escapeCsvField(item.fuente),
+                escapeCsvField(item.proponente),
+                escapeCsvField(item.rango),
+                escapeCsvField(item.subgrupo),
+                escapeCsvField(item.fecha),
+                escapeCsvField(item.link)
             ].join(','))
         ].join('\n');
         const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -991,19 +1011,59 @@
             const endVal = modal.querySelector('#exportEndDateLegales').value;
             const rows = Array.from(filtersContainer.querySelectorAll('.filter-row'));
             let data = [...iniciativasLegalesData];
+            
+            // Filtrar por fecha desde (usando lógica normalizada)
             if (startVal) {
+                console.log('📅 Exportación Legales: Filtrando por fecha desde:', startVal);
                 data = data.filter(item => {
-                    const [d, m, y] = (item.fecha || '').split('-');
-                    const dt = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
-                    return dt >= new Date(startVal);
+                    if (!item.fecha) return false;
+                    try {
+                        const dateParts = item.fecha.split('-');
+                        if (dateParts.length === 3) {
+                            const [d, m, y] = dateParts;
+                            const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                            const filterDate = new Date(startVal);
+                            
+                            // Normalizar ambas fechas a medianoche
+                            const itemDateNormalized = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                            const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                            
+                            return itemDateNormalized >= filterDateNormalized;
+                        }
+                        return false;
+                    } catch (error) {
+                        console.error('❌ Error procesando fecha desde en exportación legales:', error, item.fecha);
+                        return false;
+                    }
                 });
+                console.log('📊 Datos legales después de filtro fecha desde:', data.length);
             }
+            
+            // Filtrar por fecha hasta (usando lógica normalizada)
             if (endVal) {
+                console.log('📅 Exportación Legales: Filtrando por fecha hasta:', endVal);
                 data = data.filter(item => {
-                    const [d, m, y] = (item.fecha || '').split('-');
-                    const dt = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
-                    return dt <= new Date(endVal);
+                    if (!item.fecha) return false;
+                    try {
+                        const dateParts = item.fecha.split('-');
+                        if (dateParts.length === 3) {
+                            const [d, m, y] = dateParts;
+                            const itemDate = new Date(parseInt(y,10), parseInt(m,10)-1, parseInt(d,10));
+                            const filterDate = new Date(endVal);
+                            
+                            // Normalizar ambas fechas a medianoche
+                            const itemDateNormalized = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+                            const filterDateNormalized = new Date(filterDate.getFullYear(), filterDate.getMonth(), filterDate.getDate());
+                            
+                            return itemDateNormalized <= filterDateNormalized;
+                        }
+                        return false;
+                    } catch (error) {
+                        console.error('❌ Error procesando fecha hasta en exportación legales:', error, item.fecha);
+                        return false;
+                    }
                 });
+                console.log('📊 Datos legales después de filtro fecha hasta:', data.length);
             }
             rows.forEach(r => {
                 const col = r.querySelector('.export-col').value;
@@ -1017,6 +1077,16 @@
                     return String(target ?? '').toLowerCase().includes(val);
                 });
             });
+            console.log('📊 Exportando', data.length, 'registros de iniciativas legales');
+            
+            // Log de muestra para verificar escape de comas
+            if (data.length > 0) {
+                const sampleTitles = data.slice(0, 3).map(item => item.titulo).filter(t => t && t.includes(','));
+                if (sampleTitles.length > 0) {
+                    console.log('📝 Títulos con comas encontrados (muestra):', sampleTitles);
+                }
+            }
+            
             exportToExcelWithDataLegales(data);
             closeExportModalLegales();
         };

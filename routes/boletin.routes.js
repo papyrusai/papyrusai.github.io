@@ -178,7 +178,7 @@ module.exports = router;
 router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, res) => {
 	try {
 		const result = await withDatabase(async (database) => {
-			const desiredCollections = ['BOCG_test', 'MONCLOA_REFERENCIAS_test', 'OEIL_test'];
+			const desiredCollections = ['BOCG_test', 'MONCLOA_REFERENCIAS_test', 'OEIL_test', 'SENADO_LEYES_EN_TRAMITACION_test'];
 			const allCollections = await database.listCollections({}, { nameOnly: true }).toArray();
 			const availableNames = allCollections.map(c => String(c.name));
 			const resolvedCollections = [];
