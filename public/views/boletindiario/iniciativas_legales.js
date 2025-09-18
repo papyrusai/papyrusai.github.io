@@ -31,8 +31,8 @@
             const legalSet = new Set(LEGAL_BASE.map(s => s.toLowerCase()));
             const filtered = list.filter(n => legalSet.has(String(n).toLowerCase()));
             
-            // Eliminar duplicados y devolver
-            const uniqueFiltered = [...new Set(filtered)];
+            // Eliminar duplicados con normalización estricta (trim + uppercase)
+            const uniqueFiltered = [...new Set(filtered.map(n => String(n).trim().toUpperCase()))];
             console.log('🔍 Fuentes del servidor:', list.length);
             console.log('✅ Fuentes filtradas:', uniqueFiltered);
             
@@ -69,14 +69,18 @@
         list.innerHTML = '';
         FUENTES_ALL = await fetchAvailableFuentes();
         
-        // Eliminar duplicados usando Set
-        FUENTES_ALL = [...new Set(FUENTES_ALL)];
+        // Normalizar y eliminar duplicados (trim + uppercase)
+        FUENTES_ALL = [...new Set(FUENTES_ALL.map(v => String(v).trim().toUpperCase()))];
         console.log('📚 Fuentes disponibles (sin duplicados):', FUENTES_ALL);
         
         // Por defecto, seleccionar solo BOE (sin duplicados)
         const defaultSelected = ['BOE'];
         
+        const seen = new Set();
         FUENTES_ALL.forEach((f, index) => {
+            const key = String(f).trim().toUpperCase();
+            if (seen.has(key)) { return; }
+            seen.add(key);
             console.log(`📝 Creando item ${index + 1}: ${f}`);
             const item = document.createElement('div');
             const isSelected = defaultSelected.includes(f);
@@ -96,16 +100,17 @@
             });
             list.appendChild(item);
         });
-        console.log('🎯 Items de dropdown creados:', list.children.length);
-        console.log('🔍 Verificando duplicados en DOM...');
-        const domValues = Array.from(list.children).map(child => child.dataset.value);
-        const uniqueDomValues = [...new Set(domValues)];
-        if (domValues.length !== uniqueDomValues.length) {
-            console.error('❌ DUPLICADOS DETECTADOS EN DOM:', domValues);
-            console.error('❌ Únicos:', uniqueDomValues);
-        } else {
-            console.log('✅ No hay duplicados en DOM');
-        }
+        // Re-verificar y depurar DOM por si hay duplicados residuales
+        const seenDom = new Set();
+        Array.from(list.children).forEach(child => {
+            const v = String(child.dataset.value || '').trim().toUpperCase();
+            if (seenDom.has(v)) {
+                child.remove();
+            } else {
+                seenDom.add(v);
+            }
+        });
+        console.log('🎯 Items de dropdown final:', list.children.length, 'valores:', Array.from(seenDom));
         
         const updateFuenteLabel = () => {
             const sel = Array.from(list.querySelectorAll('.item input:checked')).map(cb => cb.closest('.item').dataset.value);
@@ -325,9 +330,9 @@
 
         setupEventListenersLegales();
         setupHeaderFiltersLegales();
+        // applyAllFiltersLegales ya ordena y renderiza
         applyAllFiltersLegales();
         updateFilterIconStatesLegales();
-        renderTableLegales();
     }
 
     function sortDataLegales() {
@@ -587,7 +592,7 @@
                 <td>${item.id}</td>
                 <td>${sectorBubbles}</td>
                 <td>${subsectorBubbles}</td>
-                <td>${item.tema}</td>
+                <td class="tema-cell" title="${String(item.tema || '').replace(/\"/g, '&quot;')}">${item.tema}</td>
                 <td>${item.marco}</td>
                 <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
                 <td class="fuente-cell" title="${item.fuente}">${truncatedFuente}</td>

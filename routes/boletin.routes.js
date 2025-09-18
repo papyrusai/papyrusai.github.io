@@ -241,7 +241,7 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 
 							const link = doc.pdf_url || doc.url_pdf || doc.url_html || null;
 
-							initiatives.forEach((ini, idx) => {
+                            initiatives.forEach((ini, idx) => {
 								// Fecha preferida: del documento (anio/mes/dia) y si no de datetime_insert
 								let displayDate = '';
 								if (Number.isInteger(doc?.anio) && Number.isInteger(doc?.mes) && Number.isInteger(doc?.dia)) {
@@ -263,9 +263,10 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 								if (seen.has(key)) return;
 								seen.add(key);
 
-								aggregated.push({
+                                aggregated.push({
 									id: ini?.id || `${String(doc._id)}-${idx + 1}`,
 									sector: ini?.sector || 'No especificado',
+                                    subsector: ini?.subsector || 'No especificado',
 									tema: ini?.tema || 'No especificado',
 									marco: ini?.marco_geografico || 'No especificado',
 									titulo: ini?.titulo_iniciativa || 'Sin título',

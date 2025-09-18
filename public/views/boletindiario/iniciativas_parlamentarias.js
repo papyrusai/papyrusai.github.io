@@ -45,6 +45,7 @@
         return {
             id: item.id || '',
             sector: item.sector || 'No especificado',
+            subsector: item.subsector || 'No especificado',
             tema: item.tema || 'No especificado',
             marco: item.marco || 'No especificado',
             titulo: item.titulo || 'Sin título',
@@ -65,6 +66,16 @@
         iniciativasData = await fetchIniciativasData();
         isLoading = false;
 
+        // Establecer por defecto la fecha desde = hoy, si no está ya definida
+        const fechaDesdeInput = document.getElementById('fecha-desde');
+        if (fechaDesdeInput && !fechaDesdeInput.value) {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            fechaDesdeInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+
         // Filtro por defecto: incluir todos los tipos excepto "No especificado"
         try {
             const allTipos = Array.from(new Set(iniciativasData.map(i => String(i.tipo || '').trim()).filter(v => v)));
@@ -84,8 +95,7 @@
         applyAllFilters();
         updateFilterIconStates();
 
-        // Renderizar tabla inicial
-        renderTable();
+        // Renderizar tabla inicial (applyAllFilters lo hará)
     }
 
     function sortData() {
@@ -419,7 +429,8 @@
             row.innerHTML = `
                 <td>${item.id}</td>
                 <td><span class="sector-bubble">${item.sector}</span></td>
-                <td>${item.tema}</td>
+                <td>${item.subsector}</td>
+                <td class="tema-cell" title="${item.tema.replace(/\"/g, '&quot;')}">${item.tema}</td>
                 <td>${item.marco}</td>
                 <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
                 <td class="fuente-cell" title="${item.fuente}">${truncatedFuente}</td>

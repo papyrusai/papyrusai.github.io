@@ -5,6 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Boletín Diario</title>
     
+    <!-- Script de inicialización temprana para usuarios LLYC -->
+    <script>
+        // Función para detectar usuarios LLYC Global lo más temprano posible
+        document.addEventListener('DOMContentLoaded', function() {
+            function getEarlyUserEmail() {
+                let userEmail = null;
+                
+                try {
+                    const userEmailElement = document.getElementById('userEmail');
+                    if (userEmailElement && userEmailElement.textContent) {
+                        const emailContent = userEmailElement.textContent.trim();
+                        if (emailContent.startsWith('"') && emailContent.endsWith('"') && !emailContent.includes('{{')) {
+                            userEmail = JSON.parse(emailContent);
+                        } else if (emailContent && !emailContent.includes('{{')) {
+                            userEmail = emailContent;
+                        }
+                    }
+                } catch (e) {
+                    // Silencioso
+                }
+                
+                if (!userEmail) {
+                    userEmail = sessionStorage.getItem('userEmail');
+                }
+                
+                if (!userEmail && window.__currentUserEmail) {
+                    userEmail = window.__currentUserEmail;
+                }
+                
+                return userEmail;
+            }
+            
+            function isEarlyLlycGlobalUser() {
+                const userEmail = getEarlyUserEmail();
+                return userEmail && typeof userEmail === 'string' && userEmail.toLowerCase().endsWith('@llyc.global');
+            }
+            
+            // Configurar estilos CSS iniciales basados en el tipo de usuario
+            if (isEarlyLlycGlobalUser()) {
+                console.log('🏢 Usuario LLYC Global detectado temprano - configurando vista inicial');
+                
+                // Crear estilos CSS para configuración inicial LLYC
+                const earlyStyle = document.createElement('style');
+                earlyStyle.id = 'early-llyc-config';
+                earlyStyle.textContent = `
+                    /* Configuración inicial para usuarios LLYC Global */
+                    #vista-boletin-diario { display: none !important; }
+                    #vista-iniciativas { display: block !important; }
+                    #vista-iniciativas-legales { display: none !important; }
+                    #tabBoletinDiario { display: none !important; }
+                    #tabIniciativas { display: inline-block !important; }
+                    #tabIniciativasLegales { display: inline-block !important; }
+                `;
+                document.head.appendChild(earlyStyle);
+                
+                // Aplicar clases active directamente
+                setTimeout(() => {
+                    const tabIniciativas = document.getElementById('tabIniciativas');
+                    const tabBoletinDiario = document.getElementById('tabBoletinDiario');
+                    
+                    if (tabIniciativas) {
+                        tabIniciativas.classList.add('active');
+                    }
+                    if (tabBoletinDiario) {
+                        tabBoletinDiario.classList.remove('active');
+                    }
+                }, 0);
+                
+                // Marcar que es usuario LLYC para uso posterior
+                window.__isLlycGlobalUser = true;
+            } else {
+                console.log('👤 Usuario estándar detectado - configuración normal');
+                window.__isLlycGlobalUser = false;
+            }
+        });
+    </script>
+    
     <style>
         .boletin-tags { 
             margin: 8px 0; 
@@ -249,12 +326,14 @@
             border-radius: 12px;
             background: white;
             box-shadow: 0 2px 8px rgba(11,36,49,.06);
+            -webkit-overflow-scrolling: touch;
         }
         .reversa-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 14px;
-            table-layout: fixed;
+            table-layout: auto;
+            min-width: 1400px;
         }
         .reversa-table thead {
             background: #f8f9fa;
@@ -266,6 +345,8 @@
             font-weight: 600;
             color: var(--text-color);
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .reversa-table th.sortable {
             cursor: pointer;
@@ -390,6 +471,20 @@
             overflow: visible;
             z-index: 2;
         }
+        .tema-cell {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.15s ease;
+        }
+        .tema-cell:hover {
+            white-space: normal;
+            overflow: visible;
+            z-index: 2;
+        }
         .fuente-cell {
             max-width: 120px;
             white-space: nowrap;
@@ -494,13 +589,13 @@
 <body>
     <!-- Submenú Tabs -->
     <div class="ambito-tabs">
-        <a id="tabBoletinDiario" class="tab-link active" data-tab="boletin-diario">Boletines Diarios</a>
+        <!-- El tab de Boletín Diario se añadirá dinámicamente solo si el usuario NO es @llyc.global -->
         <a id="tabIniciativas" class="tab-link" data-tab="iniciativas">Iniciativas Parlamentarias</a>
         <a id="tabIniciativasLegales" class="tab-link" data-tab="iniciativas-legales">Iniciativas Legales</a>
     </div>
 
     <!-- Vista Boletín Diario (existente) -->
-    <div id="vista-boletin-diario" class="vista-section">
+    <div id="vista-boletin-diario" class="vista-section" style="display: none;">
         <h2>Boletín Diario</h2>
     
     <!-- Newsletter Subscription Banner (hidden by default) -->
@@ -615,6 +710,7 @@
                     <tr>
                         <th class="sortable" data-column="id">ID_iniciativa <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="sector">Sector <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="subsector">Subsector <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="tema">Tema <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="marco">Marco Geográfico <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="titulo">Título Iniciativa <span class="sort-icon">↕</span></th>
@@ -773,8 +869,8 @@
     <script src="iniciativas_legales.js"></script>
     
     <script>
-        // Función para verificar si el usuario tiene acceso a las vistas avanzadas
-        function checkAdvancedViewsAccess() {
+        // Función para obtener el email del usuario
+        function getUserEmail() {
             let userEmail = null;
             
             try {
@@ -802,6 +898,33 @@
             if (!userEmail && window.__currentUserEmail) {
                 userEmail = window.__currentUserEmail;
             }
+            
+            return userEmail;
+        }
+
+        // Función para verificar si el usuario es de LLYC Global (solo iniciativas)
+        function isLlycGlobalUser() {
+            // Usar la detección temprana si está disponible
+            if (typeof window.__isLlycGlobalUser === 'boolean') {
+                return window.__isLlycGlobalUser;
+            }
+            
+            // Fallback a detección manual
+            const userEmail = getUserEmail();
+            if (!userEmail || typeof userEmail !== 'string') {
+                return false;
+            }
+            
+            const isLlyc = userEmail.toLowerCase().endsWith('@llyc.global');
+            if (isLlyc) {
+                console.log('🏢 Usuario LLYC Global detectado:', userEmail);
+            }
+            return isLlyc;
+        }
+
+        // Función para verificar si el usuario tiene acceso a las vistas avanzadas
+        function checkAdvancedViewsAccess() {
+            const userEmail = getUserEmail();
             
             console.log('🔐 Verificando acceso para email:', userEmail);
             
@@ -840,14 +963,82 @@
         // Función para aplicar la visibilidad de los tabs
         function applyTabVisibility() {
             const hasAccess = checkAdvancedViewsAccess();
+            const isLlycUser = isLlycGlobalUser();
             
-            // Obtener los tabs
+            // Obtener los tabs y vistas
             const tabIniciativas = document.getElementById('tabIniciativas');
             const tabIniciativasLegales = document.getElementById('tabIniciativasLegales');
-            const tabBoletinDiario = document.getElementById('tabBoletinDiario');
+            let tabBoletinDiario = document.getElementById('tabBoletinDiario');
             
-            if (!hasAccess) {
-                // Ocultar tabs avanzados
+            const vistaBoletinDiario = document.getElementById('vista-boletin-diario');
+            const vistaIniciativas = document.getElementById('vista-iniciativas');
+            const vistaIniciativasLegales = document.getElementById('vista-iniciativas-legales');
+            
+            // Limpiar todas las clases active
+            [tabIniciativas, tabIniciativasLegales, tabBoletinDiario].forEach(tab => {
+                if (tab) tab.classList.remove('active');
+            });
+            
+            if (isLlycUser) {
+                // Comportamiento especial para usuarios LLYC Global
+                console.log('🏢 Aplicando configuración LLYC Global (refinamiento)');
+                
+                // Remover estilos tempranos ya que ahora aplicamos la configuración definitiva
+                const earlyStyle = document.getElementById('early-llyc-config');
+                if (earlyStyle) {
+                    earlyStyle.remove();
+                }
+                
+                // Para LLYC: NO añadir Boletín Diario
+                if (tabBoletinDiario) tabBoletinDiario.remove();
+                
+                // Mostrar tabs de iniciativas
+                if (tabIniciativas) {
+                    tabIniciativas.style.display = '';
+                    tabIniciativas.classList.add('active');
+                    console.log('✅ Tab Iniciativas Parlamentarias activo por defecto para LLYC');
+                }
+                if (tabIniciativasLegales) {
+                    tabIniciativasLegales.style.display = '';
+                    console.log('✅ Tab Iniciativas Legales visible para LLYC');
+                }
+                
+                // Configurar vistas por defecto para LLYC
+                if (vistaBoletinDiario) vistaBoletinDiario.style.display = 'none';
+                if (vistaIniciativas) vistaIniciativas.style.display = 'block';
+                if (vistaIniciativasLegales) vistaIniciativasLegales.style.display = 'none';
+                
+                // Inicializar datos de iniciativas parlamentarias automáticamente
+                setTimeout(() => {
+                    if (window.iniciativasModule && typeof window.iniciativasModule.init === 'function') {
+                        console.log('🚀 Inicializando Iniciativas Parlamentarias para LLYC');
+                        window.iniciativasModule.init();
+                    }
+                }, 200);
+                
+            } else if (!hasAccess) {
+                // Usuarios sin acceso - solo boletín oficial
+                console.log('🔒 Aplicando configuración restringida');
+                
+                // Remover estilos tempranos si existen
+                const earlyStyle = document.getElementById('early-llyc-config');
+                if (earlyStyle) {
+                    earlyStyle.remove();
+                }
+                
+                // Añadir dinámicamente el tab de Boletín Diario si no existe
+                if (!tabBoletinDiario) {
+                    const ambitoTabs = document.querySelector('.ambito-tabs');
+                    if (ambitoTabs) {
+                        tabBoletinDiario = document.createElement('a');
+                        tabBoletinDiario.id = 'tabBoletinDiario';
+                        tabBoletinDiario.className = 'tab-link';
+                        tabBoletinDiario.setAttribute('data-tab', 'boletin-diario');
+                        tabBoletinDiario.textContent = 'Boletines Oficiales';
+                        ambitoTabs.insertBefore(tabBoletinDiario, ambitoTabs.firstChild);
+                    }
+                }
+
                 if (tabIniciativas) {
                     tabIniciativas.style.display = 'none';
                     console.log('🚫 Tab Iniciativas Parlamentarias ocultado');
@@ -859,11 +1050,40 @@
                 
                 // Cambiar el texto del tab principal
                 if (tabBoletinDiario) {
+                    tabBoletinDiario.style.display = '';
                     tabBoletinDiario.textContent = 'Boletines Oficiales';
+                    tabBoletinDiario.classList.add('active');
                     console.log('📝 Tab principal renombrado a "Boletines Oficiales"');
                 }
+                
+                // Asegurar que vista boletín diario esté visible
+                if (vistaBoletinDiario) vistaBoletinDiario.style.display = 'block';
+                if (vistaIniciativas) vistaIniciativas.style.display = 'none';
+                if (vistaIniciativasLegales) vistaIniciativasLegales.style.display = 'none';
+                
             } else {
-                // Mostrar todos los tabs (comportamiento por defecto)
+                // Usuarios con acceso completo - comportamiento normal
+                console.log('👤 Aplicando configuración estándar');
+                
+                // Remover estilos tempranos si existen (para usuarios normales)
+                const earlyStyle = document.getElementById('early-llyc-config');
+                if (earlyStyle) {
+                    earlyStyle.remove();
+                }
+                
+                // Añadir dinámicamente el tab de Boletín Diario si no existe
+                if (!tabBoletinDiario) {
+                    const ambitoTabs = document.querySelector('.ambito-tabs');
+                    if (ambitoTabs) {
+                        tabBoletinDiario = document.createElement('a');
+                        tabBoletinDiario.id = 'tabBoletinDiario';
+                        tabBoletinDiario.className = 'tab-link';
+                        tabBoletinDiario.setAttribute('data-tab', 'boletin-diario');
+                        tabBoletinDiario.textContent = 'Boletines Diarios';
+                        ambitoTabs.insertBefore(tabBoletinDiario, ambitoTabs.firstChild);
+                    }
+                }
+
                 if (tabIniciativas) {
                     tabIniciativas.style.display = '';
                     console.log('✅ Tab Iniciativas Parlamentarias visible');
@@ -875,9 +1095,16 @@
                 
                 // Mantener el texto original
                 if (tabBoletinDiario) {
+                    tabBoletinDiario.style.display = '';
                     tabBoletinDiario.textContent = 'Boletines Diarios';
+                    tabBoletinDiario.classList.add('active');
                     console.log('📝 Tab principal mantiene "Boletines Diarios"');
                 }
+                
+                // Vista por defecto: boletín diario
+                if (vistaBoletinDiario) vistaBoletinDiario.style.display = 'block';
+                if (vistaIniciativas) vistaIniciativas.style.display = 'none';
+                if (vistaIniciativasLegales) vistaIniciativasLegales.style.display = 'none';
             }
         }
         
@@ -887,9 +1114,6 @@
         } else {
             applyTabVisibility();
         }
-        
-        // También aplicar después de un pequeño delay para asegurar que todos los scripts se han cargado
-        setTimeout(applyTabVisibility, 100);
         
         // Función para interceptar clicks en tabs no autorizados
         function interceptUnauthorizedTabClicks() {
@@ -922,6 +1146,40 @@
         
         // Aplicar interceptores después de que los tabs estén configurados
         setTimeout(interceptUnauthorizedTabClicks, 200);
+
+        // Delegación de eventos para tabs (incluye tab Boletín añadido dinámicamente)
+        document.addEventListener('click', function(e) {
+            const target = e.target.closest('.ambito-tabs .tab-link');
+            if (!target) return;
+            e.preventDefault();
+            const tabId = target.getAttribute('data-tab');
+            const tabs = document.querySelectorAll('.ambito-tabs .tab-link');
+            tabs.forEach(t => t.classList.remove('active'));
+            target.classList.add('active');
+            const vistaBoletin = document.getElementById('vista-boletin-diario');
+            const vistaIniciativas = document.getElementById('vista-iniciativas');
+            const vistaLegales = document.getElementById('vista-iniciativas-legales');
+            if (vistaBoletin) vistaBoletin.style.display = 'none';
+            if (vistaIniciativas) vistaIniciativas.style.display = 'none';
+            if (vistaLegales) vistaLegales.style.display = 'none';
+            if (tabId === 'boletin-diario') {
+                if (vistaBoletin) vistaBoletin.style.display = 'block';
+            } else if (tabId === 'iniciativas') {
+                if (vistaIniciativas) vistaIniciativas.style.display = 'block';
+                setTimeout(() => {
+                    if (window.iniciativasModule && typeof window.iniciativasModule.init === 'function') {
+                        window.iniciativasModule.init();
+                    }
+                }, 50);
+            } else if (tabId === 'iniciativas-legales') {
+                if (vistaLegales) vistaLegales.style.display = 'block';
+                setTimeout(() => {
+                    if (window.iniciativasLegalesModule && typeof window.iniciativasLegalesModule.init === 'function') {
+                        window.iniciativasLegalesModule.init();
+                    }
+                }, 50);
+            }
+        });
     </script>
 </body>
 </html>
