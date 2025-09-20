@@ -285,6 +285,7 @@
             subsector: normalizeArray(item.subsector),
             tema: item.tema || 'No especificado',
             marco: item.marco || 'No especificado',
+            nivel: item.nivel || 'No especificado',
             titulo: item.titulo || item.tema || 'Sin título',
             fuente: String(item.fuente || '').replace(/_test$/i, ''),
             proponente: item.proponente || 'No especificado',
@@ -420,31 +421,17 @@
     }
 
     function setupTabNavigationLegales() {
-        const tabs = document.querySelectorAll('.ambito-tabs .tab-link');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function(e) {
-                e.preventDefault();
-                tabs.forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                const tabId = this.getAttribute('data-tab');
-                const vistaBoletin = document.getElementById('vista-boletin-diario');
-                const vistaParlamentarias = document.getElementById('vista-iniciativas');
-                const vistaLegales = document.getElementById('vista-iniciativas-legales');
-                if (tabId === 'boletin-diario') {
-                    if (vistaBoletin) vistaBoletin.style.display = 'block';
-                    if (vistaParlamentarias) vistaParlamentarias.style.display = 'none';
-                    if (vistaLegales) vistaLegales.style.display = 'none';
-                } else if (tabId === 'iniciativas') {
-                    if (vistaBoletin) vistaBoletin.style.display = 'none';
-                    if (vistaParlamentarias) vistaParlamentarias.style.display = 'block';
-                    if (vistaLegales) vistaLegales.style.display = 'none';
-                } else if (tabId === 'iniciativas-legales') {
-                    if (vistaBoletin) vistaBoletin.style.display = 'none';
-                    if (vistaParlamentarias) vistaParlamentarias.style.display = 'none';
-                    if (vistaLegales) vistaLegales.style.display = 'block';
-                    if (iniciativasLegalesData.length === 0) { initIniciativasLegales(); }
-                }
-            });
+        const tab = document.getElementById('tabIniciativasLegales');
+        if (!tab) return;
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            const vistaBoletin = document.getElementById('vista-boletin-diario');
+            const vistaParlamentarias = document.getElementById('vista-iniciativas');
+            const vistaLegales = document.getElementById('vista-iniciativas-legales');
+            if (vistaBoletin) vistaBoletin.style.display = 'none';
+            if (vistaParlamentarias) vistaParlamentarias.style.display = 'none';
+            if (vistaLegales) vistaLegales.style.display = 'block';
+            if (iniciativasLegalesData.length === 0) { initIniciativasLegales(); }
         });
     }
 
@@ -594,6 +581,7 @@
                 <td>${subsectorBubbles}</td>
                 <td class="tema-cell" title="${String(item.tema || '').replace(/\"/g, '&quot;')}">${item.tema}</td>
                 <td>${item.marco}</td>
+                <td>${item.nivel}</td>
                 <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
                 <td class="fuente-cell" title="${item.fuente}">${truncatedFuente}</td>
                 <td>${item.proponente}</td>
@@ -718,6 +706,7 @@
             subsector: 'Subsector',
             tema: 'Tema',
             marco: 'Marco Geográfico',
+            nivel: 'Nivel Geográfico',
             titulo: 'Título Iniciativa',
             fuente: 'Fuente',
             proponente: 'Proponente',
@@ -880,54 +869,32 @@
     }
 
     function exportToExcelWithDataLegales(data) {
-        // Función helper para escapar correctamente los campos CSV
-        const escapeCsvField = (value) => {
-            if (value == null) return '""';
-            const str = String(value);
-            // Si contiene comas, comillas dobles, saltos de línea o espacios al inicio/final, necesita ser escapado
-            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r') || str.trim() !== str) {
-                // Escapar comillas dobles duplicándolas y envolver en comillas
-                return `"${str.replace(/"/g, '""')}"`;
-            }
-            return str;
-        };
-
-        // Función helper para procesar arrays (sector, subsector)
-        const processArrayField = (value) => {
-            if (Array.isArray(value)) {
-                return value.join(' | ');
-            }
-            return value || '';
-        };
-
-        const headers = ['ID', 'Sector', 'Subsector', 'Tema', 'Marco Geográfico', 'Título Iniciativa', 'Fuente', 'Proponente', 'Rango', 'Subgrupo', 'Fecha', 'Link'];
-        const csvContent = [
-            headers.join(','),
-            ...data.map(item => [
-                escapeCsvField(item.id),
-                escapeCsvField(processArrayField(item.sector)),
-                escapeCsvField(processArrayField(item.subsector)),
-                escapeCsvField(item.tema),
-                escapeCsvField(item.marco),
-                escapeCsvField(item.titulo),
-                escapeCsvField(item.fuente),
-                escapeCsvField(item.proponente),
-                escapeCsvField(item.rango),
-                escapeCsvField(item.subgrupo),
-                escapeCsvField(item.fecha),
-                escapeCsvField(item.link)
-            ].join(','))
-        ].join('\n');
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `iniciativas_legales_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToastLegales('Archivo exportado correctamente', 'success');
+        try {
+            const toText = (v) => Array.isArray(v) ? v.join(' | ') : (v ?? '');
+            const rows = data.map(item => ({
+                ID: item.id,
+                Sector: toText(item.sector),
+                Subsector: toText(item.subsector),
+                Tema: item.tema,
+                'Marco Geográfico': item.marco,
+                'Nivel Geográfico': item.nivel,
+                'Título Iniciativa': item.titulo,
+                Fuente: item.fuente,
+                Proponente: item.proponente,
+                Rango: item.rango,
+                Subgrupo: item.subgrupo,
+                Fecha: item.fecha,
+                Link: item.link
+            }));
+            const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false });
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Iniciativas Legales');
+            XLSX.writeFile(wb, `iniciativas_legales_${new Date().toISOString().split('T')[0]}.xlsx`, { compression: true });
+            showToastLegales('Archivo XLSX exportado correctamente', 'success');
+        } catch (e) {
+            console.error('Error exportando XLSX legales:', e);
+            showToastLegales('Error exportando XLSX', 'error');
+        }
     }
 
     function ensureExportModalStylesLegales() {

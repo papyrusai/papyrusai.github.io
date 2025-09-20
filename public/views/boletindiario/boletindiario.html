@@ -585,6 +585,8 @@
         #fuente-select-legales option:checked { background-color: #0b2431; color: #fff; }
         #fuente-select-legales { min-width: 200px; }
     </style>
+    <!-- SheetJS (XLSX) for Excel exports -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- Submenú Tabs -->
@@ -592,6 +594,7 @@
         <!-- El tab de Boletín Diario se añadirá dinámicamente solo si el usuario NO es @llyc.global -->
         <a id="tabIniciativas" class="tab-link" data-tab="iniciativas">Iniciativas Parlamentarias</a>
         <a id="tabIniciativasLegales" class="tab-link" data-tab="iniciativas-legales">Iniciativas Legales</a>
+        <a id="tabAgendas" class="tab-link" data-tab="agendas">Agendas Parlamentarias</a>
     </div>
 
     <!-- Vista Boletín Diario (existente) -->
@@ -644,6 +647,104 @@
         <button id="aplicarFiltrosBoletinBtn" onclick="fetchBoletinDiario()" style="padding: 8px 15px; background-color: var(--primary-color); color: white; border: none; border-radius: 20px; cursor: pointer; height: fit-content; font-size: 14px;">Aplicar Filtros</button>
     </div>
 
+    <!-- Vista Agendas Parlamentarias (nueva) -->
+    <div id="vista-agendas" class="vista-section" style="display: none; position: relative; z-index: 1;">
+        <div class="page-header">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <h2 class="page-title">Agendas Parlamentarias</h2>
+                <span class="beta-badge">Versión Beta</span>
+            </div>
+            <div class="page-subtitle">Agenda de sesiones y asuntos a tratar</div>
+        </div>
+
+        <!-- Controles de filtrado y exportación -->
+        <div class="table-controls">
+            <div class="filter-controls">
+                <div class="date-filter-group" style="gap:20px;">
+                    <label class="filter-label">Fecha</label>
+                    <input type="date" id="fecha-desde-agendas" class="date-input" placeholder="Desde">
+                    <span class="date-separator">—</span>
+                    <input type="date" id="fecha-hasta-agendas" class="date-input" placeholder="Hasta">
+                    <button id="clear-dates-agendas" class="clear-dates-btn" title="Limpiar fechas">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <label class="filter-label">Agenda</label>
+                    <div id="agenda-filter" class="fuente-filter-box" tabindex="0">
+                        <span id="agenda-selected-label">CONGRESO_AGENDA</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div id="agenda-dropdown" class="fuente-dropdown" style="display: none;">
+                        <div class="header">
+                            <span class="fuente-filter-label">Selecciona agendas</span>
+                            <div style="display:flex; gap:6px;">
+                                <button type="button" class="btn" id="agenda-select-all">Todos</button>
+                                <button type="button" class="btn" id="agenda-clear-all">Limpiar</button>
+                            </div>
+                        </div>
+                        <div class="list" id="agenda-list">
+                            <!-- Items cargados dinámicamente -->
+                        </div>
+                    </div>
+                    <button id="buscar-agendas" class="btn-export" style="margin-left:20px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Buscar
+                    </button>
+                </div>
+            </div>
+            <button id="export-excel-agendas" class="btn-export">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Exportar Excel
+            </button>
+        </div>
+
+        <!-- Tabla de Agendas -->
+        <div class="table-container">
+            <table id="tabla-agendas" class="reversa-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="fuenteDisplay">Fuente <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="fechaHora">Fecha Hora <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="concepto">Concepto <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="temas">Temas a tratar <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="link">Link</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-agendas">
+                    <!-- Datos -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination-container">
+            <div class="pagination-info">
+                Mostrando <span id="showing-start-agendas">1</span>-<span id="showing-end-agendas">25</span> de <span id="total-records-agendas">0</span> registros
+            </div>
+            <div class="pagination-controls">
+                <button id="prev-page-agendas" class="pagination-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"></polyline>
+                    </svg>
+                </button>
+                <span class="page-info">Página <span id="current-page-agendas">1</span> de <span id="total-pages-agendas">1</span></span>
+                <button id="next-page-agendas" class="pagination-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- Contenedor para los documentos del boletín -->
     <div id="boletin-loading-icon" style="display: block;">
         <div class="loader"></div> <!-- Reutiliza tu clase loader existente -->
@@ -712,6 +813,7 @@
                         <th class="sortable" data-column="sector">Sector <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="subsector">Subsector <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="tema">Tema <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="nivel">Nivel Geográfico <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="marco">Marco Geográfico <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="titulo">Título Iniciativa <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="fuente">Fuente <span class="sort-icon">↕</span></th>
@@ -827,6 +929,7 @@
                         <th class="sortable" data-column="sector">Sector <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="subsector">Subsector <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="tema">Tema <span class="sort-icon">↕</span></th>
+                        <th class="sortable" data-column="nivel">Nivel Geográfico <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="marco">Marco Geográfico <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="titulo">Título Iniciativa <span class="sort-icon">↕</span></th>
                         <th class="sortable" data-column="fuente">Fuente <span class="sort-icon">↕</span></th>
@@ -867,6 +970,7 @@
     <script src="boletindiario.js"></script>
     <script src="iniciativas_parlamentarias.js"></script>
     <script src="iniciativas_legales.js"></script>
+    <script src="agendas_parlamentarias.js"></script>
     
     <script>
         // Función para obtener el email del usuario
@@ -968,14 +1072,16 @@
             // Obtener los tabs y vistas
             const tabIniciativas = document.getElementById('tabIniciativas');
             const tabIniciativasLegales = document.getElementById('tabIniciativasLegales');
+            const tabAgendas = document.getElementById('tabAgendas');
             let tabBoletinDiario = document.getElementById('tabBoletinDiario');
             
             const vistaBoletinDiario = document.getElementById('vista-boletin-diario');
             const vistaIniciativas = document.getElementById('vista-iniciativas');
             const vistaIniciativasLegales = document.getElementById('vista-iniciativas-legales');
+            const vistaAgendas = document.getElementById('vista-agendas');
             
             // Limpiar todas las clases active
-            [tabIniciativas, tabIniciativasLegales, tabBoletinDiario].forEach(tab => {
+            [tabIniciativas, tabIniciativasLegales, tabAgendas, tabBoletinDiario].forEach(tab => {
                 if (tab) tab.classList.remove('active');
             });
             
@@ -998,15 +1104,14 @@
                     tabIniciativas.classList.add('active');
                     console.log('✅ Tab Iniciativas Parlamentarias activo por defecto para LLYC');
                 }
-                if (tabIniciativasLegales) {
-                    tabIniciativasLegales.style.display = '';
-                    console.log('✅ Tab Iniciativas Legales visible para LLYC');
-                }
+                if (tabIniciativasLegales) { tabIniciativasLegales.style.display = ''; }
+                if (tabAgendas) { tabAgendas.style.display = ''; }
                 
                 // Configurar vistas por defecto para LLYC
                 if (vistaBoletinDiario) vistaBoletinDiario.style.display = 'none';
                 if (vistaIniciativas) vistaIniciativas.style.display = 'block';
                 if (vistaIniciativasLegales) vistaIniciativasLegales.style.display = 'none';
+                if (vistaAgendas) vistaAgendas.style.display = 'none';
                 
                 // Inicializar datos de iniciativas parlamentarias automáticamente
                 setTimeout(() => {
@@ -1043,10 +1148,8 @@
                     tabIniciativas.style.display = 'none';
                     console.log('🚫 Tab Iniciativas Parlamentarias ocultado');
                 }
-                if (tabIniciativasLegales) {
-                    tabIniciativasLegales.style.display = 'none';
-                    console.log('🚫 Tab Iniciativas Legales ocultado');
-                }
+                if (tabIniciativasLegales) { tabIniciativasLegales.style.display = 'none'; }
+                if (tabAgendas) { tabAgendas.style.display = 'none'; }
                 
                 // Cambiar el texto del tab principal
                 if (tabBoletinDiario) {
@@ -1060,6 +1163,7 @@
                 if (vistaBoletinDiario) vistaBoletinDiario.style.display = 'block';
                 if (vistaIniciativas) vistaIniciativas.style.display = 'none';
                 if (vistaIniciativasLegales) vistaIniciativasLegales.style.display = 'none';
+                if (vistaAgendas) vistaAgendas.style.display = 'none';
                 
             } else {
                 // Usuarios con acceso completo - comportamiento normal
@@ -1088,10 +1192,8 @@
                     tabIniciativas.style.display = '';
                     console.log('✅ Tab Iniciativas Parlamentarias visible');
                 }
-                if (tabIniciativasLegales) {
-                    tabIniciativasLegales.style.display = '';
-                    console.log('✅ Tab Iniciativas Legales visible');
-                }
+                if (tabIniciativasLegales) { tabIniciativasLegales.style.display = ''; }
+                if (tabAgendas) { tabAgendas.style.display = ''; }
                 
                 // Mantener el texto original
                 if (tabBoletinDiario) {
@@ -1105,6 +1207,7 @@
                 if (vistaBoletinDiario) vistaBoletinDiario.style.display = 'block';
                 if (vistaIniciativas) vistaIniciativas.style.display = 'none';
                 if (vistaIniciativasLegales) vistaIniciativasLegales.style.display = 'none';
+                if (vistaAgendas) vistaAgendas.style.display = 'none';
             }
         }
         
@@ -1123,8 +1226,9 @@
                 // Interceptar clicks en tabs de iniciativas si no están autorizados
                 const tabIniciativas = document.getElementById('tabIniciativas');
                 const tabIniciativasLegales = document.getElementById('tabIniciativasLegales');
+                const tabAgendas = document.getElementById('tabAgendas');
                 
-                [tabIniciativas, tabIniciativasLegales].forEach(tab => {
+                [tabIniciativas, tabIniciativasLegales, tabAgendas].forEach(tab => {
                     if (tab) {
                         tab.addEventListener('click', function(e) {
                             e.preventDefault();
@@ -1159,9 +1263,11 @@
             const vistaBoletin = document.getElementById('vista-boletin-diario');
             const vistaIniciativas = document.getElementById('vista-iniciativas');
             const vistaLegales = document.getElementById('vista-iniciativas-legales');
+            const vistaAgendas = document.getElementById('vista-agendas');
             if (vistaBoletin) vistaBoletin.style.display = 'none';
             if (vistaIniciativas) vistaIniciativas.style.display = 'none';
             if (vistaLegales) vistaLegales.style.display = 'none';
+            if (vistaAgendas) vistaAgendas.style.display = 'none';
             if (tabId === 'boletin-diario') {
                 if (vistaBoletin) vistaBoletin.style.display = 'block';
             } else if (tabId === 'iniciativas') {
@@ -1178,6 +1284,16 @@
                         window.iniciativasLegalesModule.init();
                     }
                 }, 50);
+            } else if (tabId === 'agendas') {
+                if (vistaAgendas) vistaAgendas.style.display = 'block';
+                if (!(window.__agendasInitOnce)) {
+                    window.__agendasInitOnce = true;
+                    setTimeout(() => {
+                        if (window.agendasModule && typeof window.agendasModule.init === 'function') {
+                            window.agendasModule.init();
+                        }
+                    }, 50);
+                }
             }
         });
     </script>

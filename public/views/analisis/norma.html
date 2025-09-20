@@ -573,8 +573,14 @@
             z-index: 1000;
         }
 
-        .export-dropdown.show {
-            display: block;
+        /* Force hide export dropdown by default with higher specificity */
+        .export-menu-container .export-dropdown {
+            display: none !important;
+        }
+
+        /* Show dropdown when it has show class with even higher specificity */
+        .export-menu-container .export-dropdown.show {
+            display: block !important;
         }
 
         .export-option {
@@ -941,38 +947,49 @@
 		const exportMenuBtn = document.getElementById('exportMenuBtn');
 		const exportDropdown = document.getElementById('exportDropdown');
 		
+		// Ensure dropdown is hidden by default (force remove show class)
+		exportDropdown.classList.remove('show');
+		
 		// Click to toggle dropdown
 		exportMenuBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			exportDropdown.classList.toggle('show');
+			console.log('Export button clicked, current show class:', exportDropdown.classList.contains('show'));
+			
+			if (exportDropdown.classList.contains('show')) {
+				exportDropdown.classList.remove('show');
+				console.log('Hiding dropdown');
+			} else {
+				exportDropdown.classList.add('show');
+				console.log('Showing dropdown');
+			}
 		});
 		
-		// Show dropdown on hover
-		exportMenu.addEventListener('mouseenter', () => {
-			exportDropdown.classList.add('show');
-		});
-		
-		// Hide dropdown when mouse leaves the container
-		exportMenu.addEventListener('mouseleave', () => {
-			exportDropdown.classList.remove('show');
-		});
-		
-		// Handle export options
-		document.querySelectorAll('.export-option').forEach(option => {
+		// Handle export options (only within this specific dropdown)
+		exportDropdown.querySelectorAll('.export-option').forEach(option => {
 			option.addEventListener('click', (e) => {
 				e.stopPropagation();
 				const action = option.dataset.action;
+				console.log('Export option clicked:', action);
 				exportDropdown.classList.remove('show');
 				handleExport(action);
 			});
 		});
 		
-		// Close dropdown when clicking outside
-		document.addEventListener('click', (e) => {
-			if (!exportMenu.contains(e.target)) {
-				exportDropdown.classList.remove('show');
+		// Close dropdown when clicking outside (ensure single global handler)
+		try {
+			if (window._exportMenuDocClickHandler) {
+				document.removeEventListener('click', window._exportMenuDocClickHandler);
 			}
-		});
+		} catch (_) {}
+		window._exportMenuDocClickHandler = (e) => {
+			const menu = document.querySelector('.export-menu-container');
+			const dropdown = document.getElementById('exportDropdown');
+			if (!menu || !dropdown) return;
+			if (!menu.contains(e.target)) {
+				dropdown.classList.remove('show');
+			}
+		};
+		document.addEventListener('click', window._exportMenuDocClickHandler);
 	}
 	
 	function handleExport(action) {
@@ -1097,31 +1114,76 @@
 
 	async function exportToPDF(element, title, sourceLink = '') {
 		try {
-			await ensureHtml2PdfLoaded();
-		} catch (e) { console.error(e); return; }
+			// Clone and clean content
+			const clone = element.cloneNode(true);
+			const exportMenu = clone.querySelector('.export-menu-container');
+			if (exportMenu) exportMenu.remove();
+			if (sourceLink) {
+				const src = document.createElement('div');
+				src.style.marginTop = '24px';
+				src.style.paddingTop = '16px';
+				src.style.borderTop = '1px solid #ddd';
+				src.innerHTML = '<h3 style="color:#34495e;margin-bottom:8px;">Fuente:</h3>' +
+					`<p style="margin:0; word-break:break-all;">${sourceLink}</p>`;
+				clone.appendChild(src);
+			}
 
-		// Clone and clean
-		const clone = element.cloneNode(true);
-		const exportMenu = clone.querySelector('.export-menu-container');
-		if (exportMenu) exportMenu.remove();
-		if (sourceLink) {
-			const src = document.createElement('div');
-			src.style.marginTop = '30px';
-			src.style.paddingTop = '20px';
-			src.style.borderTop = '1px solid #ddd';
-			src.innerHTML = `<h3 style="color:#34495e;margin-bottom:10px;">Fuente:</h3><p style="margin:0; word-break:break-all;">${sourceLink}</p>`;
-			clone.appendChild(src);
+			// Print-friendly stylesheet with toolbar
+			const printCss = `
+				@page { size: A4; margin: 12mm; }
+				@media print { #printToolbar { display: none !important; } }
+				html, body { height: auto; }
+				body { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.45; color: #333; }
+				.page { max-width: 794px; margin: 0 auto; }
+				h1, h2, h3 { color: #2c3e50; page-break-after: avoid; }
+				table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+				th, td { border: 1px solid #ddd; padding: 6pt 8pt; vertical-align: top; word-break: break-word; }
+				tr, td, th { page-break-inside: avoid; }
+				img { max-width: 100%; height: auto; }
+			`;
+
+			const titleHtml = `<h1 style="margin: 0 0 8pt 0;">${title || 'Análisis'}</h1>` +
+				`<div style="font-size:10pt;color:#7f8c8d;margin-bottom:12pt;">Generado el ${new Date().toLocaleDateString('es-ES')}</div>`;
+
+			const toolbar = `
+				<div id="printToolbar" style="position: sticky; top: 0; background: #fff; padding: 10px 0; margin-bottom: 10px; border-bottom: 1px solid #eee; display: flex; gap: 8px; justify-content: flex-end;">
+					<button onclick="window.print()" style="padding:8px 14px;border:1px solid #dcdcdc;border-radius:8px;background:#0b2431;color:#fff;cursor:pointer;">Guardar PDF</button>
+					<button onclick="window.close()" style="padding:8px 14px;border:1px solid #dcdcdc;border-radius:8px;background:#fff;color:#0b2431;cursor:pointer;">Cerrar</button>
+				</div>`;
+
+			// Build full HTML
+			const docHtml = `<!DOCTYPE html>
+			<html>
+			<head>
+				<meta charset="utf-8">
+				<title>${(title || 'Analisis')} - Vista de impresión</title>
+				<style>${printCss}</style>
+			</head>
+			<body>
+				${toolbar}
+				<div class="page">
+					${titleHtml}
+					${clone.innerHTML}
+				</div>
+			</body>
+			</html>`;
+
+			const printWin = window.open('', '_blank');
+			if (!printWin) {
+				// Fallback: open blob URL
+				const blob = new Blob([docHtml], { type: 'text/html' });
+				const url = URL.createObjectURL(blob);
+				window.open(url, '_blank');
+				return;
+			}
+			try { printWin.opener = null; } catch (_) {}
+			printWin.document.open();
+			printWin.document.write(docHtml);
+			printWin.document.close();
+		} catch (e) {
+			console.error('Error preparando vista de impresión:', e);
+			try { showNotification('No se pudo abrir la vista de impresión', 'error'); } catch (_) {}
 		}
-
-		const opt = {
-			margin: 10,
-			filename: `${title || 'Analisis'}_${new Date().toISOString().slice(0,10)}.pdf`,
-			image: { type: 'jpeg', quality: 0.95 },
-			html2canvas: { scale: 2, useCORS: true },
-			jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-		};
-		// Use html2pdf to directly download
-		window.html2pdf().set(opt).from(clone).save();
 	}
 	
 	function showNotification(message, type = 'success') {

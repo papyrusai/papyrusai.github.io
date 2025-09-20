@@ -48,6 +48,7 @@
             subsector: item.subsector || 'No especificado',
             tema: item.tema || 'No especificado',
             marco: item.marco || 'No especificado',
+            nivel: item.nivel || 'No especificado',
             titulo: item.titulo || 'Sin título',
             fuente: String(item.fuente || '').replace(/_test$/i, ''),
             proponente: item.proponente || 'No especificado',
@@ -432,6 +433,7 @@
                 <td>${item.subsector}</td>
                 <td class="tema-cell" title="${item.tema.replace(/\"/g, '&quot;')}">${item.tema}</td>
                 <td>${item.marco}</td>
+                <td>${item.nivel}</td>
                 <td class="titulo-cell" data-titulo="${item.titulo.replace(/\"/g, '&quot;')}">${item.titulo}</td>
                 <td class="fuente-cell" title="${item.fuente}">${truncatedFuente}</td>
                 <td>${item.proponente}</td>
@@ -559,7 +561,7 @@
             .sort((a, b) => a.localeCompare(b));
 
         const titleMap = {
-            id: 'ID_iniciativa', sector: 'Sector', tema: 'Tema', marco: 'Marco Geográfico', titulo: 'Título Iniciativa', fuente: 'Fuente', proponente: 'Proponente', tipo: 'Tipo Iniciativa', fecha: 'Fecha', link: 'Link (ID documento)'
+            id: 'ID_iniciativa', sector: 'Sector', tema: 'Tema', marco: 'Marco Geográfico', nivel: 'Nivel Geográfico', titulo: 'Título Iniciativa', fuente: 'Fuente', proponente: 'Proponente', tipo: 'Tipo Iniciativa', fecha: 'Fecha', link: 'Link (ID documento)'
         };
 
         const selected = columnFilters[column] ? new Set(columnFilters[column]) : new Set();
@@ -717,46 +719,31 @@
         document.getElementById('next-page').disabled = page === totalPages || totalPages === 0;
     }
 
-    // Exportar a Excel (datos proporcionados)
+    // Exportar a Excel (XLSX) con filtros aplicados
     function exportToExcelWithData(data) {
-        // Función helper para escapar correctamente los campos CSV
-        const escapeCsvField = (value) => {
-            if (value == null) return '""';
-            const str = String(value);
-            // Si contiene comas, comillas dobles, saltos de línea o espacios al inicio/final, necesita ser escapado
-            if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r') || str.trim() !== str) {
-                // Escapar comillas dobles duplicándolas y envolver en comillas
-                return `"${str.replace(/"/g, '""')}"`;
-            }
-            return str;
-        };
-
-        const headers = ['ID', 'Sector', 'Tema', 'Marco Geográfico', 'Título Iniciativa', 'Fuente', 'Proponente', 'Tipo Iniciativa', 'Fecha', 'Link'];
-        const csvContent = [
-            headers.join(','),
-            ...data.map(item => [
-                escapeCsvField(item.id),
-                escapeCsvField(item.sector),
-                escapeCsvField(item.tema),
-                escapeCsvField(item.marco),
-                escapeCsvField(item.titulo),
-                escapeCsvField(item.fuente),
-                escapeCsvField(item.proponente),
-                escapeCsvField(item.tipo),
-                escapeCsvField(item.fecha),
-                escapeCsvField(item.link)
-            ].join(','))
-        ].join('\n');
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `iniciativas_parlamentarias_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        showToast('Archivo exportado correctamente', 'success');
+        try {
+            const rows = data.map(item => ({
+                ID: item.id,
+                Sector: item.sector,
+                Tema: item.tema,
+                'Marco Geográfico': item.marco,
+                'Nivel Geográfico': item.nivel,
+                'Título Iniciativa': item.titulo,
+                Fuente: item.fuente,
+                Proponente: item.proponente,
+                'Tipo Iniciativa': item.tipo,
+                Fecha: item.fecha,
+                Link: item.link
+            }));
+            const ws = XLSX.utils.json_to_sheet(rows, { skipHeader: false });
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Iniciativas');
+            XLSX.writeFile(wb, `iniciativas_parlamentarias_${new Date().toISOString().split('T')[0]}.xlsx`, { compression: true });
+            showToast('Archivo XLSX exportado correctamente', 'success');
+        } catch (e) {
+            console.error('Error exportando XLSX:', e);
+            showToast('Error exportando XLSX', 'error');
+        }
     }
 
     // Modal de exportación con filtros

@@ -2318,6 +2318,7 @@ async function initializeRegistrationDate() {
 function initializeDefaultDate() {
   try {
     const startDateElement = document.getElementById('startDate');
+    const endDateElement = document.getElementById('endDate');
     if (startDateElement && !startDateElement.value) {
       // Intentar obtener fecha desde los datos globales usando la función segura
       const startDateValue = getSafeGlobalData('startDateInput');
@@ -2334,6 +2335,13 @@ function initializeDefaultDate() {
         setDefaultDate(startDateElement);
       }
     }
+    // Establecer por defecto la fecha "Hasta" a hoy si está vacía
+    if (endDateElement && !endDateElement.value) {
+      try {
+        const today = new Date();
+        endDateElement.value = today.toISOString().split('T')[0];
+      } catch(_) {}
+    }
   } catch (e) {
     console.log('Error al inicializar fecha predeterminada:', e);
   }
@@ -2342,7 +2350,7 @@ function initializeDefaultDate() {
 // Función auxiliar para establecer fecha por defecto
 function setDefaultDate(element) {
   const defaultDate = new Date();
-  defaultDate.setMonth(defaultDate.getMonth() - 3); // 3 meses atrás
+  defaultDate.setDate(defaultDate.getDate() - 7); // 7 días atrás
   element.value = defaultDate.toISOString().split('T')[0];
 }
 

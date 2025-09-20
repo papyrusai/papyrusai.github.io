@@ -89,7 +89,8 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 		if (userBoletines.length === 0) userBoletines = ['BOE'];
 
 		const now = new Date();
-		const defaultStart = new Date(now.getFullYear(), now.getMonth(), 1);
+		const defaultStart = new Date(now);
+		defaultStart.setDate(defaultStart.getDate() - 7);
 		const defaultEnd = now;
 		const { etiquetas, boletines, rangos, startDate: queryStartDate, endDate: queryEndDate } = req.query;
 		const searchStartDate = queryStartDate ? new Date(queryStartDate) : defaultStart;
@@ -118,7 +119,7 @@ router.get('/profile', ensureAuthenticated, async (req, res) => {
 				.replace('{{months_json}}', JSON.stringify([]))
 				.replace('{{counts_json}}', JSON.stringify([]))
 				.replace('{{subscription_plan}}', JSON.stringify(user.subscription_plan || 'plan1'))
-				.replace('{{start_date}}', JSON.stringify((() => { const d = new Date(new Date().getFullYear(), new Date().getMonth(), 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()))
+				.replace('{{start_date}}', JSON.stringify((() => { const now = new Date(); const d = new Date(now); d.setDate(d.getDate() - 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()))
 				.replace('{{end_date}}', JSON.stringify((() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()))
 				.replace('{{user_boletines_json}}', JSON.stringify(userBoletines || []))
 				.replace('{{user_rangos_json}}', JSON.stringify(userRangos || []))

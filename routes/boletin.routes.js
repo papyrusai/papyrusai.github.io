@@ -178,7 +178,7 @@ module.exports = router;
 router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, res) => {
 	try {
 		const result = await withDatabase(async (database) => {
-			const desiredCollections = ['BOCG_test', 'MONCLOA_REFERENCIAS_test', 'OEIL_test'];
+			const desiredCollections = ['BOCG_test', 'MONCLOA_REFERENCIAS_test', 'OEIL_test', 'SENADO_test', 'BOAM_test', 'BOPG_test', 'BOCV_test'];
 			const allCollections = await database.listCollections({}, { nameOnly: true }).toArray();
 			const availableNames = allCollections.map(c => String(c.name));
 			const resolvedCollections = [];
@@ -189,6 +189,24 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 			if (resolvedCollections.length === 0) {
 				return { date: null, iniciativas: [], fuentes: [] };
 			}
+			// Cargar info de fuentes para nivel/marco geográfico (por sigla = nombre colección sin _test)
+			const siglas = Array.from(new Set(resolvedCollections.map(n => String(n).replace(/_test$/i, '').toUpperCase())));
+			const infoDocs = await database.collection('info_fuentes')
+				.find({ sigla: { $in: siglas } })
+				.project({ sigla: 1, nivel_geografico: 1, pais: 1, region: 1 })
+				.toArray();
+			const siglaToInfo = new Map(infoDocs.map(d => [String(d.sigla).toUpperCase(), d]));
+			const computeGeo = (collectionName) => {
+				const sigla = String(collectionName).replace(/_test$/i, '').toUpperCase();
+				const info = siglaToInfo.get(sigla);
+				const nivel = info?.nivel_geografico || 'No especificado';
+				let marco = 'No especificado';
+				if (nivel === 'Nacional') marco = info?.pais || 'No especificado';
+				else if (nivel === 'Regional') marco = info?.region || 'No especificado';
+				else if (nivel === 'Europeo') marco = 'Europa';
+				else if (nivel === 'Internacional') marco = 'Internacional';
+				return { nivel, marco };
+			};
 			const projection = {
 				_id: 1,
 				anio: 1,
@@ -241,8 +259,7 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 
 							const link = doc.pdf_url || doc.url_pdf || doc.url_html || null;
 
-                            initiatives.forEach((ini, idx) => {
-								// Fecha preferida: del documento (anio/mes/dia) y si no de datetime_insert
+							initiatives.forEach((ini, idx) => {
 								let displayDate = '';
 								if (Number.isInteger(doc?.anio) && Number.isInteger(doc?.mes) && Number.isInteger(doc?.dia)) {
 									const d = String(doc.dia).padStart(2, '0');
@@ -263,12 +280,14 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 								if (seen.has(key)) return;
 								seen.add(key);
 
-                                aggregated.push({
+								const geo = computeGeo(collectionName);
+								aggregated.push({
 									id: ini?.id || `${String(doc._id)}-${idx + 1}`,
 									sector: ini?.sector || 'No especificado',
-                                    subsector: ini?.subsector || 'No especificado',
+									subsector: ini?.subsector || 'No especificado',
 									tema: ini?.tema || 'No especificado',
-									marco: ini?.marco_geografico || 'No especificado',
+									marco: geo.marco,
+									nivel: geo.nivel,
 									titulo: ini?.titulo_iniciativa || 'Sin título',
 									fuente: collectionName,
 									proponente: ini?.proponente || 'No especificado',
@@ -305,6 +324,115 @@ router.get('/api/iniciativas-parlamentarias', ensureAuthenticated, async (req, r
 	}
 });
 
+// ------------------------- Agendas Parlamentarias -----------------------------
+router.get('/api/agendas-parlamentarias', ensureAuthenticated, async (req, res) => {
+	try {
+		const result = await withDatabase(async (database) => {
+			const BASE = ['CONGRESO_AGENDA', 'SENADO_AGENDA'];
+			let requestedAgendas = null;
+			if (typeof req.query?.agendas === 'string' && req.query.agendas.length > 0) {
+				try { const parsed = JSON.parse(req.query.agendas); if (Array.isArray(parsed)) { requestedAgendas = parsed.map((s) => String(s)); } }
+				catch { requestedAgendas = String(req.query.agendas).split(',').map((s) => s.trim()).filter(Boolean); }
+			}
+			let selectedCollections = BASE;
+			if (Array.isArray(requestedAgendas) && requestedAgendas.length > 0) {
+				const allow = new Set(BASE.map(s => s.toLowerCase()));
+				selectedCollections = requestedAgendas.filter(n => allow.has(String(n).toLowerCase()));
+				if (selectedCollections.length === 0) selectedCollections = ['CONGRESO_AGENDA'];
+			} else {
+				selectedCollections = ['CONGRESO_AGENDA'];
+			}
+
+			// Agendas: usar SIEMPRE colecciones base (sin sufijo _test)
+
+			const parseYmd = (s) => {
+				if (typeof s !== 'string' || s.length !== 10) return null;
+				const [y, m, d] = s.split('-').map((v) => parseInt(v, 10));
+				if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return null;
+				const dt = new Date(y, m - 1, d);
+				return isNaN(dt.getTime()) ? null : dt;
+			};
+			const getMonday = (date) => {
+				const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+				const day = d.getDay(); // 0=Sun..6=Sat
+				const diff = (day === 0 ? -6 : 1) - day; // move to Monday
+				d.setDate(d.getDate() + diff);
+				return new Date(d.getFullYear(), d.getMonth(), d.getDate()); // midnight
+			};
+
+			const desdeParam = parseYmd(req.query?.desde_insert);
+			const hastaParam = parseYmd(req.query?.hasta_insert);
+			const startInclusive = desdeParam ? new Date(desdeParam.getFullYear(), desdeParam.getMonth(), desdeParam.getDate()) : getMonday(new Date());
+			const endExclusive = hastaParam ? new Date(hastaParam.getFullYear(), hastaParam.getMonth(), hastaParam.getDate() + 1) : null;
+
+			const projection = { _id: 1, anio: 1, mes: 1, dia: 1, event_time: 1, resumen: 1, url_html: 1, datetime_insert: 1 };
+			const displayName = (coll) => {
+				const base = String(coll);
+				if (base === 'SENADO_AGENDA') return 'Senado Agenda';
+				if (base === 'CONGRESO_AGENDA') return 'Congreso Agenda';
+				return base;
+			};
+			const toTwo = (n) => String(parseInt(n, 10)).padStart(2, '0');
+			const buildFechaHora = (doc) => {
+				let yyyy = doc?.anio, mm = doc?.mes, dd = doc?.dia;
+				if (!Number.isInteger(yyyy) || !Number.isInteger(mm) || !Number.isInteger(dd)) {
+					const dt = doc?.datetime_insert ? new Date(doc.datetime_insert) : null;
+					if (dt && !isNaN(dt.getTime())) { yyyy = dt.getFullYear(); mm = dt.getMonth() + 1; dd = dt.getDate(); }
+				}
+				const datePart = `${String(yyyy).padStart(4, '0')}-${toTwo(mm)}-${toTwo(dd)}`;
+				let hh = '00', mi = '00';
+				if (doc?.event_time && typeof doc.event_time === 'string') {
+					const parts = doc.event_time.split(':');
+					if (parts.length >= 2) { hh = toTwo(parts[0]); mi = toTwo(parts[1]); }
+				}
+				return `${datePart} ${hh}:${mi}`;
+			};
+
+			const matchByInsert = () => {
+				if (startInclusive && endExclusive) return { datetime_insert: { $gte: startInclusive, $lt: endExclusive } };
+				if (startInclusive) return { datetime_insert: { $gte: startInclusive } };
+				if (endExclusive) return { datetime_insert: { $lt: endExclusive } };
+				return {};
+			};
+
+			const aggregated = [];
+			for (const collectionName of selectedCollections) {
+				try {
+					const exists = await collectionExists(database, collectionName);
+					if (!exists) continue;
+					const docs = await database.collection(collectionName).find(matchByInsert()).project(projection).toArray();
+					if (!Array.isArray(docs) || docs.length === 0) continue;
+					for (const doc of docs) {
+						aggregated.push({
+							fuente: collectionName,
+							fuenteDisplay: displayName(collectionName),
+							fechaHora: buildFechaHora(doc),
+							concepto: '',
+							temas: doc?.resumen || '',
+							link: doc?.url_html || '',
+							doc_id: String(doc?._id || '')
+						});
+					}
+				} catch (err) {
+					console.error(`[agendas] Error leyendo colección ${collectionName}:`, err.message);
+				}
+			}
+
+			aggregated.sort((a, b) => {
+				if (a.fechaHora < b.fechaHora) return -1;
+				if (a.fechaHora > b.fechaHora) return 1;
+				return a.fuenteDisplay.localeCompare(b.fuenteDisplay);
+			});
+
+			return { agendas: aggregated, fuentes: selectedCollections };
+		});
+
+		return res.json(result);
+	} catch (error) {
+		console.error('Error in agendas-parlamentarias:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+});
 // ------------------------- Iniciativas Legales (clasificacion_boletin) -----------------------------
 router.get('/api/iniciativas-legales', ensureAuthenticated, async (req, res) => {
 	try {
@@ -329,6 +457,25 @@ router.get('/api/iniciativas-legales', ensureAuthenticated, async (req, res) => 
 				selectedBase = ['BOE'];
 			}
 			const desiredCollections = selectedBase.map((n) => isTest ? `${n}_test` : n);
+
+			// Cargar info de fuentes para nivel/marco geográfico (por sigla = nombre colección sin _test)
+			const siglas = Array.from(new Set(desiredCollections.map(n => String(n).replace(/_test$/i, '').toUpperCase())));
+			const infoDocs = await database.collection('info_fuentes')
+				.find({ sigla: { $in: siglas } })
+				.project({ sigla: 1, nivel_geografico: 1, pais: 1, region: 1 })
+				.toArray();
+			const siglaToInfo = new Map(infoDocs.map(d => [String(d.sigla).toUpperCase(), d]));
+			const computeGeo = (collectionName) => {
+				const sigla = String(collectionName).replace(/_test$/i, '').toUpperCase();
+				const info = siglaToInfo.get(sigla);
+				const nivel = info?.nivel_geografico || 'No especificado';
+				let marco = 'No especificado';
+				if (nivel === 'Nacional') marco = info?.pais || 'No especificado';
+				else if (nivel === 'Regional') marco = info?.region || 'No especificado';
+				else if (nivel === 'Europeo') marco = 'Europa';
+				else if (nivel === 'Internacional') marco = 'Internacional';
+				return { nivel, marco };
+			};
 
 			const projection = { _id: 1, anio: 1, mes: 1, dia: 1, url_pdf: 1, pdf_url: 1, url_html: 1, fecha_publicacion: 1, fecha: 1, date: 1, datetime_insert: 1, clasificacion_boletin: 1 };
 
@@ -379,14 +526,15 @@ router.get('/api/iniciativas-legales', ensureAuthenticated, async (req, res) => 
 							{ $project: projection }
 						]).toArray();
 						if (docs.length === 0) continue;
-						for (const doc of docs) {
+								for (const doc of docs) {
 							const cb = doc?.clasificacion_boletin || {};
 							const key = `${collectionName}|${String(doc._id)}`; if (seen.has(key)) continue; seen.add(key);
 							let displayDate = '';
 							if (Number.isInteger(doc?.anio) && Number.isInteger(doc?.mes) && Number.isInteger(doc?.dia)) { const d = String(doc.dia).padStart(2,'0'); const m = String(doc.mes).padStart(2,'0'); const y = String(doc.anio).padStart(4,'0'); displayDate = `${d}-${m}-${y}`; }
 							else if (doc?.datetime_insert) { const dt = new Date(doc.datetime_insert); if (!isNaN(dt.getTime())) { const d = String(dt.getDate()).padStart(2,'0'); const m = String(dt.getMonth()+1).padStart(2,'0'); const y = String(dt.getFullYear()); displayDate = `${d}-${m}-${y}`; } }
 							const link = doc.pdf_url || doc.url_pdf || doc.url_html || null;
-							aggregated.push({ id: String(doc._id), sector: Array.isArray(cb?.sector) ? cb.sector : (cb?.sector ? [cb.sector] : []), subsector: Array.isArray(cb?.subsector) ? cb.subsector : (cb?.subsector ? [cb.subsector] : []), tema: cb?.tema || 'Sin tema', marco: cb?.marco_geografico || 'No especificado', fuente: collectionName, proponente: cb?.proponente || 'No especificado', rango: cb?.rango_legal || 'No especificado', subgrupo: cb?.subgrupo || 'No especificado', fecha: displayDate, link, doc_id: String(doc._id) });
+									const geo = computeGeo(collectionName);
+									aggregated.push({ id: String(doc._id), sector: Array.isArray(cb?.sector) ? cb.sector : (cb?.sector ? [cb.sector] : []), subsector: Array.isArray(cb?.subsector) ? cb.subsector : (cb?.subsector ? [cb.subsector] : []), tema: cb?.tema || 'Sin tema', marco: geo.marco, nivel: geo.nivel, fuente: collectionName, proponente: cb?.proponente || 'No especificado', rango: cb?.rango_legal || 'No especificado', subgrupo: cb?.subgrupo || 'No especificado', fecha: displayDate, link, doc_id: String(doc._id) });
 						}
 					} catch (err) { console.error(`Error fetching iniciativas legales (insert filters) for ${collectionName}:`, err); }
 				}
@@ -401,14 +549,15 @@ router.get('/api/iniciativas-legales', ensureAuthenticated, async (req, res) => 
 							{ $project: projection }
 						]).toArray();
 						if (docs.length === 0) continue;
-						for (const doc of docs) {
+							for (const doc of docs) {
 							const cb = doc?.clasificacion_boletin || {};
 							const key = `${collectionName}|${String(doc._id)}`; if (seen.has(key)) continue; seen.add(key);
 							let displayDate = '';
 							if (Number.isInteger(doc?.anio) && Number.isInteger(doc?.mes) && Number.isInteger(doc?.dia)) { const d = String(doc.dia).padStart(2,'0'); const m = String(doc.mes).padStart(2,'0'); const y = String(doc.anio).padStart(4,'0'); displayDate = `${d}-${m}-${y}`; }
 							else if (doc?.datetime_insert) { const dt = new Date(doc.datetime_insert); if (!isNaN(dt.getTime())) { const d = String(dt.getDate()).padStart(2,'0'); const m = String(dt.getMonth()+1).padStart(2,'0'); const y = String(dt.getFullYear()); displayDate = `${d}-${m}-${y}`; } }
 							const link = doc.pdf_url || doc.url_pdf || doc.url_html || null;
-							aggregated.push({ id: String(doc._id), sector: Array.isArray(cb?.sector) ? cb.sector : (cb?.sector ? [cb.sector] : []), subsector: Array.isArray(cb?.subsector) ? cb.subsector : (cb?.subsector ? [cb.subsector] : []), tema: cb?.tema || 'Sin tema', marco: cb?.marco_geografico || 'No especificado', fuente: collectionName, proponente: cb?.proponente || 'No especificado', rango: cb?.rango_legal || 'No especificado', subgrupo: cb?.subgrupo || 'No especificado', fecha: displayDate, link, doc_id: String(doc._id) });
+								const geo = computeGeo(collectionName);
+								aggregated.push({ id: String(doc._id), sector: Array.isArray(cb?.sector) ? cb.sector : (cb?.sector ? [cb.sector] : []), subsector: Array.isArray(cb?.subsector) ? cb.subsector : (cb?.subsector ? [cb.subsector] : []), tema: cb?.tema || 'Sin tema', marco: geo.marco, nivel: geo.nivel, fuente: collectionName, proponente: cb?.proponente || 'No especificado', rango: cb?.rango_legal || 'No especificado', subgrupo: cb?.subgrupo || 'No especificado', fecha: displayDate, link, doc_id: String(doc._id) });
 						}
 					} catch (err) { console.error(`Error fetching iniciativas legales (explicit range) for ${collectionName}:`, err); }
 				}
@@ -428,14 +577,15 @@ router.get('/api/iniciativas-legales', ensureAuthenticated, async (req, res) => 
 								{ $project: projection }
 							]).toArray();
 							if (docs.length === 0) continue;
-							for (const doc of docs) {
+								for (const doc of docs) {
 								const cb = doc?.clasificacion_boletin || {};
 								const key = `${collectionName}|${String(doc._id)}`; if (seen.has(key)) continue; seen.add(key);
 								let displayDate = '';
 								if (Number.isInteger(doc?.anio) && Number.isInteger(doc?.mes) && Number.isInteger(doc?.dia)) { const d = String(doc.dia).padStart(2,'0'); const m = String(doc.mes).padStart(2,'0'); const y = String(doc.anio).padStart(4,'0'); displayDate = `${d}-${m}-${y}`; }
 								else if (doc?.datetime_insert) { const dt = new Date(doc.datetime_insert); if (!isNaN(dt.getTime())) { const d = String(dt.getDate()).padStart(2,'0'); const m = String(dt.getMonth()+1).padStart(2,'0'); const y = String(dt.getFullYear()); displayDate = `${d}-${m}-${y}`; } }
 								const link = doc.pdf_url || doc.url_pdf || doc.url_html || null;
-								aggregated.push({ id: String(doc._id), sector: Array.isArray(cb?.sector) ? cb.sector : (cb?.sector ? [cb.sector] : []), subsector: Array.isArray(cb?.subsector) ? cb.subsector : (cb?.subsector ? [cb.subsector] : []), tema: cb?.tema || 'Sin tema', marco: cb?.marco_geografico || 'No especificado', fuente: collectionName, proponente: cb?.proponente || 'No especificado', rango: cb?.rango_legal || 'No especificado', subgrupo: cb?.subgrupo || 'No especificado', fecha: displayDate, link, doc_id: String(doc._id) });
+									const geo = computeGeo(collectionName);
+									aggregated.push({ id: String(doc._id), sector: Array.isArray(cb?.sector) ? cb.sector : (cb?.sector ? [cb.sector] : []), subsector: Array.isArray(cb?.subsector) ? cb.subsector : (cb?.subsector ? [cb.subsector] : []), tema: cb?.tema || 'Sin tema', marco: geo.marco, nivel: geo.nivel, fuente: collectionName, proponente: cb?.proponente || 'No especificado', rango: cb?.rango_legal || 'No especificado', subgrupo: cb?.subgrupo || 'No especificado', fecha: displayDate, link, doc_id: String(doc._id) });
 							}
 						} catch (err) { console.error(`Error fetching iniciativas legales (rolling) for ${collectionName}:`, err); }
 					}

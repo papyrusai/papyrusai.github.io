@@ -78,6 +78,15 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Analytics middleware (no bloqueante)
+try {
+  const { trackPageView, sessionTimeTracker } = require('./middleware/analytics.middleware');
+  app.use(sessionTimeTracker);
+  app.use(trackPageView);
+} catch (e) {
+  console.warn('Analytics middleware not loaded:', e?.message || e);
+}
+
 // Mount routers
 const boletinRoutes = require('./routes/boletin.routes');
 app.use(boletinRoutes);

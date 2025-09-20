@@ -1779,6 +1779,27 @@ async function sendReportEmail(db, userStats) {
         </table>
         
         <h2>2. Todos los Usuarios</h2>
+
+        <h3>2.0. Correo de no matches enviado</h3>
+        <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              if (!userStats.noMatchEmailsSent || userStats.noMatchEmailsSent.length === 0) {
+                return `<tr><td style=\"border: 1px solid #ddd; padding: 8px;\">Ninguno</td></tr>`;
+              }
+              return userStats.noMatchEmailsSent.map(u => `
+                <tr>
+                  <td style=\"border: 1px solid #ddd; padding: 8px;\">${u.email}</td>
+                </tr>
+              `).join('');
+            })()}
+          </tbody>
+        </table>
         
         <h3>2.1. Usuarios con match</h3>
         <table style="border-collapse: collapse; width: 100%; margin-bottom: 30px;">
@@ -2423,6 +2444,35 @@ async function getLatestEtlLogId(db) {
 }
 
 /**
+ * Check if a user had matches earlier today (UTC) by inspecting logs_newsletter
+ */
+async function userHadMatchesEarlierToday(db, email) {
+  try {
+    const logsCollection = db.collection('logs_newsletter');
+    const startOfDay = moment().utc().startOf('day').toDate();
+    const endOfDay = moment().utc().endOf('day').toDate();
+
+    const todayLogs = await logsCollection.find({
+      datetime_run_newsletter: { $gte: startOfDay, $lte: endOfDay },
+      "run_info.environment": "production"
+    }).toArray();
+
+    const target = (email || '').toLowerCase();
+    for (const log of todayLogs) {
+      const usersMatch = (log.run_info && log.run_info.users_match) || {};
+      for (const key of Object.keys(usersMatch)) {
+        if ((key || '').toLowerCase() === target) {
+          return true; // Presence implies the user had matches in that run
+        }
+      }
+    }
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
  * Create newsletter log in logs_newsletter collection
  * NEW LOGIC: Detailed statistics and user match tracking
  * ETL SYNC: Includes last_etl_log for synchronized reporting
@@ -2644,7 +2694,8 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
     const userStats = {
       withMatches: [],
       withoutMatches: [],
-      withDeleted: []
+      withDeleted: [],
+      noMatchEmailsSent: []
     };
 
     for (const user of filteredUsers) {
@@ -2998,11 +3049,27 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
            etiquetas_demo: user.etiquetas_demo || {}
          });
 
-         // Check if we should send emails to users without matches
-         if (!SEND_EMAILS_TO_USERS_WITHOUT_MATCHES) {
-           console.log(`Skipping email for ${user.email} - no matches and SEND_EMAILS_TO_USERS_WITHOUT_MATCHES is false`);
-           continue; // Skip to next user
-         }
+        // Check if we should send emails to users without matches (domain-allowlist)
+        const emailLower = (user.email || '').toLowerCase();
+        const allowNoMatchEmail = emailLower.endsWith('@webershandwick.com');
+        if (!allowNoMatchEmail) {
+          // For all domains except webershandwick.com, keep behavior: do not send no-match emails
+          console.log(`Skipping email for ${user.email} - no matches and domain is not allowlisted`);
+          continue; // Skip to next user
+        }
+
+        // Only send "no matches" on the second run of the day (extra version)
+        if (!isExtraVersion) {
+          console.log(`Skipping no-match for ${user.email} - first run of the day`);
+          continue;
+        }
+
+        // Do not send if the user had matches earlier today
+        const hadEarlier = await userHadMatchesEarlierToday(db, user.email);
+        if (hadEarlier) {
+          console.log(`Skipping no-match for ${user.email} - had matches earlier today`);
+          continue;
+        }
 
          // No matches => get BOE documents with seccion = "Disposiciones generales"
          const queryBoeGeneral = { 
@@ -3111,7 +3178,12 @@ async function getEmpresaDoc(db, estructuraEmpresaId) {
        };
        try {
          await transporter.sendMail(mailOptions);
-       
+         // Track recipients of no-match emails for reporting
+         if (!hasMatches) {
+           userStats.noMatchEmailsSent.push({
+             email: user.email
+           });
+         }
          console.log(`Email sent to ${user.email}.`);
          //console.log(htmlBody);
        } catch(err) {

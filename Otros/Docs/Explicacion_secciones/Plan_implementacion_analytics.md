@@ -58,7 +58,10 @@ Implementar un sistema completo de analytics para tracking del uso de la platafo
     collection_name: String,
     analysis_type: String,         // "resumen", "obligaciones", "riesgos"
     content_type: String,          // "whatsapp", "linkedin", "email"
-    export_format: String,         // "pdf", "word", "json"
+    export_format: String,         // "xlsx", "csv", "pdf", "word", "json"
+    export_type: String,           // "iniciativas_legales" | "iniciativas_parlamentarias" | "analysis" | "content"
+    export_rows: Number,           // filas exportadas (opcional)
+    filters_applied: Object,       // snapshot mínimo de filtros (opcional)
     list_name: String,
     agent_name: String,
     search_query: String,
@@ -138,9 +141,16 @@ Implementar un sistema completo de analytics para tracking del uso de la platafo
     // Exports
     export_count: Number,
     export_by_type: {
-      iniciativas: Number,
+      iniciativas_parlamentarias: Number,
+      iniciativas_legales: Number,
       generaciones: Number,
       analisis: Number
+    },
+    // Exports Excel (formato xlsx únicamente)
+    export_excel_count: Number,
+    export_excel_by_type: {
+      iniciativas_parlamentarias: Number,
+      iniciativas_legales: Number
     },
     
     // Engagement
@@ -180,6 +190,8 @@ db.analytics_events.createIndex({ "event_type": 1, "timestamp": -1 })
 db.analytics_events.createIndex({ "date_day": 1 })
 db.analytics_events.createIndex({ "date_month": 1 })
 db.analytics_events.createIndex({ "session_id": 1 })
+db.analytics_events.createIndex({ "event_type": 1, "event_metadata.export_type": 1, "timestamp": -1 })
+db.analytics_events.createIndex({ "event_type": 1, "event_metadata.export_format": 1, "timestamp": -1 })
 
 // analytics_aggregates - Índices para cache
 db.analytics_aggregates.createIndex({ 
@@ -604,6 +616,59 @@ class AnalyticsService {
 module.exports = new AnalyticsService();
 ```
 
+#### Nuevo: actualización de agregados para exports Excel de iniciativas
+```javascript
+// Dentro de services/analytics.service.js
+async updateAggregates(userId, empresa, event) {
+  const db = await this.getDb();
+  const now = new Date();
+  const periods = [
+    { type: 'daily', value: this.formatDate(now, 'day') },
+    { type: 'monthly', value: this.formatDate(now, 'month') },
+    { type: 'yearly', value: String(now.getFullYear()) },
+    { type: 'all_time', value: 'all' }
+  ];
+  const targets = [
+    { aggregate_type: 'user', aggregate_id: userId.toString() },
+    ...(empresa ? [{ aggregate_type: 'empresa', aggregate_id: empresa }] : []),
+    { aggregate_type: 'global', aggregate_id: 'global' }
+  ];
+
+  // Incrementos base
+  const isExport = event?.event_type === 'export';
+  const isExcel = event?.event_metadata?.export_format === 'xlsx';
+  const expType = event?.event_metadata?.export_type; // iniciativas_legales | iniciativas_parlamentarias | ...
+
+  const baseInc = {
+    total_events: 1,
+    login_count: event?.event_type === 'login' ? 1 : 0,
+    analysis_count: event?.event_type === 'analysis' ? 1 : 0,
+    content_generation_count: event?.event_type === 'content_generation' ? 1 : 0,
+    export_count: isExport ? 1 : 0,
+    total_session_time: event?.event_type === 'session_time' ? (event?.event_value || 0) : 0
+  };
+
+  // Incrementos específicos de export por tipo
+  if (isExport && (expType === 'iniciativas_legales' || expType === 'iniciativas_parlamentarias')) {
+    baseInc[`export_by_type.${expType}`] = 1;
+    if (isExcel) {
+      baseInc['export_excel_count'] = 1;
+      baseInc[`export_excel_by_type.${expType}`] = 1;
+    }
+  }
+
+  for (const p of periods) {
+    for (const t of targets) {
+      await db.collection(this.aggregatesCollection).updateOne(
+        { ...t, period_type: p.type, period_value: p.value },
+        { $inc: baseInc, $set: { updated_at: now }, $setOnInsert: { created_at: now } },
+        { upsert: true }
+      );
+    }
+  }
+}
+```
+
 ### 2. Middleware de Tracking (`/middleware/analytics.middleware.js`)
 ```javascript
 // middleware/analytics.middleware.js
@@ -796,6 +861,41 @@ router.get('/api/analytics/export', ensureAuthenticated, async (req, res) => {
 module.exports = router;
 ```
 
+#### Nuevo: endpoint para tracking de exports de iniciativas (cliente → backend)
+```javascript
+// routes/analytics.routes.js (añadir antes del module.exports)
+
+// Track de export Excel de iniciativas (legales/parlamentarias)
+router.post('/api/analytics/track-export-iniciativas', ensureAuthenticated, async (req, res) => {
+  try {
+    const { tipo, format = 'xlsx', rows = 0, filters = {} } = req.body; // tipo: 'iniciativas_legales' | 'iniciativas_parlamentarias'
+
+    if (!['iniciativas_legales', 'iniciativas_parlamentarias'].includes(tipo)) {
+      return res.status(400).json({ success: false, error: 'tipo inválido' });
+    }
+
+    await analyticsService.trackEvent({
+      userId: req.user._id,
+      eventType: 'export',
+      eventCategory: 'document',
+      eventAction: `export_${tipo}`,
+      metadata: {
+        export_type: tipo,
+        export_format: format,
+        export_rows: rows,
+        filters_applied: filters
+      },
+      req
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Error tracking iniciativas export:', error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+```
+
 ---
 
 ## 📝 INTEGRACIÓN EN ENDPOINTS EXISTENTES
@@ -920,6 +1020,39 @@ router.post('/api/export-analysis', ensureAuthenticated, async (req, res) => {
   }
 });
 ```
+
+### 6. Exports de Iniciativas (Frontend → Tracking)
+```javascript
+// public/views/boletindiario/iniciativas_legales.js
+// Después de generar y descargar el XLSX con SheetJS
+await fetch('/api/analytics/track-export-iniciativas', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    tipo: 'iniciativas_legales',
+    format: 'xlsx',
+    rows: filteredData.length,
+    filters: collectedFilters // snapshot mínimo (fechas, fuentes, etc.)
+  })
+});
+
+// public/views/boletindiario/iniciativas_parlamentarias.js
+await fetch('/api/analytics/track-export-iniciativas', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    tipo: 'iniciativas_parlamentarias',
+    format: 'xlsx',
+    rows: filteredData.length,
+    filters: collectedFilters
+  })
+});
+```
+
+Notas:
+- El tracking se lanza tras crear el archivo XLSX en cliente (SheetJS) [[memory:9092358]] [[memory:9092325]].
+- Mantener el uso de modal estándar para confirmaciones y feedback, sin `alert()` [[memory:7117596]].
+- Si se muestra un modal de confirmación previo a exportar, esperar a que el `await` del export termine antes de cerrar [[memory:9092340]].
 
 ---
 
@@ -1471,6 +1604,8 @@ class AnalyticsDashboard {
       { name: 'Análisis de Impacto', total: total.analysis_count, avg: average_per_user.analysis_count },
       { name: 'Generación de Contenido', total: total.content_generation_count, avg: average_per_user.content_generation_count },
       { name: 'Exports Realizados', total: total.export_count, avg: average_per_user.export_count },
+      { name: 'Exports Excel Inic. Legales', total: total.export_excel_by_type?.iniciativas_legales || 0, avg: '-' },
+      { name: 'Exports Excel Inic. Parl.', total: total.export_excel_by_type?.iniciativas_parlamentarias || 0, avg: '-' },
       { name: 'Tiempo en Plataforma', total: this.formatTime(total.total_session_time), avg: this.formatTime(average_per_user.avg_session_time) }
     ];
     
@@ -1682,6 +1817,26 @@ class AnalyticsDashboard {
 document.addEventListener('DOMContentLoaded', () => {
   window.dashboard = new AnalyticsDashboard();
 });
+```
+
+#### Agregaciones de lectura (ejemplo) para Excel exports por tipo
+```javascript
+// Ejemplo de pipeline (user/empresa/global) filtrando Excel de iniciativas
+const pipeline = [
+  { $match: {
+      event_type: 'export',
+      'event_metadata.export_format': 'xlsx',
+      'event_metadata.export_type': { $in: ['iniciativas_legales', 'iniciativas_parlamentarias'] },
+      ...this.getPeriodFilter(period),
+      ...(scope.userIds ? { user_id: { $in: scope.userIds } } : {})
+    }
+  },
+  { $group: {
+      _id: '$event_metadata.export_type',
+      count: { $sum: 1 }
+    }
+  }
+];
 ```
 
 ### 3. Estilos CSS (`/public/styles/analytics-dashboard.css`)
@@ -1970,10 +2125,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 ### FASE 1: Infraestructura Base (2-3 días)
 1. ✅ Crear colecciones MongoDB (`analytics_events`, `analytics_aggregates`)
-2. ✅ Implementar servicio base (`analytics.service.js`)
-3. ✅ Crear middleware de tracking
-4. ✅ Configurar índices MongoDB
-5. ✅ Tests unitarios del servicio
+2. ✅ Implementar servicio base (`services/analytics.service.js`)
+3. ✅ Crear middleware de tracking (`middleware/analytics.middleware.js`)
+4. ✅ Configurar índices MongoDB (`scripts/create_analytics_indexes.js`)
+5. ✅ Wire en `app.js` (sessionTimeTracker + trackPageView)
+6. ✅ Tests básicos/linter sin errores
 
 ### FASE 2: Integración con Endpoints (3-4 días)
 1. ✅ Integrar tracking en login/logout
@@ -1991,14 +2147,14 @@ document.addEventListener('DOMContentLoaded', () => {
 5. ✅ Sistema de caché para agregaciones
 6. ✅ Exportación de datos
 
-### FASE 4: Dashboard Frontend (3-4 días)
-1. ✅ Crear estructura HTML del dashboard
-2. ✅ Implementar lógica JavaScript
-3. ✅ Integrar Chart.js para gráficos
-4. ✅ Vista de resumen general
-5. ✅ Vista por empresas con drill-down
-6. ✅ Vista por usuarios con filtros
-7. ✅ Sistema de exportación
+### FASE 4: Integración UI en Dashboard Interno (3-4 días)
+1. ✅ Añadir pestaña "Analytics" en `public/views/internal/dashboard_interno.html`
+2. ✅ Crear módulo `public/views/internal/analytics_internal.js` (overview/empresas/usuarios)
+3. ✅ Integrar Chart.js y wiring de eventos/períodos (custom range incluido)
+4. ✅ Renderizar KPIs, gráficos y tabla de métricas en panel interno
+5. ✅ Mostrar contadores de exports Excel por tipo (legales/parlamentarias)
+6. ✅ Añadir estilos `public/styles/analytics-internal.css` (responsive)
+7. ✅ Export opcional de métricas desde el panel interno
 
 ### FASE 5: Optimización y Testing (2-3 días)
 1. ✅ Optimizar queries de agregación
@@ -2028,14 +2184,19 @@ document.addEventListener('DOMContentLoaded', () => {
 - [ ] Integrar tracking en `routes/listas.routes.js`
 - [ ] Integrar tracking en `routes/profile.routes.js`
 - [ ] Crear índices MongoDB via script
+- [ ] Añadir endpoint `POST /api/analytics/track-export-iniciativas`
+- [ ] Actualizar `analytics.service.js` con incrementos `export_excel_by_type` y `export_excel_count`
+- [ ] Añadir índices por `event_metadata.export_type` y `event_metadata.export_format`
 
 ### Frontend
-- [ ] Crear carpeta `public/views/analytics/`
-- [ ] Crear archivo `public/views/analytics/dashboard.html`
-- [ ] Crear archivo `public/views/analytics/dashboard.js`
-- [ ] Crear archivo `public/styles/analytics-dashboard.css`
-- [ ] Añadir entrada en menú principal para admins
-- [ ] Integrar Chart.js
+- [ ] Añadir pestaña "Analytics" en `public/views/internal/dashboard_interno.html`
+- [ ] Crear `public/views/internal/analytics_internal.js`
+- [ ] Incluir `<script src="/views/internal/analytics_internal.js"></script>` en `dashboard_interno.html`
+- [ ] Crear `public/styles/analytics-internal.css`
+- [ ] Integrar Chart.js (ya presente en `dashboard_interno.html`)
+- [ ] Renderizar KPIs/series/tabla en el panel interno
+- [ ] Instrumentar `iniciativas_legales.js` para track de export XLSX (filas y filtros)
+- [ ] Instrumentar `iniciativas_parlamentarias.js` para track de export XLSX (filas y filtros)
 
 ### Testing
 - [ ] Tests unitarios del servicio

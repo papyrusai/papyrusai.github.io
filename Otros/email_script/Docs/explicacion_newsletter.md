@@ -264,6 +264,29 @@ function getSelectedEtiquetasFromUser(user) {
 // - Rangos enterprise: usar empresa.rangos si existen; si no, usar user.rangos; si ambos vacíos → no filtrar por rango
 ```
 
+### 4.6 userHadMatchesEarlierToday(db, email)
+
+```javascript
+// Comprueba si el usuario tuvo matches en algún envío anterior del día (UTC)
+async function userHadMatchesEarlierToday(db, email) {
+  const logsCollection = db.collection('logs_newsletter');
+  const startOfDay = moment().utc().startOf('day').toDate();
+  const endOfDay = moment().utc().endOf('day').toDate();
+  const todayLogs = await logsCollection.find({
+    datetime_run_newsletter: { $gte: startOfDay, $lte: endOfDay },
+    "run_info.environment": "production"
+  }).toArray();
+  const target = (email || '').toLowerCase();
+  for (const log of todayLogs) {
+    const usersMatch = (log.run_info && log.run_info.users_match) || {};
+    for (const key of Object.keys(usersMatch)) {
+      if ((key || '').toLowerCase() === target) return true;
+    }
+  }
+  return false;
+}
+```
+
 ## 5. MÉTRICAS DE MATCHES
 
 ### 5.1 Diferencia entre Métricas
@@ -366,10 +389,11 @@ if (keys.length) { /* match */ }
 - Usuario está en `filteredUsers`
 - Usuario pasa filtros de cobertura y rangos
 - Hay matches de etiquetas (individual o empresa según corresponda)
+ - Caso especial “sin novedades” (solo dominio permitido): únicamente para emails que terminan en `@webershandwick.com`, y solo en la segunda ejecución del día (cuando `isExtraVersion === true`), y solo si el usuario no tuvo matches en la primera ejecución del mismo día (ver `userHadMatchesEarlierToday`).
 
 **❌ NO SE ENVÍAN EMAILS cuando:**
 - No hay documentos nuevos desde última ejecución
-- `SEND_EMAILS_TO_USERS_WITHOUT_MATCHES = false` y usuario sin matches
+- Usuario sin matches y el dominio del email no es `@webershandwick.com` (no se envía “sin novedades”)
 - Usuario especial `eaz@ayuelajimenez.es` sin matches (skip completo)
 
 ### 7.2 Tipos de Email
@@ -394,6 +418,15 @@ htmlBody = buildNewsletterHTMLNoMatches(
   boeDocsWithCollection
 );
 ```
+**Compuertas para “sin novedades”:**
+```javascript
+const emailLower = (user.email || '').toLowerCase();
+const allowNoMatchEmail = emailLower.endsWith('@webershandwick.com');
+if (!allowNoMatchEmail) { continue; }
+if (!isExtraVersion) { continue; }
+const hadEarlier = await userHadMatchesEarlierToday(db, user.email);
+if (hadEarlier) { continue; }
+```
 
 **Subject personalizado:**
 - Normal: `"Reversa Alertas Normativas — 2025-08-15"`
@@ -405,6 +438,7 @@ htmlBody = buildNewsletterHTMLNoMatches(
 
 **Daily Report Email (sendReportEmail):**
 - Usuarios con/sin matches
+- Correo de no matches enviado (listado de destinatarios)
 - Cuentas calientes (hot accounts)
 - Estadísticas detalladas por etiqueta
 - Enviado a: `info@reversa.ai`
@@ -445,6 +479,7 @@ htmlBody = buildNewsletterHTMLNoMatches(
 | `isEnterpriseUser` | Si el usuario pertenece a empresa | `true`/`false` |
 | `estructura_empresa_id` | ID empresa asociada (MongoDB) | `ObjectId` |
 | `selectedEnterpriseEtiquetas` | Selección por usuario en empresa | `Array<string>` |
+| `userStats.noMatchEmailsSent` | Destinatarios de “sin novedades” | `Array<{email:string}>` |
 
 ## 10. FLUJO COMPLETO DE EJECUCIÓN
 
@@ -459,6 +494,7 @@ htmlBody = buildNewsletterHTMLNoMatches(
    - Matching etiquetas: empresa (con selección) o individual
    - Calcular matches únicos y totales
    - Generar HTML y enviar emails
+   - “Sin novedades” (solo `@webershandwick.com`): enviar únicamente en la 2ª ejecución del día y si no hubo matches en la 1ª
 6. Calcular estadísticas finales
 7. createNewsletterLog() → Guardar log en logs_newsletter
 8. Enviar reports (Daily + ETL)

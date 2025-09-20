@@ -164,6 +164,18 @@ app.use(onboardingRoutes);     // Onboarding usuarios
 app.use(boletinRoutes);        // Boletín diario
 ```
 
+Además, se montan routers de soporte adicionales ya presentes en el proyecto:
+
+```javascript
+app.use(etiquetasRoutes);             // Endpoints unificados de etiquetas
+app.use(enterpriseRoutes);            // Contexto enterprise (incluye /api/user-context)
+app.use(permisosRoutes);              // Gestión de permisos
+app.use(fuentesRoutes);               // Gestión de fuentes oficiales
+app.use(statsRoutes);                 // Tendencias normativas y analítica
+app.use(internalRoutes);              // Dashboard interno (seguimiento/ranking/data)
+app.use(internalReviewFeedbackRoutes); // Review de feedback interno (pestaña dashboard)
+```
+
 #### 🚀 **5. Inicio del Servidor:**
 ```javascript
 function startServer(currentPort) {
@@ -246,6 +258,59 @@ Respuesta: { documents: [...], collections: [...] }
 Notas UX:
 - Banner de newsletter condicionado por plan y preferencia de email (accept/reject) con POST /api/update-user-data
 - Para plan1, "Analizar documento" abre modal de upgrade (gating por plan)
+```
+
+#### **G. Vista Iniciativas Parlamentarias** 🏛️
+**🎯 Funcionalidad de Producto:**
+- **Para el usuario:** Explorar iniciativas parlamentarias agregadas de varias fuentes
+- **Valor:** Visión consolidada y filtrable por sector, tema, tipo, fecha
+
+**🔧 Flujo Técnico:**
+```
+Frontend: public/views/boletindiario/iniciativas_parlamentarias.js
+↓ fetch('/api/iniciativas-parlamentarias')
+Backend: routes/boletin.routes.js → GET /api/iniciativas-parlamentarias
+↓ Agrega iniciativas desde colecciones (BOCG_test, MONCLOA_REFERENCIAS_test, OEIL_test), cruza con 'info_fuentes' para nivel/marco
+Respuesta: { iniciativas: [...], fuentes: [...] }
+
+Notas UX:
+- Filtros por columnas con dropdown; filtros de fecha en cliente (dd-mm-yyyy)
+- Exportación a Excel (XLSX) vía SheetJS con filtros aplicados
+```
+
+#### **H. Vista Iniciativas Legales** ⚖️
+**🎯 Funcionalidad de Producto:**
+- **Para el usuario:** Explorar disposiciones clasificadas por rango/tema en boletines oficiales
+- **Valor:** Filtrado por boletines, fecha efectiva o fecha de inserción, y campos clave
+
+**🔧 Flujo Técnico:**
+```
+Frontend: public/views/boletindiario/iniciativas_legales.js
+↓ Construye URL /api/iniciativas-legales?test=yes&fuentes=[...]&desde_insert=YYYY-MM-DD
+Backend: routes/boletin.routes.js → GET /api/iniciativas-legales
+↓ Coalesce de fechas (fecha_publicacion/fecha/datetime_insert), mapping geo por 'info_fuentes'
+Respuesta: { iniciativas: [...], fuentes: [...] }
+
+Notas UX:
+- Multi-select de boletines con dropdown; filtros por columnas con arrays (sector/subsector)
+- Exportación a Excel (XLSX) vía SheetJS con arrays unidos por ' | '
+```
+
+#### **I. Vista Agendas Parlamentarias** 🗓️
+**🎯 Funcionalidad de Producto:**
+- **Para el usuario:** Consultar agendas (Congreso/Senado) por fecha de inserción
+- **Valor:** Planificación semanal y seguimiento de sesiones/temas
+
+**🔧 Flujo Técnico:**
+```
+Frontend: public/views/boletindiario/agendas_parlamentarias.js
+↓ GET /api/agendas-parlamentarias?agendas=[...]&desde_insert=YYYY-MM-DD&hasta_insert=YYYY-MM-DD
+Backend: routes/billing.routes.js → GET /api/agendas-parlamentarias
+↓ Normaliza fecha/hora (YYYY-MM-DD HH:mm) a partir de anio/mes/dia/event_time o datetime_insert
+Respuesta: { agendas: [...], fuentes: [...] }
+
+Notas UX:
+- Dropdown multi-select de agendas, filtros por columnas, XLSX export con SheetJS
 ```
 
 #### **B. Vista Tus Listas** 📝
@@ -344,19 +409,26 @@ Respuesta: { agent_id, configuration, status: "active" }
 papyrusai.github.io/
 ├── 📄 app.js                     # Bootstrap (175 líneas)
 ├── 📄 auth.js                    # Configuración Passport
-├── 📂 routes/                    # 12 routers modulares
+├── 📂 routes/                    # 19 routers modulares
 │   ├── 📄 auth.routes.js         # Autenticación (286 líneas)
 │   ├── 📄 profile.routes.js      # Perfil usuario, impacto agentes, guardar listas (573 líneas)
 │   ├── 📄 static.routes.js       # Páginas HTML (71 líneas)
 │   ├── 📄 normativa.routes.js    # Análisis docs (260 líneas)
 │   ├── 📄 feedback.routes.js     # Sistema feedback (227 líneas)
-│   ├── 📄 billing.routes.js      # Stripe/facturación (468 líneas)
+│   ├── 📄 billing.routes.js      # Stripe/facturación (+ agendas parlamentarias)
 │   ├── 📄 user.routes.js         # CRUD usuarios (253 líneas)
 │   ├── 📄 generacioncontenido.routes.js # Marketing (268 líneas)
 │   ├── 📄 agentes.routes.js      # Agentes IA (284 líneas)
 │   ├── 📄 listas.routes.js       # Gestión listas (294 líneas)
 │   ├── 📄 onboarding.routes.js   # Onboarding (312 líneas)
-│   └── 📄 boletin.routes.js      # Boletín diario (183 líneas)
+│   ├── 📄 boletin.routes.js      # Boletín diario + iniciativas (parlamentarias/legales)
+│   ├── 📄 enterprise.routes.js   # Contexto enterprise y utilidades
+│   ├── 📄 permisos.routes.js     # Permisos y acceso
+│   ├── 📄 etiquetas.routes.js    # Endpoints unificados de etiquetas
+│   ├── 📄 fuentes.routes.js      # Endpoints de fuentes oficiales
+│   ├── 📄 stats.routes.js        # Endpoints de tendencias normativas
+│   ├── 📄 internal.routes.js     # Dashboard interno (seguimiento, ranking, data)
+│   └── 📄 internal.review.feedback.js # Dashboard interno: review de feedback
 ├── 📂 services/                  # Lógica de negocio
 │   ├── 📄 email.service.js       # SendGrid emails (518 líneas)
 │   ├── 📄 users.service.js       # Gestión usuarios (198 líneas)
@@ -437,6 +509,10 @@ POST /save-free-plan             # Plan gratuito
 POST /save-same-plan2            # Renovar plan actual
 POST /cancel-plan2               # Cancelar suscripción
 
+// Agendas parlamentarias
+GET  /api/agendas-parlamentarias # Eventos de agenda (Congreso/Senado)
+// Query params: agendas=["CONGRESO_AGENDA","SENADO_AGENDA"], desde_insert, hasta_insert (YYYY-MM-DD)
+
 // Servicios utilizados:
 - services/email.service.js → sendSubscriptionEmail()
 - services/users.service.js → getUserLimits()
@@ -470,6 +546,49 @@ DELETE /api/delete-user-list          # Eliminar lista completa
 
 // Emparejamiento de etiquetas:
 // - Al guardar, cruza etiquetas del documento con etiquetas_personalizadas del usuario
+```
+
+#### **H. Boletín & Iniciativas Router (boletin.routes.js)**
+```javascript
+// Endpoints boletín diario y agregaciones
+GET /api/available-collections   # Colecciones disponibles para filtros (excluye _test/aux)
+GET /api/boletin-diario          # Última fecha con docs según boletines/rangos
+
+// Iniciativas (agregadores)
+GET /api/iniciativas-parlamentarias  # Agrega iniciativas legislativas en fuentes parlamentarias
+GET /api/iniciativas-legales         # Agrega disposiciones clasificadas por rango/tema
+
+// Notas de uso:
+// - iniciativas-legales soporta parámetros test=yes|no, fuentes=[...],
+//   date=YYYY-MM-DD o (desde/hasta) y/o (desde_insert/hasta_insert)
+// - Se normalizan fechas y se enriquece nivel/marco geográfico con 'info_fuentes'
+```
+
+#### **I. Stats Router (stats.routes.js)**
+```javascript
+// Tendencias normativas (agregación multi-colección, España + UE)
+GET  /api/stats/facets      # Facetas globales (rangos, divisiones, ramas)
+POST /api/stats/tendencias  # Series temporales, distribuciones, heatmap regional
+
+// Características:
+// - Coalesce de campos de fecha → createdAt
+// - Filtros (rangos/divisiones/ramas) con opción excluir outliers
+// - Caching (TTL) preparado; heatmap por CCAA (ISO) a partir de 'info_fuentes'
+```
+
+#### **J. Internal Router (internal.routes.js)**
+```javascript
+// Dashboard interno (solo tomas@reversa.ai)
+GET  /api/internal/seguimiento-users   # Lista/estado de usuarios/empresas en seguimiento
+POST /api/internal/seguimiento-users   # Actualiza selección (con backup *_old)
+GET  /api/internal/ranking             # Ranking por matches de etiquetas (paginado)
+GET  /api/internal/data                # Documentos/analítica por usuario/empresa (filtros)
+GET  /api/internal/user-boletines      # Cobertura de boletines del usuario/empresa
+GET  /api/internal/user-rangos         # Rangos disponibles derivados de cobertura
+GET  /api/internal/user-etiquetas      # Agentes/etiquetas del usuario/empresa
+POST /api/internal/delete-document     # Marca eliminación (persistido en 'Feedback')
+
+// Archivo relacionado: internal.review.feedback.js (pestaña de review de feedback)
 ```
 
 ### 🎨 FRONTEND → BACKEND FLOW
@@ -556,18 +675,23 @@ processAODomainUser(user)
 
 #### **C. DB Utils Service (services/db.utils.js)**
 ```javascript
-// Utilidades MongoDB reutilizables
+// Conexión con pool y utilidades reutilizables
+getMongoClient()                 // Cliente Mongo con connection pool (maxPoolSize, timeouts)
+getDatabase(dbName='papyrus')    // Instancia de DB (usa el pool)
+withDatabase(operation, dbName)  // Ejecuta operaciones con manejo de errores
+closeMongoConnection()           // Cierre ordenado del pool
+
 expandCollectionsWithTest(collections)
 - Expande colecciones para incluir versiones _test
-- Usado en múltiples endpoints para testing
 
 collectionExists(db, collectionName)
-- Verificación de existencia de colecciones
-- Prevención de errores en queries
+- Verificación rápida de existencia de colecciones
+
+getLatestDateForCollection(name, db)
+- Obtiene la fecha más reciente en una colección
 
 buildDateFilter(fechaInicio, fechaFin)
-- Constructor de filtros de fecha MongoDB
-- Estandarización de queries temporales
+- Devuelve array de condiciones combinables ($and) normalizadas a límites de día
 ```
 
 ---
